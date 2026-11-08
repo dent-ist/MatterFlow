@@ -64,7 +64,13 @@ function measure(page: Page): Promise<Measure> {
             'tbody td[data-col="priority"] .im-value, tbody td[data-col="status"] .im-value',
           ),
         )
-          .filter((v) => v.scrollWidth > v.clientWidth + 1)
+          // D-43 and D-44s: a long admin-edited name clips with an ellipsis and carries the full text as its tooltip, on purpose.
+          .filter((v) => {
+            const ellipsis =
+              getComputedStyle(v).textOverflow === 'ellipsis' || !!v.closest('.pg-clip');
+            const tooltip = !!v.closest('[title], [data-tip]') || !!v.getAttribute('aria-label');
+            return v.scrollWidth > v.clientWidth + 1 && !(ellipsis && tooltip);
+          })
           .map((v) => `menu value ${v.textContent?.trim()} ${v.scrollWidth}>${v.clientWidth}`),
       );
     const w = document.querySelector('.wt-wrap') as HTMLElement;

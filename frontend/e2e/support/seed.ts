@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { Api, Json } from './api';
+import { Api, ApiError, Json } from './api';
 
 let counter = 0;
 
@@ -144,6 +144,25 @@ export class Seeder {
     return id;
   }
 
+  /** Like `role`, with a name of the caller: a second call with the same name (a beforeAll that runs again) returns the role of the first. */
+  async roleOnce(
+    name: string,
+    description: string | null,
+    permissionCodes: string[],
+  ): Promise<Json> {
+    try {
+      const role = await this.admin.post('/api/v1/roles', { name, description, permissionCodes });
+      this.roleIds?.set(role.name, role.roleId);
+      return role;
+    } catch (err) {
+      if (!(err instanceof ApiError) || err.status !== 409) throw err;
+      const roles = await this.admin.get<Json[]>('/api/v1/roles');
+      const found = roles.find((r) => r.name === name);
+      if (!found) throw err;
+      return found;
+    }
+  }
+
   /** Creates a custom role with exactly these permission codes. */
   async role(permissionCodes: string[], label = 'E2E role'): Promise<Json> {
     const role = await this.admin.post('/api/v1/roles', {
@@ -230,8 +249,24 @@ export class Seeder {
   }
 
   async pod(name: string | undefined, memberUserIds: number[]): Promise<Json> {
-    const created = await this.admin.post('/api/v1/pods', { name: name ?? `E2E Pod ${uid()}` });
-    const pod = created.pod;
+    let pod: Json;
+    try {
+      const created = await this.admin.post('/api/v1/pods', { name: name ?? `E2E Pod ${uid()}` });
+      pod = created.pod;
+    } catch (err) {
+      // A beforeAll that runs again in the same worker (a new group, a restarted worker) finds its pod of the first run: reuse it.
+      if (!(err instanceof ApiError) || err.status !== 409 || name === undefined) throw err;
+      let existing: Json | undefined;
+      for (const active of ['true', 'false']) {
+        const found = await this.admin.get<Json>(
+          `/api/v1/pods?name=${encodeURIComponent(name)}&active=${active}&pageSize=100`,
+        );
+        existing = (found.items as Json[]).find((p) => p.name === name);
+        if (existing) break;
+      }
+      if (!existing) throw err;
+      return existing; // already built by the first run of the hook: members and state stay as they were
+    }
     if (memberUserIds.length > 0) {
       await this.admin.post(`/api/v1/pods/${pod.podId}/members`, { userIds: memberUserIds });
     }

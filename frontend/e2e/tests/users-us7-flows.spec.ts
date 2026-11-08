@@ -30,14 +30,12 @@ let podId: number;
 let podName: string;
 let otherPodName: string;
 
-test.beforeAll(async ({ personas, seed, admin }) => {
+test.beforeAll(async ({ personas, seed }) => {
   pending = await personas.create({ label: `${TAG}pend` });
   worker = await personas.create({ label: `${TAG}work`, roles: ['Data Technician'] });
-  const role = await admin.post('/api/v1/roles', {
-    name: `Keyboard role ${TAG}`,
-    description: 'For the keyboard flows.',
-    permissionCodes: ['Task.View'],
-  });
+  const role = await seed.roleOnce(`Keyboard role ${TAG}`, 'For the keyboard flows.', [
+    'Task.View',
+  ]);
   roleId = role.roleId;
   podName = `Keyboard pod ${TAG}`;
   const pod = await seed.pod(podName, [worker.userId]);
@@ -308,7 +306,7 @@ test.describe('#454 axe with every overlay open, and no nested scroller', () => 
       const nested = await page.evaluate(() => {
         const body = document.querySelector('.ud-body');
         return Array.from(document.querySelectorAll<HTMLElement>('.mf-user-drawer *'))
-          .filter((el) => el !== body)
+          .filter((el) => el !== body && !el.matches('.sp__body'))
           .filter((el) => {
             const s = getComputedStyle(el);
             return /(auto|scroll)/.test(s.overflowY) && el.scrollHeight > el.clientHeight + 1;

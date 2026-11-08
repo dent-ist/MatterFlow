@@ -4,7 +4,7 @@ Date: 2026-11-07. Subject: `origin/dev` at fd1428f (equal to the finished `ui-up
 
 ## 1. Verdict
 
-**Not ready on the e2e side: 294 failing tests in 159 spec files remain.** Stage 4 final clean full run (new database, rebuilt publish of `qa-e2e-fixes` + `ui-fixes`, all 2,514 tests): **2,101 passed, 294 failed, 119 skipped**. Progress: 1,749 / 680 (first run), 2,032 / 390 (stage 2), 2,058 / 362 (stage 3), 2,101 / 294 (stage 4). The sensitive pass is **14 of 14** (leak scan and the other sensitive tests). Fixes are test-only. The gate stays open: every remaining failure is listed per file in 3.2, most of them old specs of rebuilt pages that need a rewrite against the live page.
+**Not ready on the e2e side: 279 failing tests in 157 spec files remain.** Stage 5 final clean full run (new database, rebuilt publish of `dev` b38af52 plus the stage 5 spec changes, all 2,515 tests): **2,139 passed, 279 failed, 97 skipped**. Trend: 1,749 / 680 (first run), 2,101 / 294 (stage 4), 2,139 / 279 (stage 5). The sensitive pass is **14 of 14**. Fixes are test-only. All 16 pixel-budget rows were decided by the designer (`docs/qa/ui-update-2-e2e-measures.md`) and applied; two page defects came out of it (#1296; and a Filters/Name-filter placement question, rows 17 and 18 of the measures doc). The duplicate-name 409s are fixed (cause proven, section 3.3).
 
 ## 2. What was run, and how
 
@@ -22,6 +22,8 @@ Date: 2026-11-07. Subject: `origin/dev` at fd1428f (equal to the finished `ui-up
 | full 3 | **Clean full run, tree = qa-e2e-fixes + ui-fixes b2650b4**, 2 workers, 1.9 h | **2,058 passed, 362 failed, 106 skipped, 0 flaky** (2,526 tests) |
 | 7 | Stage 4 sensitive pass | **14 passed** |
 | full 4 | **Clean full run, stage 4**, tree = qa-e2e-fixes + ui-fixes b2650b4, 2 workers, 1.9 h | **2,101 passed, 294 failed, 119 skipped, 0 flaky** (2,514 tests) |
+| 8 | Stage 5 sensitive pass | **14 passed** |
+| full 5 | **Clean full run, stage 5**, 2 workers, 2 h | **2,139 passed, 279 failed, 97 skipped, 0 flaky** (2,515 tests) |
 | slices | Small re-runs of fixed families (create-task: 15/15 then 9/9 after the last fix; the Task Types / Workflows slice 55 of 87; several mixed slices) | used to prove each fix |
 
 Not run: the sensitive-ui fix and the last small fix commit (7770f24) after the second full run; the run with `E2E_SCREENSHOTS`, and `npm run e2e` with retries. Run 3 was not complete (46 tests), and no failed test was re-run strictly alone twice: reruns were in groups of up to 633 tests on a kept stack that had also run earlier tests, so a test that fails in run 2 and run 3 is "failed twice in a re-run", not "failed twice alone". Flaky: none observed (0 flaky in run 1; failures repeated in run 2).
@@ -49,18 +51,16 @@ Categories: (a) stale test (UI standardisation or another intended change), (b) 
 | mf-dropdown | pages/create-task.page.ts, task-create, create-task-sections, sensitive-leak-scan | Project, Priority, Pod and report Group By are `mf-dropdown`, not native selects. | a | Dropdown helper used. |
 | Sensitive dialog | sensitive-ui | The confirm dialog is "Mark Matter Sensitive". | a | Spec updated (not yet re-run, see 4.4). |
 
-### 3.2 Stage 4: what was done, and what is still failing (full run 4: 294 tests in 159 files)
+### 3.2 Stage 5: what was done, and what is still failing (full run 5: 279 tests in 157 files)
 
-Stage 4 work, per family (failing before -> in the slice after): Users administration 32 -> 18 (record-grid headers and rows, drawer error text, Make Primary only when offered, 403 text, Tab-stop budget 18, unique run tags); Profile 17 -> about 10 (four stale-note tests, one preview test, two save-bar tests and review-round-5 capture and UXR5-04 deleted: the Status radio and the stale coupling are gone; wording fixes); measures 60 -> 13 (Due 152 px arithmetic in wp20, wp21, wp22; record links `a[data-row-key]`; numeric dates in the status note; matter strip assertions removed because the strip was removed); Task Types / Workflows wording (Retire dialogs without question mark, "Couldn't save", counts with thousands separators, Title Case headings).
-Rules applied as asked: deleted only tests of removed features or narrow windows under 1280 px (lc09 at 1024, wp13 at 1023, dashboard-shell phone widths); ux-round-4 now checks the default columns at 1366; the progress control is a 24 px line (the guideline gives no smaller bar), so that test allows at most 24 px.
+Done in stage 5, per family: the designer's decisions for the pixel-budget rows applied (task-header-t2 budgets 320 / 300 / 44, wp13 Title >= 120 and the spring rule, wp20 drag with the Title giving way plus a new test with the Title at 120, wp21 Widen 160 / Narrow 152 / 144, wp22 Title row, wp9-fixed-layout ellipsis cells, wp8 toolbar, wp16 waits for the More popover); duplicate-name 409s fixed; Dashboard Users tab: the idle out-of-office card reads "Out of Office" without "until" (seeded without an end date). Issues from it: **#1296** (Matters: the open filter row shows a chip for Sensitive). #1295 (Title 120 px) is **not a page defect** (D-43a, owner decision in #1232); it should be closed as spec stale by whoever owns it.
 
-Still failing, sorted by number of tests, with the first error as the reason (each needs a look at the live page; none is proven stale and none is claimed as a defect except where an issue is named):
+Remaining files and failing test counts, first error as the reason (each needs a look at the live page; none is proven stale and none is claimed as a defect except where an issue is named):
 
-- users-tab (11): locator('[data-user-card][data-user="ke\\\\e2e-wlkybq45d208- expected /, 0 open tasks, Idle, Out of Office unt got "ke\\e2e-wlkybq45d208-kyragq436, 0 open 
-- ty9-keyboard (5): locator('a[data-row-key]') expected 25 got 30
-- wp8-list-chrome (5): locator('[data-grid-toolbar]') expected 0 got 1
+- users-tab (8): Error: expect(received).toBeLessThanOrEqual(expected) /  / Expected: < expected <= 64 got 77
+- ty9-keyboard (6): locator('a[data-row-key]') expected 25 got 30
 - clients-final (4): locator('mf-scoped-tasks [data-strip]') expected visible
-- clients-keyboard (4): Error: expect(page).toHaveURL(expected) failed /  / Expected pattern:  expected /\/projects\/15/ got "http://127.0.0.1:5290/matters/144?tab=p
+- clients-keyboard (4): Error: expect(page).toHaveURL(expected) failed /  / Expected pattern:  expected /\/projects\/17/ got "http://127.0.0.1:5290/matters/147?tab=p
 - matter-columns (4): Error: expect(received).toBeGreaterThanOrEqual(expected) /  / Expected expected >= 160 got 120
 - md-forms-grid (4): Error: page.evaluate: TypeError: Cannot read properties of undefined (
 - sh5-toast-host (4): locator('[data-toast][data-severity="error"]') expected 1 got 0
@@ -68,13 +68,13 @@ Still failing, sorted by number of tests, with the first error as the reason (ea
 - ty3-lists (4): locator('.mf-table-wrap, ul[data-record-cards]').first()
 - ad3-priorities-edit (3): locator('tbody tr[data-row], li.rc').filter({ has: getByRole expected visible
 - ad6-custom-fields (3): getByRole('navigation', { name: 'Breadcrumb' }).locator('li'
-- as3-list (3): locator('tbody tr[data-record-id]').first() expected "64" got ""
+- as3-list (3): locator('tbody tr[data-record-id]').first() expected "62" got ""
 - clients-permissions (3): Error: project links in the Tasks grid /  / expect(received).toBe(expe expected true got false
 - coverage-by-type (3): getByRole('button', { name: /^Order:/ })
 - dashboard-period (3): locator('[data-period] button') expected "90d"
-- dashboard-v4-summary (3): locator('mf-dash-grid [data-list-count]') expected "168"
+- dashboard-v4-summary (3): locator('mf-dash-grid [data-list-count]') expected "216"
 - mm-ui-update (3): locator('mf-mm-task-list tr[data-task]').first().locator('mf expected 1 got 0
-- pm-matters (3): locator('[data-managers]') expected "(primary)" got "Primary PMPFPM Alpha FXX5Y"
+- pm-matters (3): locator('[data-managers]') expected "(primary)" got "Primary PMP2PM Alpha 230FT"
 - profile-pf3-layout (3): locator('[data-name]') expected "pf2long Featherstonehaugh Cholmondeley  got ""
 - pv-saved-views (3): locator('[data-export-menu] [data-overflow]')
 - px5-matter (3): locator('p-dialog').locator('[data-task-list] label') expected 2 got 0
@@ -82,15 +82,14 @@ Still failing, sorted by number of tests, with the first error as the reason (ea
 - swimlane-board (3): getByRole('menu', { name: 'Board options' }).getByRole('menu
 - t8-edit-create (3): locator('[data-locked-fields]') expected in viewport got viewport ratio 0
 - task-detail-final (3): locator('[data-task-header] .mf-btn--primary').filter({ visi expected /Reopen task/ got " Reopen Task "
-- task-header-t2 (3): Error: Workflow y at 1366 /  / expect(received).toBeLessThanOrEqual(ex expected <= 300 got 316
 - ty2-shell (3): Error: expect(received).toEqual(expected) // deep equality /  / - Expe
 - ty2-states (3): locator('[data-empty="none"]').locator('a, button') expected 0 got 1
 - ty3-narrow-columns (3): locator('.mf-table-wrap')
 - ty3-task-types (3): locator('tbody .chip') expected 0 got 3
-- ty3-workflows-steps (3): locator('tbody tr:is([data-row], [data-record-id])').last() expected "1dcopli12 Draft only" got ""
+- ty3-workflows-steps (3): locator('tbody tr:is([data-row], [data-record-id])').last() expected "pjtxtgl12 Draft only" got ""
 - users-capacity (3): getByRole('button', { name: 'Hide them' })
 - ux-round-4 (3): locator('[data-icon-trigger]') expected /Icon.*Document.*Change icon/
-- wp21-fit-menu (3): Error: expect(received).toBe(expected) // Object.is equality /  / Expe expected 144 got 152
+- wp11-view-counts (3): locator('[data-view="overdue"]').locator('.qv-n:not([data-co expected visible
 - ad1-designer-states (2): getByRole('navigation', { name: 'Breadcrumb' }).getByRole('l
 - ad3-labels-shell (2): getByRole('tab')
 - admin-holidays (2): getByRole('dialog', { name: 'Import or paste holidays' }).ge
@@ -100,12 +99,13 @@ Still failing, sorted by number of tests, with the first error as the reason (ea
 - column-filters-work-lists (2): getByRole('textbox', { name: 'Filter by Project' })
 - dashboard-audit (2): getByRole('tablist', { name: 'Dashboard views' }).getByRole( expected focused got inactive
 - dashboard-breakdowns (2): locator('[data-section="breakdowns"]').locator('mf-bar-list'
+- dashboard-fixed-height (2): Error: expect(received).toEqual(expected) // deep equality /  / - Expe
 - dashboard-permissions (2): Error: expect(received).toBeLessThanOrEqual(expected) /  / Expected: < expected <= 1078 got 1233
 - dashboard-shell (2): getByRole('button', { name: 'View as pie for Priority' }) expected focused
 - final-verification (2): locator('a.tile').first() expected visible
-- matter-client-details-tab (2): getByRole('tab', { name: 'Summary' }) expected focused got inactive
 - mm-qa (2): getByRole('dialog').getByRole('button', { name: 'Add item' }
-- my-work-per-tab-columns (2): locator('[data-task]').filter({ hasText: 'Assigned df9b6jp34 expected "12 d"
+- my-work-per-tab-columns (2): locator('[data-task]').filter({ hasText: 'Assigned zlt2cpy35 expected "12 d"
+- pv-asset-report-builder (2): getByRole('dialog').getByRole('button', { name: 'Rename', ex
 - pv-export (2): locator('[data-export-menu] [data-overflow]') expected /not a status report/
 - pw6-assign (2): locator('.im-pop').getByRole('menuitemradio', { name: 'ke\\e expected visible
 - sh-create-task (2): getByRole('button', { name: 'New Task' }) expected 1 got 0
@@ -113,47 +113,46 @@ Still failing, sorted by number of tests, with the first error as the reason (ea
 - sh-page-header (2): Error: title height at 1366: one line /  / expect(received).toBeLessTh expected <= 37 got 39.375
 - sh1-skip-link (2): locator('a.mf-skip[data-skip-list]') expected /Skip to (task list/table)/ got "Skip to Task List"
 - sr3-grids (2): getByRole('region', { name: 'Assets (58)' }) expected visible
+- sr3-results-tabs (2): getByRole('region', { name: 'Tasks (30)' }) expected visible
 - swimlane (2): locator('[data-lane="NEW"]').getByRole('tree').locator('[rol expected "8"
-- task-detail-t9 (2): locator('[data-panel="unassigned"] a.main[data-row-key="3468 expected visible
 - task-due-inline (2): locator('[data-due-live]') expected "Due date set to 10/24/2030 05:00 PM" got "Due date set to 10/24/2030 5:00 PM"
-- task-lifecycle (2): locator('[data-status-note]') expected "ke\\kekim" got "On hold since 11/07 03:15 PM by kekim: 
+- task-lifecycle (2): locator('[data-status-note]') expected "ke\\kekim" got "On hold since 11/07 07:46 PM by kekim: 
 - task-queue-copy (2): getByRole('toolbar', { name: 'Quick views' }).getByRole('but
 - task-types-tabs (2): getByRole('tab')
-- tip-axe (2): locator('[data-tree-collapse]')
+- tip-axe (2): locator('[role="tooltip"]') expected "true"
 - ty-permissions-matrix (2): Error: /admin/priorities: 4 tab links for Priority=true, Status=true /
 - ty4-task-type (2): Error: note at 1366: axe /  / expect(received).toEqual(expected) // de
 - ty6-version-bar (2): getByRole('dialog').getByRole('button', { name: 'Cancel' }) expected focused
 - ty7-step (2): locator('[data-footer] button')
-- users-us-copy-roles (2): locator('[data-role="522"] .mf-name') expected "usc95034mpnq Senior Document Review Coo got "usc95034mpnq Senior Document Review Coo
+- users-pods (2): getByRole('tab')
 - users-us4-drawer (2): locator('[data-pods-popover]').locator('[data-pods-apply]')
-- users-us7-flows (2): Error: expect(received).toEqual(expected) // deep equality /  / - Expe
-- users-us8-final (2): Error: axe, user panel open, 1366x768 /  / expect(received).toEqual(ex
 - wp10-matter-tabs (2): Error: expect(received).toBe(expected) // Object.is equality /  / Expe expected 36 got 40
-- wp11-view-counts (2): locator('[data-view="overdue"]').locator('.qv-n:not([data-co expected visible
-- wp13-narrow-rule (2): Error: expect(received).toBeGreaterThanOrEqual(expected) /  / Expected expected >= 160 got 120
-- wp16-more-views (2): Error: all views at 1366 /  / expect(received).toEqual(expected) // de
-- wp20-resize (2): Error: expect(received).toBeLessThanOrEqual(expected) /  / Expected: < expected <= 1 got 44
-- wp22-columns-widths (2): locator('[data-width-row="title"]') expected "Fills the space left" got "Title Reset Width "
 - wp5-toolbar (2): locator('[data-toolbar-row2] [data-sort-note]') expected 1 got 0
 - wp6-client-overview (2): Error: expect(received).toEqual(expected) // deep equality /  / - Expe
-- wp7-inline-row-actions (2): locator('[data-task]').filter({ hasText: 'Step 3i7ibds76' }) expected "1 of 2"
+- wp7-inline-row-actions (2): locator('[data-task]').filter({ hasText: 'Step shsmpvh87' }) expected "1 of 2"
+- wp8-list-chrome (2): getByRole('button', { name: /^Filters/ }) expected "(2)" got " Filters (1)"
 - ad3-priorities-delete (1): locator('tbody tr[data-row], li.rc').filter({ has: getByRole
 - ad3-priorities-list (1): locator('tbody tr[data-row], li.rc').filter({ has: getByRole expected "3"
 - ad4-asset-type-record (1): getByRole('navigation', { name: 'Breadcrumb' }).locator('li'
-- ad4-asset-types-list (1): locator('tr:has(td[data-row="Alpha jobamfq29"])').locator('[ expected /Updated [A-Z][a-z]{2} \d{1,2}/ got "Published v18 fields · Updated 11/07"
+- ad4-asset-types-list (1): locator('tr:has(td[data-row="Alpha 4ukeu4f25"])').locator('[ expected /Updated [A-Z][a-z]{2} \d{1,2}/ got "Published v18 fields · Updated 11/07"
 - ad5-link-roles (1): getByRole('menuitem')
 - ad7-audit (1): Error: expect(received).toContain(expected) // indexOf /  / Expected v expected "Asset Type" got ["Any Object", "Configuration Changes", 
 - ad8-axe-reflow (1): locator('tr[data-row="Matter"], li.rc').first() expected visible
-- ad8-focus-rules (1): locator('tr[data-row="Focus Type le8w8cj21"]') expected visible
-- ad8-tab-stops (1): locator('[data-announce]') expected "moved to position" got ""
-- as5-forms (1): getByText('Asset Created nhars8r17 saved') expected visible
+- ad8-focus-rules (1): locator('tr[data-row="Focus Type 6r824iu1"]') expected visible
+- as1-defects (1): locator('.dd-panel [role="option"]:not([aria-disabled="true"
+- as2-record-page (1): getByRole('menuitem', { name: 'Set active' })
+- as5-forms (1): getByText('Asset Created 93rvwez17 saved') expected visible
+- as757-assignee-suggestions (1): Error: axe: Edit task list at 1366x768 /  / expect(received).toEqual(e
 - assets-final (1): Error: expect(received).toBe(expected) // Object.is equality /  / Expe expected 3 got 4
 - assets-keyboard (1): Error: expect(received).toBeLessThanOrEqual(expected) /  / Expected: < expected <= 6 got 22
 - assets-screen (1): getByRole('region', { name: 'Assets list, scrollable' }).loc expected 8 got 9
 - column-filters (1): getByRole('dialog', { name: 'Filters' }) expected visible
+- dashboard-alignment (1): TypeError: Cannot read properties of null (reading 'y')
 - dashboard-grid-resize (1): Error: type: title keeps its width /  / expect(received).toBeLessThanO expected <= 1.5 got 6
 - detail-layout (1): Error: expect(received).toBeGreaterThan(expected) /  / Expected: > 127 expected > 1270 got 1266
+- edit-task-sections (1): locator('#td-due-date') expected focused got inactive
 - lc-list-toolbar (1): getByRole('columnheader', { name: /^Name/ }).getByRole('butt
+- matter-client-details-tab (1): getByRole('dialog').getByRole('button', { name: 'Set inactiv
 - md-notes-parity (1): locator('[data-notes-list] [data-notes-controls]').getByRole expected visible
 - md-summary (1): Error: columns at 768 /  / expect(received).toBe(expected) // Object.i expected 1 got 2
 - md-tasks-look (1): getByRole('tooltip') expected /^\d+ of \d+ steps$/
@@ -161,69 +160,66 @@ Still failing, sorted by number of tests, with the first error as the reason (ea
 - my-work-vocabulary (1): Error: expect(received).toEqual(expected) // deep equality /  / - Expe
 - page-header-icons (1): getByRole('heading', { level: 1 }).locator('i[data-page-icon expected /pi-compass/
 - profile-absences (1): getByRole('button', { name: 'Add Out of Office' }).first()
-- profile-availability (1): locator('tbody tr').filter({ hasText: 'ke\\e2e-axe1366-i636b expected visible
-- profile-pf5-dialog (1): locator('[data-ooo-label]') expected "Out of office until Nov 14"
+- profile-availability (1): locator('tbody tr').filter({ hasText: 'ke\\e2e-axe1366-4j2vw expected visible
 - pv-asset-disposition (1): getByRole('dialog').getByRole('button', { name: 'Set Asset I
-- pv-asset-report-builder (1): getByRole('dialog').getByRole('button', { name: 'Rename', ex
 - pv-assets-pages (1): getByRole('columnheader', { name: 'Size' }).getByRole('butto
 - pv-final-gate (1): locator('[data-filter-toggle]')
-- pv-task-types-on-hold (1): locator('[data-row="E2E Type m5vv9lm22"]').locator('[data-ta expected "4"
-- pw1-bugs (1): Error: expect(received).not.toBe(expected) // Object.is equality /  /  expected not "103"
-- pw2-scope (1): locator('[data-pod-list]').locator('button') expected 130 got 124
-- pw7-keyboard (1): Error: expect(received).not.toBe(expected) // Object.is equality /  /  expected not "172"
+- pv-task-types-on-hold (1): locator('[data-row="E2E Type 94ov2dr41"]').locator('[data-ta expected "4"
+- pw1-bugs (1): Error: expect(received).not.toBe(expected) // Object.is equality /  /  expected not "105"
+- pw2-scope (1): locator('[data-pod-list]').locator('button') expected 135 got 128
+- pw7-keyboard (1): Error: expect(received).not.toBe(expected) // Object.is equality /  /  expected not "174"
 - review-round-5 (1): getByRole('dialog').locator('[data-actions]') expected visible
 - rich-description (1): Error: page.evaluate: TypeError: Cannot read properties of null (readi
-- rp5-reports-admin (1): locator('tr:has(td[data-row="Added s9dxme354"])') expected visible
+- rp5-reports-admin (1): locator('tr:has(td[data-row="Added fcsemft1"])') expected visible
 - sh-403-in-place (1): locator('[data-back-link]') expected focused got inactive
 - sh-final-contract (1): getByRole('navigation', { name: 'Main' }).locator('[data-nav
 - sh-focus-heading (1): locator('[data-back-link]') expected focused got inactive
 - sh-rail-icons (1): Error: expect(received).toBe(expected) // Object.is equality /  / Expe expected "21px" got "19px"
 - sh-state-pages (1): locator('[data-back-link]') expected focused got inactive
 - sh1-user-name (1): Error: expect(received).toBe(expected) // Object.is equality /  / Expe expected 57 got 53
-- sr3-results-tabs (1): getByRole('region', { name: 'Tasks (30)' }) expected visible
 - sr5-filters (1): getByRole('button', { name: /^Remove filter Task status: On 
 - sr6-a11y (1): getByTestId('search-button')
 - swimlane-big-screens (1): Error: summary 2560 /  / expect(received).toBeLessThanOrEqual(expected expected <= 1360 got 2292
 - t4-menus-dialogs (1): getByRole('dialog').getByRole('button', { name: 'Keep' }) expected visible
-- t7-comments-activity (1): locator('[data-comment-id]').first().locator('time') expected /^[A-Z][a-z]{2} \d{1,2}, \d{4}, \d{1,2}: got "11/07 03:09 PM"
+- t7-comments-activity (1): locator('[data-comment-id]').first().locator('time') expected /^[A-Z][a-z]{2} \d{1,2}, \d{4}, \d{1,2}: got "11/07 07:40 PM"
 - task-detail-layout (1): Error: expect(received).toBeGreaterThan(expected) /  / Expected: > 127 expected > 1270 got 1266
 - task-detail-t1 (1): locator('[data-toast]') expected 0 got 1
-- task-detail-t5 (1): getByRole('tablist', { name: 'Task sections' }).getByRole('t expected focused got inactive
 - task-detail-t6 (1): locator('[data-filter="unresolved"]')
+- task-detail-t9 (1): locator('[data-panel="unassigned"] a.main[data-row-key="3648 expected visible
+- task-detail-tabs (1): getByRole('tablist', { name: 'Task sections' }).getByRole('t expected focused got inactive
 - task-type-icons (1): getByRole('dialog', { name: 'Change task type' }).getByRole(
 - ty-dialogs (1): locator('[data-status]') expected "Published v2"
 - ty-titles-crumbs (1): TypeError: Cannot read properties of null (reading 'height')
+- ty1-list-return (1): Error: expect(received).toBe(expected) // Object.is equality /  / Expe expected "/admin/workflows?name=h6utmt222&size=25 got "/admin/workflows/878"
 - ty5-workflow (1): getByRole('menuitem', { name: /Create draft from this versio expected "true"
+- ty6-version-editor (1): Error: expect(received).toEqual(expected) // deep equality /  / - Expe
 - ty8-designer-owners (1): getByRole('heading', { level: 1 }) expected "Client custom fields"
 - ty8-designer-readonly (1): getByRole('dialog', { name: /Discard/ }) expected visible
 - ty9-audit (1): getByRole('button', { name: /^Versions/ }).first()
-- users-pods (1): getByRole('tab')
 - users-us03-us04 (1): getByRole('region', { name: 'Skills matrix, scrollable' }) expected visible
-- users-us2-status (1): locator('[data-strip-item="active"]') expected "1588" got "Active   1,588"
-- users-us3-grid (1): Error: POST /api/v1/roles -> 409: {"type":"urn:matterflow:error:duplic
-- users-us6-editors (1): Error: POST /api/v1/roles -> 409: {"type":"urn:matterflow:error:duplic
-- users-us6-pods (1): Error: POST /api/v1/pods -> 409: {"type":"urn:matterflow:error:duplica
+- users-us1-bugs (1): locator('[data-edit-availability]') expected focused got inactive
+- users-us2-status (1): Error: pending rows /  / expect(received).toBe(expected) // Object.is  expected 24 got 23
 - users-us7-matrix (1): Error: User.View + User.Manage /  / expect(received).toEqual(expected)
 - workflow-steps (1): getByRole('dialog').getByRole('button', { name: 'Skip Step' 
-- wp1-dialogs-popovers (1): getByRole('dialog').filter({ has: locator('[data-reason-body expected "Workflow steps can't be changed while i got " TSK-4913 stays On Hold until someone r
+- wp1-dialogs-popovers (1): getByRole('dialog').filter({ has: locator('[data-reason-body expected "Workflow steps can't be changed while i got " TSK-4975 stays On Hold until someone r
 - wp10-hold-colours (1): locator('tbody tr, li[data-task]').filter({ has: getByRole(' expected 1 got 0
-- wp12b-keyboard (1): getByRole('switch', { name: /Keyboard Shortcuts/ }) expected checked
-- wp14-due-cell (1): locator('[data-task="TSK-5092"] td[data-col="due"] .dc').loc expected "Overdue 120d" got " +120d "
+- wp12b-keyboard (1): locator('[data-task] a.wt-title').nth(2) expected focused got inactive
+- wp14-due-cell (1): locator('[data-task="TSK-5165"] td[data-col="due"] .dc').loc expected "Overdue 120d" got " +120d "
 - wp19-compact (1): Error: forced colours /  / expect(received).toEqual(expected) // deep 
 - wp2-list-states (1): locator('[data-empty=none]') expected /No projects yet\. Open a matter and cho
+- wp21-fit-menu (1): locator('[data-column-menu]').locator('[data-item="widen"]')
+- wp22-columns-widths (1): locator('[data-width-row="matterName"]').locator('[data-widt expected "160"
 - wp24-toolbar-keys (1): getByRole('toolbar', { name: 'Quick views' }).locator('> but expected /^Unassigned/ got "More views"
 - wp25-dash-due (1): Error: overdue24d: Swimlane card = queue row /  / expect(received).toE
 - wp8-matter-cell (1): getByRole('button', { name: /Reset columns/ })
-- wp9-fixed-layout (1): Error: nothing is cut off at 1366 for /tasks?q=5d3zjgf11 /  / expect(r
+- wp9-density (1): Error: a Compact row is 36 px (#211): 44,44,44,44,44,44,44,44,44,44,44 expected <= 1 got 8
+- wp9-fixed-layout (1): Error: nothing is cut off at 1366 for /tasks?q=tzpjnka31 /  / expect(r
 
-What these would need, by value:
-1. **Waiting for an application fix:** wp13-narrow-rule Title width (#1295); users-us8-final heading-order (#1294); the availability chip date format (#1293, the specs are green once the casing is fixed).
-2. **Dashboard Users tab** (users-tab 11, users-capacity 3): the page was redesigned (the "Who is counted" popover holds Show them / Hide them, the capacity strip and the view switch moved); needs a rewrite from the current page object.
-3. **Task Types / Workflows lists and designer** (ty2, ty3, ty4, ty5, ty6, ty7, ty8, ty9): selectors of the record grid, the version bar and the dialogs; 25 versus 30 rows per page (ty9-keyboard) needs the page size decided.
-4. **Matter and client pages** (px5, px6, wp7-matter-overview, clients-final, clients-keyboard): the matter overview strips were replaced by the Summary tab (D-44f); the specs must target the Summary tab and the Tasks tab strip instead.
-5. **Measures** (wp8-list-chrome, wp13, wp16, wp20 drag, wp21 menu, wp22, wp9-fixed-layout, task-header-t2 budgets): numbers and toolbar markup of the standardised grids; the Workflow y budgets of task-header-t2 (300 / 275 / 40 px) need a design decision.
-6. **Dialogs and forms** (as2, as3, as5, pv-*, rich-description, email-intake, sr5): form and dialog markup.
-7. **Fixed names and timing** (users-us6-editors, users-us6-pods, users-us7-flows): the 409 duplicate-name errors come from requests retried under load; the run tag now has a time suffix; if it persists a unique name per call is needed.
+Not done in stage 5 (ran out of time): the Dashboard Users tab rewrite beyond the idle card (users-tab 6, users-capacity 3: the toolbar holds Workload / Coverage / Skills, the "Who is counted" popover holds Show them / Hide them), the matter and client pages (px5, px6, wp7-matter-overview, clients-final, clients-keyboard), the dialogs and forms (as2, as3, as5, pv-*, rich-description, email-intake, sr5) and the Task Types / Workflows specs (ty2 to ty9, including ty9-keyboard 25 versus 30 rows: the list shows 30 name links, so the spec cannot simply say 25 without knowing what the other five are). The measure rows 17 (users-tab card height 77 against 64) and 18 (wp8 counter and the placement of the Filters toggle and the Name search on Clients) wait for the designer.
+
+### 3.3 Duplicate-name 409s: cause and fix
+
+Cause, proven with `--repeat-each=2` on a kept stack: a `test.beforeAll` that runs again in the same worker (a second repeat, or a new group after a failed test) has module-level fixed names (the file's TAG), so `POST /api/v1/roles` and `POST /api/v1/pods` answered 409 DUPLICATE_NAME for the role and pod it had created in its first run. It is not a retry under load and not a leftover from another file. Fix: `Seeder.roleOnce` and `Seeder.pod` return the existing role or pod on 409; users-us3-grid, us6-editors, us6-pods, us7-flows and users-us-copy-roles use them. After the fix a run with `--repeat-each=2` over those files and users-us1-bugs and users-us4-drawer gave no 409 (169 passed, 5 failed for other reasons).
 
 ## 4. Real defects and open questions
 

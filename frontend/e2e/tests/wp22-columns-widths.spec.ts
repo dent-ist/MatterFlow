@@ -83,8 +83,9 @@ test.describe('Column widths in the Columns panel (#206)', () => {
 
     await openPanel(page);
     await expect(page.locator('[data-widths-set] legend')).toHaveText('Column Widths');
-    await expect(row(page, 'title')).toContainText('Fills the space left');
-    await expect(row(page, 'title').locator('input')).toHaveCount(0);
+    // #1243: the Title width can be set and reset in the panel (one input and "Reset Width"); "Fills the space left" is now only the hint of the disabled header-menu items.
+    await expect(row(page, 'title')).toContainText('Reset Width');
+    await expect(row(page, 'title').locator('[data-width-input]')).toHaveCount(1);
 
     // Tab from the field reaches Widen, Fit and Reset width in order.
     await field(page, 'due').focus();
