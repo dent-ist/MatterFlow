@@ -11,6 +11,9 @@ public enum AssetGroupKind
     Matter,
     AssetType,
     Field,
+
+    /// <summary>The generated Asset Number text; assets without one share the empty key.</summary>
+    AssetNumber,
 }
 
 /// <summary>
@@ -118,6 +121,8 @@ public sealed class AssetAggregates(DbContext db, IFormIndexReader index)
                 return await assets.GroupBy(a => a.MatterId.ToString()).Select(g => new AssetCountRow { Key = g.Key, Count = g.Count() }).ToListAsync(ct);
             case AssetGroupKind.AssetType:
                 return await assets.GroupBy(a => a.AssetTypeId.ToString()).Select(g => new AssetCountRow { Key = g.Key, Count = g.Count() }).ToListAsync(ct);
+            case AssetGroupKind.AssetNumber:
+                return await assets.GroupBy(a => a.AssetNumber ?? string.Empty).Select(g => new AssetCountRow { Key = g.Key, Count = g.Count() }).ToListAsync(ct);
             default:
                 {
                     var values = index.Rows(FormValueOwnerKind.Asset).Where(i => i.FieldKey == fieldKey);
@@ -143,6 +148,8 @@ public sealed class AssetAggregates(DbContext db, IFormIndexReader index)
                 return await valued.GroupBy(v => new { Key = v.Asset.MatterId.ToString(), v.Unit }).Select(g => new AssetSumRow { Key = g.Key.Key, Unit = g.Key.Unit, Sum = g.Sum(v => v.Value), Valued = g.Count() }).ToListAsync(ct);
             case AssetGroupKind.AssetType:
                 return await valued.GroupBy(v => new { Key = v.Asset.AssetTypeId.ToString(), v.Unit }).Select(g => new AssetSumRow { Key = g.Key.Key, Unit = g.Key.Unit, Sum = g.Sum(v => v.Value), Valued = g.Count() }).ToListAsync(ct);
+            case AssetGroupKind.AssetNumber:
+                return await valued.GroupBy(v => new { Key = v.Asset.AssetNumber ?? string.Empty, v.Unit }).Select(g => new AssetSumRow { Key = g.Key.Key, Unit = g.Key.Unit, Sum = g.Sum(v => v.Value), Valued = g.Count() }).ToListAsync(ct);
             default:
                 {
                     var values = index.Rows(FormValueOwnerKind.Asset).Where(i => i.FieldKey == fieldKey);

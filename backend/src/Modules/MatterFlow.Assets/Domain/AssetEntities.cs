@@ -43,7 +43,7 @@ public class AssetType : AuditedEntity<int>
 
 /// <summary>
 /// The atomic counter of the automatic asset numbering: one row per asset type and scope key (the matter id while the scope is per matter). <see cref="NextNumber"/> is the number the
-/// NEXT asset gets. Only <see cref="AssetNumberGenerator"/> and the administrator's "set next number" write it; it never goes down below the highest assigned number and a deleted or
+/// NEXT asset gets. Only <see cref="AssetNumberGenerator"/> and the administrator's "set next number" write it; it can only be raised, never lowered; a deleted or
 /// deactivated asset does not touch it.
 /// </summary>
 public class AssetNumberCounter

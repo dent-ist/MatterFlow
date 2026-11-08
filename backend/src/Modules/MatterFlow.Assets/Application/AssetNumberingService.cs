@@ -107,7 +107,7 @@ public sealed class AssetNumberingService(
     }
 
     /// <summary>
-    /// Sets the counter value the next asset of the type in the matter gets. Never lower than the highest assigned number plus one (400 <c>NEXT_NUMBER_TOO_LOW</c>); the counter row is created when
+    /// Sets the counter value the next asset of the type in the matter gets. The number can only be RAISED: below the counter's current next number (and below the highest assigned number plus one for a matter without a counter row) is 400 <c>NEXT_NUMBER_TOO_LOW</c>; equal is a no-op without an audit event; the counter row is created when
     /// missing. The counter row is locked first, so a create that is numbering at the same moment finishes before the check and the change (the highest number is then exact). Audited: who, matter, old and new.
     /// </summary>
     public async Task<Result<AssetNumberCounterItem>> SetNextAsync(int assetTypeId, int matterId, AssetNextNumberChange request, CancellationToken ct)
@@ -136,6 +136,15 @@ public sealed class AssetNumberingService(
                     "nextNumber",
                     "NEXT_NUMBER_TOO_LOW",
                     $"Numbers up to {highest} are already in use for this asset type in matter {matter.MatterRef}. The next number must be at least {highest + 1}.");
+            }
+
+            if (request.NextNumber < old)
+            {
+                // The next number can only be raised (owner rule): lowering it could hand out a number a folder on the share may already use.
+                return Error.Validation(
+                    "nextNumber",
+                    "NEXT_NUMBER_TOO_LOW",
+                    $"The next number can only be raised. It is now {old} for this asset type in matter {matter.MatterRef}; enter {old} or more.");
             }
 
             if (request.NextNumber != old)

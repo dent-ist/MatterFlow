@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 namespace MatterFlow.WorkViews.Application.Queries;
 
 /// <summary>
-/// Runs an asset report (epic #851, issue #873): Count, Sum or Average of a number field of the assets, grouped by disposition, matter, client, asset type or a SELECT field, as SQL
+/// Runs an asset report (epic #851, issue #873): Count, Sum or Average of a number field of the assets, grouped by disposition, matter, client, asset type, Asset Number (issue #1297) or a SELECT field, as SQL
 /// aggregates over the assets of the caller's visible matters and the typed index (never the stored JSON, never in memory). A saved report is only a definition; every run uses the
 /// viewer's current visibility and the form as it is today. Limits: 200 groups ("N more hidden") and 10 seconds.
 /// </summary>
@@ -83,6 +83,7 @@ public sealed class AssetReportRunService(
             AssetReportGroupBy.Disposition => AssetGroupKind.Disposition,
             AssetReportGroupBy.Matter or AssetReportGroupBy.Client => AssetGroupKind.Matter,
             AssetReportGroupBy.AssetType => AssetGroupKind.AssetType,
+            AssetReportGroupBy.AssetNumber => AssetGroupKind.AssetNumber,
             _ => AssetGroupKind.Field,
         };
         var fieldKey = sqlKind == AssetGroupKind.Field ? groupBy[AssetReportGroupBy.FieldPrefix.Length..] : null;
@@ -240,6 +241,10 @@ public sealed class AssetReportRunService(
             case AssetReportGroupBy.Client:
                 foreach (var m in matters.Values)
                     labels[m.ClientId.ToString(CultureInfo.InvariantCulture)] = m.ClientName;
+                break;
+            case AssetReportGroupBy.AssetNumber:
+                foreach (var key in keys)
+                    labels[key] = key.Length == 0 ? "(none)" : key;
                 break;
             case AssetReportGroupBy.AssetType:
                 {
