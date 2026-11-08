@@ -60,14 +60,14 @@ public static class StarterRoles
 
     public static IReadOnlyList<StarterRole> All { get; } =
     [
-        // Matter.BeManager (owner decision, issue #976, 2026-11-07; script 62 for existing databases): the Director opens My Matters (the page needs BeManager) and can be named as a matter's project manager.
+        // Matter.BeManager (owner decision, issue #976, 2026-11-07; script 66 for existing databases): the Director opens My Matters (the page needs BeManager) and can be named as a matter's project manager.
         new("Director", "Department head: full operational access plus oversight.",
             [..Everyone, ..ClientMatterEdit, ..NumbersAndActivation, ..ProjectManage, Permissions.Matter.BeManager, ..AssignManagers, ..MatterContentManage, Permissions.Matter.ViewSensitive, Permissions.Asset.Dispose, Permissions.Pod.Manage, Permissions.Pod.ManageMembers,
                 Permissions.User.View, Permissions.Audit.View,
                 Permissions.Dashboard.View, Permissions.Dashboard.ViewSummary, Permissions.Dashboard.ViewBreakdowns, Permissions.Dashboard.ViewTrends,
                 Permissions.Dashboard.ViewSwimlane, Permissions.Dashboard.ViewUsers, Permissions.Dashboard.ViewCoverage,
                 ..CalendarAccess]),
-        // Report.Run (owner decision 8, 2026-11-07; script 61 for existing databases): the only starter role that may run reports. It shows only the reports an administrator assigns to the role.
+        // Report.Run (owner decision 8, 2026-11-07; script 65 for existing databases): the only starter role that may run reports. It shows only the reports an administrator assigns to the role.
         new("Project Manager", "Manages clients, matters and projects, can be named as a matter's project manager; works from My Matters.",
             [..Everyone, ..ClientMatterEdit, ..NumbersAndActivation, ..ProjectManage, Permissions.Matter.BeManager, ..AssignManagers, ..MatterContentManage, Permissions.Asset.Dispose, Permissions.Report.Run]),
         new("Pod Lead", "Leads a pod: manages pod members; sees the Dashboard summary, swimlane and team workload.",

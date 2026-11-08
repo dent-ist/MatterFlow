@@ -166,7 +166,7 @@ public sealed class ReportStarterTests(SqlServerFixture sql)
         var overdue = Manifest.Reports.Single(r => r.Key == "open-and-overdue-tasks-by-matter");
         var completed = Manifest.Reports.Single(r => r.Key == "tasks-completed-this-month");
 
-        // The starter role "Project Manager" holds Report.Run (script 61 / StarterRoles) and gets exactly the two PM starters; Director and the others hold neither.
+        // The starter role "Project Manager" holds Report.Run (script 65 / StarterRoles) and gets exactly the two PM starters; Director and the others hold neither.
         var pmRole = await CountAsync(h, "SELECT RoleId FROM dbo.Role WHERE Name = N'Project Manager'");
         (await CountAsync(h, $"SELECT COUNT(*) FROM dbo.RolePermission rp JOIN dbo.Permission p ON p.PermissionId = rp.PermissionId WHERE rp.RoleId = {pmRole} AND p.Code = 'Report.Run'")).ShouldBe(1);
         (await CountAsync(h, "SELECT COUNT(*) FROM dbo.RolePermission rp JOIN dbo.Permission p ON p.PermissionId = rp.PermissionId JOIN dbo.Role r ON r.RoleId = rp.RoleId WHERE p.Code = 'Report.Run' AND r.Name <> N'Project Manager'")).ShouldBe(0);

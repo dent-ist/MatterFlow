@@ -134,7 +134,7 @@ How to read it:
 |---|---|---|---|---|
 | `Report.Manage` | Create and edit reports, categories and parameters, preview and activate them, browse the report schema and read the run log | none (System Admin only) | `ReportAdminControllers` | `admin.routes`, `nav-items`, `report-tabs` and 1 more |
 | `Report.Assign` | Choose which roles can run which reports. Shows report names only, never the SQL | none (System Admin only) | `ReportAdminControllers` | `report-editor-page`, `report-tabs`, `reports-list-tab` and 1 more |
-| `Report.Run` | Run the reports assigned to your roles, keep personal views and download the result as CSV | Project Manager (owner decision 8; script 61 for existing databases) | `ReportAdminControllers` | none |
+| `Report.Run` | Run the reports assigned to your roles, keep personal views and download the result as CSV | Project Manager (owner decision 8; script 65 for existing databases) | `ReportAdminControllers` | none |
 
 ## Administration
 
@@ -150,7 +150,7 @@ How to read it:
 
 ## Notes on special permissions
 
-- `Matter.BeManager` is a marker: it lets a person be named Primary or Secondary project manager of a matter (and shows My Matters together with `Matter.View` and `Task.View`). The Director holds it since issue #976 (script 62 for existing databases), so a Director opens My Matters, lands there, and can be named as a project manager; on My Matters a Director who manages no matter sees "You do not manage any matter yet.". `Matter.AssignManagers` lets a person change a matter's managers and use the All scope and manager picker in My Matters.
+- `Matter.BeManager` is a marker: it lets a person be named Primary or Secondary project manager of a matter (and shows My Matters together with `Matter.View` and `Task.View`). The Director holds it since issue #976 (script 66 for existing databases), so a Director opens My Matters, lands there, and can be named as a project manager; on My Matters a Director who manages no matter sees "You do not manage any matter yet.". `Matter.AssignManagers` lets a person change a matter's managers and use the All scope and manager picker in My Matters.
 - `Matter.ViewSensitive` lets a person see all Sensitive matters (effective only when `Features:SensitiveMatterAccess` is on).
 - `Dashboard.View` opens the Dashboard; every tab needs its own `Dashboard.View<Tab>` permission as well (a Dashboard with no tab permission is hidden). `Dashboard.ViewAbsenceReasons` only shows the absence type in the Calendar.
 - `Settings.Manage` and the three Reports permissions are granted to no starter role; only the System Admin holds them until an administrator grants them.

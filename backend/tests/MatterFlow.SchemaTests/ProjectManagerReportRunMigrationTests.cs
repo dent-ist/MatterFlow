@@ -6,7 +6,7 @@ using Shouldly;
 
 namespace MatterFlow.SchemaTests;
 
-/// <summary>61-project-manager-report-run.sql (Reports, owner decision 8): the starter role "Project Manager" gets Report.Run in an existing database, nobody else does.</summary>
+/// <summary>65-project-manager-report-run.sql (Reports, owner decision 8): the starter role "Project Manager" gets Report.Run in an existing database, nobody else does.</summary>
 [Collection(SqlServerCollection.Name)]
 public class ProjectManagerReportRunMigrationTests(SqlServerFixture sql)
 {
@@ -47,10 +47,23 @@ public class ProjectManagerReportRunMigrationTests(SqlServerFixture sql)
         ReadAsync(cs, "SELECT r.Name FROM dbo.RolePermission rp JOIN dbo.Role r ON r.RoleId = rp.RoleId JOIN dbo.Permission p ON p.PermissionId = rp.PermissionId WHERE p.Code = 'Report.Run' ORDER BY r.Name");
 
     [Fact]
+    public async Task A_database_that_already_applied_63_and_64_applies_65_and_66_on_the_next_start()
+    {
+        var cs = await sql.CreateDatabaseAsync();
+        await RunAsync(cs, new ScriptsBefore(65));
+        (await ReadAsync(cs, "SELECT CAST(MAX(Prefix) AS VARCHAR(10)) FROM dbo.SchemaMigration")).Single().ShouldBe("64");
+
+        await RunAsync(cs, new EmbeddedMigrationScriptSource());
+
+        (await ReadAsync(cs, "SELECT ScriptName FROM dbo.SchemaMigration WHERE Prefix >= 63 AND Success = 1 ORDER BY Prefix"))
+            .ShouldBe(["63-asset-numbering.sql", "64-matter-fields.sql", "65-project-manager-report-run.sql", "66-director-be-manager.sql"]);
+    }
+
+    [Fact]
     public async Task The_starter_Project_Manager_role_gets_Report_Run_and_no_other_role_does()
     {
         var cs = await sql.CreateDatabaseAsync();
-        await RunAsync(cs, new ScriptsBefore(61));
+        await RunAsync(cs, new ScriptsBefore(65));
         await ExecAsync(cs, $"""
             INSERT dbo.Role (Name, Description, IsActive) VALUES
               (N'Project Manager', N'{StarterDescription}', 1), (N'Director', N'Department head', 1), (N'Pod Lead', N'Leads a pod', 1),
@@ -70,7 +83,7 @@ public class ProjectManagerReportRunMigrationTests(SqlServerFixture sql)
     public async Task A_customised_Project_Manager_role_is_left_alone_and_a_missing_one_is_no_error()
     {
         var customised = await sql.CreateDatabaseAsync();
-        await RunAsync(customised, new ScriptsBefore(61));
+        await RunAsync(customised, new ScriptsBefore(65));
         await ExecAsync(customised, "INSERT dbo.Role (Name, Description, IsActive) VALUES (N'Project Manager', N'Our own managers', 1);");
         await RunAsync(customised, new EmbeddedMigrationScriptSource());
         (await HoldersAsync(customised)).ShouldBeEmpty();
@@ -86,7 +99,7 @@ public class ProjectManagerReportRunMigrationTests(SqlServerFixture sql)
     public async Task A_role_that_already_holds_the_permission_is_not_granted_twice()
     {
         var cs = await sql.CreateDatabaseAsync();
-        await RunAsync(cs, new ScriptsBefore(61));
+        await RunAsync(cs, new ScriptsBefore(65));
         await ExecAsync(cs, $"""
             INSERT dbo.Permission (Code, GroupName, Description, IsActive) VALUES ('Report.Run', 'Reports', N'Run the reports assigned to your roles, keep personal views and download the result as CSV', 1);
             INSERT dbo.Role (Name, Description, IsActive) VALUES (N'Project Manager', N'{StarterDescription}', 1);

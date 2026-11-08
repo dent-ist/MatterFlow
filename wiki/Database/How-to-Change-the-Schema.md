@@ -8,7 +8,7 @@
 
 - Schema changes are **only** numbered SQL scripts in `db/scripts/`. No EF migrations, never edit the database by hand.
 - A merged script is **immutable** (checksum guard). Fix forward with a new script.
-- The next number is the next free number at merge time (63 scripts exist, the highest is 64, so the next is 65). Number 16 is a permanent gap. If two branches collide, renumber the unmerged one. In a UI-update round the numbers are allocated by one person (see [Branching and Workflow](../Getting-Started/Branching-and-Workflow.md)).
+- The next number is the next free number at merge time (64 scripts exist, the highest is 66, so the next is 67). Number 16 is a permanent gap. If two branches collide, renumber the unmerged one. In a UI-update round the numbers are allocated by one person (see [Branching and Workflow](../Getting-Started/Branching-and-Workflow.md)).
 - File name: `NN-kebab-description.sql` (`^\d{2,6}-[a-z0-9][a-z0-9-]*\.sql$`); two digits to 99, then three.
 - One logical change per script. Separate batches with a line that contains only `GO`. Start with a comment: purpose, owner, notes.
 - Name every constraint and index explicitly with the prefixes `PK_`, `FK_`, `UQ_`, `CK_`, `IX_`, `DF_`, `TR_`.

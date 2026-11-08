@@ -1,4 +1,4 @@
--- 61-project-manager-report-run.sql
+-- 65-project-manager-report-run.sql
 -- Purpose: Reports (epic #671, owner decision 8, 2026-11-07): the starter role "Project Manager" holds Report.Run ("run the reports assigned to your roles, keep
 --   personal views and download the result as CSV"). The permission alone shows nothing: a person sees and runs only the reports an administrator (Report.Assign) has
 --   assigned to one of their roles, and the seeder assigns the two Project Manager starter reports (#784) to this role only. Director, Pod Lead and the technician
@@ -25,12 +25,12 @@ GO
 DECLARE @roleId INT = (SELECT TOP 1 RoleId FROM dbo.Role WHERE Name = N'Project Manager' AND IsSystemAdmin = 0 ORDER BY RoleId);
 IF @roleId IS NULL
 BEGIN
-  PRINT N'61-project-manager-report-run: no role named "Project Manager"; nothing to do.';
+  PRINT N'65-project-manager-report-run: no role named "Project Manager"; nothing to do.';
 END
 ELSE IF NOT EXISTS (SELECT 1 FROM dbo.Role WHERE RoleId = @roleId
                     AND Description = N'Manages clients, matters and projects, can be named as a matter''s project manager; works from My Matters.')
 BEGIN
-  PRINT N'61-project-manager-report-run: the role "Project Manager" (RoleId ' + CAST(@roleId AS NVARCHAR(12)) + N') no longer has the starter description (customised); left alone. Grant Report.Run in the role editor if wanted.';
+  PRINT N'65-project-manager-report-run: the role "Project Manager" (RoleId ' + CAST(@roleId AS NVARCHAR(12)) + N') no longer has the starter description (customised); left alone. Grant Report.Run in the role editor if wanted.';
 END
 ELSE
 BEGIN
@@ -39,6 +39,6 @@ BEGIN
   FROM dbo.Permission p
   WHERE p.Code = 'Report.Run'
     AND NOT EXISTS (SELECT 1 FROM dbo.RolePermission x WHERE x.RoleId = @roleId AND x.PermissionId = p.PermissionId);
-  PRINT N'61-project-manager-report-run: granted Report.Run to the role "Project Manager" (RoleId ' + CAST(@roleId AS NVARCHAR(12)) + N'), ' + CAST(@@ROWCOUNT AS NVARCHAR(12)) + N' row(s) added.';
+  PRINT N'65-project-manager-report-run: granted Report.Run to the role "Project Manager" (RoleId ' + CAST(@roleId AS NVARCHAR(12)) + N'), ' + CAST(@@ROWCOUNT AS NVARCHAR(12)) + N' row(s) added.';
 END
 GO

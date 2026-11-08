@@ -384,7 +384,7 @@ Source of truth: `contracts/permissions.json` (code, group, description), genera
 | Client/Matter/Project/Asset View | X | X | X | X | X |
 | Client/Matter Create/Edit | X | X | X | - | - |
 | EditNumber, Matter.SetActive | X | X | - | - | - |
-| Matter.BeManager (can be named project manager; opens My Matters; Director since issue #976, script 62) | X | X | - | - | - |
+| Matter.BeManager (can be named project manager; opens My Matters; Director since issue #976, script 66) | X | X | - | - | - |
 | Matter.AssignManagers (set a matter's managers) | X | X | - | - | - |
 | Project Create/Edit/Archive | X | X | X | X | - |
 | Asset Create/Edit/Link | X | X | X | X | X |

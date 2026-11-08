@@ -6,7 +6,7 @@ using Shouldly;
 
 namespace MatterFlow.SchemaTests;
 
-/// <summary>62-director-be-manager.sql (Identity #976, owner decision 2026-11-07): the starter role "Director" gets Matter.BeManager in an existing database, nothing else changes.</summary>
+/// <summary>66-director-be-manager.sql (Identity #976, owner decision 2026-11-07): the starter role "Director" gets Matter.BeManager in an existing database, nothing else changes.</summary>
 [Collection(SqlServerCollection.Name)]
 public class DirectorBeManagerMigrationTests(SqlServerFixture sql)
 {
@@ -60,7 +60,7 @@ public class DirectorBeManagerMigrationTests(SqlServerFixture sql)
     public async Task The_starter_Director_role_gets_Matter_BeManager_and_no_other_role_changes()
     {
         var cs = await sql.CreateDatabaseAsync();
-        await RunAsync(cs, new ScriptsBefore(62));
+        await RunAsync(cs, new ScriptsBefore(66));
         await ExecAsync(cs, Seed.Replace("DESC", DirectorDescription));
         (await HoldersAsync(cs)).ShouldBe(["Project Manager"]);
         var before = await CountAsync(cs, "SELECT CAST(COUNT(*) AS VARCHAR(10)) FROM dbo.RolePermission");
@@ -77,7 +77,7 @@ public class DirectorBeManagerMigrationTests(SqlServerFixture sql)
     public async Task A_customised_Director_role_is_left_alone_and_a_missing_one_is_no_error()
     {
         var customised = await sql.CreateDatabaseAsync();
-        await RunAsync(customised, new ScriptsBefore(62));
+        await RunAsync(customised, new ScriptsBefore(66));
         await ExecAsync(customised, "INSERT dbo.Role (Name, Description, IsActive) VALUES (N'Director', N'Our own directors', 1);");
         await RunAsync(customised, new EmbeddedMigrationScriptSource());
         (await HoldersAsync(customised)).ShouldBeEmpty();
@@ -91,7 +91,7 @@ public class DirectorBeManagerMigrationTests(SqlServerFixture sql)
     public async Task A_Director_that_already_holds_the_permission_is_not_granted_twice_and_a_second_run_changes_nothing()
     {
         var cs = await sql.CreateDatabaseAsync();
-        await RunAsync(cs, new ScriptsBefore(62));
+        await RunAsync(cs, new ScriptsBefore(66));
         await ExecAsync(cs, $"""
             INSERT dbo.Role (Name, Description, IsActive) VALUES (N'Director', N'{DirectorDescription}', 1);
             INSERT dbo.RolePermission (RoleId, PermissionId) SELECT r.RoleId, p.PermissionId FROM dbo.Role r CROSS JOIN dbo.Permission p WHERE r.Name = N'Director' AND p.Code = 'Matter.BeManager';
