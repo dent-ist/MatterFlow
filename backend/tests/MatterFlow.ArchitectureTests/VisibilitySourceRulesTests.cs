@@ -26,6 +26,7 @@ public class VisibilitySourceRulesTests
     private static readonly Dictionary<string, string> SetAllowList = new()
     {
         // the sources the rule itself is built on
+        ["MatterTeamService.cs"] = "team endpoints check the matter through IMatterVisibility.WhereMatterRowVisible (404 for a hidden matter); the pick-list usage counts are aggregate numbers for the admin lists, no matter content (epic #1298)",
         ["MatterAccessSource.cs"] = "the unfiltered matter source behind IMatterVisibility",
         ["TaskAccessSource.cs"] = "the unfiltered task source behind IMatterVisibility",
         ["TaskAccess.cs"] = "the one place WorkManagement reads tasks through the rule (Visible, CanSeeAsset)",

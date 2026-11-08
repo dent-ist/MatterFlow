@@ -20,6 +20,8 @@ public static class OrganizationModule
         services.AddScoped<MatterFlow.SharedKernel.Visibility.IMatterAccessSource, MatterAccessSource>();
         services.AddScoped<ClientService>();
         services.AddScoped<MatterService>();
+        services.AddScoped<MatterTeamService>();
+        services.AddScoped<MatterFlow.Configuration.Contracts.IMatterListUsage, MatterListUsage>();
         services.AddScoped<ProjectService>();
         services.AddScoped<MatterEventService>();
         services.AddScoped<IMatterDirectory, MatterDirectory>();

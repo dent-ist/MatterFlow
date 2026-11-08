@@ -37,6 +37,12 @@ internal static class ConfigurationPolicies
     /// <summary>Read the on-hold reasons: <c>Task.View</c> or <c>OnHoldReason.Manage</c> (the Labels page works without <c>Task.View</c>).</summary>
     public const string OnHoldReasonRead = Prefix + Permissions.Task.View + "|" + Permissions.OnHoldReason.Manage;
 
+    /// <summary>Manage the Matter Type, Current State and Team Title lists (epic #1298, <c>MatterList.Manage</c>).</summary>
+    public const string MatterListManage = Prefix + Permissions.MatterList.Manage;
+
+    /// <summary>Read those lists: <c>Matter.View</c> (the matter screens pick from them) or <c>MatterList.Manage</c> (the admin page).</summary>
+    public const string MatterListRead = Prefix + Permissions.Matter.View + "|" + Permissions.MatterList.Manage;
+
     public const string StatusLabelManage = Prefix + Permissions.StatusLabel.Manage;
 
     /// <summary>Read the status labels: <c>Task.View</c> or <c>StatusLabel.Manage</c> (the Labels page works without <c>Task.View</c>).</summary>

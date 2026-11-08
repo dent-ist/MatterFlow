@@ -109,6 +109,10 @@ public sealed class ChangeNumberRequest
 /// <param name="OnHoldTaskCount">Open Tasks that are On Hold (list only, PM v2 #881); null when the viewer lacks <c>Task.View</c> and on the detail response.</param>
 /// <param name="AtRiskTaskCount">Open Tasks that are At risk by the rule of the Task Queue (list only, PM v2 #881); null when the viewer lacks <c>Task.View</c> and on the detail response.</param>
 /// <param name="AiAllowed">Which AI tools may be used on this Matter: <c>No</c> (default), <c>OnPremOnly</c> or <c>CompanyApproved</c>.</param>
+/// <param name="MatterType">The Matter Type; null when not set (optional; existing matters stay blank). Inactive types still show here.</param>
+/// <param name="CurrentState">The Current State (current value only; changes are in the audit log); null when not set.</param>
+/// <param name="DmsPath">The DMS location (UNC path or http/https address); null when not set.</param>
+/// <param name="DfsPath">The DFS location (UNC path or http/https address); null when not set.</param>
 public sealed record MatterResponse(
     [property: Required] int MatterId,
     [property: Required] int ClientId,
@@ -134,7 +138,74 @@ public sealed record MatterResponse(
     DateTime? ModifiedAtUtc,
     int? OnHoldTaskCount = null,
     int? AtRiskTaskCount = null,
-    [property: Required] MatterAiAllowed AiAllowed = MatterAiAllowed.No);
+    [property: Required] MatterAiAllowed AiAllowed = MatterAiAllowed.No,
+    MatterListRef? MatterType = null,
+    MatterListRef? CurrentState = null,
+    string? DmsPath = null,
+    string? DfsPath = null);
+
+/// <summary>A chosen item of a matter pick list (Matter Type, Current State, Team Title) as lists and headers show it.</summary>
+/// <param name="Id">Item id.</param>
+/// <param name="Name">Display name.</param>
+/// <param name="IsActive">False once an admin retired the item; it stays on the matters that use it until someone changes it.</param>
+public sealed record MatterListRef(
+    [property: Required] int Id,
+    [property: Required] string Name,
+    [property: Required] bool IsActive);
+
+/// <summary>A person on a matter's team: a typed-in contact, not a user account.</summary>
+/// <param name="Id">Team row id.</param>
+/// <param name="MatterId">Owning matter.</param>
+/// <param name="Name">The person's name.</param>
+/// <param name="Email">E-mail address, as typed (unique within the matter without regard to case).</param>
+/// <param name="Title">The Team Title (admin list).</param>
+/// <param name="SortOrder">Position in the order the people were added (1 is first); the list itself sorts by name unless asked otherwise.</param>
+/// <param name="RowVersion">Concurrency token (base64); send it back on edit.</param>
+public sealed record MatterTeamMemberResponse(
+    [property: Required] int Id,
+    [property: Required] int MatterId,
+    [property: Required] string Name,
+    [property: Required] string Email,
+    [property: Required] MatterListRef Title,
+    [property: Required] int SortOrder,
+    [property: Required] string RowVersion);
+
+/// <summary>Adds a person to a matter's team (appended at the end).</summary>
+public sealed class AddTeamMemberRequest
+{
+    /// <summary>The person's name (1 to 200 characters; trimmed).</summary>
+    [Required, StringLength(200)]
+    public string Name { get; init; } = string.Empty;
+
+    /// <summary>A plain e-mail address (max 254; trimmed). 409 <c>DUPLICATE_TEAM_EMAIL</c> when it is already on this matter's team (any case); 400 <c>INVALID_EMAIL</c> when malformed.</summary>
+    [Required, StringLength(254)]
+    public string Email { get; init; } = string.Empty;
+
+    /// <summary>An active Team Title.</summary>
+    [Range(1, int.MaxValue)]
+    public int TeamTitleId { get; init; }
+}
+
+/// <summary>Changes a team member (all three values are replaced).</summary>
+public sealed class UpdateTeamMemberRequest
+{
+    [Required, StringLength(200)]
+    public string Name { get; init; } = string.Empty;
+
+    [Required, StringLength(254)]
+    public string Email { get; init; } = string.Empty;
+
+    /// <summary>A Team Title: an active one, or the member's current one (a retired title stays acceptable on the rows that already have it).</summary>
+    [Range(1, int.MaxValue)]
+    public int TeamTitleId { get; init; }
+
+    /// <summary>The <c>rowVersion</c> last read.</summary>
+    [Required]
+    public string RowVersion { get; init; } = string.Empty;
+}
+
+/// <summary>Paging and sort of a matter's team. Sort: name (default), email, title; a minus sign sorts descending.</summary>
+public sealed class TeamListQuery : OrgListQuery;
 
 /// <summary>A matter's project manager as lists and headers show them.</summary>
 /// <param name="UserId">User id.</param>
@@ -190,11 +261,27 @@ public sealed class CreateMatterRequest
     [Range(1, int.MaxValue)]
     public int? SecondaryManagerId { get; init; }
 
+    /// <summary>Optional Matter Type (an active item of the Matter Type list).</summary>
+    [Range(1, int.MaxValue)]
+    public int? MatterTypeId { get; init; }
+
+    /// <summary>Optional Current State (an active item of the Current State list). Setting it at creation is audited.</summary>
+    [Range(1, int.MaxValue)]
+    public int? CurrentStateId { get; init; }
+
+    /// <summary>Optional DMS path: a UNC path (<c>\\server\share\...</c>) or an http/https address; trimmed, max 1000; blank means none. 400 <c>INVALID_PATH</c> otherwise (drive letters are refused).</summary>
+    [StringLength(1000)]
+    public string? DmsPath { get; init; }
+
+    /// <summary>Optional DFS path, same rules as <see cref="DmsPath"/>.</summary>
+    [StringLength(1000)]
+    public string? DfsPath { get; init; }
+
     /// <summary>Custom-field values keyed by field key, validated against the published custom-field form (hidden values are dropped). Null means none.</summary>
     public Dictionary<string, JsonElement>? FormValues { get; init; }
 }
 
-/// <summary>Updates a Matter's name and sensitivity flag (number and active state have their own endpoints).</summary>
+/// <summary>Updates a Matter's name, sensitivity flag, type, state and paths (number, active state, managers and the team have their own endpoints). Type, state and paths are full values, not patches.</summary>
 public sealed class UpdateMatterRequest
 {
     [Required, StringLength(300, MinimumLength = 1)]
@@ -215,6 +302,26 @@ public sealed class UpdateMatterRequest
     /// <summary>The <c>rowVersion</c> last read.</summary>
     [Required]
     public string RowVersion { get; init; } = string.Empty;
+
+
+    /// <summary>
+    /// The Matter Type: the full value, so send the current one to keep it and null to clear it. A change needs an active item; an unchanged value is always
+    /// accepted (also a retired one). Audited as <c>MATTER_TYPE_CHANGED</c>.
+    /// </summary>
+    [Range(1, int.MaxValue)]
+    public int? MatterTypeId { get; init; }
+
+    /// <summary>The Current State: the full value (null clears it), same rules as <see cref="MatterTypeId"/>. Audited as <c>MATTER_STATE_CHANGED</c>.</summary>
+    [Range(1, int.MaxValue)]
+    public int? CurrentStateId { get; init; }
+
+    /// <summary>The DMS path: the full value (blank or null clears it); a UNC path or an http/https address, trimmed, max 1000 (400 <c>INVALID_PATH</c>). An unchanged stored value is always accepted.</summary>
+    [StringLength(1000)]
+    public string? DmsPath { get; init; }
+
+    /// <summary>The DFS path: the full value, same rules as <see cref="DmsPath"/>.</summary>
+    [StringLength(1000)]
+    public string? DfsPath { get; init; }
 
     /// <summary>
     /// A patch over the stored custom-field values keyed by field key: a JSON <c>null</c> clears a value, omitted keys stay as they are.
@@ -371,6 +478,7 @@ public sealed record ClientSummaryResponse(
 /// <param name="Unassigned">Open Tasks with no person assigned (the Task Queue's <c>unassigned=true</c>); null without <c>Task.View</c>.</param>
 /// <param name="ProjectCount">Number of Projects in the Matter (archived included).</param>
 /// <param name="AssetCount">Number of Assets of the Matter (retired included).</param>
+/// <param name="TeamMemberCount">Number of people on the matter's team (the Team tab's count).</param>
 public sealed record MatterSummaryResponse(
     [property: Required] int MatterId,
     int? OpenTasks,
@@ -380,7 +488,8 @@ public sealed record MatterSummaryResponse(
     int? DueSoon,
     int? Unassigned,
     [property: Required] int ProjectCount,
-    [property: Required] int AssetCount);
+    [property: Required] int AssetCount,
+    [property: Required] int TeamMemberCount = 0);
 
 /// <summary>Counts for the Project overview strip; the five Task numbers are null when the viewer lacks <c>Task.View</c>. Same meaning as <see cref="ClientSummaryResponse"/>, over the Project's Tasks.</summary>
 /// <param name="ProjectId">The Project.</param>

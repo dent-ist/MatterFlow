@@ -54,6 +54,23 @@ internal sealed class OnHoldReasonConfiguration : IEntityTypeConfiguration<OnHol
     }
 }
 
+internal abstract class MatterListConfiguration<T>(string table, string uniqueName) : IEntityTypeConfiguration<T>
+    where T : MatterListEntity
+{
+    public void Configure(EntityTypeBuilder<T> b)
+    {
+        b.ToTable(table);
+        b.Property(x => x.Name).HasMaxLength(100).IsRequired();
+        b.HasIndex(x => x.Name).IsUnique().HasDatabaseName(uniqueName);
+    }
+}
+
+internal sealed class MatterTypeConfiguration() : MatterListConfiguration<MatterType>("MatterType", "UQ_MatterType_Name");
+
+internal sealed class CurrentStateConfiguration() : MatterListConfiguration<CurrentState>("CurrentState", "UQ_CurrentState_Name");
+
+internal sealed class TeamTitleConfiguration() : MatterListConfiguration<TeamTitle>("TeamTitle", "UQ_TeamTitle_Name");
+
 /// <summary>Names of the unique indexes in <c>07-configuration-basics.sql</c>, used to map duplicate-key errors to friendly conflicts.</summary>
 internal static class LookupConstraints
 {

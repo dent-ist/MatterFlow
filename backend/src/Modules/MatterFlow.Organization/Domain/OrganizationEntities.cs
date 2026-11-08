@@ -69,6 +69,20 @@ public class Matter : AuditedEntity<int>, IAuditScoped
     /// <summary>Which AI tools may be used on this Matter's content (MD-02, #1003): No (default), On-prem only or Company-approved. Changes are audited as a field change.</summary>
     public MatterAiAllowed AiAllowed { get; set; }
 
+    /// <summary>Optional Matter Type (admin list, epic #1298). Changes are audited by <c>MATTER_TYPE_CHANGED</c> events with the names, not as generic field changes.</summary>
+    [AuditExplicit]
+    public int? MatterTypeId { get; set; }
+
+    /// <summary>Optional Current State (admin list, epic #1298): the current value only. Each change is audited by a <c>MATTER_STATE_CHANGED</c> event with the names.</summary>
+    [AuditExplicit]
+    public int? CurrentStateId { get; set; }
+
+    /// <summary>Optional DMS location: a UNC path (<c>\\server\share\...</c>) or an http/https address; trimmed, at most 1000 characters. Changes are audited as a field change.</summary>
+    public string? DmsPath { get; set; }
+
+    /// <summary>Optional DFS location, same rules as <see cref="DmsPath"/>.</summary>
+    public string? DfsPath { get; set; }
+
     [AuditJsonFields("custom")]
     public string? CustomFieldsJson { get; set; }
 
@@ -96,4 +110,23 @@ public class Project : AuditedEntity<int>, IAuditScoped
     int? IAuditScoped.AuditMatterId => MatterId;
 
     long? IAuditScoped.AuditTaskId => null;
+}
+
+/// <summary>
+/// One person on a matter's team (epic #1298): a typed-in contact (name, e-mail, title), not a user account, so the Team never affects visibility,
+/// My Matters or permissions. The e-mail is unique within the matter without regard to case. Changes are audited by explicit
+/// <c>MATTER_TEAM_MEMBER_*</c> events, so the entity itself is not field-audited.
+/// </summary>
+public class MatterTeamMember : AuditedEntity<int>
+{
+    public int MatterId { get; set; }
+
+    public string Name { get; set; } = string.Empty;
+
+    public string Email { get; set; } = string.Empty;
+
+    /// <summary>The Team Title (admin list in the Configuration module); a title that is later deactivated stays on the rows that use it.</summary>
+    public int TeamTitleId { get; set; }
+
+    public int SortOrder { get; set; }
 }

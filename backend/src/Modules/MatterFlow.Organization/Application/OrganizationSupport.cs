@@ -99,6 +99,18 @@ public sealed class MatterListQuery : OrgListQuery
     /// <summary>True: only matters with no manager at all; false: only matters with at least one. A plain filter, never a count or a warning anywhere.</summary>
     public bool? HasNoManager { get; init; }
 
+    /// <summary>Only matters of these Matter Types (repeat the parameter: <c>matterTypeId=1&amp;matterTypeId=2</c>; ids of the list, inactive ones included). Combined with <see cref="MatterTypeNone"/> a matter matches on any of them.</summary>
+    public int[]? MatterTypeId { get; init; }
+
+    /// <summary>True: also (or only, without ids) matters with no Matter Type, the "Not Set" choice. False is the same as leaving it out.</summary>
+    public bool? MatterTypeNone { get; init; }
+
+    /// <summary>Only matters in these Current States (repeatable, like <see cref="MatterTypeId"/>).</summary>
+    public int[]? CurrentStateId { get; init; }
+
+    /// <summary>True: also (or only, without ids) matters with no Current State, the "Not Set" choice.</summary>
+    public bool? CurrentStateNone { get; init; }
+
     /// <summary>True: only matters with a Primary; false: only matters without one (the column filter's Any and None).</summary>
     public bool? HasPrimaryManager { get; init; }
 
@@ -109,6 +121,7 @@ public sealed class MatterListQuery : OrgListQuery
     [
         "page", "pageSize", "sort", "q", "clientId", "isActive", "isSensitive", "matterRef", "name", "client",
         "primaryManagerId", "secondaryManagerId", "managerId", "managedByMe", "hasNoManager", "hasPrimaryManager", "hasSecondaryManager",
+        "matterTypeId", "matterTypeNone", "currentStateId", "currentStateNone",
     ];
 }
 
@@ -160,6 +173,21 @@ public static class OrganizationAuditEvents
     public const string ClientNumberChanged = "CLIENT_NUMBER_CHANGED";
     public const string MatterCreated = "MATTER_CREATED";
     public const string MatterNumberChanged = "MATTER_NUMBER_CHANGED";
+
+    /// <summary>A matter's Matter Type was set, changed or cleared (field key <c>MatterType</c>; old and new value are the type names).</summary>
+    public const string MatterTypeChanged = "MATTER_TYPE_CHANGED";
+
+    /// <summary>A matter's Current State was set, changed or cleared (field key <c>CurrentState</c>; old and new value are the state names).</summary>
+    public const string MatterStateChanged = "MATTER_STATE_CHANGED";
+
+    /// <summary>A person was added to a matter's team (field key <c>Team</c>; new value is <c>Name &lt;email&gt; (Title)</c>).</summary>
+    public const string MatterTeamMemberAdded = "MATTER_TEAM_MEMBER_ADDED";
+
+    /// <summary>A team member's name, e-mail or title was changed (old and new value as for added).</summary>
+    public const string MatterTeamMemberChanged = "MATTER_TEAM_MEMBER_CHANGED";
+
+    /// <summary>A person was removed from a matter's team (old value as for added).</summary>
+    public const string MatterTeamMemberRemoved = "MATTER_TEAM_MEMBER_REMOVED";
     public const string ProjectCreated = "PROJECT_CREATED";
 }
 
@@ -168,6 +196,7 @@ internal static class OrganizationSupport
     public const string ClientNumberUnique = "UQ_Client_Number";
     public const string MatterNumberUnique = "UQ_Matter_ClientMatterNumber";
     public const string ProjectNameUnique = "UQ_Project_MatterName";
+    public const string TeamEmailUnique = "UQ_MatterTeamMember_MatterEmail";
 
     /// <summary>Parses a 1-5 digit number, reporting the failure against <paramref name="field"/> (a request property name, camelCase).</summary>
     public static Result<BusinessNumber> ParseNumber(string? input, string field)

@@ -272,6 +272,11 @@
       "description": "Manage the reasons for putting a task on hold"
     },
     {
+      "code": "MatterList.Manage",
+      "group": "Configuration",
+      "description": "Manage matter types, current states and team titles"
+    },
+    {
       "code": "StatusLabel.Manage",
       "group": "Configuration",
       "description": "Manage task status labels"

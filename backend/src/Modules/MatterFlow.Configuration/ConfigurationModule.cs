@@ -7,6 +7,7 @@ using MatterFlow.Configuration.Application.TaskTypes;
 using MatterFlow.Configuration.Contracts;
 using MatterFlow.Configuration.Contracts.Forms;
 using MatterFlow.SharedKernel.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -27,6 +28,11 @@ public static class ConfigurationModule
         services.AddScoped<IPriorityCatalog>(sp => sp.GetRequiredService<PriorityService>());
         services.AddScoped<OnHoldReasonService>();
         services.AddScoped<IOnHoldReasonCatalog>(sp => sp.GetRequiredService<OnHoldReasonService>());
+        services.AddScoped(sp => new MatterListService<Domain.MatterType>(sp.GetRequiredService<DbContext>(), "A matter type named", MatterListKind.MatterType, sp.GetRequiredService<IMatterListUsage>()));
+        services.AddScoped(sp => new MatterListService<Domain.CurrentState>(sp.GetRequiredService<DbContext>(), "A current state named", MatterListKind.CurrentState, sp.GetRequiredService<IMatterListUsage>()));
+        services.AddScoped(sp => new MatterListService<Domain.TeamTitle>(sp.GetRequiredService<DbContext>(), "A team title named", MatterListKind.TeamTitle, sp.GetRequiredService<IMatterListUsage>()));
+        services.TryAddScoped<IMatterListUsage, NoMatterListUsage>();
+        services.AddScoped<IMatterListCatalog, MatterListCatalog>();
         services.AddScoped<StatusLabelService>();
         services.AddScoped<IStatusLabelCatalog>(sp => sp.GetRequiredService<StatusLabelService>());
         services.AddScoped<AssetLinkRoleService>();
