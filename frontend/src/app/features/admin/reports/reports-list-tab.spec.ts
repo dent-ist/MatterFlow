@@ -117,6 +117,10 @@ describe('ReportsListTab (#712)', () => {
       expect(row.querySelectorAll('a')).toHaveLength(1);
       expect(row.querySelector('a')!.getAttribute('href')).toBe('/admin/reports/5');
       expect(row.querySelector('[data-category]')!.textContent!.trim()).toBe('Task follow-up');
+      // The ellipsis clip is a span inside the cell: a `display: block` td leaves the table-cell layout and sits above the row centre (#1322).
+      const cat = row.querySelector('[data-category]')!;
+      expect(cat.classList.contains('pg-clip')).toBe(false);
+      expect(cat.querySelector('span.pg-clip')!.getAttribute('title')).toBe('Task follow-up');
       expect(row.querySelector('[data-roles]')!.textContent!.trim()).toBe('3');
       expect(row.querySelector('[data-last-run]')!.textContent).toContain(' 10/20 ');
       expect(

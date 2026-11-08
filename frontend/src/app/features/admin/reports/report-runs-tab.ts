@@ -94,7 +94,9 @@ const STATUS_CHIPS: Readonly<Record<string, { label: string; tone: BadgeTone; ic
           </td>
         </ng-template>
         <ng-template mfCell="person" let-r>
-          <td class="pg-clip" [attr.title]="r.userName">{{ r.userName }}</td>
+          <td>
+            <span class="pg-clip" [attr.title]="r.userName">{{ r.userName }}</span>
+          </td>
         </ng-template>
         <ng-template mfCell="kind" let-r>
           <td>{{ kindLabel(r.kind) }}</td>
@@ -118,8 +120,10 @@ const STATUS_CHIPS: Readonly<Record<string, { label: string; tone: BadgeTone; ic
           </td>
         </ng-template>
         <ng-template mfCell="values" let-r>
-          <td class="rr__values pg-clip" [attr.title]="r.parameters.join('; ')">
-            {{ r.parameters.join('; ') }}
+          <td class="rr__values">
+            <span class="pg-clip" [attr.title]="r.parameters.join('; ')">{{
+              r.parameters.join('; ')
+            }}</span>
           </td>
         </ng-template>
         @if (next() !== null) {

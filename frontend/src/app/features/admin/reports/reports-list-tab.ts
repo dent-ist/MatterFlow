@@ -147,8 +147,8 @@ const BONES: Record<string, string> = {
           </td>
         </ng-template>
         <ng-template mfCell="category" let-r>
-          <td class="pg-clip" data-category [attr.title]="r.categoryName">
-            {{ r.categoryName }}
+          <td data-category>
+            <span class="pg-clip" [attr.title]="r.categoryName">{{ r.categoryName }}</span>
           </td>
         </ng-template>
         <ng-template mfCell="roles" let-r>
