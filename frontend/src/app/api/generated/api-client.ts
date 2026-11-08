@@ -139,7 +139,7 @@ export interface IAssetTypesClient {
     /**
      * @return OK
      */
-    setAssetNextNumber(assetTypeId: number, matterId: number, body: SetAssetNextNumberRequest): Observable<AssetNumberCounterItem>;
+    setAssetNextNumber(assetTypeId: number, matterId: number, body: AssetNextNumberChange): Observable<AssetNumberCounterItem>;
     /**
      * @return OK
      */
@@ -592,7 +592,7 @@ export class AssetTypesClient implements IAssetTypesClient {
     /**
      * @return OK
      */
-    setAssetNextNumber(assetTypeId: number, matterId: number, body: SetAssetNextNumberRequest): Observable<AssetNumberCounterItem> {
+    setAssetNextNumber(assetTypeId: number, matterId: number, body: AssetNextNumberChange): Observable<AssetNumberCounterItem> {
         let url_ = this.baseUrl + "/api/v1/asset-types/{assetTypeId}/numbering/counters/{matterId}";
         if (assetTypeId === undefined || assetTypeId === null)
             throw new globalThis.Error("The parameter 'assetTypeId' must be defined.");
@@ -24874,6 +24874,12 @@ export interface AssetLookupItem {
     [key: string]: any;
 }
 
+export interface AssetNextNumberChange {
+    nextNumber?: number;
+
+    [key: string]: any;
+}
+
 export interface AssetNumberCounterItem {
     assetTypeId: number;
     matterId: number;
@@ -28676,12 +28682,6 @@ export interface SetActiveRequest {
 export interface SetAssetActiveRequest {
     isActive?: boolean;
     rowVersion: string;
-
-    [key: string]: any;
-}
-
-export interface SetAssetNextNumberRequest {
-    nextNumber?: number;
 
     [key: string]: any;
 }

@@ -428,17 +428,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SetAssetNextNumberRequest"
+                "$ref": "#/components/schemas/AssetNextNumberChange"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/SetAssetNextNumberRequest"
+                "$ref": "#/components/schemas/AssetNextNumberChange"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/SetAssetNextNumberRequest"
+                "$ref": "#/components/schemas/AssetNextNumberChange"
               }
             }
           },
@@ -18603,6 +18603,17 @@
           }
         }
       },
+      "AssetNextNumberChange": {
+        "type": "object",
+        "properties": {
+          "nextNumber": {
+            "maximum": 999999999,
+            "minimum": 1,
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "AssetNumberCounterItem": {
         "required": [
           "assetTypeId",
@@ -32600,17 +32611,6 @@
           },
           "rowVersion": {
             "type": "string"
-          }
-        }
-      },
-      "SetAssetNextNumberRequest": {
-        "type": "object",
-        "properties": {
-          "nextNumber": {
-            "maximum": 999999999,
-            "minimum": 1,
-            "type": "integer",
-            "format": "int32"
           }
         }
       },

@@ -584,7 +584,7 @@ public sealed class AssetNumberCounterListQuery : AssetListQueryBase
 }
 
 /// <summary>Sets the next counter value of an asset type in one matter (for example to continue after folders that already exist on the share).</summary>
-public sealed class SetAssetNextNumberRequest
+public sealed class AssetNextNumberChange
 {
     /// <summary>The counter value the next asset gets, 1 to 999,999,999. Never lower than the highest assigned number plus one (400 <c>NEXT_NUMBER_TOO_LOW</c>).</summary>
     [Range(1, AssetNumbering.MaxNextNumber)]

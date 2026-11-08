@@ -116,7 +116,7 @@ public class AssetTypesController(AssetTypeService types, AssetNumberingService 
     [HttpPut("{assetTypeId:int}/numbering/counters/{matterId:int}", Name = "SetAssetNextNumber")]
     [Authorize(Policy = AssetPolicies.AssetTypeManage)]
     [ProducesResponseType<AssetNumberCounterItem>(StatusCodes.Status200OK, "application/json")]
-    public async Task<IActionResult> SetNextNumber(int assetTypeId, int matterId, [FromBody] SetAssetNextNumberRequest request, CancellationToken cancellationToken) =>
+    public async Task<IActionResult> SetNextNumber(int assetTypeId, int matterId, [FromBody] AssetNextNumberChange request, CancellationToken cancellationToken) =>
         this.ToActionResult(await numbering.SetNextAsync(assetTypeId, matterId, request, cancellationToken));
 
     /// <summary>Rebuilds the filter index of all assets of the type from their stored values (idempotent). Needed after the indexing rule changes; the API also fills missing rows at startup.</summary>

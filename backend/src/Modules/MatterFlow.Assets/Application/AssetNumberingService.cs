@@ -110,7 +110,7 @@ public sealed class AssetNumberingService(
     /// Sets the counter value the next asset of the type in the matter gets. Never lower than the highest assigned number plus one (400 <c>NEXT_NUMBER_TOO_LOW</c>); the counter row is created when
     /// missing. The counter row is locked first, so a create that is numbering at the same moment finishes before the check and the change (the highest number is then exact). Audited: who, matter, old and new.
     /// </summary>
-    public async Task<Result<AssetNumberCounterItem>> SetNextAsync(int assetTypeId, int matterId, SetAssetNextNumberRequest request, CancellationToken ct)
+    public async Task<Result<AssetNumberCounterItem>> SetNextAsync(int assetTypeId, int matterId, AssetNextNumberChange request, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(request);
         var type = await db.Set<AssetType>().AsNoTracking().SingleOrDefaultAsync(t => t.Id == assetTypeId, ct);
