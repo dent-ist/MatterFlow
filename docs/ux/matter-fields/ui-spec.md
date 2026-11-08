@@ -18,7 +18,7 @@ No screenshots were made (this is a spec, not a build). Wireframes below are ASC
 1. **Summary tab > Details card** gets Matter Type, Current State, DMS Path and DFS Path (shared `mf-details-card`, D-44f). No new card there.
 2. **Team is a new Matter tab, "Team (n)"**, with a record grid, an Add/Edit Team Member dialog and a remove confirm. A tab (not a Summary card) because the team has no size limit and the Summary page cannot give a grid room at 1366x768 without squeezing the Details card to a few rows.
 3. **Create/Edit Matter dialog** gets Matter Type, Current State, DMS Path, DFS Path. Team is not in the dialog (a dialog must not open a dialog, D-31); a new matter's team is added on the Team tab.
-4. **Matters list** gets two optional columns and two filters. **Both columns are off by default**: the current default set already uses 1056 of the 1098 px (section 6), so a 144 to 160 px column cannot be added without breaking the 1366 fit rule (D-43a). They are one click away in Columns and fully filterable and searchable.
+4. **Matters list** gets two columns and two filters. **Owner decision (2026-11-08): Matter Type and Current State are ON by default.** To keep the default set inside the 1366 frame, **Primary PM, Open Tasks and Overdue become off by default** (still one click away in Columns, still filterable). Default set: CM Number, Matter Name, Client, Matter Type, Current State, Status (section 6.1).
 5. **One new Administration item, "Matter Lists"**, with three tabs: Matter Types, Current States, Team Titles. Same kit as On-Hold Reasons (reorder list, D-44o). New permission `MatterList.Manage`.
 
 ## 2. Matter page > Summary tab > Details card
@@ -238,23 +238,40 @@ The same email on a different matter is fine (owner decision). Editing a row to 
 
 The list keeps `mf-record-grid` id `matters`. New columns come after the people columns and before the counts (D-43: people, status words, counts):
 
-| Order | Column | Heading = field label | Width | Default | Sort | Cell |
-| --- | --- | --- | --- | --- | --- | --- |
-| 1 | CM Number | | min 180 (11.25rem) | on | yes | unchanged |
-| 2 | Matter Name | | 36%, min 200 | on | yes | unchanged |
-| 3 | Client | | 22%, min 140 | on | yes | unchanged |
-| 4 | Primary PM | | 136 | on | yes | unchanged |
-| 5 | Secondary PM | | 136 | off | yes | unchanged |
-| 6 | **Matter Type** | "Matter Type" | **160** (`--mf-col-matter-type-w`) | **off** | yes (by the list order of the type, then name) | plain text, ellipsis, tooltip; empty = muted "Not set" |
-| 7 | **Current State** | "Current State" | **160** (`--mf-col-current-state-w`) | **off** | yes (by list order) | same |
-| 8 | Open Tasks | | 96 | on | yes | unchanged |
-| 9 | Overdue | | 96 | on | yes | unchanged |
-| 10 | Status | | 160 | on | no | unchanged |
-| 11 | (actions) | | 48 | on | | unchanged |
+| Order | Column | Width | Default | Sort | Cell |
+| --- | --- | --- | --- | --- | --- |
+| 1 | CM Number | min 180 (11.25rem) | on | yes | unchanged |
+| 2 | Matter Name | 36%, min 200 | on | yes | unchanged |
+| 3 | Client | 22%, min 140 | on | yes | unchanged |
+| 4 | Primary PM | 136 | **off (was on)** | yes | unchanged |
+| 5 | Secondary PM | 136 | off | yes | unchanged |
+| 6 | **Matter Type** | **160** (`--mf-col-matter-type-w`) | **on** | yes (list order of the type, then name) | plain text, ellipsis, tooltip; empty = muted "Not set" |
+| 7 | **Current State** | **160** (`--mf-col-current-state-w`) | **on** | yes (list order) | same |
+| 8 | Open Tasks | 96 | **off (was on)** | yes | unchanged |
+| 9 | Overdue | 96 | **off (was on)** | yes | unchanged |
+| 10 | Status | 160 | on | no | unchanged |
+| 11 | (actions) | 48 | on | | unchanged |
 
-**Fit at 1366 (D-43a).** Default columns today: 180 + 200 (Name min) + 140 (Client min) + 136 + 96 + 96 + 160 + 48 = **1056 px of the 1098 px frame**, leaving 42 px. A 160 px column does not fit, so both new columns are `defaultHidden` (the same mechanism Secondary PM uses). Saved column choices are never touched. A person who turns both on gets 1376 px of minimums; the frame then scrolls sideways inside itself with CM Number pinned (LC-09, the same as when any other optional column is added); the guarantee covers the default set only (D-43a, #1295). At 1920 the springs absorb the room and both columns fit without scrolling. Guard `default-columns-fit.spec.ts` style check: sum of default widths plus minimums at most 1098.
+Headings equal the field labels ("Matter Type", "Current State").
 
-Widths follow the longest realistic label ("Start of Discovery" is about 140 px with cell padding); longer names ellipsize with a tooltip, never cut mid-word (D-43).
+**Fit (D-43a).** The old default set used 180 + 200 + 140 + 136 + 96 + 96 + 160 + 48 = 1056 px of the 1098 px frame at 1366 (42 px free). Two 160 px columns need 320 px, so 278 px must go. Shrinking is not possible within the guidelines: CM Number holds 11 mono characters plus the copy button (180), Matter Name has its 200 px minimum (D-43), Client its 140 px token, Status is 160 px because the filter row stacks two filters in it (D-44w, #1276), and the actions column is fixed at 48 (D-42). "Start of Discovery" needs about 140 px with padding, so 160 is already tight. So columns leave the default set.
+
+**New default set, 1366:** 180 + 200 + 140 + 160 + 160 + 160 + 48 = **1048 px of 1098** (50 px spare; Matter Name and Client share it through the springs, Name about 230 px, Client about 160 px). **1920:** the same six columns; the frame is about 1668 px, so Matter Name gets about 580 px and Client about 360 px. Columns do not drop by window width (D-42), so one default set serves both sizes.
+
+**Which columns leave, and why.**
+- **Primary PM (136):** the PMs are reachable through the "Mine" quick filter and the Primary PM and Secondary PM filters; the Matters list is mostly used to find a matter and tell what kind it is and where it stands, which the new columns now show.
+- **Open Tasks (96) and Overdue (96):** counts need Task.View anyway, the same numbers are on My Matters and the Dashboard, and they are the least useful for finding a matter.
+- Kept: CM Number and Matter Name (identity, locked), Client, Status (also carries the Active and Sensitive filters), and the two new columns. Client stays because the CM Number holds only the client's number, not its name.
+- Considered and rejected: hiding Client and Primary PM instead (1100 px, 2 px over); keeping Open Tasks and Overdue and dropping Client and Primary PM (loses the only column that names the client).
+
+**Adding columns back.** At 1366, turning on all three (Primary PM, Open Tasks, Overdue) gives 1048 + 328 = 1376 px of minimums, so the frame scrolls sideways inside itself with CM Number pinned (LC-09, as for any added column; the 160 px guarantee covers the default set only, D-43a, #1295). At 1920 all of them fit without scrolling (1376 of 1668). Guard: a Matters list case in `default-columns-fit.spec.ts` (sum of default widths plus minimums at most 1098).
+
+**What a person with saved column choices sees** (the existing grid-preferences mechanism, `shared/ui/grid-prefs.ts`; this spec changes no mechanism):
+- A column is shown when the person's stored `visible` list contains it, or, when no `visible` list is stored, when its definition is not `defaultHidden`.
+- **Never changed which columns are shown** (nothing stored, or only widths or order stored): the person gets the **new default set** at once: Matter Type and Current State appear, Primary PM, Open Tasks and Overdue disappear. This is the on-screen change for most people.
+- **Has used the Columns menu to show or hide columns** (a `visible` list is stored): their choice is kept untouched. **Matter Type and Current State are not in their list, so they are hidden for them** until turned on in Columns; Primary PM, Open Tasks and Overdue stay if they had them. Their stored order is kept; new columns slot in after the column that precedes them in the definitions.
+- Stored widths are never touched. "Reset to Default" gives anybody the new default set.
+- No migration or one-time reset is added: MatterFlow has not been deployed and all data is demo (CLAUDE.md, owner 2026-10-24).
 
 ### 6.2 Filters
 
@@ -264,7 +281,7 @@ Widths follow the longest realistic label ("Start of Discovery" is about 140 px 
 | Current State | same, column "Current State" | same pattern |
 
 - Several values and "Not Set" can be ticked together (a match on any). Trigger texts: "All", the value, "Not Set", "3 selected". Chip text: "Matter Type: Not Set", "Current State: Start of Discovery +1". Remove button name "Remove filter Matter Type: Not Set".
-- The two filters live in the filter row **only while their column is shown**. While a column is hidden (the default) its filter is in the "Other filters" menu of the Filters bar (the existing hidden-column behaviour), so Not Set can be filtered without showing the column. A filter on a hidden column still shows as a chip with "(hidden column)" and "Show column".
+- A filter lives in the filter row **only while its column is shown**. Matter Type and Current State are shown by default, so their filters are in the row; if a person hides a column, its filter moves to the "Other filters" menu of the Filters bar (the existing hidden-column behaviour). The filters of Primary PM and Secondary PM move there too now that those columns are off by default; Open Tasks and Overdue have no filter. A filter on a hidden column still shows as a chip with "(hidden column)" and "Show column".
 - They are `FilterDef`s like Status: URL is the source of truth, saved views and "Clear Filters" work unchanged. Parameter names are the backend's choice (suggested `matterTypeId` repeatable plus `matterTypeNone=true`, `currentStateId` plus `currentStateNone=true`).
 - Print line: "Filters: Matter Type Not Set".
 - Empty result: the standard "No matters match these filters." + "Clear Filters".
@@ -354,14 +371,15 @@ The owner wants Current State changes audited and the feed to read well. Suggest
 Changing the guidelines is part of the implementation PR (design-guidelines section 7), not this spec:
 
 1. `design-guidelines.md`: D-80 admin item list (add "Matter Lists"), D-43 Matters columns sentence (add Matter Type and Current State as optional, not default), D-44f (the Matter Summary fields and the wide path field with Copy), a new D-44y "Team tab and path values" with sections 2.3 and 4 in two sentences.
-2. `docs/ux/tokens.css`: `--mf-col-matter-type-w: 160px`, `--mf-col-current-state-w: 160px`.
-3. `tab-icons.ts` (`team`, `matter-lists`, `matter-types`, `current-states`, `team-titles`), `nav-items.ts`, `admin.routes.ts`, `matter-tabs.ts`, `matter-summary.ts`, `matter-form-dialog.ts`, `matters-list-page.ts`, `field-limits.ts` (`matterTypeName`, `currentStateName`, `teamTitleName` = 100), `contracts/permissions.json`.
-4. Guards: capitalisation (every new label is Title Case as written), `private-classes.spec.ts` (no private link or chip), `record-grid-guard.spec.ts` (Team is `mf-record-grid`), default-columns fit for the Matters list (section 6.1), axe 0 at both sizes.
+2. `docs/ux/design-guidelines.md` D-43 and D-43a also change as in section 6.1: the Matters line of D-43 ("Matters: CM Number, Matter Name, Client, Primary PM, Secondary PM, Open Tasks, Overdue, Status") becomes the new column order with the default set marked (CM Number, Matter Name, Client, Matter Type, Current State, Status on by default; Primary PM, Secondary PM, Open Tasks, Overdue optional), and D-43a gets one sentence naming the Matters list default set (1048 of 1098 px) and its guard. The Client > Matters tab is not changed.
+3. `docs/ux/tokens.css`: `--mf-col-matter-type-w: 160px`, `--mf-col-current-state-w: 160px`.
+4. `tab-icons.ts` (`team`, `matter-lists`, `matter-types`, `current-states`, `team-titles`), `nav-items.ts`, `admin.routes.ts`, `matter-tabs.ts`, `matter-summary.ts`, `matter-form-dialog.ts`, `matters-list-page.ts` (`defaultHidden` on `primaryManager`, `openTasks`, `overdue`; none on the two new columns), `matters-list-page.spec.ts` and the Matters e2e specs that assume the old default columns, `field-limits.ts` (`matterTypeName`, `currentStateName`, `teamTitleName` = 100), `contracts/permissions.json`.
+5. Guards: capitalisation (every new label is Title Case as written), `private-classes.spec.ts` (no private link or chip), `record-grid-guard.spec.ts` (Team is `mf-record-grid`), default-columns fit for the Matters list (section 6.1), axe 0 at both sizes.
 
 ## 11. Decisions made by the designer where the owner's text left room (change on request)
 
 1. Team is a tab, not a Summary card (section 1).
-2. Matter Type and Current State columns are off by default (section 6.1).
+2. Superseded by the owner (2026-11-08): Matter Type and Current State are on by default; Primary PM, Open Tasks and Overdue go off by default (section 6.1).
 3. All three team fields, including Title, are required (every row is Name, Email, Title).
 4. Delete exists for unused pick-list items only; the existing label lists never delete.
 5. A new admin item "Matter Lists" with one permission, rather than three more tabs on Labels (that page is for task labels and already has four tabs).
