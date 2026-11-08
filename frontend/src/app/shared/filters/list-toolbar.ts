@@ -85,7 +85,7 @@ let nextId = 0;
           <div class="lt__chips">
             <mf-filter-chips
               [filters]="filters()"
-              mode="all"
+              [mode]="chipMode()"
               (showColumn)="showColumn.emit($event)"
             />
           </div>
@@ -213,6 +213,14 @@ let nextId = 0;
 export class ListToolbar extends FocusFilter {
   /** Id of the filter row (the Filters button's `aria-controls`). */
   readonly controls = input('');
+  /**
+   * D-44d: with the filter row open, a chip shows only for a filter that has no visible control (a link-only filter or one whose column is hidden); with the row closed
+   * every active filter has its chip. Off by default (the other lists show every chip while the row is open, LC-01); the Matters list turns it on (#1296).
+   */
+  readonly chipsFollowRow = input(false);
+  protected readonly chipMode = computed((): 'all' | 'hidden' =>
+    this.chipsFollowRow() && this.filters().rowVisible() ? 'hidden' : 'all',
+  );
   /** Legacy parameters that Clear filters drops too. */
   readonly clearAlso = input<readonly string[]>([]);
   /** "Search tasks": the placeholder and the accessible name of the Search box. */

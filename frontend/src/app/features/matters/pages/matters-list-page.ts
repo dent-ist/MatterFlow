@@ -248,6 +248,8 @@ const BONES: Record<string, string> = {
         searchLabel="Search matters"
         [clearAlso]="['q']"
         [bulkActive]="!phone() && selecting()"
+        [chipsFollowRow]="true"
+        (showColumn)="showColumn($event)"
       >
         @if (!phone()) {
           <mf-record-columns mfColumns [grid]="grid" />
@@ -1020,7 +1022,16 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
     defs: this.defs,
     openByDefault: true,
     sheetBelow: 640,
+    // A filter on a column that is not on screen moves to "Other filters" and its chip says "(hidden column)" with "Show column" (UI spec 6.2, #1308).
+    visibleColumns: computed(() => (this.phone() ? null : this.columns())),
   });
+
+  /** A chip on a hidden column asks for its column: it joins the shown ones (the person's choice is stored like any Columns choice). */
+  protected showColumn(column: string): void {
+    const shown = this.grid.shown();
+    if (!shown.includes(column))
+      this.grid.set({ ...this.grid.prefs(), visible: [...shown, column] });
+  }
 
   /** `?newMatter=1&newClient=5` (the old `/matters/new` link, Client pages): opens the New matter dialog at once, then leaves the URL clean. */
   readonly newMatter = input<string | undefined>(undefined);

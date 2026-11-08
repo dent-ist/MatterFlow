@@ -219,6 +219,8 @@ export class FormDialog {
   readonly ownSecondary = input(false);
   /** The dialog opens on its primary button, not on the first field (the publish and retire questions). */
   readonly focusPrimary = input(false);
+  /** The id of the field that takes focus on opening, when it is not the first one (Edit Team Member: Name, not the optional "Fill from a User" search). */
+  readonly focusId = input('');
 
   readonly visible = model(false);
   readonly submitted = output<void>();
@@ -300,6 +302,11 @@ export class FormDialog {
         primary.focus();
         return;
       }
+    }
+    const chosen = this.focusId() ? root?.querySelector<HTMLElement>(`#${this.focusId()}`) : null;
+    if (chosen) {
+      chosen.focus();
+      return;
     }
     const field = root?.querySelector<HTMLElement>(
       '[data-panel-body] input:not([type=hidden]):not([disabled]), [data-panel-body] select:not([disabled]), [data-panel-body] textarea:not([disabled]), [data-panel-body] mf-dropdown button:not([disabled]), [data-panel-body] [tabindex="0"]',

@@ -103,6 +103,7 @@ export function titleItems(
       [error]="error()"
       [dirty]="dirty()"
       [canSubmit]="noTitles() === false"
+      [focusId]="member() ? 'member-name' : ''"
       [(visible)]="visible"
       (submitted)="save()"
     >

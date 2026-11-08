@@ -234,9 +234,8 @@ describe('MattersListPage', () => {
     const call = api.listMatters.mock.calls.at(-1)!;
     // matterTypeId, matterTypeNone, currentStateId, currentStateNone
     expect(call.slice(12, 16)).toEqual([[2], true, [5], undefined]);
-    expect(fixture.nativeElement.querySelector('[data-chip="matterType"]')!.textContent).toContain(
-      'Matter Type',
-    );
+    // Matter Type is a shown column, so its control is in the row and there is no chip while the row is open (D-44d).
+    expect(fixture.nativeElement.querySelector('[data-chip="matterType"]')).toBeNull();
   });
 
   it('shows the combined reference in monospace with a copy button, the client and the status', async () => {
@@ -350,7 +349,7 @@ describe('MattersListPage', () => {
   const search = (el: HTMLElement): HTMLInputElement =>
     el.querySelector<HTMLInputElement>('[data-list-search] input')!;
 
-  it('has column filters instead of a search box; Sensitive is a select after Status, no Other filters; Active is shown, not counted', async () => {
+  it('has column filters instead of a search box; Sensitive is a select after Status, Other filters holds only the hidden PM columns; Active is shown, not counted', async () => {
     const fixture = await create();
     const el: HTMLElement = fixture.nativeElement;
     expect(el.querySelector('#matter-search, #matter-status')).toBeNull();
@@ -376,7 +375,8 @@ describe('MattersListPage', () => {
     expect(
       status.button.compareDocumentPosition(sensitive.button) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
-    expect(el.querySelector('[data-more-filters]')).toBeNull();
+    // Primary PM and Secondary PM are off by default: their filters are in Other filters (#1308); Matter Type and Current State are in the row.
+    expect(el.querySelector('[data-more-filters]')).not.toBeNull();
     expect(el.querySelector('[data-filter-count]')).toBeNull();
 
     sensitive.value = 'true';
@@ -428,14 +428,35 @@ describe('MattersListPage', () => {
       'Client: 00343 Acme Corp',
     );
     expect(control<HTMLInputElement>(el, 'Client').value).toBe('acme');
-    // The chips show with the row open too (LC-01); the Search text (merger) is in the box and makes no chip.
+    // D-44d (#1296): with the row open a chip shows only for a filter without a visible control (Sensitive sits in the Status cell); the Search text (merger) makes no chip.
     expect(ddSelect(el, 'Filter by Sensitive').value).toBe('true');
-    expect(el.querySelector('[data-chip="isSensitive"]')?.textContent).toContain('Sensitive: Yes');
+    expect(el.querySelector('[data-chip="isSensitive"]')).toBeNull();
     expect(el.querySelector('[data-chip="name"]')).toBeNull();
     el.querySelector<HTMLButtonElement>('[data-filters-toggle]')!.click();
     await settle(fixture);
     expect(el.querySelector('[data-chip="isSensitive"]')?.textContent).toContain('Sensitive: Yes');
     expect(el.querySelectorAll('[data-clear-filters]').length).toBe(1);
+  });
+
+  it('moves the filter of a hidden column to Other filters, with a chip that says "(hidden column)" and brings the column back (UI spec 6.2, #1308)', async () => {
+    const fixture = await create(['Matter.View'], { primaryManager: 'none' });
+    const el: HTMLElement = fixture.nativeElement;
+    // Primary PM is off by default: no control in the row, one "Other filters" button, one chip with Show column.
+    expect(el.querySelector('mf-more-filters')).not.toBeNull();
+    const chip = el.querySelector('[data-chip="primaryManager"]')!;
+    expect(chip.textContent).toContain('Primary PM: None');
+    expect(chip.textContent).toContain('(hidden column)');
+    const show = Array.from(chip.querySelectorAll('button')).find((b) =>
+      b.textContent!.includes('Show Column'),
+    )!;
+    show.click();
+    await settle(fixture);
+    expect(
+      Array.from(el.querySelectorAll('thead tr:first-child th[data-col]')).map((h) =>
+        h.getAttribute('data-col'),
+      ),
+    ).toContain('primaryManager');
+    expect(el.querySelector('[data-chip="primaryManager"]')).toBeNull();
   });
 
   it('keeps an old ?isSensitive=true link working and says how many inactive matters are hidden', async () => {

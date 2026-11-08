@@ -34,6 +34,16 @@ import { Tip } from '../../../shared/ui/tip';
       font-family: var(--mf-font-mono);
       user-select: text;
     }
+    /* The clamp is on the anchor itself, so its clipped lines are not laid out outside the box (axe target-size next to the PM "Add" button, #1310). */
+    .pv__text a {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      max-width: 100%;
+      overflow: hidden;
+      overflow-wrap: anywhere;
+    }
     .pv__icon {
       flex: none;
       margin-top: 0.3rem;

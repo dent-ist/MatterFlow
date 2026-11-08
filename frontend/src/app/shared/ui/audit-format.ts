@@ -27,6 +27,9 @@ const KNOWN_FIELDS: Readonly<Record<string, string>> = {
   requested_at: 'Request sent',
   requestor_name: 'Requestor name',
   requestor_email: 'Requestor email',
+  // Acronyms keep their capitals (UI spec 5).
+  dmspath: 'DMS Path',
+  dfspath: 'DFS Path',
 };
 
 /** Audit object types whose raw name means nothing to a reader. */
@@ -81,15 +84,19 @@ export function objectTypeLabel(type: string): string {
 /** Replaces internal field keys (`received_datetime`) inside a sentence with their labels. */
 export function friendlyText(text: string | undefined | null): string {
   if (!text) return '';
-  return text
-    .replace(/\b[a-z][a-z0-9]*(?:_[a-z0-9]+)+\b/g, (key) => fieldLabel(`form:${key}`))
-    .replace(
-      /\b(?:FormValueSet|StepInstance|TaskStepInstance|TaskAsset|AssetType|AssetLinkRole|StepDefinition|WorkflowDefinition|TaskType|StatusLabel|CustomField)\b/g,
-      (type, offset: number) => {
-        const label = objectTypeLabel(type);
-        return offset === 0 ? label : label.toLowerCase();
-      },
-    );
+  return (
+    text
+      // The server's generic field label lowercases an acronym ("Dms path set to ..."): the two path fields read DMS Path and DFS Path.
+      .replace(/^(Dms|Dfs) path\b/, (_m, a: string) => `${a.toUpperCase()} Path`)
+      .replace(/\b[a-z][a-z0-9]*(?:_[a-z0-9]+)+\b/g, (key) => fieldLabel(`form:${key}`))
+      .replace(
+        /\b(?:FormValueSet|StepInstance|TaskStepInstance|TaskAsset|AssetType|AssetLinkRole|StepDefinition|WorkflowDefinition|TaskType|StatusLabel|CustomField)\b/g,
+        (type, offset: number) => {
+          const label = objectTypeLabel(type);
+          return offset === 0 ? label : label.toLowerCase();
+        },
+      )
+  );
 }
 
 /** `IsSensitive` -> `Sensitive`, `form:billing_code` -> `Billing code`, `ClientNumber` -> `Client number`. */

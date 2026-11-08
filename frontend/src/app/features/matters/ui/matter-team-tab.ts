@@ -69,6 +69,18 @@ const DEFAULT_SORT = 'name';
     td.mt-name .mt-plain {
       font-weight: 700;
     }
+    /* Email and Title keep their widths whatever the text: a long address is cut with an ellipsis and never squeezes Name below its minimum (#1312). */
+    td.mt-fixed {
+      max-width: 0;
+    }
+    td.mt-email {
+      width: var(--mf-col-email-w);
+      min-width: var(--mf-col-email-w);
+    }
+    td.mt-title {
+      width: var(--mf-col-title-w);
+      min-width: var(--mf-col-title-w);
+    }
     .mt-remove {
       color: var(--mf-text-muted);
     }
@@ -140,12 +152,12 @@ const DEFAULT_SORT = 'name';
         </td>
       </ng-template>
       <ng-template mfCell="email" let-m>
-        <td>
+        <td class="mt-fixed mt-email">
           <span class="pg-clip" data-member-email [mfTip]="m.email">{{ m.email }}</span>
         </td>
       </ng-template>
       <ng-template mfCell="title" let-m>
-        <td>
+        <td class="mt-fixed mt-title">
           <span
             class="pg-clip"
             data-member-title

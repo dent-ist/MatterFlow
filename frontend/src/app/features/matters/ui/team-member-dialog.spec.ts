@@ -232,6 +232,21 @@ describe('TeamMemberDialog', () => {
     });
   });
 
+  it('puts the first focus on Name when editing, and on the picker when adding (UI spec 9, #1312)', async () => {
+    let f = await start({ edit: true, permissions: ['Matter.View', 'Matter.Edit', 'User.View'] });
+    f.componentInstance.open.set(false);
+    await settle(f);
+    f.componentInstance.open.set(true);
+    await new Promise((r) => setTimeout(r, 300));
+    await settle(f);
+    expect(document.activeElement?.id).toBe('member-name');
+    TestBed.resetTestingModule();
+    f = await start({ permissions: ['Matter.View', 'Matter.Edit', 'User.View'] });
+    await new Promise((r) => setTimeout(r, 300));
+    await settle(f);
+    expect(document.activeElement?.id).toBe('member-pick');
+  });
+
   it('disables Title and Add Member with the help line when no title is active', async () => {
     const f = await start({ titles: [title(1, 'Attorney', false)] });
     expect(q('[data-no-titles]')!.textContent).toContain(

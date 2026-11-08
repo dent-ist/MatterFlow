@@ -56,6 +56,12 @@ describe('audit formatting', () => {
   });
 
   it('replaces internal names inside a sentence with readable ones', () => {
+    // The two path fields keep their capitals in the server's generic sentence (#1311).
+    expect(friendlyText('Dms path set to \\\\fs01\\dms\\five')).toBe(
+      'DMS Path set to \\\\fs01\\dms\\five',
+    );
+    expect(friendlyText('Dfs path cleared')).toBe('DFS Path cleared');
+    expect(friendlyText('Dmsx path set to a')).toBe('Dmsx path set to a');
     expect(friendlyText('Owner kind set to StepInstance')).toBe('Owner kind set to workflow step');
     expect(friendlyText('AssetType 8 and 3 related changes')).toBe(
       'Asset type 8 and 3 related changes',
