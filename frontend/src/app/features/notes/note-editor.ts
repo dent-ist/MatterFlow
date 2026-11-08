@@ -832,9 +832,14 @@ export class NoteEditor {
   protected readonly linkEditing = signal(false);
   protected readonly linkNeedsText = signal(false);
 
+  private destroyed = false;
+
   constructor() {
     afterNextRender(() => this.create());
-    inject(DestroyRef).onDestroy(() => this.editor?.destroy());
+    inject(DestroyRef).onDestroy(() => {
+      this.destroyed = true;
+      this.editor?.destroy();
+    });
     effect(() => {
       const editable = this.editable();
       untracked(() => {
@@ -852,6 +857,8 @@ export class NoteEditor {
         if (this.editor) this.editor.commands.setContent(html, { emitUpdate: false });
         this.tick.update((n) => n + 1);
         queueMicrotask(() => {
+          // The component can be gone by the time the microtask runs (teardown right after a key change, #1328).
+          if (this.destroyed) return;
           this.decorate();
           this.markTokens();
         });
@@ -1191,6 +1198,8 @@ export class NoteEditor {
 
   /** The CSS Custom Highlight API paints `{{word}}` ranges without changing the text (no markup is stored). */
   private markTokens(): void {
+    // `CSS` itself is undefined once the test window is torn down (#1328); a destroyed editor has nothing to paint.
+    if (this.destroyed || typeof CSS === 'undefined') return;
     const reg = (CSS as unknown as { highlights?: Map<string, unknown> }).highlights;
     const H = (window as unknown as { Highlight?: new (...r: Range[]) => unknown }).Highlight;
     if (!reg || !H) return;
@@ -1276,6 +1285,7 @@ export class NoteEditor {
     });
     // Tab stops of the toolbar: only the first button is in the tab order.
     queueMicrotask(() => {
+      if (this.destroyed) return;
       const buttons = Array.from(this.barEl()?.nativeElement.querySelectorAll('button') ?? []);
       buttons.forEach((b, i) => (b.tabIndex = i === 0 ? 0 : -1));
       this.decorate();

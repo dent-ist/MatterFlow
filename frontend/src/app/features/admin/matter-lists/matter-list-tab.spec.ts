@@ -88,6 +88,9 @@ class Host {
 describe('MatterListTab (Matter Types)', () => {
   let api: Record<string, ReturnType<typeof vi.fn>>;
   const q = (s: string) => document.body.querySelector<HTMLElement>(s);
+  /** The component under test, not the whole document: another spec's leftovers must not add headings (flaky under load). */
+  let current: HTMLElement | null = null;
+  const host = (): HTMLElement => current!;
   const all = (s: string) => Array.from(document.body.querySelectorAll<HTMLElement>(s));
 
   async function start(list: MatterListItemView[] | 'error', manage = true) {
@@ -122,6 +125,7 @@ describe('MatterListTab (Matter Types)', () => {
     const f = TestBed.createComponent(Host);
     document.body.appendChild(f.nativeElement);
     await settle(f);
+    current = f.nativeElement;
     return f;
   }
 
@@ -142,7 +146,7 @@ describe('MatterListTab (Matter Types)', () => {
       item(2, 'Advisory', { isActive: false }),
     ]);
     expect(
-      all('th')
+      Array.from(host().querySelectorAll('th'))
         .map((t) => t.textContent!.trim())
         .filter(Boolean),
     ).toEqual(['Order', 'Matter Type', 'Matters', 'Status', 'Actions']);

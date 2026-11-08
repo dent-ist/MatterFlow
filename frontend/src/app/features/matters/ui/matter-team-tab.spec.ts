@@ -53,6 +53,9 @@ class Host {
 describe('MatterTeamTab (epic #1298, UI spec 4)', () => {
   let team: Record<string, ReturnType<typeof vi.fn>>;
   const q = (s: string) => document.body.querySelector<HTMLElement>(s);
+  /** The component under test, not the whole document: another spec's leftovers must not add headings (flaky under load). */
+  let current: HTMLElement | null = null;
+  const host = (): HTMLElement => current!;
   const all = (s: string) => Array.from(document.body.querySelectorAll<HTMLElement>(s));
 
   async function start(rows: MatterTeamMemberResponse[] | 'error', canEdit = true) {
@@ -81,6 +84,7 @@ describe('MatterTeamTab (epic #1298, UI spec 4)', () => {
     f.componentInstance.canEdit.set(canEdit);
     document.body.appendChild(f.nativeElement);
     await settle(f);
+    current = f.nativeElement;
     return f;
   }
 
@@ -95,7 +99,7 @@ describe('MatterTeamTab (epic #1298, UI spec 4)', () => {
     ]);
     expect(team['listMatterTeam']).toHaveBeenCalledWith(7, 1, 50, 'name');
     expect(
-      all('th')
+      Array.from(host().querySelectorAll('th'))
         .map((t) => t.textContent!.trim())
         .filter(Boolean),
     ).toEqual(['Name', 'Email', 'Title', 'Actions']);
@@ -112,9 +116,10 @@ describe('MatterTeamTab (epic #1298, UI spec 4)', () => {
       'Remove Ben Ortiz',
     ]);
     expect(q('[data-add-member]')).not.toBeNull();
-    expect(q('table')!.getAttribute('aria-label') ?? q('caption')?.textContent).toContain(
-      'Team members of 00343-00012',
-    );
+    expect(
+      host().querySelector('table')!.getAttribute('aria-label') ??
+        host().querySelector('caption')?.textContent,
+    ).toContain('Team members of 00343-00012');
   });
 
   it('is read only without edit rights: plain names, no Add Member, no Remove', async () => {

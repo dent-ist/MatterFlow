@@ -35,4 +35,21 @@ describe('NoteEditor content sync', () => {
     await f.whenStable();
     expect(f.componentInstance.getHtml()).toContain('second');
   });
+
+  it('does nothing when the editor is destroyed before the deferred token marking runs (#1328)', async () => {
+    const f = await make('<p>first {{Name}}</p>', 'k1');
+    f.componentRef.setInput('contentKey', 'k2');
+    f.detectChanges();
+    f.destroy();
+    // The microtask queued by the key change runs now, against a destroyed editor and with no `CSS` global.
+    const css = (globalThis as { CSS?: unknown }).CSS;
+    Object.defineProperty(globalThis, 'CSS', { value: undefined, configurable: true });
+    try {
+      await Promise.resolve();
+      await new Promise((r) => setTimeout(r, 0));
+    } finally {
+      Object.defineProperty(globalThis, 'CSS', { value: css, configurable: true });
+    }
+    expect(true).toBe(true);
+  });
 });

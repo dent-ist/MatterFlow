@@ -65,6 +65,16 @@ describe('PodsPage', () => {
     await fixture.whenStable();
   }
 
+  /** Waits (up to 2 s) until the selector matches in the document, so a slow machine does not fail a fixed settle (#1328). */
+  async function waitForSel(sel: string): Promise<HTMLElement> {
+    for (let i = 0; i < 100; i++) {
+      const found = document.querySelector<HTMLElement>(sel);
+      if (found) return found;
+      await settle(20);
+    }
+    return document.querySelector<HTMLElement>(sel)!;
+  }
+
   async function click(sel: string): Promise<void> {
     const target = q(sel);
     (target.tagName === 'BUTTON' ? target : target.querySelector('button')!).click();
@@ -171,8 +181,7 @@ describe('PodsPage', () => {
       await create('Pod.View', 'Pod.Manage', 'Pod.ManageMembers');
       await openEditor(1);
       q('[data-record-header] [data-overflow]').click();
-      await settle();
-      const item = document.querySelector<HTMLElement>('[data-action="deactivate"]');
+      const item = await waitForSel('[data-action="deactivate"]');
       expect(item?.textContent).toContain('Deactivate Pod');
       item!.click();
       await settle();
