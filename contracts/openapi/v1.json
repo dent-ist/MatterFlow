@@ -940,6 +940,57 @@
         }
       }
     },
+    "/api/v1/assets/{assetId}/assign-number": {
+      "post": {
+        "tags": [
+          "Assets"
+        ],
+        "operationId": "AssignAssetNumber",
+        "parameters": [
+          {
+            "name": "assetId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignAssetNumberRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignAssetNumberRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignAssetNumberRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/assets/disposition": {
       "post": {
         "tags": [
@@ -18433,7 +18484,8 @@
           "rowVersion",
           "createdAtUtc",
           "modifiedAtUtc",
-          "dispositionCode"
+          "dispositionCode",
+          "assetTypeNumberingEnabled"
         ],
         "type": "object",
         "properties": {
@@ -18558,6 +18610,10 @@
               "null",
               "string"
             ]
+          },
+          "assetTypeNumberingEnabled": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -18624,7 +18680,8 @@
           "nextNumber",
           "nextAssetNumber",
           "hasCounter",
-          "modifiedAtUtc"
+          "modifiedAtUtc",
+          "numberedAssetCount"
         ],
         "type": "object",
         "properties": {
@@ -18662,6 +18719,11 @@
               "string"
             ],
             "format": "date-time"
+          },
+          "numberedAssetCount": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0
           }
         }
       },
@@ -18686,6 +18748,12 @@
           },
           "text": {
             "type": "string"
+          },
+          "longestCmNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -19033,7 +19101,8 @@
           "createdAtUtc",
           "modifiedAtUtc",
           "matterCanOpen",
-          "dispositionCode"
+          "dispositionCode",
+          "assetTypeNumberingEnabled"
         ],
         "type": "object",
         "properties": {
@@ -19200,6 +19269,10 @@
               "null",
               "string"
             ]
+          },
+          "assetTypeNumberingEnabled": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -19377,6 +19450,20 @@
           },
           "example": {
             "$ref": "#/components/schemas/AssetNumberExample"
+          },
+          "numberedAssetCount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "unnumberedAssetCount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -19638,6 +19725,17 @@
             ]
           },
           "limitation": {
+            "type": "string"
+          }
+        }
+      },
+      "AssignAssetNumberRequest": {
+        "required": [
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "rowVersion": {
             "type": "string"
           }
         }

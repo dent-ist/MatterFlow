@@ -81,9 +81,11 @@ public class Asset : AuditedEntity<int>, IAuditScoped
     /// The generated Asset Number (for the default pattern <c>90003-80008_001</c>), null when the asset type did not number automatically when the asset was created. A snapshot: assigned once in the
     /// transaction of the insert, never changed (database trigger, API rule), and a later change of the matter's CM Number does not rewrite it.
     /// </summary>
+    [AuditExplicit]
     public string? AssetNumber { get; set; }
 
     /// <summary>The counter value <see cref="AssetNumber"/> was built from (null together with it).</summary>
+    [AuditExplicit]
     public int? AssetNumberSeq { get; set; }
 
     /// <summary>

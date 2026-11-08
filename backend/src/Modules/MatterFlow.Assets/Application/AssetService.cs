@@ -194,6 +194,8 @@ public sealed class AssetService(
         // The matters of the page in one statement (a page can span as many matters as it has rows).
         var pageMatters = await matters.FindManyAsync([.. items.Select(r => r.Asset.MatterId).Distinct()], ct);
         var sizes = await SizesAsync(items.Select(r => (r.Asset.Id, r.Asset.AssetTypeId)).ToList(), ct);
+        var pageTypeIds = items.Select(r => r.Asset.AssetTypeId).Distinct().ToList();
+        var numberingOn = await db.Set<AssetType>().AsNoTracking().Where(t => pageTypeIds.Contains(t.Id) && t.NumberingEnabled).Select(t => t.Id).ToListAsync(ct);
         var list = new List<AssetListItem>(items.Count);
         foreach (var row in items)
         {
@@ -222,7 +224,8 @@ public sealed class AssetService(
                 counts is null ? null : row.Asset.DispositionCode != AssetDisposition.Active && (counts.GetValueOrDefault(row.Asset.Id)?.Open ?? 0) > 0,
                 row.AssetTypeIconKey,
                 row.AssetTypeColourKey,
-                row.Asset.AssetNumber));
+                row.Asset.AssetNumber,
+                numberingOn.Contains(row.Asset.AssetTypeId)));
         }
 
         return AssetSupport.Page(list, total, page);
@@ -326,6 +329,7 @@ public sealed class AssetService(
                 var assigned = await numbers.TakeNextAsync(type, matter.MatterId, matter.MatterRef, ct);
                 asset.AssetNumber = assigned.Number;
                 asset.AssetNumberSeq = assigned.Sequence;
+                audit.Write(NumberAssignedEntry(asset, assigned.Number, "at creation", () => asset.Id.ToString(CultureInfo.InvariantCulture)));
             }
 
             try
@@ -357,13 +361,85 @@ public sealed class AssetService(
         return await GetAsync(asset.Id, dropped, ct);
     }
 
+    /// <summary>The audit event of an assigned Asset Number (at creation or by the "assign number" action).</summary>
+    public const string NumberAssignedEvent = "ASSET_NUMBER_ASSIGNED";
+
+    public const string AlreadyNumberedCode = "ASSET_ALREADY_NUMBERED";
+    public const string NumberingOffCode = "ASSET_TYPE_NUMBERING_OFF";
+
+    private static AuditEntry NumberAssignedEntry(Asset asset, string number, string how, Func<string> id) => new()
+    {
+        EventType = NumberAssignedEvent,
+        ObjectType = nameof(Asset),
+        ObjectIdFactory = id,
+        MatterId = asset.MatterId,
+        FieldKey = "assetNumber",
+        NewValue = number,
+        Summary = $"Asset number {number} assigned {how}.",
+    };
+
+    /// <summary>
+    /// Gives an asset without a number its Asset Number now, the only way an old or unnumbered asset gets one (turning numbering on numbers nothing). Takes the next counter value of the asset's type
+    /// in its matter in the same transaction as the update, like a create (so it shares the counter with concurrent creates and assigns). Refused when the asset has a number (409
+    /// <c>ASSET_ALREADY_NUMBERED</c>) or its type numbers nothing now (409 <c>ASSET_TYPE_NUMBERING_OFF</c>). A lost deadlock is retried once, then 409 (see <see cref="CreateAsync"/>).
+    /// </summary>
+    public Task<Result<AssetResponse>> AssignNumberAsync(int id, AssignAssetNumberRequest request, CancellationToken ct) =>
+        WithDeadlockRetryAsync(() => AssignNumberOnceAsync(id, request, ct));
+
+    private async Task<Result<AssetResponse>> AssignNumberOnceAsync(int id, AssignAssetNumberRequest request, CancellationToken ct)
+    {
+        var asset = await LoadForWriteAsync(id, ct);
+        if (asset is null)
+            return AssetSupport.NotFound("Asset");
+
+        var version = AssetSupport.CheckRowVersion(asset.RowVersion, request.RowVersion);
+        if (version.IsFailure)
+            return version.Error!;
+        if (asset.AssetNumber is not null)
+            return Error.Conflict(AlreadyNumberedCode, $"This asset already has the number {asset.AssetNumber}; a number never changes.");
+
+        var type = await db.Set<AssetType>().AsNoTracking().SingleOrDefaultAsync(t => t.Id == asset.AssetTypeId, ct);
+        if (type is null)
+            return AssetSupport.NotFound("Asset type");
+        if (!type.NumberingEnabled)
+            return Error.Conflict(NumberingOffCode, $"Asset type '{type.Name}' does not number its assets. Switch numbering on for the type first.");
+
+        var matter = await matters.FindAsync(asset.MatterId, ct);
+        if (matter is null)
+            return Error.Validation("matterId", "NOT_FOUND", "The matter of the asset does not exist.");
+
+        try
+        {
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
+            var assigned = await numbers.TakeNextAsync(type, asset.MatterId, matter.MatterRef, ct);
+            asset.AssetNumber = assigned.Number;
+            asset.AssetNumberSeq = assigned.Sequence;
+            AssetSupport.TrackOriginalRowVersion(db, asset, request.RowVersion);
+            audit.Write(NumberAssignedEntry(asset, assigned.Number, "to an existing asset", () => asset.Id.ToString(CultureInfo.InvariantCulture)));
+            await db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            db.ChangeTracker.Clear();
+            return AssetSupport.ConcurrencyError();
+        }
+        catch (DbUpdateException ex) when (AssetSupport.IsUniqueViolation(ex, AssetSupport.AssetNumberUnique))
+        {
+            db.ChangeTracker.Clear();
+            return Error.Conflict(ErrorCodes.ConcurrencyConflict, "The next asset number is already used by another asset of this matter. Ask an administrator to set the next number of this asset type for the matter above the highest number in use.");
+        }
+
+        return await GetAsync(id, ct);
+    }
+
     /// <summary>Saves an Asset's editable fields and type values; a lost deadlock is retried once, then 409 (see <see cref="CreateAsync"/>).</summary>
     public Task<Result<AssetResponse>> UpdateAsync(int id, UpdateAssetRequest request, CancellationToken ct) =>
         WithDeadlockRetryAsync(() => UpdateOnceAsync(id, request, ct));
 
     private async Task<Result<AssetResponse>> UpdateOnceAsync(int id, UpdateAssetRequest request, CancellationToken ct)
     {
-        var asset = await access.OfVisibleMatters(db.Set<Asset>()).SingleOrDefaultAsync(a => a.Id == id, ct);
+        var asset = await LoadForWriteAsync(id, ct);
         if (asset is null)
             return AssetSupport.NotFound("Asset");
 
@@ -448,7 +524,7 @@ public sealed class AssetService(
 
     private async Task<Result<AssetResponse>> SetActiveOnceAsync(int id, SetAssetActiveRequest request, CancellationToken ct)
     {
-        var asset = await access.OfVisibleMatters(db.Set<Asset>()).SingleOrDefaultAsync(a => a.Id == id, ct);
+        var asset = await LoadForWriteAsync(id, ct);
         if (asset is null)
             return AssetSupport.NotFound("Asset");
 
@@ -486,7 +562,7 @@ public sealed class AssetService(
 
     private async Task<Result<AssetResponse>> ChangeDispositionOnceAsync(int id, ChangeAssetDispositionRequest request, CancellationToken ct)
     {
-        var asset = await access.OfVisibleMatters(db.Set<Asset>()).SingleOrDefaultAsync(a => a.Id == id, ct);
+        var asset = await LoadForWriteAsync(id, ct);
         if (asset is null)
             return AssetSupport.NotFound("Asset");
 
@@ -560,7 +636,7 @@ public sealed class AssetService(
         try
         {
             await using var transaction = await db.Database.BeginTransactionAsync(ct);
-            var asset = await access.OfVisibleMatters(db.Set<Asset>()).SingleOrDefaultAsync(a => a.Id == assetId, ct);
+            var asset = await LoadForWriteAsync(assetId, ct);
             if (asset is null)
                 return new BulkAssetDispositionResult(assetId, false, false, ErrorCodes.NotFound, "Asset not found.");
 
@@ -591,6 +667,16 @@ public sealed class AssetService(
             return new BulkAssetDispositionResult(assetId, false, false, ErrorCodes.ConcurrencyConflict, "Another change was saved at the same time; try again.");
         }
     }
+
+    /// <summary>
+    /// The asset to change, TRACKED, when its matter is one the caller may see as a whole (mode M); otherwise null. Visibility is checked by a no-tracking query and the entity is then loaded by id on its own:
+    /// the visible-matters subquery carries <c>AsNoTracking</c>, which EF Core applies to the whole statement, so loading through it returned an untracked asset and the save silently changed nothing
+    /// for a caller who is not "see all" while the sensitive-matter rule is on.
+    /// </summary>
+    private async Task<Asset?> LoadForWriteAsync(int id, CancellationToken ct) =>
+        await access.OfVisibleMatters(db.Set<Asset>().AsNoTracking()).AnyAsync(a => a.Id == id, ct)
+            ? await db.Set<Asset>().SingleOrDefaultAsync(a => a.Id == id, ct)
+            : null;
 
     /// <summary>The disposition changes of an Asset (who, when, from, to, note), newest first. The caller must see the Asset (mode A).</summary>
     public async Task<Result<AssetDispositionHistoryResponse>> DispositionHistoryAsync(int id, CancellationToken ct)
@@ -732,7 +818,8 @@ public sealed class AssetService(
             CanCountTasks ? row.Asset.DispositionCode != AssetDisposition.Active && (counts?.Open ?? 0) > 0 : null,
             row.AssetTypeIconKey,
             row.AssetTypeColourKey,
-            row.Asset.AssetNumber);
+            row.Asset.AssetNumber,
+            await db.Set<AssetType>().AsNoTracking().AnyAsync(t => t.Id == row.Asset.AssetTypeId && t.NumberingEnabled, ct));
     }
 
     /// <summary>The size of an asset: the value of its type's designated size field, its unit and the bytes for the size family.</summary>

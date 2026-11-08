@@ -81,9 +81,10 @@ public sealed class AssetNumberingService(
         var ids = rows.Select(r => r.ScopeKey).ToList();
         var pageMatters = await matters.FindManyAsync(ids, ct);
         var highest = await HighestAsync(assetTypeId, ids, ct);
+        var numbered = await NumberedCountsAsync(assetTypeId, ids, ct);
         var items = rows
             .Where(r => pageMatters.ContainsKey(r.ScopeKey))
-            .Select(r => ToItem(type, pageMatters[r.ScopeKey], r.NextNumber, highest.GetValueOrDefault(r.ScopeKey), hasCounter: true, r.ModifiedAtUtc))
+            .Select(r => ToItem(type, pageMatters[r.ScopeKey], r.NextNumber, highest.GetValueOrDefault(r.ScopeKey), hasCounter: true, r.ModifiedAtUtc, numbered.GetValueOrDefault(r.ScopeKey)))
             .ToList();
         return AssetSupport.Page(items, total, page);
     }
@@ -101,9 +102,10 @@ public sealed class AssetNumberingService(
 
         var counter = await db.Set<AssetNumberCounter>().AsNoTracking().SingleOrDefaultAsync(c => c.AssetTypeId == assetTypeId && c.ScopeKey == matterId, ct);
         var highest = (await HighestAsync(assetTypeId, [matterId], ct)).GetValueOrDefault(matterId);
+        var numbered = (await NumberedCountsAsync(assetTypeId, [matterId], ct)).GetValueOrDefault(matterId);
         return counter is null
-            ? ToItem(type, matter, Math.Max(1, highest + 1), highest, hasCounter: false, modifiedAtUtc: null)
-            : ToItem(type, matter, counter.NextNumber, highest, hasCounter: true, counter.ModifiedAtUtc);
+            ? ToItem(type, matter, Math.Max(1, highest + 1), highest, hasCounter: false, modifiedAtUtc: null, numbered)
+            : ToItem(type, matter, counter.NextNumber, highest, hasCounter: true, counter.ModifiedAtUtc, numbered);
     }
 
     /// <summary>
@@ -197,7 +199,15 @@ public sealed class AssetNumberingService(
             .Select(g => new { MatterId = g.Key, Highest = g.Max(a => a.AssetNumberSeq!.Value) })
             .ToDictionaryAsync(x => x.MatterId, x => x.Highest, ct);
 
-    private static AssetNumberCounterItem ToItem(AssetType type, MatterSummary matter, int next, int highest, bool hasCounter, DateTime? modifiedAtUtc) =>
+    /// <summary>How many assets of the type carry a number, per matter (one grouped statement).</summary>
+    private async Task<Dictionary<int, int>> NumberedCountsAsync(int assetTypeId, IReadOnlyCollection<int> matterIds, CancellationToken ct) =>
+        await db.Set<Asset>().AsNoTracking()
+            .Where(a => a.AssetTypeId == assetTypeId && matterIds.Contains(a.MatterId) && a.AssetNumber != null)
+            .GroupBy(a => a.MatterId)
+            .Select(g => new { MatterId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.MatterId, x => x.Count, ct);
+
+    private static AssetNumberCounterItem ToItem(AssetType type, MatterSummary matter, int next, int highest, bool hasCounter, DateTime? modifiedAtUtc, int numbered) =>
         new(
             type.Id,
             matter.MatterId,
@@ -207,7 +217,8 @@ public sealed class AssetNumberingService(
             next,
             Preview(type, matter, next),
             hasCounter,
-            AssetSupport.Utc(modifiedAtUtc));
+            AssetSupport.Utc(modifiedAtUtc),
+            numbered);
 
     private static string Preview(AssetType type, MatterSummary matter, int next)
     {

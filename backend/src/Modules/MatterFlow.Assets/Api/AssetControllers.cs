@@ -216,6 +216,16 @@ public class AssetsController(AssetService assets, IEnumerable<IAssetTaskLinkRea
     public async Task<IActionResult> ChangeDisposition(int assetId, [FromBody] ChangeAssetDispositionRequest request, CancellationToken cancellationToken) =>
         this.ToActionResult(await assets.ChangeDispositionAsync(assetId, request, cancellationToken));
 
+    /// <summary>
+    /// Gives an asset that has no Asset Number its number now: the only way an old or unnumbered asset gets one. Needs <c>Asset.Edit</c>; the asset's type must number its assets (409 <c>ASSET_TYPE_NUMBERING_OFF</c>
+    /// otherwise) and the asset must have no number yet (409 <c>ASSET_ALREADY_NUMBERED</c>). Takes the next counter value atomically, audited as <c>ASSET_NUMBER_ASSIGNED</c>. Returns the updated asset.
+    /// </summary>
+    [HttpPost("{assetId:int}/assign-number", Name = "AssignAssetNumber")]
+    [Authorize(Policy = AssetPolicies.AssetEdit)]
+    [ProducesResponseType<AssetResponse>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> AssignNumber(int assetId, [FromBody] AssignAssetNumberRequest request, CancellationToken cancellationToken) =>
+        this.ToActionResult(await assets.AssignNumberAsync(assetId, request, cancellationToken));
+
     /// <summary>Moves up to 100 Assets to one disposition. Each Asset is its own change; the response lists every Asset with its outcome (no failure is hidden).</summary>
     [HttpPost("disposition", Name = "BulkChangeAssetDisposition")]
     [Authorize(Policy = AssetPolicies.AssetDisposition)]

@@ -287,6 +287,7 @@ public static class SensitiveAccessCatalog
         ["POST api/v1/asset-types/{assetTypeId:int}/reindex"] = new(AccessKind.Neutral, IdKind.None, "asset type maintenance: rebuilds the filter index of the type's values and returns a count only (needs AssetType.Manage)", []),
         ["POST api/v1/assets"] = new(AccessKind.Write, IdKind.Asset, "hidden target = 404 and no change; covered by the Sensitive* feature suites", []),
         ["POST api/v1/assets/disposition"] = new(AccessKind.Write, IdKind.Asset, "per asset: a hidden target answers NOT_FOUND in its own result and changes nothing; covered by the Sensitive* feature suites", []),
+        ["POST api/v1/assets/{assetId:int}/assign-number"] = new(AccessKind.Write, IdKind.Asset, "hidden target = 404 and no change; covered by AssetAssignNumberTests (issue #1297)", []),
         ["POST api/v1/assets/{assetId:int}/active"] = new(AccessKind.Write, IdKind.Asset, "hidden target = 404 and no change; covered by the Sensitive* feature suites", []),
         ["POST api/v1/clients"] = new(AccessKind.Write, IdKind.None, "client-level write; the has-matters guard is unfiltered and generic", []),
         ["POST api/v1/forms"] = new(AccessKind.Neutral, IdKind.None, "configuration or role definitions: no matter data", []),

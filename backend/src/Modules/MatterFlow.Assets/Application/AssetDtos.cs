@@ -48,22 +48,28 @@ public sealed record AssetTypeResponse(
 /// <param name="Pattern">The tail after the CM Number: literal text with exactly one counter such as <c>{###}</c> (1 to 9 #, the minimum width: 001, 0001; a larger counter widens), for example <c>_{###}</c> gives <c>123456-123444_001</c>. Applies to assets created from now on.</param>
 /// <param name="Scope">What the counter restarts for: <c>MATTER</c> (the only value for now).</param>
 /// <param name="Example">What the next asset would be called, for the live example.</param>
+/// <param name="NumberedAssetCount">Assets of the type (that the caller may see) that carry an Asset Number; null without <c>Asset.View</c>.</param>
+/// <param name="UnnumberedAssetCount">Assets of the type (that the caller may see) without a number: they get one only through the explicit "assign number" action; null without <c>Asset.View</c>.</param>
 public sealed record AssetTypeNumbering(
     [property: Required] bool Enabled,
     [property: Required] string Pattern,
     [property: Required] string Scope,
-    [property: Required] AssetNumberExample Example);
+    [property: Required] AssetNumberExample Example,
+    int? NumberedAssetCount = null,
+    int? UnnumberedAssetCount = null);
 
 /// <summary>An example Asset Number: a real matter and its real next counter, or the sample.</summary>
 /// <param name="CmNumber">The CM Number: of the matter most recently numbered for this type that the caller may see, else the sample <c>90003-80008</c>.</param>
 /// <param name="NextCounter">The next counter value of that matter (1 for the sample).</param>
 /// <param name="IsSample">True when no visible matter has been numbered for the type (or numbering is off), so the example is made up.</param>
 /// <param name="Text">The Asset Number the next asset would get with the current pattern; empty when the pattern is invalid.</param>
+/// <param name="LongestCmNumber">The longest CM Number among the matters the caller may see (null when there is none), so a screen can check that the longest possible Asset Number stays within 100 characters.</param>
 public sealed record AssetNumberExample(
     [property: Required] string CmNumber,
     [property: Required] int NextCounter,
     [property: Required] bool IsSample,
-    [property: Required] string Text);
+    [property: Required] string Text,
+    string? LongestCmNumber = null);
 
 /// <summary>The numbering settings of a create or update request. Every member is optional; an omitted member keeps the current value (the defaults for a new type).</summary>
 public sealed class AssetTypeNumberingRequest
@@ -282,6 +288,7 @@ public sealed class AssetLookupQuery
 /// <param name="DispositionChangedAtUtc">When the disposition last changed (UTC); null when it never did.</param>
 /// <param name="InactiveLinked">True when the asset is not Active but still linked to an open task (a warning, not a rule); null without <c>Task.View</c>.</param>
 /// <param name="AssetNumber">The generated Asset Number (for example <c>90003-80008_001</c>, the name of the folder on the share); null when the asset type did not number automatically when the asset was created. Read-only.</param>
+/// <param name="AssetTypeNumberingEnabled">True when the asset's type numbers its assets automatically now (so an asset without a number can be given one with "assign number").</param>
 public sealed record AssetListItem(
     [property: Required] int AssetId,
     [property: Required] int MatterId,
@@ -306,7 +313,8 @@ public sealed record AssetListItem(
     bool? InactiveLinked = null,
     string? AssetTypeIconKey = null,
     string? AssetTypeColourKey = null,
-    string? AssetNumber = null);
+    string? AssetNumber = null,
+    [property: Required] bool AssetTypeNumberingEnabled = false);
 
 /// <summary>An Asset with its type-specific values.</summary>
 /// <param name="AssetId">Internal id.</param>
@@ -339,6 +347,7 @@ public sealed record AssetListItem(
 /// <param name="DispositionNote">The note given with the last change, if any.</param>
 /// <param name="InactiveLinked">True when the asset is not Active but still linked to an open task (a warning, not a rule); null without <c>Task.View</c>.</param>
 /// <param name="AssetNumber">The generated Asset Number (for example <c>90003-80008_001</c>, the name of the folder on the share); null when the asset type did not number automatically when the asset was created. Assigned once at create, read-only.</param>
+/// <param name="AssetTypeNumberingEnabled">True when the asset's type numbers its assets automatically now (so an asset without a number can be given one with "assign number").</param>
 public sealed record AssetResponse(
     [property: Required] int AssetId,
     [property: Required] int MatterId,
@@ -371,7 +380,18 @@ public sealed record AssetResponse(
     bool? InactiveLinked = null,
     string? AssetTypeIconKey = null,
     string? AssetTypeColourKey = null,
-    string? AssetNumber = null);
+    string? AssetNumber = null,
+    [property: Required] bool AssetTypeNumberingEnabled = false);
+
+/// <summary>
+/// Gives an asset that has no Asset Number its number now (the only way an old or unnumbered asset gets one). Takes the next counter value of the asset's type in its matter.
+/// </summary>
+public sealed class AssignAssetNumberRequest
+{
+    /// <summary>The <c>rowVersion</c> last read.</summary>
+    [Required]
+    public string RowVersion { get; init; } = string.Empty;
+}
 
 /// <summary>Sets or clears the default size field of an Asset Type.</summary>
 public sealed class SetAssetTypeSizeFieldRequest
@@ -560,6 +580,7 @@ public sealed record AssetDispositionHistoryResponse([property: Required] IReadO
 /// <param name="HighestAssigned">The highest counter value an asset of this type in this matter carries; 0 when none has a number. Read from the assets, so it is exact even when an administrator moved the counter.</param>
 /// <param name="NextNumber">The counter value the NEXT asset gets (1 when the matter has no counter yet).</param>
 /// <param name="NextAssetNumber">The text the next asset would get with the type's current pattern, for example <c>90003-80008_001</c>.</param>
+/// <param name="NumberedAssetCount">Assets of this type in this matter that carry an Asset Number.</param>
 /// <param name="HasCounter">False when nothing was numbered in this matter and no administrator set a start yet (the values then are the defaults).</param>
 /// <param name="ModifiedAtUtc">When the counter last moved (UTC); null when it has no row yet.</param>
 public sealed record AssetNumberCounterItem(
@@ -571,7 +592,8 @@ public sealed record AssetNumberCounterItem(
     [property: Required] int NextNumber,
     [property: Required] string NextAssetNumber,
     [property: Required] bool HasCounter,
-    DateTime? ModifiedAtUtc);
+    DateTime? ModifiedAtUtc,
+    [property: Required] int NumberedAssetCount = 0);
 
 /// <summary>Filters of the counter list of an asset type.</summary>
 public sealed class AssetNumberCounterListQuery : AssetListQueryBase

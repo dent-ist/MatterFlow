@@ -759,6 +759,10 @@ export interface IAssetsClient {
     /**
      * @return OK
      */
+    assignAssetNumber(assetId: number, body: AssignAssetNumberRequest): Observable<AssetResponse>;
+    /**
+     * @return OK
+     */
     bulkChangeAssetDisposition(body: BulkChangeAssetDispositionRequest): Observable<BulkAssetDispositionResponse>;
     /**
      * @return OK
@@ -1287,6 +1291,63 @@ export class AssetsClient implements IAssetsClient {
     }
 
     protected processChangeAssetDisposition(response: HttpResponseBase): Observable<AssetResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as AssetResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    assignAssetNumber(assetId: number, body: AssignAssetNumberRequest): Observable<AssetResponse> {
+        let url_ = this.baseUrl + "/api/v1/assets/{assetId}/assign-number";
+        if (assetId === undefined || assetId === null)
+            throw new globalThis.Error("The parameter 'assetId' must be defined.");
+        url_ = url_.replace("{assetId}", encodeURIComponent("" + assetId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processAssignAssetNumber(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processAssignAssetNumber(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<AssetResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<AssetResponse>;
+        }));
+    }
+
+    protected processAssignAssetNumber(response: HttpResponseBase): Observable<AssetResponse> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -24858,6 +24919,7 @@ export interface AssetListItem {
     assetTypeIconKey?: string | undefined;
     assetTypeColourKey?: string | undefined;
     assetNumber?: string | undefined;
+    assetTypeNumberingEnabled: boolean;
 
     [key: string]: any;
 }
@@ -24890,6 +24952,7 @@ export interface AssetNumberCounterItem {
     nextAssetNumber: string;
     hasCounter: boolean;
     modifiedAtUtc: string | undefined;
+    numberedAssetCount: number;
 
     [key: string]: any;
 }
@@ -24899,6 +24962,7 @@ export interface AssetNumberExample {
     nextCounter: number;
     isSample: boolean;
     text: string;
+    longestCmNumber?: string | undefined;
 
     [key: string]: any;
 }
@@ -25022,6 +25086,7 @@ export interface AssetResponse {
     assetTypeIconKey?: string | undefined;
     assetTypeColourKey?: string | undefined;
     assetNumber?: string | undefined;
+    assetTypeNumberingEnabled: boolean;
 
     [key: string]: any;
 }
@@ -25067,6 +25132,8 @@ export interface AssetTypeNumbering {
     pattern: string;
     scope: string;
     example: AssetNumberExample;
+    numberedAssetCount?: number | undefined;
+    unnumberedAssetCount?: number | undefined;
 
     [key: string]: any;
 }
@@ -25133,6 +25200,12 @@ export interface AssetVolumeResponse {
     units: string[];
     unitsWarning: string | undefined;
     limitation: string;
+
+    [key: string]: any;
+}
+
+export interface AssignAssetNumberRequest {
+    rowVersion: string;
 
     [key: string]: any;
 }

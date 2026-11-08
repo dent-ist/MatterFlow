@@ -57,9 +57,10 @@ public sealed class AssetTypeService(
         var counts = await AssetCountsAsync(ids, ct);
         var summaries = (await forms.GetOwnerSummariesAsync(FormOwnerKind.AssetType, ids, ct)).ToDictionary(x => x.OwnerId!.Value);
 
+        var longest = await LongestCmNumberAsync(ct);
         var responses = new List<AssetTypeResponse>(items.Count);
         foreach (var type in items)
-            responses.Add(ToResponse(type, counts?.GetValueOrDefault(type.Id), summaries.GetValueOrDefault(type.Id), await ExampleAsync(type, ct)));
+            responses.Add(ToResponse(type, counts is null ? null : counts.GetValueOrDefault(type.Id), summaries.GetValueOrDefault(type.Id), await ExampleAsync(type, longest, ct)));
 
         return AssetSupport.Page(responses, total, page);
     }
@@ -72,7 +73,7 @@ public sealed class AssetTypeService(
 
         var counts = await AssetCountsAsync([id], ct);
         var summary = (await forms.GetOwnerSummariesAsync(FormOwnerKind.AssetType, [id], ct)).FirstOrDefault();
-        return ToResponse(type, counts?.GetValueOrDefault(id), summary, await ExampleAsync(type, ct));
+        return ToResponse(type, counts is null ? null : counts.GetValueOrDefault(id), summary, await ExampleAsync(type, await LongestCmNumberAsync(ct), ct));
     }
 
     public async Task<Result<AssetTypeResponse>> CreateAsync(CreateAssetTypeRequest request, CancellationToken ct)
@@ -230,7 +231,7 @@ public sealed class AssetTypeService(
     }
 
     /// <summary>The Asset count of each type (one grouped statement), or null when the viewer may not see Assets, so the responses carry null instead of a made-up 0.</summary>
-    private async Task<Dictionary<int, int>?> AssetCountsAsync(IReadOnlyCollection<int> typeIds, CancellationToken ct)
+    private async Task<Dictionary<int, (int Total, int Numbered)>?> AssetCountsAsync(IReadOnlyCollection<int> typeIds, CancellationToken ct)
     {
         if (!permissions.Has(Permissions.Asset.View))
             return null;
@@ -239,18 +240,26 @@ public sealed class AssetTypeService(
         return await access.Visible(db.Set<Asset>().AsNoTracking())
             .Where(a => typeIds.Contains(a.AssetTypeId))
             .GroupBy(a => a.AssetTypeId)
-            .Select(g => new { g.Key, Count = g.Count() })
-            .ToDictionaryAsync(x => x.Key, x => x.Count, ct);
+            .Select(g => new { g.Key, Count = g.Count(), Numbered = g.Count(a => a.AssetNumber != null) })
+            .ToDictionaryAsync(x => x.Key, x => (x.Count, x.Numbered), ct);
     }
 
-    private static AssetTypeResponse ToResponse(AssetType type, int? assetCount, FormOwnerSummary? form, AssetNumberExample example) =>
+    /// <summary>The longest CM Number among the matters the caller may see (so a screen can check the 100-character limit); null when there is none.</summary>
+    private async Task<string?> LongestCmNumberAsync(CancellationToken ct) =>
+        await visibility.WhereMatterVisible(matters.SortKeys(), m => m.MatterId)
+            .OrderByDescending(m => m.MatterRef.Length)
+            .ThenBy(m => m.MatterRef)
+            .Select(m => m.MatterRef)
+            .FirstOrDefaultAsync(ct);
+
+    private static AssetTypeResponse ToResponse(AssetType type, (int Total, int Numbered)? counts, FormOwnerSummary? form, AssetNumberExample example) =>
         new(
             type.Id,
             type.Name,
             type.Description,
             type.SortOrder,
             type.IsActive,
-            assetCount,
+            counts?.Total,
             form?.PublishedVersionNo is null ? null : form.PublishedVersionId,
             form?.PublishedVersionNo,
             AssetSupport.Encode(type.RowVersion),
@@ -263,14 +272,20 @@ public sealed class AssetTypeService(
             type.SizeUnit,
             type.IconKey,
             type.ColourKey,
-            ToNumbering(type, example));
+            ToNumbering(type, example, counts));
 
-    private static AssetTypeNumbering ToNumbering(AssetType type, AssetNumberExample? example) =>
-        new(type.NumberingEnabled, type.NumberingPattern, AssetNumbering.ScopeName(type.NumberingScope) ?? AssetNumbering.ScopeMatterName, example ?? SampleExample(type));
+    private static AssetTypeNumbering ToNumbering(AssetType type, AssetNumberExample? example, (int Total, int Numbered)? counts) =>
+        new(
+            type.NumberingEnabled,
+            type.NumberingPattern,
+            AssetNumbering.ScopeName(type.NumberingScope) ?? AssetNumbering.ScopeMatterName,
+            example ?? SampleExample(type),
+            counts?.Numbered,
+            counts is { } c ? c.Total - c.Numbered : null);
 
-    private static AssetNumberExample SampleExample(AssetType type) => MakeExample(type, AssetNumbering.SampleCmNumber, 1, isSample: true);
+    private static AssetNumberExample SampleExample(AssetType type, string? longest = null) => MakeExample(type, AssetNumbering.SampleCmNumber, 1, isSample: true, longest);
 
-    private static AssetNumberExample MakeExample(AssetType type, string cmNumber, int counter, bool isSample)
+    private static AssetNumberExample MakeExample(AssetType type, string cmNumber, int counter, bool isSample, string? longest = null)
     {
         string text;
         try
@@ -282,17 +297,17 @@ public sealed class AssetTypeService(
             text = string.Empty;
         }
 
-        return new AssetNumberExample(cmNumber, counter, isSample, text);
+        return new AssetNumberExample(cmNumber, counter, isSample, text, longest);
     }
 
     /// <summary>
     /// The example of a numbered type: the matter most recently numbered for it (the latest counter change) among the matters the caller may see (a hidden matter's CM Number is never shown) and its real next
     /// counter; the sample when numbering is off or nothing visible was numbered yet.
     /// </summary>
-    private async Task<AssetNumberExample> ExampleAsync(AssetType type, CancellationToken ct)
+    private async Task<AssetNumberExample> ExampleAsync(AssetType type, string? longest, CancellationToken ct)
     {
         if (!type.NumberingEnabled)
-            return SampleExample(type);
+            return SampleExample(type, longest);
 
         var latest = await visibility.WhereMatterVisible(db.Set<AssetNumberCounter>().AsNoTracking().Where(c => c.AssetTypeId == type.Id), c => c.ScopeKey)
             .OrderByDescending(c => c.ModifiedAtUtc)
@@ -300,9 +315,9 @@ public sealed class AssetTypeService(
             .Select(c => new { c.ScopeKey, c.NextNumber })
             .FirstOrDefaultAsync(ct);
         if (latest is null || await matters.FindAsync(latest.ScopeKey, ct) is not { } matter)
-            return SampleExample(type);
+            return SampleExample(type, longest);
 
-        return MakeExample(type, matter.MatterRef, latest.NextNumber, isSample: false);
+        return MakeExample(type, matter.MatterRef, latest.NextNumber, isSample: false, longest);
     }
 
     private sealed record NumberingSettings(bool Enabled, string Pattern);
