@@ -163,4 +163,46 @@ test.describe('Asset numbering (#1297)', () => {
       await retire(admin, type);
     }
   });
+
+  test('an old asset reads Not assigned and gets its number only through Assign Number', async ({
+    page,
+    admin,
+    seed,
+  }) => {
+    const type = await admin.post('/api/v1/asset-types', {
+      name: `Old ${uid()}`,
+      description: null,
+    });
+    try {
+      const matter = await seed.matter();
+      const asset = await admin.post('/api/v1/assets', {
+        matterId: matter.matterId,
+        assetTypeId: type.assetTypeId,
+        displayName: `Old folder ${uid()}`,
+      });
+      const current = await admin.get<Json>(`/api/v1/asset-types/${type.assetTypeId}`);
+      await admin.put(`/api/v1/asset-types/${type.assetTypeId}`, {
+        name: current.name,
+        description: null,
+        sortOrder: current.sortOrder,
+        isActive: true,
+        rowVersion: current.rowVersion,
+        numbering: { enabled: true, pattern: '_{###}' },
+      });
+      await page.setViewportSize({ width: 1366, height: 768 });
+      await page.goto(`/admin/asset-types/${type.assetTypeId}?tab=numbering`);
+      await expect(page.locator('[data-unnumbered-line]')).toContainText(
+        '1 existing asset of this type has no number.',
+      );
+      await page.goto(`/assets/${asset.assetId}`);
+      await expect(page.locator('[data-not-assigned]')).toHaveText('Not assigned');
+      await page.getByRole('button', { name: 'Assign Number' }).click();
+      await expect(page.locator('[data-number-value]')).toHaveText(`${matter.matterRef}_001`);
+      await expect(
+        page.locator('[data-toast]').filter({ hasText: 'Asset number assigned' }),
+      ).toBeVisible();
+    } finally {
+      await retire(admin, type);
+    }
+  });
 });

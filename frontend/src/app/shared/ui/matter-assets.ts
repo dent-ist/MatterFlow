@@ -52,12 +52,7 @@ import {
   RecordGridState,
 } from './record-grid';
 import { RowActionSpec, rowActions } from './row-actions';
-import {
-  ASSET_NUMBER_COLUMN_WIDTH,
-  AssetNumberCell,
-  hasNumberedType,
-  numberedTypeIds,
-} from './asset-number-cell';
+import { ASSET_NUMBER_COLUMN_WIDTH, AssetNumberCell, hasNumberedType } from './asset-number-cell';
 import { CopyButton } from './copy-button';
 import { ServerListPage } from './list-query';
 import { Pager } from './pager';
@@ -224,10 +219,7 @@ const BONES: Record<string, string> = {
       </ng-template>
       <ng-template mfCell="assetNumber" let-a>
         <td class="ma-number" data-asset-number>
-          <mf-asset-number-cell
-            [number]="a.assetNumber"
-            [numbered]="numberedTypes().has(a.assetTypeId)"
-          />
+          <mf-asset-number-cell [number]="a.assetNumber" [numbered]="a.assetTypeNumberingEnabled" />
         </td>
       </ng-template>
       <ng-template mfCell="size" let-a>
@@ -406,7 +398,6 @@ export class MatterAssets extends ServerListPage<AssetListItem> {
   protected readonly types = signal<AssetTypeResponse[]>([]);
   /** An active asset type numbers its assets: the Asset Number column exists (#1297). */
   protected readonly numbered = computed(() => hasNumberedType(this.types()));
-  protected readonly numberedTypes = computed(() => numberedTypeIds(this.types()));
 
   /** How many assets of each type the matter holds (the Type dropdown shows them); empty until the counts arrive. */
   protected readonly typeCounts = signal<ReadonlyMap<number, number>>(new Map());

@@ -8,6 +8,7 @@ import {
   effect,
   inject,
   input,
+  output,
   signal,
   untracked,
   viewChild,
@@ -18,6 +19,7 @@ import { AssetResponse, FormsClient } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { FORM_SCHEMA_READ_PERMISSIONS, toFormDefinition } from '../../../shared/forms/form-schema';
 import { AssetPickerContext } from '../../../shared/ui/asset-picker';
+import { AssignNumberButton } from '../../../shared/ui/assign-number-button';
 import { CopyButton } from '../../../shared/ui/copy-button';
 import { DetailField, DetailsCard } from '../../../shared/ui/details-card';
 import { StatusChip } from '../../../shared/ui/status-chip';
@@ -39,6 +41,7 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
     NumericDatePipe,
     MatterRef,
     CopyButton,
+    AssignNumberButton,
     DynamicForm,
     StatusChip,
     AssetDispositionHistory,
@@ -60,6 +63,18 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
               }}</span>
               <mf-copy-button [text]="number" label="asset number" />
             </span>
+          </div>
+        } @else if (asset().assetTypeNumberingEnabled) {
+          <div mfDetailField label="Asset Number" data-asset-number>
+            <span class="ad__muted" data-not-assigned>Not assigned</span>
+            @if (canAssign()) {
+              <mf-assign-number-button
+                [assetId]="asset().assetId"
+                [rowVersion]="asset().rowVersion"
+                (assigned)="assigned.emit($event)"
+                (stale)="stale.emit()"
+              />
+            }
           </div>
         }
         <div mfDetailField label="Matter" data-matter>
@@ -212,11 +227,18 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 })
 export class AssetDetailsTab {
   readonly asset = input.required<AssetResponse>();
+  /** An old asset got its number (Assign Number): the page takes the new asset. */
+  readonly assigned = output<AssetResponse>();
+  /** The asset changed meanwhile: the page reloads. */
+  readonly stale = output<void>();
 
   private readonly forms = inject(FormsClient);
   private readonly auth = inject(AuthStore);
   private readonly pickerContext = inject(AssetPickerContext);
 
+  protected readonly canAssign = computed(
+    () => this.auth.has('Asset.Edit') && this.asset().isActive,
+  );
   protected readonly disposition = computed(() => dispositionOf(this.asset().dispositionCode));
   protected readonly schema = signal<FormDefinition | null>(null);
   protected readonly values = computed<Record<string, unknown>>(() => ({

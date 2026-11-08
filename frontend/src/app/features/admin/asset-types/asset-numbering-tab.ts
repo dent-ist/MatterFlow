@@ -20,6 +20,7 @@ import { NotificationService } from '../../../core/notify/notification.service';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { DetailsCard } from '../../../shared/ui/details-card';
 import { MatterRef } from '../../../shared/ui/matter-ref';
+import { IntPipe } from '../../../shared/ui/number-format';
 import { Pager } from '../../../shared/ui/pager';
 import {
   RecordCell,
@@ -65,6 +66,7 @@ function problemCode(e: unknown): string | undefined {
     AssetTailField,
     ConfirmDialog,
     DetailsCard,
+    IntPipe,
     MatterRef,
     NextNumbersDialog,
     Pager,
@@ -205,6 +207,14 @@ function problemCode(e: unknown): string | undefined {
                   Restarts at 1 for each matter. {{ '{###}' }} gives 001, {{ '{####}' }} gives 0001.
                 </p>
               </div>
+              @if (unnumbered() > 0) {
+                <p class="an__muted" data-unnumbered-line>
+                  {{ unnumbered() | mfInt }} existing
+                  {{ unnumbered() === 1 ? 'asset' : 'assets' }} of this type
+                  {{ unnumbered() === 1 ? 'has' : 'have' }} no number. They stay without one until
+                  you open them and choose Assign Number.
+                </p>
+              }
               <div>
                 <span class="an__label">Example</span>
                 <p class="an__example" role="status" data-numbering-example>
@@ -309,6 +319,11 @@ function problemCode(e: unknown): string | undefined {
                 </ng-template>
                 <ng-template mfCell="matterName" let-c>
                   <td class="nn__cell-name" [attr.title]="c.matterName">{{ c.matterName }}</td>
+                </ng-template>
+                <ng-template mfCell="numberedAssets" let-c>
+                  <td class="pg-num" [attr.data-numbered-of]="c.matterId">
+                    {{ c.numberedAssetCount | mfInt }}
+                  </td>
                 </ng-template>
                 <ng-template mfCell="highest" let-c>
                   <td
@@ -424,7 +439,13 @@ export class AssetNumberingTab {
   );
   protected readonly cmNumber = this.cmNumberText;
   private readonly nameLong = computed(
-    () => !this.rule() && nameTooLong(this.cmNumberText(), this.tail()),
+    () =>
+      !this.rule() &&
+      nameTooLong(
+        this.cmNumberText(),
+        this.tail(),
+        this.assetType().numbering?.example?.longestCmNumber?.length,
+      ),
   );
   protected readonly invalid = computed(() => !!this.rule() || this.nameLong());
   protected readonly shownError = computed<string | null>(() => {
@@ -452,6 +473,10 @@ export class AssetNumberingTab {
       ? `Sample matter ${SAMPLE_CM}.`
       : `Based on matter ${ex.cmNumber} (its next number).`;
   });
+  /** Existing assets of the type without a number (null without Asset.View: the line stays hidden). */
+  protected readonly unnumbered = computed(
+    () => this.assetType().numbering?.unnumberedAssetCount ?? 0,
+  );
   protected readonly hasNumbered = computed(
     () => this.assetType().numbering?.example?.isSample === false,
   );
@@ -462,6 +487,14 @@ export class AssetNumberingTab {
     signal<readonly RecordGridColumn[]>([
       { key: 'matterRef', label: 'CM Number', locked: true, width: '141px', minWidth: '141px' },
       { key: 'matterName', label: 'Matter Name', locked: true, minWidth: '200px' },
+      {
+        key: 'numberedAssets',
+        label: 'Numbered Assets',
+        num: true,
+        locked: true,
+        width: '120px',
+        minWidth: '120px',
+      },
       { key: 'highest', label: 'Highest Used', locked: true, width: '176px', minWidth: '176px' },
       { key: 'next', label: 'Next Number', locked: true, width: '176px', minWidth: '176px' },
     ]),
@@ -469,6 +502,7 @@ export class AssetNumberingTab {
   protected readonly bones: Record<string, string> = {
     matterRef: '6rem',
     matterName: '12rem',
+    numberedAssets: '3rem',
     highest: '8rem',
     next: '8rem',
   };

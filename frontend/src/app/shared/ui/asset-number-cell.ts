@@ -9,11 +9,6 @@ export function hasNumberedType(types: readonly AssetTypeResponse[]): boolean {
   return types.some((t) => t.isActive && t.numbering?.enabled === true);
 }
 
-/** The ids of the asset types that number their assets (an asset of one of them without a number reads "Not assigned"). */
-export function numberedTypeIds(types: readonly AssetTypeResponse[]): ReadonlySet<number> {
-  return new Set(types.filter((t) => t.numbering?.enabled === true).map((t) => t.assetTypeId));
-}
-
 /**
  * The Asset Number of a list row (#1297): the number in mono type on one line with an ellipsis and the whole number as tooltip (D-45); muted "Not assigned"
  * for an asset of a numbered type that has none; empty for a type without numbering. No Copy button in a list (the record page has it).
@@ -48,6 +43,6 @@ export function numberedTypeIds(types: readonly AssetTypeResponse[]): ReadonlySe
 })
 export class AssetNumberCell {
   readonly number = input<string | null | undefined>(null);
-  /** The asset's type numbers its assets. */
+  /** The asset's type numbers its assets (`assetTypeNumberingEnabled`). */
   readonly numbered = input(false);
 }

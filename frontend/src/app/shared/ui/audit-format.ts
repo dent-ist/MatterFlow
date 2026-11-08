@@ -59,6 +59,7 @@ const EVENT_TYPES: Readonly<Record<string, string>> = {
   FORM_RETIRED: 'Form retired',
   MATTER_SENSITIVITY_CHANGED: 'Matter sensitivity changed',
   ASSET_NEXT_NUMBER_SET: 'Asset next number set',
+  ASSET_NUMBER_ASSIGNED: 'Asset number assigned',
 };
 
 /** `COMMENT_ADDED` -> `Comment added`, `TASK_STATUS_CHANGED` -> `Task status changed` (the code stays the option's value, #650). */

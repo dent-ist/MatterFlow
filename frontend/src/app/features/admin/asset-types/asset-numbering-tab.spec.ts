@@ -15,6 +15,7 @@ const counter = (over = {}) => ({
   matterRef: '90003-80008',
   matterName: 'Merger Review',
   highestAssigned: 7,
+  numberedAssetCount: 7,
   nextNumber: 8,
   nextAssetNumber: '90003-80008_008',
   hasCounter: true,
@@ -33,7 +34,10 @@ const numbered = (over: Partial<AssetTypeResponse> = {}): AssetTypeResponse =>
         nextCounter: 8,
         isSample: false,
         text: '90003-80008_008',
+        longestCmNumber: '90003-80008',
       },
+      numberedAssetCount: 7,
+      unnumberedAssetCount: 12,
     },
     ...over,
   });
@@ -98,6 +102,36 @@ describe('AssetNumberingTab (#1297)', () => {
       expect(q<HTMLInputElement>('[data-numbering-switch]').checked).toBe(false);
       expect(el().querySelector('[data-tail-row]')).toBeNull();
       expect(el().querySelector('[data-next-numbers-card]')).toBeNull();
+      expect(q<HTMLButtonElement>('[data-save-numbering]').disabled).toBe(true);
+    });
+
+    it('says how many existing assets have no number, and nothing for none or unknown', async () => {
+      await open(numbered());
+      expect(text('[data-unnumbered-line]')).toBe(
+        '12 existing assets of this type have no number. They stay without one until you open them and choose Assign Number.',
+      );
+      TestBed.resetTestingModule();
+      const one = numbered();
+      one.numbering!.unnumberedAssetCount = 1;
+      await open(one);
+      expect(text('[data-unnumbered-line]')).toContain(
+        '1 existing asset of this type has no number.',
+      );
+      TestBed.resetTestingModule();
+      const none = numbered();
+      none.numbering!.unnumberedAssetCount = undefined;
+      await open(none);
+      expect(el().querySelector('[data-unnumbered-line]')).toBeNull();
+    });
+
+    it('checks the whole name against the longest CM Number the server knows', async () => {
+      const type = numbered();
+      type.numbering!.example!.longestCmNumber = 'x'.repeat(60);
+      await open(type);
+      await typeTail('x'.repeat(45) + '{###}');
+      expect(text('[data-tail-error]')).toBe(
+        'The whole name would be longer than 100 characters. Shorten the tail.',
+      );
       expect(q<HTMLButtonElement>('[data-save-numbering]').disabled).toBe(true);
     });
 
@@ -250,6 +284,11 @@ describe('AssetNumberingTab (#1297)', () => {
   });
 
   describe('Next Numbers', () => {
+    it('shows the number of numbered assets per matter', async () => {
+      await open(numbered());
+      expect(text('[data-numbered-of="7"]')).toBe('7');
+    });
+
     it('lists the counters with the full highest and next numbers and the row button', async () => {
       await open(numbered());
       expect(text('[data-next-numbers-card]')).toContain('Next Numbers');

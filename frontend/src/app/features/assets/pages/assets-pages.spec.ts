@@ -376,8 +376,8 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       it('shows the number in mono type with the whole number as tooltip, Not assigned for an old asset of a numbered type, and nothing for another type', async () => {
         firstType = { numbering: NUMBERING };
         listItems = [
-          anAssetListItem({ assetNumber: '00343-00012-M-001' }),
-          anAssetListItem({ assetId: 11, displayName: 'Old one' }),
+          anAssetListItem({ assetNumber: '00343-00012-M-001', assetTypeNumberingEnabled: true }),
+          anAssetListItem({ assetId: 11, displayName: 'Old one', assetTypeNumberingEnabled: true }),
           anAssetListItem({ assetId: 12, displayName: 'Other', assetTypeId: 5 }),
         ];
         await create(['Asset.View', 'Matter.View']);
@@ -1188,6 +1188,21 @@ describe('Assets pages', { timeout: 20_000 }, () => {
         expect(toast.toasts().some((t) => t.detail === 'Asset Number 00343-00012-M-001')).toBe(
           true,
         );
+      });
+
+      it('says Not assigned on Edit for an old asset of a numbered type and assigns on request', async () => {
+        assetOver = { assetTypeNumberingEnabled: true };
+        await create({ assetId: '9' }, ['Asset.View', 'Asset.Edit', 'Task.View']);
+        expect(el().querySelector('[data-not-assigned]')?.textContent).toBe('Not assigned');
+        (assets as Record<string, Mock>)['assignAssetNumber'] = vi
+          .fn()
+          .mockReturnValue(ok(anAsset({ assetNumber: '00343-00012_005' })));
+        el().querySelector<HTMLButtonElement>('[data-assign-number]')!.click();
+        await settle(fixture);
+        expect(el().querySelector('[data-number-value]')?.textContent?.trim()).toBe(
+          '00343-00012_005',
+        );
+        expect(el().querySelector('[data-assign-number]')).toBeNull();
       });
 
       it('shows the number read only with Copy on Edit', async () => {

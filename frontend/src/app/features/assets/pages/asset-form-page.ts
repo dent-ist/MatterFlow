@@ -33,6 +33,7 @@ import { serverFormErrors } from '../../../shared/forms/api-errors';
 import { FORM_SCHEMA_READ_PERMISSIONS, toFormDefinition } from '../../../shared/forms/form-schema';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { AssetPickerContext } from '../../../shared/ui/asset-picker';
+import { AssignNumberButton } from '../../../shared/ui/assign-number-button';
 import { CopyButton } from '../../../shared/ui/copy-button';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { formatHint, tailHashes } from '../../admin/asset-types/tail-rules';
@@ -73,6 +74,7 @@ export function externalReferenceError(text: string): string | null {
   selector: 'mf-asset-form-page',
   imports: [
     CopyButton,
+    AssignNumberButton,
     Dropdown,
     RecordHeader,
     Badge,
@@ -203,19 +205,36 @@ export function externalReferenceError(text: string): string | null {
                 </p>
               </div>
             }
-            @if (isEdit() && original()?.assetNumber; as number) {
-              <div class="pg-filter" data-asset-number>
-                <span class="af__label" id="asset-number-label">Asset Number</span>
-                <span class="af__number">
-                  <span class="pg-mono af__number-text" [attr.title]="number" data-number-value>{{
-                    number
-                  }}</span>
-                  <mf-copy-button [text]="number" label="asset number" />
-                </span>
-                <p class="mf-field__help">
-                  Assigned when the asset was created. It can't be changed.
-                </p>
-              </div>
+            @if (isEdit() && original(); as o) {
+              @if (o.assetNumber; as number) {
+                <div class="pg-filter" data-asset-number>
+                  <span class="af__label" id="asset-number-label">Asset Number</span>
+                  <span class="af__number">
+                    <span class="pg-mono af__number-text" [attr.title]="number" data-number-value>{{
+                      number
+                    }}</span>
+                    <mf-copy-button [text]="number" label="asset number" />
+                  </span>
+                  <p class="mf-field__help">
+                    Assigned when the asset was created. It can't be changed.
+                  </p>
+                </div>
+              } @else if (o.assetTypeNumberingEnabled) {
+                <div class="pg-filter" data-asset-number>
+                  <span class="af__label" id="asset-number-label">Asset Number</span>
+                  <span class="af__number">
+                    <span class="af__muted" data-not-assigned>Not assigned</span>
+                    @if (canAssign()) {
+                      <mf-assign-number-button
+                        [assetId]="o.assetId"
+                        [rowVersion]="o.rowVersion"
+                        (assigned)="onAssigned($event)"
+                        (stale)="load()"
+                      />
+                    }
+                  </span>
+                </div>
+              }
             }
 
             <mf-text-field
@@ -407,6 +426,9 @@ export class AssetFormPage implements HasUnsavedChanges {
     const cm = this.matter()?.label.split(' ')[0];
     return cm ? formatHint(cm, numbering.pattern) : `<CM Number>${tailHashes(numbering.pattern)}`;
   });
+  protected readonly canAssign = computed(
+    () => this.auth.has('Asset.Edit') && !!this.original()?.isActive,
+  );
   protected readonly displayName = signal('');
   protected readonly externalReference = signal('');
   protected readonly description = signal('');
@@ -566,6 +588,11 @@ export class AssetFormPage implements HasUnsavedChanges {
     } catch {
       // The picker simply stays empty; the user can search.
     }
+  }
+
+  /** Assign Number worked: the asset now has its number and a new row version (the typed edits stay). */
+  protected onAssigned(asset: AssetResponse): void {
+    this.original.set(asset);
   }
 
   protected async chooseType(value: string): Promise<void> {

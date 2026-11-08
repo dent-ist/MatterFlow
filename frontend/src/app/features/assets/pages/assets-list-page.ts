@@ -43,7 +43,6 @@ import {
   ASSET_NUMBER_COLUMN_WIDTH,
   AssetNumberCell,
   hasNumberedType,
-  numberedTypeIds,
 } from '../../../shared/ui/asset-number-cell';
 import { CopyButton } from '../../../shared/ui/copy-button';
 import { RowLink, registerTableSkip, restoreRowFocus } from '../../../shared/ui/row-nav';
@@ -410,7 +409,7 @@ const BONES: Record<string, string> = {
               <td class="as-number" data-asset-number>
                 <mf-asset-number-cell
                   [number]="a.assetNumber"
-                  [numbered]="numberedTypes().has(a.assetTypeId)"
+                  [numbered]="a.assetTypeNumberingEnabled"
                 />
               </td>
             </ng-template>
@@ -701,7 +700,6 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
   protected readonly types = signal<AssetTypeResponse[]>([]);
   /** An active asset type numbers its assets: the Asset Number column exists (#1297). */
   protected readonly numbered = computed(() => hasNumberedType(this.types()));
-  protected readonly numberedTypes = computed(() => numberedTypeIds(this.types()));
 
   protected readonly typeOptions = computed<FilterOption[]>(() =>
     this.types().map((t) => ({ value: String(t.assetTypeId), label: t.name })),

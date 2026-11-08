@@ -172,7 +172,11 @@ type Tab = 'details' | 'tasks' | 'history';
               @switch (current()) {
                 @case ('details') {
                   <div class="mf-scroll-area" mfScrollArea="Asset details" data-details-tab>
-                    <mf-asset-details-tab [asset]="a" />
+                    <mf-asset-details-tab
+                      [asset]="a"
+                      (assigned)="asset.set($event)"
+                      (stale)="load()"
+                    />
                   </div>
                 }
                 @case ('tasks') {
