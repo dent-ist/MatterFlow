@@ -207,7 +207,7 @@ public sealed class ProjectService(DbContext db, IAuditWriter audit, CustomField
 
     public async Task<Result<ProjectResponse>> UpdateAsync(int id, UpdateProjectRequest request, CancellationToken ct)
     {
-        var project = await ProjectSet().SingleOrDefaultAsync(p => p.Id == id, ct);
+        var project = await LoadForWriteAsync(id, ct);
         if (project is null)
             return OrganizationSupport.NotFound("Project");
 
@@ -268,7 +268,7 @@ public sealed class ProjectService(DbContext db, IAuditWriter audit, CustomField
     /// <summary>Archives (inactive) or restores a Project. Existing Tasks keep it; new Tasks cannot select an inactive Project.</summary>
     public async Task<Result<ProjectResponse>> SetActiveAsync(int id, SetActiveRequest request, CancellationToken ct)
     {
-        var project = await ProjectSet().SingleOrDefaultAsync(p => p.Id == id, ct);
+        var project = await LoadForWriteAsync(id, ct);
         if (project is null)
             return OrganizationSupport.NotFound("Project");
 
@@ -292,6 +292,16 @@ public sealed class ProjectService(DbContext db, IAuditWriter audit, CustomField
 
     /// <summary>The projects of matters the caller may see.</summary>
     private IQueryable<Project> ProjectSet() => visibility.WhereMatterVisible(db.Set<Project>(), p => p.MatterId);
+
+    /// <summary>
+    /// The project to change, tracked: it must be of a matter the caller may see (otherwise null, the same 404 as a missing id). The visibility subquery is read without tracking and EF applies
+    /// that to the whole statement, so a project loaded through it would be untracked and the save would silently change nothing (issue #1304). The visibility is therefore checked on its own,
+    /// then the project is loaded by its key.
+    /// </summary>
+    private async Task<Project?> LoadForWriteAsync(int id, CancellationToken ct) =>
+        await ProjectSet().AsNoTracking().AnyAsync(p => p.Id == id, ct)
+            ? await db.Set<Project>().SingleOrDefaultAsync(p => p.Id == id, ct)
+            : null;
 
     private IQueryable<ProjectRow> Rows(bool restricted = true) =>
         from p in db.Set<Project>().AsNoTracking()

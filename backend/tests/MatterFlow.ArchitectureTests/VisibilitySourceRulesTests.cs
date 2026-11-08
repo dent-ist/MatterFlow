@@ -42,7 +42,7 @@ public class VisibilitySourceRulesTests
         ["Directories.cs"] = "internal IMatterDirectory / IProjectDirectory lookups (R13): callers gate",
         ["ClientService.cs"] = "client rows; matter counts through WhereMatterRowVisible",
         ["MatterService.cs"] = "matters through MatterSet (WhereMatterRowVisible); the answer to a write is read once unrestricted",
-        ["ProjectService.cs"] = "projects through WhereMatterVisible; the answer to a write is read once unrestricted",
+        ["ProjectService.cs"] = "projects through WhereMatterVisible; a project to change is checked with a no-tracking visibility query, then loaded by its key (LoadForWriteAsync, issue #1304); the answer to a write is read once unrestricted",
         ["SearchService.cs"] = "every type applies its rule (VisibleMatters, WhereTaskRowVisible, WhereMatterRowVisibleOr)",
         ["TaskAssetLinkReader.cs"] = "links joined to TaskAccess.Visible",
         ["TaskBulkService.cs"] = "the task list of a bulk goes through TaskAccess.Visible",
@@ -110,6 +110,21 @@ public class VisibilitySourceRulesTests
         var unreviewed = found.Where(f => !RawSqlAllowList.ContainsKey(f!)).ToList();
         unreviewed.ShouldBeEmpty("These files contain raw SQL on rule-protected tables. Use the visibility functions or the port, or review it and add it to VisibilitySourceRulesTests with a reason: " + string.Join(", ", unreviewed));
         RawSqlAllowList.Keys.Where(k => !found.Contains(k)).ShouldBeEmpty("Stale allow-list entries (the file no longer contains such SQL).");
+    }
+
+    [Fact]
+    public void The_access_sources_behind_the_visibility_port_never_use_AsNoTracking()
+    {
+        // Issue #1304: the helpers filter with a subquery over these rows. EF applies AsNoTracking to the WHOLE statement, so one AsNoTracking here makes every entity a caller loads through
+        // the filter untracked and SaveChanges silently saves nothing for a caller who is not "see all" while the sensitive-matter rule is on. The rows are a projection (never tracked), so the option buys nothing.
+        var implementers = new Regex(@"class\s+\w+[^{]*:\s*[^{]*\bI(Matter|Task)AccessSource\b", RegexOptions.CultureInvariant);
+        var sources = ProductSources().Where(f => implementers.IsMatch(File.ReadAllText(f))).ToList();
+        sources.Select(Path.GetFileName).Order(StringComparer.Ordinal).ShouldBe(["MatterAccessSource.cs", "TaskAccessSource.cs"]);
+        var offenders = sources
+            .Where(f => File.ReadAllLines(f).Any(line => !line.TrimStart().StartsWith("//", StringComparison.Ordinal) && line.Contains("AsNoTracking", StringComparison.Ordinal)))
+            .Select(Path.GetFileName)
+            .ToList();
+        offenders.ShouldBeEmpty("AsNoTracking in an access source makes writes through the visibility filter silently save nothing (issue #1304): " + string.Join(", ", offenders));
     }
 
     [Fact]

@@ -157,6 +157,17 @@ Conventions common to all modules:
 - **Frontend:** `features/notes`, Notes tab of the matter detail, Administration > Labels > Note Tags.
 - **Tests:** `IntegrationTests/Security/MatterContentApiTests`, `UnitTests/Notes`.
 
+## Loading an entity for writing under the Sensitive matter rule
+
+Rule of thumb: **a visibility filter decides who may touch a row; it must never be the query that loads the row you are going to change.** Issue #1304: with the Sensitive matter rule on, a caller who is not "see all" got a 200 from an update but nothing was saved. The filters (`WhereMatterVisible` and its relatives on `IMatterVisibility`, `AssetAccess.OfVisibleMatters`, `NoteAccess.Visible`, `ProductionAccess.Visible`) restrict the rows with a subquery over the access rows. EF applies `AsNoTracking` to the whole statement, so if that subquery (or any part of the composed query) is no-tracking, the entity comes back untracked and `SaveChanges` has nothing to save, without any error.
+
+- **Write path (load to change):** check the target with a separate no-tracking query, then load the entity by its key, tracked. The shape is the same everywhere: `await Visible(db.Set<T>().AsNoTracking()).AnyAsync(where, ct) ? await db.Set<T>().SingleOrDefaultAsync(where, ct) : null`. Existing helpers: `AssetService.LoadForWriteAsync`, `NoteAccess.FindTrackedAsync` and `ProductionAccess.FindTrackedAsync`, `ProjectService.LoadForWriteAsync`. Task commands use `TaskTransactions.LockTaskAsync` (visibility check, then a tracked `FromSql` load under an update lock).
+- **Hidden target:** return exactly what a missing id returns (the module's `NotFound`, 404 with the same body). Never answer 403 for a hidden row.
+- **Read path:** add `AsNoTracking()` on the entity set as usual; the filter may stay on the query.
+- **Never** put `AsNoTracking()` in the access sources behind `IMatterVisibility` (`MatterAccessSource`, `TaskAccessSource`); they are projections and are never tracked anyway. `VisibilitySourceRulesTests` fails the build if one does, and `VisibilityFilterTrackingTests` proves an entity loaded through each helper is tracked.
+- **Tests:** a hidden-target test (404) is not enough. Add a **successful** write by a non-"see all" persona with the rule on and read the value back with an administrator (see `IntegrationTests/Security/LostWrite*Tests`: Organization, Work, Content, Admin).
+- **Row predicates** (`WhereMatterRowVisible`, `WhereTaskRowVisible`) filter on columns of the entity itself and do not use a subquery, so the entity stays tracked; the rule above still applies if the same query also contains `AsNoTracking()`.
+
 ## Non-module projects
 
 | Project | What it is |
