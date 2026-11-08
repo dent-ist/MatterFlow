@@ -225,7 +225,7 @@ test.describe('the list (#718)', () => {
     await expect(page.locator('[data-search-empty]')).toContainText(
       'No results for "zzzz-nothing".',
     );
-    await page.getByRole('button', { name: 'Clear Search' }).click();
+    await page.getByRole('button', { name: 'Clear Search', exact: true }).click();
     await expect(page.locator(`td[data-report="${s.reportName}"]`)).toBeVisible();
   });
 
@@ -345,7 +345,8 @@ test.describe('the run page (#719)', () => {
     await page.getByRole('button', { name: 'Run Report' }).click();
     await expect(page.locator('[data-running]')).toContainText('Running...');
     await expect(page.getByRole('button', { name: 'Run Report' })).toHaveCount(0);
-    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+    // The spinner icon of the button is part of its accessible name, so the name is matched, not compared whole.
+    await page.locator('[data-cancel-run] button').click();
     await expect(page.getByRole('button', { name: 'Run Report' })).toBeVisible();
     await expect(page.locator('[data-run-banner]')).toHaveCount(0);
     expect(cancels).toBe(1);

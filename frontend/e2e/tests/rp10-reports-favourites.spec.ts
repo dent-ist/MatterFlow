@@ -63,7 +63,7 @@ const starOf = (page: Page, name: string) => rowOf(page, name).locator('[data-fa
 const favouritesChip = (page: Page) =>
   page.locator('[data-favourites-filter] button[data-key="favourites"]');
 const recentChips = (page: Page) => page.locator('[data-recent-line] a[data-recent]');
-const visibleNames = (page: Page) => page.locator('td[data-report]');
+const visibleNames = (page: Page) => page.locator('td[data-report] a[data-open]');
 
 /** Runs a report as the person of the page (the request carries the same sign-in as the page). */
 async function runReport(page: Page, reportId: number): Promise<void> {

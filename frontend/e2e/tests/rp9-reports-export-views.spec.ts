@@ -219,6 +219,8 @@ test.describe('Saved Views (#722)', () => {
     await expect(viewsButton(page)).not.toContainText('(modified)');
 
     await viewsButton(page).click();
+    // Rename and Delete appear while the row is hovered or holds the focus (they are inert before).
+    await page.locator('[data-view-row]', { hasText: 'Newest first' }).hover();
     await page.getByRole('button', { name: 'Rename Newest first' }).click();
     const rename = page.getByRole('dialog', { name: 'Rename View' });
     await rename.getByLabel(/View name/).fill('Sorted by label');
@@ -230,6 +232,7 @@ test.describe('Saved Views (#722)', () => {
     await page.getByRole('button', { name: 'Remove Default' }).click();
     await expect(toasts(page).last()).toContainText('Default view removed.');
     await viewsButton(page).click();
+    await page.locator('[data-view-row]', { hasText: 'Sorted by label' }).hover();
     await page.getByRole('button', { name: 'Delete Sorted by label' }).click();
     await page
       .getByRole('dialog', { name: 'Delete View' })

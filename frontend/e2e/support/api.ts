@@ -126,6 +126,17 @@ export class Api {
       await new Promise((resolve) => setTimeout(resolve, 500 * retry));
       result = await this.raw(method, path, body);
     }
+    // Reports allow one run per person at a time (409 REPORT_ALREADY_RUNNING). The workers act as the same System Admin, so two previews in setup
+    // can meet; a run takes milliseconds, so waiting a little and repeating is correct. Only a run that is still held after ten tries throws.
+    for (
+      let retry = 1;
+      retry <= 10 && result.status === 409 && result.body?.code === 'REPORT_ALREADY_RUNNING';
+      retry++
+    ) {
+      console.warn(`[e2e] ${method} ${path} -> 409 REPORT_ALREADY_RUNNING, retry ${retry} of 10`);
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      result = await this.raw(method, path, body);
+    }
     if (result.status < 200 || result.status >= 300) {
       throw new ApiError(method, path, result.status, result.body);
     }

@@ -115,7 +115,7 @@ test.describe('the result grid (#720)', () => {
     await expect(page.locator('mf-filter-chips')).toContainText('Label: Row 1');
     await page.getByRole('button', { name: 'Clear Filters' }).click();
     await expect(page.locator('[data-range]')).toContainText('of 60');
-    await page.locator('button[data-filter="c3"]').first().click();
+    await page.getByRole('button', { name: 'Filter by Even: Any' }).click();
     await page.getByRole('option', { name: 'Yes' }).click();
     await expect(page.locator('[data-range]')).toContainText('of 30');
   });
@@ -138,7 +138,11 @@ test.describe('the result grid (#720)', () => {
     await page.getByRole('button', { name: 'Columns' }).click();
     await page.keyboard.press('Escape');
     expect(drops).toHaveLength(0);
-    await page.goto('/reports');
+    // Leaving inside the app (a full page load never runs the page's teardown; the server's idle sweep removes that result).
+    await page
+      .getByRole('navigation', { name: 'Breadcrumb' })
+      .getByRole('link', { name: 'Reports' })
+      .click();
     await expect.poll(() => drops.length).toBe(1);
   });
 

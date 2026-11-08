@@ -112,6 +112,9 @@ reports_conn="Server=127.0.0.1,$sql_port;Database=MatterFlow;User Id=mf_reports;
   export RateLimits__AdvancedSearchPerMinute=1000000
   export RateLimits__AuditPerMinute=1000000
   export RateLimits__DashboardPerMinute=1000000
+  # Reports allow 30 runs and previews per person and hour (Reports:RunsPerUserPerHour). The Reports specs and the suite's setup calls all run as
+  # one System Admin, so a full run used the budget up (429 REPORT_RATE_LIMITED on a preview). Raised for this throwaway stack only.
+  export Reports__RunsPerUserPerHour=1000000
   exec ./MatterFlow.Api
 ) >"$root/artifacts/e2e-api.log" 2>&1 &
 api_pid=$!
