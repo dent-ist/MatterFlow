@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace MatterFlow.WorkflowEngine.Infrastructure;
 
-/// <summary>Names of the unique indexes in <c>09-workflow-config.sql</c>, used to map duplicate-key errors to friendly conflicts.</summary>
+/// <summary>Names of the unique indexes in <c>00-baseline.sql</c>, used to map duplicate-key errors to friendly conflicts.</summary>
 internal static class WorkflowConstraints
 {
     public const string StepTitle = "UQ_StepDefinition_Title";

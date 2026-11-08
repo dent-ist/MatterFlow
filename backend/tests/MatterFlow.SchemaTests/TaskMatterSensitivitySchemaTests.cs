@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using MatterFlow.Data.SchemaMigrations;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -7,18 +6,12 @@ using Shouldly;
 namespace MatterFlow.SchemaTests;
 
 /// <summary>
-/// 37-task-matter-sensitivity.sql (epic #788, issue #810): <c>dbo.Task.IsMatterSensitive</c> is the database's own copy of the matter's flag. It is filled for the rows that existed,
+/// Baseline (archived 37-task-matter-sensitivity.sql) (epic #788, issue #810): <c>dbo.Task.IsMatterSensitive</c> is the database's own copy of the matter's flag. It is filled for the rows that existed,
 /// follows a change of <c>Matter.IsSensitive</c> and is right for every new task, however it is inserted, so the sensitive-matter rule can test it instead of joining the matter.
 /// </summary>
 [Collection(SqlServerCollection.Name)]
 public class TaskMatterSensitivitySchemaTests(SqlServerFixture sql)
 {
-    private sealed class ScriptsBefore(int number) : IMigrationScriptSource
-    {
-        public IReadOnlyList<(string Name, string Content)> ReadAll() =>
-            [.. new EmbeddedMigrationScriptSource().ReadAll().Where(s => int.Parse(Regex.Match(s.Name, @"^\d+").Value) < number)];
-    }
-
     private static Task RunAsync(string cs, IMigrationScriptSource source) =>
         new SchemaMigrationRunner(cs, source, new MigrationsOptions { LockTimeoutSeconds = 60 }, NullLogger<SchemaMigrationRunner>.Instance).RunAsync();
 
@@ -47,19 +40,6 @@ public class TaskMatterSensitivitySchemaTests(SqlServerFixture sql)
 
     private static Task<int> MismatchesAsync(string cs) =>
         ScalarAsync(cs, "SELECT COUNT(*) FROM dbo.Task t JOIN dbo.Matter m ON m.MatterId = t.MatterId WHERE t.IsMatterSensitive <> m.IsSensitive");
-
-    [Fact]
-    public async Task Existing_tasks_are_filled_from_their_matter_when_the_script_runs()
-    {
-        var cs = await sql.CreateDatabaseAsync();
-        await RunAsync(cs, new ScriptsBefore(37));
-        await ScalarAsync(cs, Fixtures + InsertTask(1, 1) + InsertTask(2, 2) + InsertTask(2, 3) + "SELECT 0");
-
-        await RunAsync(cs, new EmbeddedMigrationScriptSource());
-
-        (await ScalarAsync(cs, "SELECT COUNT(*) FROM dbo.Task WHERE IsMatterSensitive = 1")).ShouldBe(2);
-        (await MismatchesAsync(cs)).ShouldBe(0);
-    }
 
     [Fact]
     public async Task A_new_task_gets_its_matters_flag_whatever_the_insert_says()

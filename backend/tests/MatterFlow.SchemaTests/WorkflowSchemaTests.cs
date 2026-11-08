@@ -5,7 +5,7 @@ using Shouldly;
 
 namespace MatterFlow.SchemaTests;
 
-/// <summary>Constraints, indexes and triggers of 09-workflow-config.sql (docs/erd.md section 7).</summary>
+/// <summary>Constraints, indexes and triggers of the baseline (archived 09-workflow-config.sql) (docs/erd.md section 7).</summary>
 [Collection(SqlServerCollection.Name)]
 public class WorkflowSchemaTests(SqlServerFixture sql)
 {

@@ -16,7 +16,7 @@
 8. **Default grants.**
    - The System Admin holds every permission implicitly: no rows needed.
    - New installs: add it to the right starter roles in `backend/src/Modules/MatterFlow.Identity/Seeding/StarterRoles.cs` (roles are seeded **once**, only when no non-system role exists).
-   - Existing databases: roles are editable and already seeded, so add a numbered SQL script that inserts the permission row and grants it to the named roles, idempotently (pattern: `db/scripts/46-asset-dispose-permission.sql`, also 34, 60). Roles that were renamed or created by hand are not touched; say so in the script header.
+   - Existing databases: roles are editable and already seeded, so add a numbered SQL script that inserts the permission row and grants it to the named roles, idempotently (pattern: `db/scripts/archive/46-asset-dispose-permission.sql`, also 34, 60; the archived chain is history, a new script is numbered 67 or higher). Roles that were renamed or created by hand are not touched; say so in the script header.
    - A permission that is only a marker or that no starter role should hold (for example `Settings.Manage`, the Reports permissions): grant to no role and say why.
 9. **Docs and wiki:** add the row to [Permission Catalogue](../Reference/Permission-Catalogue.md); mention it in the matching feature in [Feature Map](../Features/Feature-Map.md); update `docs/architecture.md` section 6.3 if it changes the starter role matrix.
 10. **Tests:** run `dotnet test tests/MatterFlow.UnitTests` (permission catalog tests) and `npm test` in `frontend/` (guard specs). Add an integration test that a caller without the permission gets 403 `PERMISSION_DENIED` (`IntegrationTests/Tasks/TaskPermissionMatrixTests.cs` is a model).

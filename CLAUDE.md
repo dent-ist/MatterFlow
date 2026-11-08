@@ -8,7 +8,7 @@ Internal law-firm eDiscovery Matter and Task tracker. ASP.NET Core (.NET 10) mod
 - `backend/` .NET solution `MatterFlow.sln`: `src/MatterFlow.Api` (host), `SharedKernel`, `Data`, `src/Modules/*`, `tests/*`
 - `frontend/` Angular workspace (`src/` app, `projects/form-engine` library, `e2e/` Playwright)
 - `contracts/` cross-stack contracts (OpenAPI, form-rule schema/vectors, permission catalog); `validate-contracts.mjs` checks them
-- `db/scripts/` numbered SQL schema scripts; `deploy/` IIS publish scripts; `tools/` seed-demo, perf, icons; `docs/` design, QA, runbook
+- `db/scripts/` `00-baseline.sql` (the whole schema) plus numbered scripts from 67 (the old 01 to 66 are in `db/scripts/archive/`); `deploy/` IIS publish scripts; `tools/` seed-demo, perf, icons; `docs/` design, QA, runbook
 - `app-framework/` design docs for a planned app/extension framework (not implemented code)
 
 ## Commands
@@ -23,12 +23,12 @@ Internal law-firm eDiscovery Matter and Task tracker. ASP.NET Core (.NET 10) mod
 ## Rules to respect
 
 - **Module boundaries**: a module (`Domain/`, `Application/`, `Infrastructure/`, `Api/`) may reference only `SharedKernel` and other modules' `.Contracts` projects. `MatterFlow.ArchitectureTests` enforces this. Register new modules in `backend/src/MatterFlow.Api/ModuleComposition.cs`.
-- **Schema**: SQL scripts in `db/scripts/` are immutable once merged; fix forward with a new numbered script. No EF migrations.
+- **Schema**: the schema is `db/scripts/00-baseline.sql` (squashed from the old scripts 01 to 66, issue #1307) plus later numbered scripts (67 and up). Scripts after the baseline are immutable once merged; fix forward with a new numbered script. The baseline itself becomes immutable at the first real deployment; until then it is edited only together with a rebuild of every demo and test database (`npm run db:reset`). Never add anything to `db/scripts/archive/`. No EF migrations.
 - **NuGet versions** live in `backend/Directory.Packages.props` only.
 - **API changes** must keep the OpenAPI contract in `contracts/openapi` and the generated frontend client (nswag) in sync; CI fails on drift.
 - **Permissions** come from `contracts/permissions.json`; keep backend and frontend in step.
 - **Shortcuts**: add new keyboard shortcuts in `frontend/src/app/shared/layout/shortcut-registry.ts` together with the handler. No new or changed shortcuts in the current phase (owner decision; Phase 2 backlog, issue #420).
-- **Status (owner, 2026-10-24)**: MatterFlow has not been deployed and nobody is using it. All data is demo/test data. That is why a data backfill for old rows is rarely needed, but numbered SQL scripts stay immutable once merged (fix forward) so the first real deployment starts from a clean, replayable history. The repo will later be made private and moved to the corporate network.
+- **Status (owner, 2026-10-24)**: MatterFlow has not been deployed and nobody is using it. All data is demo/test data. That is why a data backfill for old rows is rarely needed, and why the old scripts were squashed into one baseline; numbered scripts after the baseline stay immutable once merged (fix forward) so the deployed history stays clean and replayable. The repo will later be made private and moved to the corporate network.
 - **Auth**: `Dev` provider is for Development/Test only; production uses Windows auth. Never weaken that guard.
 - CI treats warnings as errors and checks formatting (`.editorconfig`, Prettier); run the checks before committing.
 - Main integration branch is `dev`.

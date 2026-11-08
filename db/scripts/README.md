@@ -1,19 +1,45 @@
 # Database scripts
 
-Schema is changed **only** by appending numbered SQL scripts to this folder (ADR 003, addendum J).
+The schema is `00-baseline.sql` plus the numbered scripts that follow it (ADR 003, addendum J; baseline since issue #1307).
 EF Core maps entities for data access only; there are no EF migrations. The startup runner in
-`MatterFlow.Data/SchemaMigrations` applies scripts in order. Full design: `docs/architecture.md` section 4.
+`MatterFlow.Data/SchemaMigrations` applies the scripts in order. Full design: `docs/architecture.md` section 4.
 
-## Conventions
+## The baseline (`00-baseline.sql`)
 
-- File name: `NN-kebab-description.sql`, matching `^(?<n>\d{2,6})-[a-z0-9][a-z0-9-]*\.sql$`.
+- One script with a complete `CREATE TABLE` for every table (columns, defaults, primary, unique, check and foreign keys), all indexes,
+  the sequence, functions, procedures, triggers (including the guard triggers such as `TR_Asset_Guard` and the database DDL trigger that protects
+  the audit tables), the structural seed rows (System Admin role, permission catalog rows, the five task status labels), the database roles
+  `mf_app`, `mf_migrator`, `mf_report_reader` and every GRANT / DENY. Read it top to bottom to see the whole schema.
+- It replaces the 63 scripts `01-init.sql` to `66-director-be-manager.sql` (numbers 16, 61 and 62 never existed). Those are kept unchanged in
+  [`archive/`](archive/) for history; the runner does not see them (the embedded glob is `db/scripts/*.sql`, not recursive).
+- **Number and name:** `00-baseline.sql`, prefix **0**, so it always sorts and runs first, and the rule "a pending script must not have a lower
+  prefix than the highest applied one" keeps working. **The first script after the baseline is `67-...`**; the numbers 1 to 66 stay with the archive
+  and are never reused (`ScriptsFolderTests` enforces it).
+- **Equivalence with the old chain is a test:** `SchemaTests/BaselineEquivalenceTests` builds one database from `archive/` and one from the baseline
+  and compares them with `tools/db/schema-fingerprint.sql` (tables, columns, constraints, indexes, triggers, routines, roles, permissions, seed rows,
+  identity counters). To compare two databases by hand: `tools/db/compare-schema.sh <databaseA> <databaseB>`.
+- **What was not carried over:** data fixes and backfills for rows that existed in an already-running database (they cannot matter in a fresh one)
+  and the grants of permissions to the starter roles in existing databases (a fresh database gets the starter roles from `StarterRoles.cs`). The list
+  is in the header of `00-baseline.sql`.
+- **Immutability:** the baseline is a normal applied script from the first real deployment on (checksum guard). Until then it may be corrected in
+  place, but only together with a rebuild of every demo and test database (`npm run db:reset`), because the checksum of an already-applied baseline
+  would no longer match. After the first deployment, never edit it: add a numbered script.
+- **Old databases are not migrated.** A database whose `dbo.SchemaMigration` lists the old scripts (`01-init.sql` ...) but not `00-baseline.sql` is
+  refused at startup with the instruction to rebuild it (`npm run db:reset` for the local Docker database). There is no data migration.
+
+## Conventions for new scripts
+
+- File name: `NN-kebab-description.sql`, matching `^(?<n>\d{2,6})-[a-z0-9][a-z0-9-]*\.sql$`, **numbered 67 or higher**.
   The numeric prefix is compared as an integer (`09` < `10` < `100`). Use two digits until 99, then three.
-- **Applied scripts are immutable.** Never edit a script that has been merged; fix forward with a new script.
+- **Applied scripts are immutable.** Never edit a script that has been merged after the baseline; fix forward with a new script.
   A checksum guard enforces this.
 - One logical change per script. Scripts run once (they need not be idempotent).
 - Separate batches with a line containing only `GO`. Do not rely on variables across batches.
 - UTF-8, LF line endings (normalized before hashing). Start each script with a comment: purpose and owner.
 - Name every constraint and index explicitly (`PK_`, `FK_`, `UQ_`, `CK_`, `IX_`, `DF_`) so later scripts can reference them.
+- Every script that adds a table must classify it in `db/report-access.json` and add the matching `GRANT SELECT` or `DENY SELECT, VIEW DEFINITION`
+  line for `mf_report_reader` (and `ALTER`/write denies for `mf_app` where the table is append-only), otherwise `ReportAccessCatalogueTests` fails.
+  Keep `docs` in step: `wiki/Database/Table-Reference.md`, `ER-Diagrams.md` and `Schema-Script-History.md` (`node wiki/tools/check-db-docs.mjs`).
 - Prefix allocation: each PR that adds a script takes the next free number at merge time. If two PRs collide,
   renumber the **unmerged** one. CI flags duplicate prefixes and edits to existing scripts.
 - Seed data owned by code (permission catalog, fixed status labels) is synchronized by the app after migrations.
@@ -25,35 +51,14 @@ EF Core maps entities for data access only; there are no EF migrations. The star
 - Scripts are embedded into `MatterFlow.Data` at build time and applied at startup in numeric-prefix order,
   each in one transaction, recorded in `dbo.SchemaMigration` (name, prefix, SHA-256 checksum, time, duration, success).
 - Startup **fails** on: a script error (rolled back, not recorded), a duplicate prefix, a checksum change or removal of an
-  applied script, or a new script numbered lower than the highest applied one. Gaps in numbering are fine.
+  applied script, a new script numbered lower than the highest applied one, or a database built by the old chain (see above).
+  Gaps in numbering are fine.
 - Append-only numbering: always add the next free number; never renumber or edit a merged script.
 - Statements that cannot run in a transaction (e.g. `CREATE DATABASE`) need `-- mf:no-transaction` on the first line.
+- `dbo.SchemaMigration` itself is created by the runner before any script, so no script creates it.
 - Config (`Migrations:*`): `Enabled` (default true), `ScriptsFolder`, `LockTimeoutSeconds`, `CommandTimeoutSeconds`,
   `ConnectionStringName` (falls back to `ConnectionStrings:Default`).
 
-## Status
+## Scripts after the baseline
 
-`01-init.sql` (schema conventions, `dbo.TaskNumberSeq`) and `02-identity-authz.sql` (AppUser, UserIdentity, Role, Permission, RolePermission, UserRole, System Admin role row) exist. Real tables arrive in later scripts.
-
-## Script list (later scripts)
-
-- `29-notifications.sql`: `dbo.Notification` (in-app notifications, poll cursor `Id`, dedupe index) and `dbo.NotificationPreference` (sparse switches); `mf_app` may update only `ReadUtc` / `Enabled` (epic #753, issue #729).
-- `30-reports.sql`: the Reports tables (`ReportCategory`, `ReportDefinition`, `ReportVersion` (append-only), `ReportParameter`, `RoleReport`, `SavedReportView`, `ReportFavourite`, `ReportRecent`, `ReportRun` (completed through `usp_ReportRunComplete`, kept two years)) and the read-only role `mf_report_reader` with its GRANT/DENY lines from `db/report-access.json` (epic #671, issue #677). Every later script that adds a table must classify it in `db/report-access.json` and add the matching GRANT or DENY line.
-- `31-my-matters-activity-seen.sql`: `dbo.UserMatterActivitySeen` (per person: the highest audit event id marked as read in the My Matters "Recent activity" panel; epic #667, issue #683).
-- `32-report-access-activity-seen.sql`: classifies `dbo.UserMatterActivitySeen` (script 31) as denied for the report role `mf_report_reader` (epic #671). **Rule for every script that adds a table: add its entry to `db/report-access.json` and its GRANT or DENY line for `mf_report_reader`, otherwise `ReportAccessCatalogueTests` fails.**
-- `33-my-matters-indexes.sql`: re-creates `IX_Task_Matter` (more included columns) and `IX_StepInstance_Workflow` (includes `Status`) so the My Matters reads are seeks (epic #667, issue #686).
-- `36-audit-sensitive-scope.sql`: `dbo.AuditEvent.IsSensitiveScope` (defaulted bit, set by the audit interceptor for events written while the matter was sensitive, so that history stays restricted after un-marking; epic #788, issue #801).
-- `39-activity-seen-initial.sql`: `dbo.UserMatterActivitySeen.IsInitial` (1 = the starting point a first read of the Activity list creates, 0 = the person marked activity as read; "Since your last visit" ignores an initial marker; PM follow-up #815).
-- `40-task-type-colour-target.sql`: `dbo.TaskType.ColourKey` (a name of the palette of ten, `contracts/task-type-colours.json`; NULL = neutral) and `TargetDays` (expected turnaround in calendar days, 1 to 365; NULL = none) for the task type badge and the At risk rule (PM v2, epic #851, issue #852).
-- `41-user-views.sql`: `dbo.UserView` (a person's remembered screen state per surface, `Name` NULL, and named saved views; ISJSON state of at most 4 KB), denied for `mf_report_reader` (PM v2, issue #856).
-- `42-on-hold-reason.sql`: `dbo.OnHoldReason` (admin-managed reasons for putting a task On Hold, never deleted, readable by `mf_report_reader`) and `dbo.Task.OnHoldReasonId` (PM v2, issue #876).
-- `43-asset-disposition.sql`: `dbo.Asset.DispositionCode` (Active, Inactive, Pending disposition, Disposed; CHECK that `IsActive` agrees), `DispositionChangedAt`, `DispositionChangedByUserId`, `DispositionNote`, and the index `IX_Asset_Matter_Disposition` (PM v2, issue #864).
-- `44-asset-type-size.sql`: `dbo.AssetType.SizeFieldKey` and `SizeUnit` (which NUMBER field of the type means size, and its unit B, KB, MB, GB, TB or Items; both or neither; PM v2, issue #867).
-- `45-asset-report.sql`: `dbo.AssetReport` (a person's saved asset report definitions, unique name per owner, ISJSON definition), denied for `mf_report_reader` (PM v2, issue #872).
-- `46-asset-dispose-permission.sql`: the permission `Asset.Dispose` and its grant to the Director and Project Manager roles (idempotent; no table; PM v2, issue #865).
-- `47-pm-v2-performance-indexes.sql`: `IX_CFI_Kind_Field_Owner (OwnerKind, FieldKey, OwnerId) INCLUDE (ValueNumber, ValueText)` on `dbo.CustomFieldIndex` (the Data tab, the volume chart and the asset reports read one field of the typed index by a seek, for a number and a SELECT field alike) and `IX_Task_Matter_Type (MatterId, TaskTypeId, StatusCode)` with the columns the counts read (the Breakdown and the type filter of the My Matters sections are seeks on the managed matters; PM v2, issue #887).
-- `48-app-settings.sql`: the permission `Settings.Manage` (group Administration; no role grant, the System Admin holds it implicitly) and `dbo.AppSetting` (setting key, text value, binary value with content type and SHA-256, 256 KB check, row version, who and when), granted to `mf_app`, denied for `mf_report_reader`; no seed row, the defaults live in code (application settings epic #850, issue #843).
-- `57-task-unassigned-at.sql`: `dbo.Task.UnassignedAt` (nullable; since when a Task has had no assigned user: set at creation without an assignee and when the assignee is cleared, null while a user is assigned; no backfill, readers use `COALESCE(UnassignedAt, CreatedAt)`) and the filtered index `IX_Task_Unassigned` for open unassigned Tasks (Dashboard v4, epic #1063, issue #1064).
-- `63-asset-numbering.sql`: automatic asset numbering (issue #1297). `dbo.AssetType.NumberingEnabled` (default off), `NumberingPattern` (the tail after the matter's CM Number, one counter token such as `{###}`; default `_{###}`) and `NumberingScope` (1 = per matter); `dbo.Asset.AssetNumber` / `AssetNumberSeq` (null for all existing assets, nothing is backfilled) with the unique filtered index `UQ_Asset_AssetNumber (AssetTypeId, MatterId, AssetNumber)`; the counter table `dbo.AssetNumberCounter (AssetTypeId, ScopeKey, NextNumber)`, denied for `mf_report_reader`; `TR_Asset_Guard` re-created with the rule that an assigned number cannot change (error 51014). Idempotent. Numbers 61 and 62 were reserved for the `reports` branch; those scripts were renumbered to 65 and 66 before they were merged, so 61 and 62 do not exist.
-- `65-project-manager-report-run.sql`: grants `Report.Run` to the starter role "Project Manager" in existing databases (owner decision 8, Reports; only while the role still has the starter description; prints what it did; no table, `db/report-access.json` unchanged; a fresh database gets it from `StarterRoles.cs`).
-- `66-director-be-manager.sql`: grants `Matter.BeManager` to the starter role "Director" in existing databases (issue #976, owner decision 2026-11-07, not a Reports change; only while the role still has the starter description "Department head: full operational access plus oversight."; prints what it did; no new permission, no table, `db/report-access.json` unchanged; a fresh database gets it from `StarterRoles.cs`). Accepted side effect: a Director can be named a matter's project manager.
+None yet. The first one is `67-...`; list each here with one line (purpose, issue).

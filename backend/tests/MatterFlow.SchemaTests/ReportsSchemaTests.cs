@@ -6,7 +6,7 @@ using Shouldly;
 
 namespace MatterFlow.SchemaTests;
 
-/// <summary>30-reports.sql (epic #671, issue #677): constraints, append-only guards and the effective rights of the role mf_report_reader.</summary>
+/// <summary>Baseline (archived 30-reports.sql) (epic #671, issue #677): constraints, append-only guards and the effective rights of the role mf_report_reader.</summary>
 [Collection(SqlServerCollection.Name)]
 public class ReportsSchemaTests(SqlServerFixture sql)
 {

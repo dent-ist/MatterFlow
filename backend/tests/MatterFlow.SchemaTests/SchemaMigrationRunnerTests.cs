@@ -36,7 +36,42 @@ public class SchemaMigrationRunnerTests(SqlServerFixture sql)
 
         applied.ShouldBe(embedded.Select(s => s.Name));
         (await ScalarAsync<int>(cs, "SELECT COUNT(*) FROM dbo.SchemaMigration WHERE Success = 1")).ShouldBe(embedded.Count);
-        (await ScalarAsync<string>(cs, "SELECT Checksum FROM dbo.SchemaMigration WHERE Prefix = 1")).ShouldBe(embedded[0].Checksum);
+        (await ScalarAsync<string>(cs, "SELECT Checksum FROM dbo.SchemaMigration WHERE Prefix = 0")).ShouldBe(embedded[0].Checksum);
+        embedded[0].Name.ShouldBe(SchemaMigrationRunner.BaselineScriptName);
+    }
+
+    [Fact]
+    public async Task A_database_built_by_the_old_script_chain_is_refused_with_the_rebuild_instruction()
+    {
+        // Issue #1307: the old chain was squashed into 00-baseline.sql before the first deployment; such a database is rebuilt, never migrated.
+        var cs = await sql.CreateDatabaseAsync();
+        await Runner(cs, S("01-init.sql", "CREATE TABLE dbo.Old(Id INT);"), S("02-identity-authz.sql", "SELECT 1;")).RunAsync();
+
+        var ex = await Should.ThrowAsync<SchemaMigrationException>(
+            () => Runner(cs, S(SchemaMigrationRunner.BaselineScriptName, "CREATE TABLE dbo.New(Id INT);")).RunAsync());
+
+        ex.Message.ShouldContain("old schema script chain");
+        ex.Message.ShouldContain("01-init.sql");
+        ex.Message.ShouldContain("npm run db:reset");
+        (await ScalarAsync<int>(cs, "SELECT COUNT(*) FROM sys.tables WHERE name = 'New'")).ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task The_baseline_runs_first_and_later_scripts_follow_it_and_the_lower_prefix_guard_still_applies()
+    {
+        var cs = await sql.CreateDatabaseAsync();
+        var baseline = S(SchemaMigrationRunner.BaselineScriptName, "CREATE TABLE dbo.Base(Id INT);");
+
+        var applied = await Runner(cs, S("67-next.sql", "ALTER TABLE dbo.Base ADD Name VARCHAR(10) NULL;"), baseline).RunAsync();
+        applied.ShouldBe([SchemaMigrationRunner.BaselineScriptName, "67-next.sql"]);
+
+        // A later pending script numbered below the highest applied one is still refused.
+        var ex = await Should.ThrowAsync<SchemaMigrationException>(
+            () => Runner(cs, baseline, S("67-next.sql", "ALTER TABLE dbo.Base ADD Name VARCHAR(10) NULL;"), S("50-late.sql", "SELECT 1;")).RunAsync());
+        ex.Message.ShouldContain("50-late.sql");
+
+        // Re-running with a database that already has the baseline is a no-op.
+        (await Runner(cs, baseline, S("67-next.sql", "ALTER TABLE dbo.Base ADD Name VARCHAR(10) NULL;")).RunAsync()).ShouldBeEmpty();
     }
 
     [Fact]

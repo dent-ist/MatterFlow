@@ -44,7 +44,7 @@ To add a starter: write `<key>.sql` (one `SELECT`, parameters as `:NAME`, only t
 The report login can read only tables classified `allow` in `db/report-access.json`. Audit, identity, notification, authorization, settings and all Reports tables are denied on purpose.
 
 1. Do not weaken the login. Decide with the owner whether the table is safe to expose.
-2. If yes: change the table's entry to `allow` in `db/report-access.json` and add a **new numbered script** with the `GRANT SELECT` (and remove the `DENY`) for `mf_report_reader`. Never edit the original script. `ReportAccessCatalogueTests` and the schema test check that file and scripts agree.
+2. If yes: change the table's entry to `allow` in `db/report-access.json` and add a **new numbered script** with the `GRANT SELECT` (and remove the `DENY`) for `mf_report_reader`. Never edit an applied script (the baseline included once it is deployed). `ReportAccessCatalogueTests` and the schema test check that file and scripts agree.
 3. Remember the Sensitive matter rule does not cover reports yet (issue #808); a report can read sensitive matter rows. Treat this as an open risk when you expose matter-related tables.
 
 ## Developer changes to the Reports module

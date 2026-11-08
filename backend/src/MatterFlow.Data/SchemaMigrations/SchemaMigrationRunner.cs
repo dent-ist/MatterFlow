@@ -17,6 +17,9 @@ public sealed class SchemaMigrationRunner(
 {
     public const string LockResource = "MatterFlow.SchemaMigration";
 
+    /// <summary>The baseline script (issue #1307): the whole schema as of the squash. It has prefix 0, so it always runs first.</summary>
+    public const string BaselineScriptName = "00-baseline.sql";
+
     private const string EnsureTableSql = """
         IF OBJECT_ID(N'dbo.SchemaMigration', N'U') IS NULL
         CREATE TABLE dbo.SchemaMigration (
@@ -93,6 +96,7 @@ public sealed class SchemaMigrationRunner(
         }
 
         var byName = scripts.ToDictionary(s => s.Name, StringComparer.Ordinal);
+        RejectPreBaselineDatabase(byName, applied);
         foreach (var row in applied)
         {
             if (!byName.TryGetValue(row.Name, out var script))
@@ -125,6 +129,30 @@ public sealed class SchemaMigrationRunner(
         }
 
         return pending;
+    }
+
+    /// <summary>
+    /// A database built by the old script chain (01-init.sql ... 66-director-be-manager.sql) is not migrated to the baseline (issue #1307: MatterFlow
+    /// was never deployed, all data is demo data). It is recognised by a journal that has applied scripts but not the baseline.
+    /// </summary>
+    private static void RejectPreBaselineDatabase(Dictionary<string, MigrationScript> scripts, List<AppliedRow> applied)
+    {
+        if (applied.Count == 0 || !scripts.ContainsKey(BaselineScriptName) || applied.Any(a => a.Name == BaselineScriptName))
+        {
+            return;
+        }
+
+        var old = applied.Where(a => !scripts.ContainsKey(a.Name)).OrderBy(a => a.Prefix).ToList();
+        if (old.Count == 0)
+        {
+            return;
+        }
+
+        throw new SchemaMigrationException(
+            $"This database was created by the old schema script chain (dbo.SchemaMigration lists {old.Count} old scripts such as '{old[0].Name}' but not '{BaselineScriptName}'). "
+            + "The old scripts were squashed into one baseline before the first deployment and old databases are not migrated. "
+            + "Rebuild the database: run `npm run db:reset` (this deletes the local SQL Server volume and all its data), then start the API again. "
+            + "For a database that is not the local Docker one, drop and re-create it (see docs/runbook.md, 'Rebuilding a database from the baseline').");
     }
 
     private async Task ApplyAsync(SqlConnection connection, MigrationScript script, CancellationToken ct)

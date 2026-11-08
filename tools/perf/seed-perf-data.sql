@@ -453,7 +453,7 @@ SELECT CONVERT(VARCHAR(30), SYSDATETIME(), 121) + ' audit done: ' + CAST((SELECT
 GO
 
 -- ---------------------------------------------------------------- statistics, marker, summary
--- The application stamps every audit event written while its matter is sensitive (script 36, IsSensitiveScope); events written before go-live are stamped by
+-- The application stamps every audit event written while its matter is sensitive (IsSensitiveScope, in the baseline); events written before go-live are stamped by
 -- the same rule here. AuditEvent is append-only behind a trigger: it is switched off for this one statement (the seed runs as the database owner).
 DISABLE TRIGGER dbo.TR_AuditEvent_AppendOnly ON dbo.AuditEvent;
 UPDATE a SET IsSensitiveScope = 1 FROM dbo.AuditEvent a JOIN dbo.Matter m ON m.MatterId = a.MatterId WHERE m.IsSensitive = 1;

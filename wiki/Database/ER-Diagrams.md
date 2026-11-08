@@ -6,8 +6,8 @@
 
 ## How these diagrams were made
 
-- Derived from the real database: the demo SQL Server container `matterflow-sql` (database `MatterFlow`, all 59 scripts applied), with read-only queries on `sys.tables`, `sys.columns`, `sys.foreign_keys` and `sys.indexes`. Nothing was written to the database.
-- Cross-checked with the scripts in `db/scripts` by [wiki/tools/check-db-docs.mjs](../tools/check-db-docs.mjs) (see "Completeness" below).
+- Derived from the real database: the demo SQL Server container `matterflow-sql` (database `MatterFlow`, built by the archived scripts 01 to 66, which `db/scripts/00-baseline.sql` reproduces exactly), with read-only queries on `sys.tables`, `sys.columns`, `sys.foreign_keys` and `sys.indexes`. Nothing was written to the database.
+- Cross-checked with `db/scripts` (the baseline, the scripts after it and the archive) by [wiki/tools/check-db-docs.mjs](../tools/check-db-docs.mjs) (see "Completeness" below).
 - 71 tables and 183 foreign keys exist. **Every table and every foreign key appears in exactly one diagram below.** A foreign key is drawn in the diagram of the table that holds it (the child).
 - Each diagram shows the primary key (PK), the foreign key columns (FK), single-column unique keys (UK) and a few key columns, not every column. Context tables from another area appear with their primary key only.
 - Column types are written `type_length` (for example `nvarchar_200`) because the diagram syntax does not allow brackets.
@@ -853,7 +853,7 @@ erDiagram
 
 - Tables in the database: 71. Tables in [Table Reference](Table-Reference.md): 71. Tables in the diagrams above: 71.
 - Foreign keys in the database: 183. Foreign keys drawn above: 183 (106 as normal lines, 77 as the combined `Created, Modified` lines from `AppUser`).
-- The script `wiki/tools/check-db-docs.mjs` re-checks this from `db/scripts` and the wiki pages. Run it with `node wiki/tools/check-db-docs.mjs` from the repository root after you change the schema.
+- The script `wiki/tools/check-db-docs.mjs` re-checks this from `db/scripts/*.sql` (the baseline and later scripts) and the wiki pages. Run it with `node wiki/tools/check-db-docs.mjs` from the repository root after you change the schema.
 - The diagrams were syntax-checked with Mermaid 9.4.3 and 10.9.1 (see [Documentation Map](../Reference/Documentation-Map.md)); their layout in Azure DevOps was not viewed.
 
 ## Related pages

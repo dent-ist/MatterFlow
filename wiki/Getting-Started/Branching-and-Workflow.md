@@ -49,9 +49,9 @@ One bullet per main navigation page (and tab or component), in the app's own men
 
 ## Schema changes: no EF migrations, immutable scripts
 
-- The schema is changed only by adding a numbered SQL script in `db/scripts/`. There are no EF migrations.
+- The schema is `db/scripts/00-baseline.sql` plus numbered SQL scripts after it (from 67); it is changed only by adding a numbered SQL script in `db/scripts/`. There are no EF migrations. The old chain 01 to 66 is archived in `db/scripts/archive/` (issue #1307).
 - A merged script is never edited (a checksum guard enforces this at startup). Fix forward with a new script.
-- The owner's note (`CLAUDE.md`): the app is not deployed, so a data backfill for old rows is rarely needed, but scripts stay immutable so the first real deployment starts from a clean, replayable history.
+- The owner's note (`CLAUDE.md`): the app is not deployed, so a data backfill for old rows is rarely needed, but the old scripts were squashed into one baseline and scripts after it stay immutable. The baseline itself is edited only together with a rebuild of every demo and test database (`npm run db:reset`) until the first real deployment.
 - Details: [How to Change the Schema](../Database/How-to-Change-the-Schema.md).
 
 ## Other rules to respect

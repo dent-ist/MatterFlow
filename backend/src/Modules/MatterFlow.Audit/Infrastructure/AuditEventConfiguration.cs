@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace MatterFlow.Audit.Infrastructure;
 
-/// <summary>Maps <see cref="AuditEvent"/> to dbo.AuditEvent (03-audit.sql). The table has UPDATE/DELETE triggers, so EF is told about them.</summary>
+/// <summary>Maps <see cref="AuditEvent"/> to dbo.AuditEvent (00-baseline.sql). The table has UPDATE/DELETE triggers, so EF is told about them.</summary>
 public sealed class AuditEventConfiguration : IEntityTypeConfiguration<AuditEvent>
 {
     public void Configure(EntityTypeBuilder<AuditEvent> b)

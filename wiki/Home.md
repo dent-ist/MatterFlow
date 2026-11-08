@@ -90,7 +90,7 @@ Details, roles and the open items: [Change Management Process](Getting-Started/C
 
 - Paths are relative to the repository root unless they start with `wiki/`.
 - A path in backticks that starts with `docs/`, `backend/`, `frontend/`, `db/`, `contracts/`, `tools/` or `deploy/` is a file or folder in the repository.
-- "Script 35" means the SQL script `db/scripts/35-matter-visibility.sql`.
+- "Script 35" (a number up to 66) means an SQL script of the archived chain `db/scripts/archive/35-matter-visibility.sql`; its content is in `db/scripts/00-baseline.sql` since the squash (issue #1307). Scripts numbered 67 and higher are in `db/scripts/`.
 - "Epic #788" or "issue #1234" refers to a GitHub issue; the number is kept so the history can be searched.
 - Every page ends with "Related pages" and the commit it was last verified against.
 

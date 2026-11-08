@@ -5,7 +5,7 @@ using Shouldly;
 
 namespace MatterFlow.SchemaTests;
 
-/// <summary>33-my-matters-indexes.sql (epic #667, issue #686): the two covering indexes keep their names and carry the columns the My Matters reads need.</summary>
+/// <summary>Baseline (archived 33-my-matters-indexes.sql) (epic #667, issue #686): the two covering indexes keep their names and carry the columns the My Matters reads need.</summary>
 [Collection(SqlServerCollection.Name)]
 public class MyMattersIndexesSchemaTests(SqlServerFixture sql)
 {

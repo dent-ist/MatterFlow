@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using MatterFlow.Data.SchemaMigrations;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -6,16 +5,10 @@ using Shouldly;
 
 namespace MatterFlow.SchemaTests;
 
-/// <summary>63-asset-numbering.sql (issue #1297): the numbering settings, the number columns, the unique index, the counter table, the guard trigger and the replay safety.</summary>
+/// <summary>Asset numbering (issue #1297; baseline, formerly script 63): the numbering settings, the number columns, the unique index, the counter table and the guard trigger.</summary>
 [Collection(SqlServerCollection.Name)]
 public class AssetNumberingSchemaTests(SqlServerFixture sql)
 {
-    private sealed class ScriptsBefore(int number) : IMigrationScriptSource
-    {
-        public IReadOnlyList<(string Name, string Content)> ReadAll() =>
-            [.. new EmbeddedMigrationScriptSource().ReadAll().Where(s => int.Parse(Regex.Match(s.Name, @"^\d+").Value) < number)];
-    }
-
     private static Task RunAsync(string cs, IMigrationScriptSource source) =>
         new SchemaMigrationRunner(cs, source, new MigrationsOptions { LockTimeoutSeconds = 60 }, NullLogger<SchemaMigrationRunner>.Instance).RunAsync();
 
@@ -42,20 +35,6 @@ public class AssetNumberingSchemaTests(SqlServerFixture sql)
         """;
 
     [Fact]
-    public async Task Existing_rows_get_the_defaults_and_no_asset_is_numbered()
-    {
-        var cs = await sql.CreateDatabaseAsync();
-        await RunAsync(cs, new ScriptsBefore(63));
-        await ExecAsync(cs, Seed);
-
-        await RunAsync(cs, new EmbeddedMigrationScriptSource());
-
-        (await ExecAsync(cs, "SELECT COUNT(*) FROM dbo.AssetType WHERE NumberingEnabled = 0 AND NumberingPattern = N'_{###}' AND NumberingScope = 1")).ShouldBe(2);
-        (await ExecAsync(cs, "SELECT COUNT(*) FROM dbo.Asset WHERE AssetNumber IS NULL AND AssetNumberSeq IS NULL")).ShouldBe(1);
-        (await ExecAsync(cs, "SELECT COUNT(*) FROM dbo.AssetNumberCounter")).ShouldBe(0);
-    }
-
-    [Fact]
     public async Task The_columns_the_index_the_counter_table_and_the_trigger_exist()
     {
         var cs = await sql.CreateDatabaseAsync();
@@ -70,22 +49,6 @@ public class AssetNumberingSchemaTests(SqlServerFixture sql)
         (await ExecAsync(cs, "SELECT COUNT(*) FROM sys.key_constraints WHERE name = 'PK_AssetNumberCounter' AND type = 'PK'")).ShouldBe(1);
         (await ExecAsync(cs, "SELECT COUNT(*) FROM sys.index_columns ic JOIN sys.key_constraints k ON k.parent_object_id = ic.object_id AND k.unique_index_id = ic.index_id WHERE k.name = 'PK_AssetNumberCounter'")).ShouldBe(2);
         (await ExecAsync(cs, "SELECT COUNT(*) FROM sys.triggers WHERE name = 'TR_Asset_Guard' AND is_disabled = 0")).ShouldBe(1);
-    }
-
-    [Fact]
-    public async Task The_script_can_be_replayed_on_a_migrated_database()
-    {
-        var cs = await sql.CreateDatabaseAsync();
-        await RunAsync(cs, new EmbeddedMigrationScriptSource());
-        await ExecAsync(cs, Seed);
-        await ExecAsync(cs, "INSERT dbo.AssetNumberCounter (AssetTypeId, ScopeKey, NextNumber) VALUES (1, 1, 5)");
-
-        var script = new EmbeddedMigrationScriptSource().ReadAll().Single(s => s.Name.StartsWith("63-", StringComparison.Ordinal)).Content;
-        foreach (var batch in Regex.Split(script, @"^\s*GO\s*$", RegexOptions.Multiline | RegexOptions.IgnoreCase).Where(b => !string.IsNullOrWhiteSpace(b)))
-            await ExecAsync(cs, batch);
-
-        (await ExecAsync(cs, "SELECT NextNumber FROM dbo.AssetNumberCounter WHERE AssetTypeId = 1 AND ScopeKey = 1")).ShouldBe(5);
-        (await ExecAsync(cs, "SELECT COUNT(*) FROM sys.triggers WHERE name = 'TR_Asset_Guard'")).ShouldBe(1);
     }
 
     [Fact]

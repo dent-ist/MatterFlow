@@ -5,7 +5,7 @@ using Shouldly;
 
 namespace MatterFlow.SchemaTests;
 
-/// <summary>57-task-unassigned-at.sql (Dashboard v4, epic #1063, issue #1064): the nullable column, no backfill, and the filtered index of open unassigned Tasks.</summary>
+/// <summary>Baseline (archived 57-task-unassigned-at.sql) (Dashboard v4, epic #1063, issue #1064): the nullable column, no backfill, and the filtered index of open unassigned Tasks.</summary>
 [Collection(SqlServerCollection.Name)]
 public class TaskUnassignedAtSchemaTests(SqlServerFixture sql)
 {

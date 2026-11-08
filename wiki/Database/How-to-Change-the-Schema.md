@@ -6,19 +6,19 @@
 
 ## The rules
 
-- Schema changes are **only** numbered SQL scripts in `db/scripts/`. No EF migrations, never edit the database by hand.
-- A merged script is **immutable** (checksum guard). Fix forward with a new script.
-- The next number is the next free number at merge time (64 scripts exist, the highest is 66, so the next is 67). Number 16 is a permanent gap. If two branches collide, renumber the unmerged one. In a UI-update round the numbers are allocated by one person (see [Branching and Workflow](../Getting-Started/Branching-and-Workflow.md)).
+- The schema is `db/scripts/00-baseline.sql` (the whole schema in one script, issue #1307) plus numbered SQL scripts after it. Schema changes are **only** new numbered scripts in `db/scripts/`. No EF migrations, never edit the database by hand. Do not add anything to `db/scripts/archive/` (the old chain 01 to 66, history only).
+- A merged script is **immutable** (checksum guard). Fix forward with a new script. The baseline is immutable from the first real deployment on; until then a baseline edit is allowed only together with a rebuild of every demo and test database (`npm run db:reset`) and a re-run of the equivalence rules below.
+- The next number is the next free number at merge time (the baseline is 00 and the archive used 01 to 66, so the first new script is 67). Numbers 1 to 66 are never reused. If two branches collide, renumber the unmerged one. In a UI-update round the numbers are allocated by one person (see [Branching and Workflow](../Getting-Started/Branching-and-Workflow.md)).
 - File name: `NN-kebab-description.sql` (`^\d{2,6}-[a-z0-9][a-z0-9-]*\.sql$`); two digits to 99, then three.
 - One logical change per script. Separate batches with a line that contains only `GO`. Start with a comment: purpose, owner, notes.
 - Name every constraint and index explicitly with the prefixes `PK_`, `FK_`, `UQ_`, `CK_`, `IX_`, `DF_`, `TR_`.
 - Destructive changes (drop or rename a column) use expand then contract across two releases.
-- Seed in a script only structural lookups that foreign keys need. Permissions are in `contracts/permissions.json`; a script may also insert the permission and grant it to existing roles (pattern of scripts 28, 34, 46).
+- Seed in a script only structural lookups that foreign keys need. Permissions are in `contracts/permissions.json`; a script may also insert the permission and grant it to existing roles (pattern of the archived scripts 28, 34, 46 in `db/scripts/archive/`). A fresh database gets the starter roles from `StarterRoles.cs`.
 
 ## Checklist for a new table
 
-1. **Write the script.** Use scripts 53 to 55 as a model. Include the standard columns when the table is edited by users: `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion rowversion`, with foreign keys to `AppUser`.
-2. **Report login.** Add the table to `db/report-access.json` (`allow` or `deny` with a reason) and the matching `GRANT SELECT` or `DENY` line for `mf_report_reader` in the same script. `ReportAccessCatalogueTests` fails otherwise (script 32 exists because script 31 forgot it). Tables with personal, audit, identity or notification data are `deny`.
+1. **Write the script.** Use the `CREATE TABLE` blocks of the baseline (for example `Production`, `Note`) as a model. Include the standard columns when the table is edited by users: `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion rowversion`, with foreign keys to `AppUser`.
+2. **Report login.** Add the table to `db/report-access.json` (`allow` or `deny` with a reason) and the matching `GRANT SELECT` or `DENY` line for `mf_report_reader` in the same script. `ReportAccessCatalogueTests` fails otherwise (the archived script 32 exists because script 31 forgot it). Tables with personal, audit, identity or notification data are `deny`.
 3. **Entity and mapping.** Add the entity in the owning module's `Domain/`, its `IEntityTypeConfiguration` in `Infrastructure/` (explicit `ToTable`, column names and `HasConstraintName` where tests inspect them), and mark audited entities `[Audited]`. `SchemaTests` check that every mapped property exists with a compatible type. If the table belongs to a matter, set the audit scope (architecture test `AuditScopeRulesTests`) and apply the Sensitive matter rule ([Sensitive Matter Visibility](../Architecture/Sensitive-Matter-Visibility.md)).
 4. **Cross-module keys.** The foreign key exists in SQL; the entities use scalar ids and no navigation across modules.
 5. **Docs.** Update the wiki: add the table to [ER Diagrams](ER-Diagrams.md) and [Table Reference](Table-Reference.md), add a line to [Schema Script History](Schema-Script-History.md), update [Module Guide](../Backend/Module-Guide.md) if the module owns a new table, and add a [Documentation Map](../Reference/Documentation-Map.md) entry only if you add a doc. Run `node wiki/tools/check-db-docs.mjs`.
@@ -32,15 +32,19 @@
 4. If the table is read by reports, check `db/report-access.json` still describes it correctly (a new sensitive column on an `allow` table may need a decision).
 5. Update the wiki table entry and the script history.
 
+## If you must change the baseline before the first deployment
+
+Only with the owner's agreement, and rarely (a new script is the normal way). Edit `00-baseline.sql`, tell everybody to run `npm run db:reset` (the stored checksum of an already-applied baseline no longer matches, so every existing demo or test database fails at startup until rebuilt), and update the wiki Table-Reference and ER diagrams. The archive is never edited; `BaselineEquivalenceTests` compares the baseline with the archived chain, so a deliberate change to the baseline must be matched by an explicit, reviewed adjustment of that test (or the test retired by the owner once the first deployment makes the baseline immutable).
+
 ## Checklist for an index
 
 1. Name it `IX_<Table>_<Purpose>`. Prefer a filtered or covering index to a wide one; the project measures plans (see `docs/qa/performance-round-1.md`, `docs/qa/sensitive-matters-performance.md`, `tools/perf/`).
-2. If you replace an index, a script may drop and re-create it (script 33 does so for two indexes).
+2. If you replace an index, a script may drop and re-create it (the archived script 33 did so for two indexes).
 
 ## Local test
 
 ```
-npm run db:reset        # fresh database; the API applies all scripts at next start
+npm run db:reset        # fresh database; the API applies the baseline and all later scripts at next start
 npm start               # or: dotnet run --project backend/src/MatterFlow.Api
 ```
 
@@ -50,7 +54,8 @@ To check only the schema without starting the web host: `dotnet run --project ba
 
 | Mistake | Result |
 |---|---|
-| Editing an applied script | Startup fails with a checksum error naming the script |
+| Editing an applied script (the baseline too) | Startup fails with a checksum error naming the script; a database built before the edit must be rebuilt |
+| Starting the API against a database built by the old chain (01 to 66) | Startup fails with the message to run `npm run db:reset` |
 | A new script with a lower number than the highest applied | Startup fails (out-of-order merge); renumber it |
 | Two scripts with the same number | Startup fails listing both |
 | New table not in `db/report-access.json` | `ReportAccessCatalogueTests` fails |
@@ -63,4 +68,4 @@ To check only the schema without starting the web host: `dotnet run --project ba
 - [Schema Script History](Schema-Script-History.md)
 - [Add a Feature End to End](../How-To/Add-a-Feature-End-to-End.md)
 
-Last verified against commit a80aa5a.
+Last verified against the schema baseline (issue #1307).

@@ -5,7 +5,7 @@ using Shouldly;
 
 namespace MatterFlow.SchemaTests;
 
-/// <summary>Constraints and triggers of 14-task-links.sql (docs/erd.md invariants I-4 and I-20).</summary>
+/// <summary>Constraints and triggers of the baseline (archived 14-task-links.sql) (docs/erd.md invariants I-4 and I-20).</summary>
 [Collection(SqlServerCollection.Name)]
 public class TaskLinksSchemaTests(SqlServerFixture sql)
 {

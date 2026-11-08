@@ -106,11 +106,9 @@ MatterFlow/
 │   └── permissions.json             # permission catalog source (codes, groups, descriptions)
 ├── docs/                            # requirements/, architecture.md, erd.md, ux/, adr/
 ├── db/
-│   └── scripts/                     # NUMBERED, IMMUTABLE SQL scripts (section 4)
-│       ├── 01-init.sql              # SchemaMigration is created by the runner, not here
-│       ├── 02-identity-authz.sql
-│       ├── 03-organization.sql
-│       ├── ...
+│   └── scripts/                     # 00-baseline.sql + NUMBERED, IMMUTABLE SQL scripts from 67 (section 4)
+│       ├── 00-baseline.sql          # the whole schema (squashed from the old 01 to 66, issue #1307); SchemaMigration is created by the runner, not here
+│       ├── archive/                 # the old chain 01 to 66, history only, not run
 │       └── README.md                # authoring rules
 ├── backend/
 │   ├── MatterFlow.sln
@@ -169,19 +167,20 @@ MatterFlow/
 └── tools/ { seed-dev-data/, spike-outlook-dnd/ }
 ```
 
-Rules: scripts in `db/scripts` are the schema source of truth; `contracts/` files are reviewed like API changes (CODEOWNERS on both stacks); generated code is committed and CI fails on drift.
+Rules: `db/scripts/00-baseline.sql` and the scripts after it are the schema source of truth; `contracts/` files are reviewed like API changes (CODEOWNERS on both stacks); generated code is committed and CI fails on drift.
 
 ---
 
 ## 4. Database schema management (SQL script runner)
 
-*Decision (addendum J):* schema is changed only by appending numbered SQL scripts. EF Core maps entities to tables for **data access only**; there is no `Add-Migration`, no `DbContext.Database.Migrate()`, no EF migrations history table.
+*Decision (addendum J):* schema is changed only by appending numbered SQL scripts, starting from one baseline script (`00-baseline.sql`, issue #1307: the 63 scripts that existed before the first deployment were squashed into it). EF Core maps entities to tables for **data access only**; there is no `Add-Migration`, no `DbContext.Database.Migrate()`, no EF migrations history table.
 
 ### 4.1 Script conventions
 
 - Location: `/db/scripts/`, embedded into `MatterFlow.Data` as resources (`<EmbeddedResource Include="..\..\..\db\scripts\*.sql" />`). Optional override: `Migrations:ScriptsFolder` (a directory path) for ops hotfix testing; embedded resources are the default in production.
 - Name: `NN-kebab-description.sql`, regex `^(?<n>\d{2,6})-[a-z0-9][a-z0-9-]*\.sql$`. The numeric prefix is parsed as an integer (so `09` < `10` < `100`). Use at least two digits; the team standard is two digits until 99 then three.
-- **Applied scripts are immutable.** To change anything, append a new script. The checksum guard enforces this.
+- **The baseline.** `00-baseline.sql` (prefix 0, so it always runs first) holds a complete `CREATE TABLE` for every table with its indexes, constraints, triggers, functions, procedures, structural seed rows and the database roles and permissions. The old scripts 01 to 66 are in `db/scripts/archive/` (history, not run, not embedded). The first script after the baseline is `67-...`. A database whose journal lists the old scripts but not the baseline is refused at startup with the instruction to rebuild it (`npm run db:reset`); there is no data migration because nothing was deployed. `BaselineEquivalenceTests` proves the baseline builds the same database as the archived chain (`tools/db/schema-fingerprint.sql`).
+- **Applied scripts are immutable** (the baseline from the first real deployment on; until then it is edited only together with a rebuild of every demo and test database). To change anything, append a new script. The checksum guard enforces this.
 - One logical change per script. DDL, seed data (permission catalog is **not** seeded here; see 4.6) and data fixes are all allowed. Scripts must be written to be run once, not idempotently.
 - Batches are separated with a line containing only `GO` (case-insensitive, optional repeat count not supported). Do not rely on variables across batches.
 - Encoding UTF-8 (BOM tolerated). Line endings are normalized before hashing (see checksum).
@@ -255,7 +254,9 @@ Details:
 - Seed data owned by code (permission catalog, fixed `TaskStatusLabel` codes) is synchronized by the app (4.6) rather than by script; scripts seed only structural lookups needed by FKs (the five status codes, default priorities, default asset link roles, default Admin role row).
 - Destructive changes (drop/rename column) use the expand-then-contract pattern across two releases.
 
-### 4.5 Initial script plan
+### 4.5 Initial script plan (historical)
+
+*Superseded by the baseline (issue #1307). The table below is the plan the project started with; the real chain was 01 to 66 and is now `db/scripts/00-baseline.sql` (archived in `db/scripts/archive/`).*
 
 | Script | Contents | Owner stream |
 |---|---|---|
@@ -281,8 +282,9 @@ Parallel work note: because order matters, early scripts are written by the plat
 
 Because EF no longer generates the schema, drift is a real risk. Controls:
 
-- `MatterFlow.SchemaTests` applies all scripts to a fresh Testcontainers database (via the runner) and then (a) asserts every EF entity/property maps to an existing table/column with a compatible type and nullability (reading `INFORMATION_SCHEMA`/`sys.*` against `IModel`), (b) smoke-queries each `DbSet`, (c) asserts key constraints exist (see `docs/erd.md`).
-- Runner tests: pending scripts run in order; second run is a no-op; duplicate prefix fails; changed checksum fails; failing script rolls back and does not record; concurrent starts serialize (two runners, one DB); GO splitting edge cases (comments, strings, `GO` inside identifiers).
+- `MatterFlow.SchemaTests` applies the baseline and every later script to a fresh Testcontainers database (via the runner) and then (a) asserts every EF entity/property maps to an existing table/column with a compatible type and nullability (reading `INFORMATION_SCHEMA`/`sys.*` against `IModel`), (b) smoke-queries each `DbSet`, (c) asserts key constraints exist (see `docs/erd.md`).
+- `BaselineEquivalenceTests` (issue #1307): database A from the archived chain `db/scripts/archive` (01 to 66) through the real runner, database B from the embedded baseline, both described by `tools/db/schema-fingerprint.sql`; the descriptions must be equal. `ScriptsFolderTests` keeps the baseline at prefix 0 and every other script at 67 or higher.
+- Runner tests: a database with the old script names in its journal but no baseline is refused with the rebuild message; pending scripts run in order; second run is a no-op; duplicate prefix fails; changed checksum fails; failing script rolls back and does not record; concurrent starts serialize (two runners, one DB); GO splitting edge cases (comments, strings, `GO` inside identifiers).
 - Entity configurations in modules map to names explicitly (`ToTable`, `HasColumnName`, `HasConstraintName` where tests inspect them); `rowversion` columns are mapped with `IsRowVersion()`; computed columns with `ValueGeneratedOnAddOrUpdate()`.
 
 ---
@@ -301,8 +303,8 @@ Because EF no longer generates the schema, drift is a real risk. Controls:
 | **WorkflowEngine** | StepDefinition, WorkflowDefinition/Version/VersionStep, WorkflowInstance, StepInstance, step state machine | `IWorkflowInstantiator`, `IWorkflowProgress` (completion check), `IStepCommands` |
 | **WorkManagement** | Task, TaskAsset, TaskComment(+Revision), lifecycle state machine, assignment | `ITaskLookup`, `ITaskLifecycle` (used by WorkflowEngine callbacks via contract interface `ITaskStatusGate`) |
 | **WorkViews** | Queue/My Work/Pod Work/Dashboard queries | none (leaf); `Audit.Contracts` only, to record `EXPORT_RUN` of a list export (PM v2 #879) |
-| **Productions** | ProductionSpec, Production, ProductionComment (epic #1001, scripts 52 and 53) | marker only (`ProductionsContractsMarker`); history is read from Audit by object type `Production` and `ProductionSpec` |
-| **Notes** | Note, NoteTag, NoteTagLink, NoteLink, NoteTemplate, NoteTemplateTag (epic #1001, scripts 54 and 55) | marker only (`NotesContractsMarker`); history is read from Audit by object type `Note` |
+| **Productions** | ProductionSpec, Production, ProductionComment (epic #1001; baseline, formerly scripts 52 and 53) | marker only (`ProductionsContractsMarker`); history is read from Audit by object type `Production` and `ProductionSpec` |
+| **Notes** | Note, NoteTag, NoteTagLink, NoteLink, NoteTemplate, NoteTemplateTag (epic #1001; baseline, formerly scripts 54 and 55) | marker only (`NotesContractsMarker`); history is read from Audit by object type `Note` |
 | **Search** | Global/advanced queries | none (leaf) |
 | **Intake** | Email parsing | none (leaf) |
 
@@ -384,7 +386,7 @@ Source of truth: `contracts/permissions.json` (code, group, description), genera
 | Client/Matter/Project/Asset View | X | X | X | X | X |
 | Client/Matter Create/Edit | X | X | X | - | - |
 | EditNumber, Matter.SetActive | X | X | - | - | - |
-| Matter.BeManager (can be named project manager; opens My Matters; Director since issue #976, script 66) | X | X | - | - | - |
+| Matter.BeManager (can be named project manager; opens My Matters; Director since issue #976) | X | X | - | - | - |
 | Matter.AssignManagers (set a matter's managers) | X | X | - | - | - |
 | Project Create/Edit/Archive | X | X | X | X | - |
 | Asset Create/Edit/Link | X | X | X | X | X |

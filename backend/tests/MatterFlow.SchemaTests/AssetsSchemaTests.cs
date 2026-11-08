@@ -5,7 +5,7 @@ using Shouldly;
 
 namespace MatterFlow.SchemaTests;
 
-/// <summary>Constraints, indexes and the guard trigger of 10-assets.sql (docs/erd.md section 3).</summary>
+/// <summary>Constraints, indexes and the guard trigger of the baseline (archived 10-assets.sql) (docs/erd.md section 3).</summary>
 [Collection(SqlServerCollection.Name)]
 public class AssetsSchemaTests(SqlServerFixture sql)
 {

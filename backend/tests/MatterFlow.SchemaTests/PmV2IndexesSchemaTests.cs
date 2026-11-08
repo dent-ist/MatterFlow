@@ -5,7 +5,7 @@ using Shouldly;
 
 namespace MatterFlow.SchemaTests;
 
-/// <summary>47-pm-v2-performance-indexes.sql (PM v2, epic #851, issue #887): the covering index of the Data tab and the asset reports and the task index of the Breakdown exist, are not filtered and keep the older indexes.</summary>
+/// <summary>Baseline (archived 47-pm-v2-performance-indexes.sql) (PM v2, epic #851, issue #887): the covering index of the Data tab and the asset reports and the task index of the Breakdown exist, are not filtered and keep the older indexes.</summary>
 [Collection(SqlServerCollection.Name)]
 public class PmV2IndexesSchemaTests(SqlServerFixture sql)
 {
@@ -44,7 +44,7 @@ public class PmV2IndexesSchemaTests(SqlServerFixture sql)
         filtered.CommandText = "SELECT has_filter FROM sys.indexes WHERE object_id = OBJECT_ID('dbo.CustomFieldIndex') AND name = 'IX_CFI_Kind_Field_Owner'";
         ((bool)(await filtered.ExecuteScalarAsync())!).ShouldBeFalse("a left join over the select value needs the rows with no value as well");
 
-        // The five older indexes of script 06 stay: the Assets list and the Task Queue filters use them.
+        // The five older indexes of the baseline stay: the Assets list and the Task Queue filters use them.
         await using var others = c.CreateCommand();
         others.CommandText = "SELECT COUNT(*) FROM sys.indexes WHERE object_id = OBJECT_ID('dbo.CustomFieldIndex') AND name IN ('IX_CFI_Text', 'IX_CFI_Number', 'IX_CFI_Date', 'IX_CFI_DateTime', 'IX_CFI_Bool', 'IX_CFI_Owner')";
         ((int)(await others.ExecuteScalarAsync())!).ShouldBe(6);

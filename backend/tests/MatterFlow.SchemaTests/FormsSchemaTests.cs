@@ -5,7 +5,7 @@ using Shouldly;
 
 namespace MatterFlow.SchemaTests;
 
-/// <summary>Constraints, indexes and triggers of 06-forms.sql (docs/erd.md section 6).</summary>
+/// <summary>Constraints, indexes and triggers of the baseline (archived 06-forms.sql) (docs/erd.md section 6).</summary>
 [Collection(SqlServerCollection.Name)]
 public class FormsSchemaTests(SqlServerFixture sql)
 {

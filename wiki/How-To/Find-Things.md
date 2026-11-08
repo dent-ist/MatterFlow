@@ -34,12 +34,12 @@ Run from the repository root.
 |---|---|
 | Where a screen's text is defined | `grep -rn "Task Queue" frontend/src --include=*.ts` (exact visible text, also in `shared/layout/nav-items.ts` and route `title`) |
 | The component of a URL | Open [Routing and Navigation](../Frontend/Routing-and-Navigation.md) or `grep -rn "path: 'matters'" frontend/src/app` |
-| Everything that uses a permission | `grep -rn "Task.Assign" backend/src frontend/src contracts db/scripts` |
+| Everything that uses a permission | `grep -rn "Task.Assign" backend/src frontend/src contracts db/scripts --exclude-dir=archive` |
 | The controller of an endpoint | `grep -rn 'Route("api/v1/dashboard' backend/src` and `grep -rn 'Name = "GetDashboard"' backend/src` |
 | Callers of an API method in the frontend | `grep -rn "GetDashboard" frontend/src/app --include=*.ts` (skip `api/generated`) |
 | The service behind a controller | The controller's constructor parameters name it; `grep -rn "class TaskService" backend/src` |
 | A table's entity and mapping | `grep -rn 'ToTable("Task")' backend/src` and the entity in the same module's `Domain/` |
-| Which script created or changed a column | `grep -ln "AssignedAt" db/scripts/*.sql` (or see [Table Reference](../Database/Table-Reference.md) "Scripts") |
+| Which script created or changed a column | `grep -n "AssignedAt" db/scripts/00-baseline.sql`; the old chain is in `db/scripts/archive/` (or see [Table Reference](../Database/Table-Reference.md) "Scripts") |
 | Who writes an audit event | `grep -rn "MATTER_SENSITIVITY_CHANGED" backend/src frontend/src` |
 | An error code's origin | `grep -rn "SENSITIVE_NEEDS_MANAGER" backend/src frontend/src` |
 | A setting key | `grep -rn "Dashboard.Gauge" backend/src frontend/src` (application setting) or `grep -rn "SensitiveMatterAccess" backend/src deploy docs` (configuration) |

@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using MatterFlow.Data.SchemaMigrations;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -6,16 +5,10 @@ using Shouldly;
 
 namespace MatterFlow.SchemaTests;
 
-/// <summary>28-matter-managers.sql (epic #667): the two optional manager columns of Matter, their constraints and indexes, and the grants of the two new permissions.</summary>
+/// <summary>Baseline (archived 28-matter-managers.sql) (epic #667): the two optional manager columns of Matter, their constraints and indexes, and the grants of the two new permissions.</summary>
 [Collection(SqlServerCollection.Name)]
 public class MatterManagersSchemaTests(SqlServerFixture sql)
 {
-    private sealed class ScriptsBefore(int number) : IMigrationScriptSource
-    {
-        public IReadOnlyList<(string Name, string Content)> ReadAll() =>
-            [.. new EmbeddedMigrationScriptSource().ReadAll().Where(s => int.Parse(Regex.Match(s.Name, @"^\d+").Value) < number)];
-    }
-
     private static Task RunAsync(string cs, IMigrationScriptSource source) =>
         new SchemaMigrationRunner(cs, source, new MigrationsOptions { LockTimeoutSeconds = 60 }, NullLogger<SchemaMigrationRunner>.Instance).RunAsync();
 
@@ -103,28 +96,4 @@ public class MatterManagersSchemaTests(SqlServerFixture sql)
             .ShouldBe(["IX_Matter_PrimaryManager|([PrimaryManagerId] IS NOT NULL)", "IX_Matter_SecondaryManager|([SecondaryManagerId] IS NOT NULL)"]);
     }
 
-    [Fact]
-    public async Task The_permissions_go_to_Project_Manager_and_Director_only_and_custom_roles_are_left_alone()
-    {
-        var cs = await sql.CreateDatabaseAsync();
-        await RunAsync(cs, new ScriptsBefore(28));
-        await ExecAsync(cs, """
-            INSERT dbo.Role (Name, Description, IsActive) VALUES
-              (N'Project Manager', N'Manages clients, matters and projects; sees the Dashboard summary and swimlane.', 1),
-              (N'Director', N'Department head', 1), (N'Pod Lead', N'Leads a pod', 1), (N'Custom', N'My own role', 1),
-              (N'Renamed PM', N'Manages clients, matters and projects; sees the Dashboard summary and swimlane.', 1);
-            """);
-
-        await RunAsync(cs, new EmbeddedMigrationScriptSource());
-        await RunAsync(cs, new EmbeddedMigrationScriptSource()); // nothing more to apply: the runner is idempotent too
-
-        (await GrantsAsync(cs, "Project Manager")).ShouldBe(["Matter.AssignManagers", "Matter.BeManager"]);
-        (await GrantsAsync(cs, "Director")).ShouldBe(["Matter.AssignManagers"]);
-        (await GrantsAsync(cs, "Pod Lead")).ShouldBeEmpty();
-        (await GrantsAsync(cs, "Custom")).ShouldBeEmpty();
-        (await GrantsAsync(cs, "Renamed PM")).ShouldBeEmpty();
-        (await ReadAsync(cs, "SELECT Description FROM dbo.Role WHERE Name = N'Project Manager'")).Single().ShouldContain("can be named as a matter's project manager");
-        (await ReadAsync(cs, "SELECT Description FROM dbo.Role WHERE Name = N'Custom'")).Single().ShouldBe("My own role");
-        (await ReadAsync(cs, "SELECT Code FROM dbo.Permission WHERE GroupName = 'Client/Matter' AND Code LIKE 'Matter.%Manager%' ORDER BY Code")).ShouldBe(["Matter.AssignManagers", "Matter.BeManager"]);
-    }
 }

@@ -5,7 +5,7 @@ using Shouldly;
 
 namespace MatterFlow.SchemaTests;
 
-/// <summary>Constraints, indexes, triggers and defaults of 12-tasks.sql (docs/erd.md section 5, decisions addendum A, M).</summary>
+/// <summary>Constraints, indexes, triggers and defaults of the baseline (archived 12-tasks.sql) (docs/erd.md section 5, decisions addendum A, M).</summary>
 [Collection(SqlServerCollection.Name)]
 public class TaskSchemaTests(SqlServerFixture sql)
 {

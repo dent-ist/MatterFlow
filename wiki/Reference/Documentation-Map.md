@@ -18,7 +18,7 @@
 | `docs/runbook.md` | Operations guide: install on IIS, upgrade, backup, troubleshooting, reports login, Sensitive matters go-live; see [Runbook](../Operations/Runbook.md) |
 | `docs/frontend-bundle.md` | Notes on the frontend bundle size |
 | `docs/contract-issues-dotnet.md`, `docs/contract-issues-ts.md` | Notes from implementing the form-rules contract in each stack (all resolved) |
-| `db/scripts/README.md` | Rules for SQL scripts and the list of later scripts |
+| `db/scripts/README.md` | The baseline, the rules for SQL scripts and the list of scripts after it; `db/scripts/archive/README.md` explains the archive |
 | `contracts/README.md`, `contracts/form-rules.md` | Contract overview and the form rule semantics |
 | `tools/perf/README.md` | Load and timing tools |
 | `frontend/projects/form-engine/README.md` | The form engine library |
@@ -69,7 +69,7 @@
 | Path | Purpose |
 |---|---|
 | `Home.md`, section pages and folders | The developer wiki; published as the Azure DevOps wiki |
-| `wiki/tools/check-db-docs.mjs` | Checks the database pages against `db/scripts` |
+| `wiki/tools/check-db-docs.mjs` | Checks the database pages against `db/scripts` (baseline, later scripts and the archive) |
 | `.order` files | Page order for Azure DevOps |
 
 ## Where to find ...

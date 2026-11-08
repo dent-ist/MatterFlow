@@ -5,7 +5,7 @@ using Shouldly;
 
 namespace MatterFlow.SchemaTests;
 
-/// <summary>Constraints of 22-user-availability.sql (docs/erd.md, epic #68).</summary>
+/// <summary>Constraints of the baseline (archived 22-user-availability.sql) (docs/erd.md, epic #68).</summary>
 [Collection(SqlServerCollection.Name)]
 public class UserAvailabilitySchemaTests(SqlServerFixture sql)
 {

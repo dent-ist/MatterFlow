@@ -2,9 +2,19 @@
 
 [[_TOC_]]
 
-**What this page is for.** One line per numbered SQL script in `db/scripts/`, in order: what it did, which tables it created and which it changed. Use it to find which script introduced a column or table, and to see how the schema grew. Rules for writing a new script: [How to Change the Schema](How-to-Change-the-Schema.md).
+**What this page is for.** The history of the schema: the baseline that replaced the first 63 scripts (issue #1307), and one line per archived script 01 to 66 (what it did, which tables it created and which it changed). Use it to find which script introduced a column or table and to see how the schema grew. Rules for writing a new script: [How to Change the Schema](How-to-Change-the-Schema.md).
 
-There are 64 scripts, numbered 01 to 66. **Numbers 16, 61 and 62 do not exist** (gaps are allowed by the runner; 61 and 62 were reserved for the Reports scripts, which were renumbered to 65 and 66 before they were merged, because a database that had already applied 63 and 64 would refuse a pending lower number). Scripts are immutable once merged, so where one later fixed another (for example 32 after 31) the fix is a new script. "Created" and "changed" are derived by pattern matching on `CREATE TABLE`, `ALTER TABLE`, `CREATE INDEX` and `CREATE TRIGGER` in the script text; permission and data scripts are described in plain words.
+## The baseline and the scripts after it
+
+| # | File | What it is |
+|---|---|---|
+| 00 | `00-baseline.sql` | The whole schema as of the squash (issue #1307): every table with columns, defaults and keys, all indexes, the sequence, the functions, procedure and triggers (including the DDL trigger that protects the audit tables), the seed rows (System Admin role, 25 permission rows, 5 task status labels), the roles `mf_app`, `mf_migrator`, `mf_report_reader` and all GRANT / DENY lines. Prefix 0, so it always runs first. |
+
+There are no scripts after the baseline yet; the first one is **67**. Add each new script to this table when you add it. Why prefix 0: the runner sorts by number and refuses a pending script that is lower than the highest applied one, so the baseline must be lower than everything that follows; 1 to 66 stay with the archive and are never reused. `SchemaTests/BaselineEquivalenceTests` proves the baseline builds the same database as the archived chain (tables, columns, constraints, indexes, triggers, permissions, seed rows). A database built by the old chain is refused at startup with the instruction to run `npm run db:reset`; nothing is migrated (MatterFlow was not deployed).
+
+## The archived chain (01 to 66)
+
+The files are in `db/scripts/archive/` (moved with `git mv`, content unchanged). The application does not run them. There were 63 scripts, numbered 01 to 66. **Numbers 16, 61 and 62 do not exist** (gaps are allowed by the runner; 61 and 62 were reserved for the Reports scripts, which were renumbered to 65 and 66 before they were merged, because a database that had already applied 63 and 64 would refuse a pending lower number). Where one script later fixed another (for example 32 after 31) the fix was a new script. "Created" and "changed" are derived by pattern matching on `CREATE TABLE`, `ALTER TABLE`, `CREATE INDEX` and `CREATE TRIGGER` in the script text; permission and data scripts are described in plain words. Scripts 24, 25, 27, 28, 34, 38, 46, 60, 65 and 66 (grants to existing starter roles) and the backfills of 13, 20, 21, 26, 31, 37, 43, 58 are not part of the baseline: they only changed rows of a running database.
 
 | # | File | What it did | Tables created | Tables or indexes changed |
 |---|---|---|---|---|
@@ -78,4 +88,4 @@ There are 64 scripts, numbered 01 to 66. **Numbers 16, 61 and 62 do not exist** 
 - [Table Reference](Table-Reference.md)
 - [Views and Procedures](Views-and-Procedures.md)
 
-Last verified against commit a80aa5a.
+Last verified against the schema baseline (issue #1307).

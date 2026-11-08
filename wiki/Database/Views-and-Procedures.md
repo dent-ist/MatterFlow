@@ -2,7 +2,7 @@
 
 [[_TOC_]]
 
-**What this page is for.** The programmable objects of the database: the sequence, inline functions, stored procedures and triggers, with what each is for and which script created it. There are no views. Read it before you change a table that has a trigger, or when you need raw SQL that must respect the Sensitive matter rule.
+**What this page is for.** The programmable objects of the database: the sequence, inline functions, stored procedures and triggers, with what each is for and which script created it (script numbers refer to the archived chain in `db/scripts/archive/`; all of these objects are in `db/scripts/00-baseline.sql` now, issue #1307). There are no views. Read it before you change a table that has a trigger, or when you need raw SQL that must respect the Sensitive matter rule.
 
 Derived from `sys.objects` and `sys.triggers` of the demo database and checked against the scripts.
 
