@@ -75,6 +75,10 @@ export const MfPreset = definePreset(AuraLite, {
           paddingY: '0.375rem',
           iconOnlyWidth: 'var(--mf-ctl-h)',
         },
+        // Primary (the default severity) had no ring colour of its own: Aura draws it in the primary colour at a pale tint, about 1.1:1 on white (#1323).
+        primary: {
+          focusRing: { color: 'var(--mf-focus)', shadow: 'none' },
+        },
         secondary: {
           background: 'var(--mf-white)',
           hoverBackground: '{surface.100}',

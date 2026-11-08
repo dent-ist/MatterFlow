@@ -27,4 +27,17 @@ describe('MfPreset', () => {
       /#[0-9A-F]{6}/,
     );
   });
+
+  it('draws the focus ring of primary, secondary and danger buttons in --mf-focus (#1323)', () => {
+    const root = (
+      MfPreset as {
+        components?: {
+          button?: { root?: Record<string, { focusRing?: { color?: string; shadow?: string } }> };
+        };
+      }
+    ).components?.button?.root;
+    for (const severity of ['primary', 'secondary', 'danger']) {
+      expect(root?.[severity]?.focusRing).toEqual({ color: 'var(--mf-focus)', shadow: 'none' });
+    }
+  });
 });

@@ -186,6 +186,16 @@ td .mf-btn--icon,
   white-space: nowrap;
 }
 
+/* PrimeNG fades the outline colour in (0.2 s from transparent): the keyboard focus ring must be there at once, as on the .mf-btn controls (#1323).
+   The second class outranks PrimeNG's own `.p-button` rule, which is injected after this file. */
+.p-button.p-component {
+  transition:
+    background var(--p-button-transition-duration),
+    color var(--p-button-transition-duration),
+    border-color var(--p-button-transition-duration),
+    box-shadow var(--p-button-transition-duration);
+}
+
 .p-button.p-button-sm {
   min-height: var(--mf-ctl-h);
   font-size: var(--mf-fs-md);
