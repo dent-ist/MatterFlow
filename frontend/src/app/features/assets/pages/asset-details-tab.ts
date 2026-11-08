@@ -51,6 +51,17 @@ import { NumericDatePipe } from '../../../shared/ui/numeric-date';
   template: `
     <div class="ad__cols">
       <mf-details-card title="Details" data-section="asset" data-details>
+        @if (asset().assetNumber; as number) {
+          <div mfDetailField label="Asset Number" data-asset-number>
+            <!-- One line with an ellipsis (the whole number is the tooltip and the copy button copies all of it). -->
+            <span class="ad__ref">
+              <span class="pg-mono ad__ref-text" [attr.title]="number" data-number-value>{{
+                number
+              }}</span>
+              <mf-copy-button [text]="number" label="asset number" />
+            </span>
+          </div>
+        }
         <div mfDetailField label="Matter" data-matter>
           <mf-matter-ref [value]="asset().matterRef" [link]="matterLink()" />
           <span>{{ asset().matterName }}</span>

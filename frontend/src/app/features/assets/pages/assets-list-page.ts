@@ -39,6 +39,12 @@ import {
   RecordGridColumn,
   RecordGridState,
 } from '../../../shared/ui/record-grid';
+import {
+  ASSET_NUMBER_COLUMN_WIDTH,
+  AssetNumberCell,
+  hasNumberedType,
+  numberedTypeIds,
+} from '../../../shared/ui/asset-number-cell';
 import { CopyButton } from '../../../shared/ui/copy-button';
 import { RowLink, registerTableSkip, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { phoneCards } from '../../../shared/ui/record-card-list';
@@ -71,6 +77,7 @@ import {
 const BONES: Record<string, string> = {
   type: '7rem',
   name: '14rem',
+  assetNumber: '9rem',
   matter: '6rem',
   size: '4rem',
   linkedTasks: '2rem',
@@ -96,6 +103,7 @@ const BONES: Record<string, string> = {
     AssetTypeCell,
     Button,
     CopyButton,
+    AssetNumberCell,
     RouterLink,
     RowLink,
     HasPermissionDirective,
@@ -116,6 +124,9 @@ const BONES: Record<string, string> = {
   styleUrl: '../../../shared/ui/page.scss',
   styles: `
     /* Name is the spring of the table: one line with an ellipsis (D-45); the floor is on the heading (the column definition). */
+    td.as-number {
+      max-width: 0;
+    }
     td.as-name {
       width: 100%;
       max-width: 0;
@@ -395,6 +406,14 @@ const BONES: Record<string, string> = {
                 >
               </td>
             </ng-template>
+            <ng-template mfCell="assetNumber" let-a>
+              <td class="as-number" data-asset-number>
+                <mf-asset-number-cell
+                  [number]="a.assetNumber"
+                  [numbered]="numberedTypes().has(a.assetTypeId)"
+                />
+              </td>
+            </ng-template>
             <ng-template mfCell="matter" let-a>
               <td class="as-matter" [attr.title]="a.matterName" data-matter>
                 <mf-matter-ref
@@ -547,6 +566,17 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
     },
     // The spring: no width, so it takes the free room in every state.
     { key: 'name', label: 'Name', locked: true, sort: 'displayName', minWidth: '200px' },
+    ...(this.numbered()
+      ? [
+          {
+            key: 'assetNumber',
+            label: 'Asset Number',
+            sort: 'assetNumber',
+            width: ASSET_NUMBER_COLUMN_WIDTH,
+            minWidth: ASSET_NUMBER_COLUMN_WIDTH,
+          },
+        ]
+      : []),
     { key: 'matter', label: 'CM Number', sort: 'matter', width: '8.8rem', minWidth: '8.8rem' },
     {
       key: 'size',
@@ -571,7 +601,14 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
         ]
       : []),
     // 168 px: the heading "External Reference" is 143 px of text plus 24 px of padding, so it stays on one line (#1249; the 150 px of the issue wrapped).
-    { key: 'externalReference', label: 'External Reference', width: '168px', minWidth: '168px' },
+    // With an active numbered type the Asset Number column takes its room and this one is off by default (still one click away in Columns; #1297).
+    {
+      key: 'externalReference',
+      label: 'External Reference',
+      width: '168px',
+      minWidth: '168px',
+      defaultHidden: this.numbered(),
+    },
     // The chip is shown whole: "Pending Disposition" is 154 px, so the column is wider than the 140 px Status of the other lists (D-43 deviation, to be ruled).
     {
       key: 'status',
@@ -662,6 +699,9 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
     })),
   );
   protected readonly types = signal<AssetTypeResponse[]>([]);
+  /** An active asset type numbers its assets: the Asset Number column exists (#1297). */
+  protected readonly numbered = computed(() => hasNumberedType(this.types()));
+  protected readonly numberedTypes = computed(() => numberedTypeIds(this.types()));
 
   protected readonly typeOptions = computed<FilterOption[]>(() =>
     this.types().map((t) => ({ value: String(t.assetTypeId), label: t.name })),
@@ -699,6 +739,17 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
     },
     // The input says the short heading word (D-44d): the column is CM Number.
     { key: 'matter', label: 'Matter', column: 'matter', type: 'text', placeholder: 'Number' },
+    ...(this.numbered()
+      ? [
+          {
+            key: 'assetNumber',
+            label: 'Asset Number',
+            column: 'assetNumber',
+            type: 'text' as const,
+            placeholder: 'Number',
+          },
+        ]
+      : []),
     {
       key: 'extref',
       label: 'External Reference',
@@ -839,6 +890,7 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
         undefined,
         this.filters.text('name') || undefined,
         this.filters.text('extref') || undefined,
+        this.filters.text('assetNumber') || undefined,
         this.filters.text('matter') || undefined,
         scoped && this.scope.mine() ? true : undefined,
         scoped && this.scope.mine() && role ? role : undefined,

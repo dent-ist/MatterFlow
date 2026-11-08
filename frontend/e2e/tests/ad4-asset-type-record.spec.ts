@@ -328,7 +328,7 @@ test.describe('Asset type record page (#635, #636, #638)', () => {
     const manager = await asUser((await seed.user([role.name], 'ad4-rec')).username);
     await manager.goto(`/admin/asset-types/${t.assetTypeId}?tab=assets`);
     await expect(heading(manager)).toContainText('Perm');
-    await expect(manager.getByRole('tab')).toHaveCount(2);
+    await expect(manager.getByRole('tab')).toHaveCount(3);
     await expect(manager.getByRole('tab', { name: /^Assets/ })).toHaveCount(0);
     await expect(manager.locator('[data-overview-tab]')).toBeVisible();
     await expect(manager.getByRole('button', { name: 'Activity' })).toHaveCount(0);

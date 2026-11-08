@@ -169,6 +169,7 @@ export class GeneratedMmApi extends MmApi {
       .getMyMattersAssets(
         q.q,
         q.name,
+        undefined,
         q.assetTypeId,
         q.status,
         q.createdFrom,

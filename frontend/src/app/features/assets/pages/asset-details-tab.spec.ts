@@ -159,4 +159,22 @@ describe('AssetDetailsTab', () => {
       ).not.toBeNull();
     });
   });
+
+  describe('the Asset Number (#1297)', () => {
+    it('is the first field in mono type with a Copy button and the whole number as tooltip', async () => {
+      await create(['Asset.View'], anAsset({ assetNumber: '00343-00012_001' }));
+      const first = el().querySelector('[data-details] [data-asset-number]')!;
+      expect(first.previousElementSibling).toBeNull();
+      expect(first.textContent).toContain('Asset Number');
+      const value = first.querySelector<HTMLElement>('[data-number-value]')!;
+      expect(value.textContent).toBe('00343-00012_001');
+      expect(value.getAttribute('title')).toBe('00343-00012_001');
+      expect(first.querySelector('button[aria-label="Copy asset number"]')).not.toBeNull();
+    });
+
+    it('is not shown for an asset without a number (a type without numbering)', async () => {
+      await create(['Asset.View'], anAsset());
+      expect(el().querySelector('[data-asset-number]')).toBeNull();
+    });
+  });
 });
