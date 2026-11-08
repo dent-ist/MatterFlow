@@ -158,12 +158,12 @@ test.describe('Users tab: workload', () => {
     await expect(away.locator('[data-open-total]')).toHaveText('2');
     await expect(card(page, 'oooIdle').locator('[data-user-open]')).toHaveAttribute(
       'aria-label',
-      /, 0 open tasks, Idle, Out of Office until/,
+      /, 0 open tasks, Idle, Out of Office$/,
     );
 
     const off = card(page, 'offHours');
     await expect(off).toHaveAttribute('data-state', 'busy');
-    await expect(off.locator('[data-user-open]')).toHaveAttribute('aria-label', /Off hours/);
+    await expect(off.locator('[data-user-open]')).toHaveAttribute('aria-label', /Off Hours/);
 
     // Every card has exactly the same height, whatever its state (out of office, off hours, heavy, overdue, long names).
     const heights = await page

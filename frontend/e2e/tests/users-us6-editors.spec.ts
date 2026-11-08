@@ -27,13 +27,13 @@ let roleId: number;
 let podName: string;
 let podId: number;
 
-test.beforeAll(async ({ admin, seed, personas }) => {
+test.beforeAll(async ({ seed, personas }) => {
   roleName = `Reviewer ${TAG}`;
-  const role = await admin.post('/api/v1/roles', {
-    name: roleName,
-    description: 'Reads and comments.',
-    permissionCodes: ['Task.View', 'Matter.View', 'Client.View'],
-  });
+  const role = await seed.roleOnce(roleName, 'Reads and comments.', [
+    'Task.View',
+    'Matter.View',
+    'Client.View',
+  ]);
   roleId = role.roleId;
   const member = await personas.create({ label: `${TAG}m`, roles: ['Data Technician'] });
   podName = `Editors ${TAG}`;

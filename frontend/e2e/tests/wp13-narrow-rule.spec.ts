@@ -88,7 +88,8 @@ test.describe('Narrow rule (#201)', () => {
     const g = await grid(page);
     expect(g.client).toBe(1098);
     // The standard order does not fit: the frame scrolls sideways, the Title keeps its width.
-    expect(g.title).toBeGreaterThanOrEqual(160);
+    // D-43a (#1232): the Title minimum is 120 px on task grids; 160 is guaranteed only for the default column sets.
+    expect(g.title).toBeGreaterThanOrEqual(120);
     await shot(page, 'task-queue-box-1098');
 
     for (const [name, width, height] of [
@@ -141,7 +142,8 @@ test.describe('Narrow rule (#201)', () => {
     const g = await grid(page);
     expect(g.keys).toContain('client');
     expect(g.keys).toContain('type');
-    expect(g.title).toBeGreaterThanOrEqual(160);
+    // D-43a (#1232): the Title minimum is 120 px on task grids; 160 is guaranteed only for the default column sets.
+    expect(g.title).toBeGreaterThanOrEqual(120);
     await page.getByRole('button', { name: 'Columns', exact: true }).click();
     await expect(page.getByRole('checkbox', { name: 'Client' })).toBeChecked();
     await expect(page.getByRole('checkbox', { name: 'Type', exact: true })).toBeChecked();
@@ -268,7 +270,21 @@ test.describe('Stored widths (#203)', () => {
     // Over the maximum: clamped to 320 px; a string and the Title are ignored.
     expect(Math.abs((await widthOf(page, 'matter')) - 320)).toBeLessThanOrEqual(1);
     expect(Math.abs((await widthOf(page, 'status')) - 140)).toBeLessThanOrEqual(1);
-    expect(await widthOf(page, 'title')).toBeLessThan(700);
+    // The Title is the one spring (D-42, D-43): the frame width minus the other columns, within 2 px, and at least 120 px.
+    const spring = await page.evaluate(() => {
+      const ths = Array.from(document.querySelectorAll<HTMLElement>('thead tr:first-child th'));
+      // The grid fills the frame (or scrolls): its table is at least as wide as the frame; the spring is the table minus the others.
+      const frame = document
+        .querySelector<HTMLElement>('.wt-wrap table')!
+        .getBoundingClientRect().width;
+      const others = ths
+        .filter((th) => th.dataset['col'] !== 'title')
+        .reduce((sum, th) => sum + th.getBoundingClientRect().width, 0);
+      const title = ths.find((th) => th.dataset['col'] === 'title')!.getBoundingClientRect().width;
+      return { title, rest: frame - others };
+    });
+    expect(spring.title).toBeGreaterThanOrEqual(120);
+    expect(Math.abs(spring.title - Math.max(120, spring.rest))).toBeLessThanOrEqual(2);
     await shot(page, 'task-queue-stored-widths-1920x1080');
 
     // My Work keeps its own width, and Task Queue still has its own after coming back.
