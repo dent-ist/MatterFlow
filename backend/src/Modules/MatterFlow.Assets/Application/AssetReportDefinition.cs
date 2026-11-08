@@ -19,9 +19,13 @@ public static class AssetReportGroupBy
     public const string Matter = "matter";
     public const string Client = "client";
     public const string AssetType = "assetType";
+
+    /// <summary>One group per generated Asset Number (issue #1297): with the Sum measure, the size per numbered folder. Assets without a number form one group "(none)".</summary>
+    public const string AssetNumber = "assetNumber";
+
     public const string FieldPrefix = "field:";
 
-    public static readonly IReadOnlyList<string> BuiltIn = [Disposition, Matter, Client, AssetType];
+    public static readonly IReadOnlyList<string> BuiltIn = [Disposition, Matter, Client, AssetType, AssetNumber];
 
     public static string Label(string key) => key switch
     {
@@ -29,6 +33,7 @@ public static class AssetReportGroupBy
         Matter => "Matter",
         Client => "Client",
         AssetType => "Asset type",
+        AssetNumber => "Asset number",
         _ => key,
     };
 }
@@ -56,7 +61,7 @@ public sealed class AssetReportDefinition
     [StringLength(10)]
     public string? NumberUnit { get; init; }
 
-    /// <summary><c>disposition</c>, <c>matter</c>, <c>client</c>, <c>assetType</c> or <c>field:&lt;key&gt;</c> (a SELECT field of the chosen type).</summary>
+    /// <summary><c>disposition</c>, <c>matter</c>, <c>client</c>, <c>assetType</c>, <c>assetNumber</c> (one group per generated Asset Number) or <c>field:&lt;key&gt;</c> (a SELECT field of the chosen type).</summary>
     [StringLength(80)]
     public string GroupBy { get; init; } = AssetReportGroupBy.Disposition;
 

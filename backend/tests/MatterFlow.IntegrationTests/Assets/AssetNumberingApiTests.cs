@@ -247,7 +247,7 @@ public sealed class AssetNumberingApiTests(SqlServerFixture sql) : IAsyncLifetim
     }
 
     [Fact]
-    public async Task The_next_number_can_be_raised_to_continue_after_existing_folders_and_never_lowered_below_the_highest_assigned()
+    public async Task The_next_number_can_only_be_raised_to_continue_after_existing_folders_never_lowered()
     {
         var matter = await _kit.CreateMatterAsync("90003", "80008");
         var media = await NumberedTypeAsync();
@@ -260,16 +260,23 @@ public sealed class AssetNumberingApiTests(SqlServerFixture sql) : IAsyncLifetim
         (await NewAssetNumberAsync(matter, media)).ShouldBe("90003-80008_038");
         (await NewAssetNumberAsync(matter, media)).ShouldBe("90003-80008_039");
 
-        // Not below the highest assigned number plus one.
+        // Not below the current next number (40), which is also above the highest assigned number.
         var low = await _kit.As().PutAsJsonAsync($"/api/v1/asset-types/{media}/numbering/counters/{matter}", new { nextNumber = 39 });
         var problem = await ProblemAsync(low, HttpStatusCode.BadRequest);
         problem.GetProperty("errors").GetProperty("nextNumber")[0].GetProperty("code").GetString().ShouldBe("NEXT_NUMBER_TOO_LOW");
         (await CounterAsync(media, matter)).GetProperty("nextNumber").GetInt32().ShouldBe(40);
 
-        // Raising further is fine, and lowering to exactly highest + 1 is allowed (nothing between was ever assigned).
+        // Raising is fine; once raised it cannot be lowered again, not even to highest + 1 (nothing between was assigned, but the owner rule is raise only).
         await OkAsync(await _kit.As().PutAsJsonAsync($"/api/v1/asset-types/{media}/numbering/counters/{matter}", new { nextNumber = 100 }));
-        await OkAsync(await _kit.As().PutAsJsonAsync($"/api/v1/asset-types/{media}/numbering/counters/{matter}", new { nextNumber = 40 }));
-        (await NewAssetNumberAsync(matter, media)).ShouldBe("90003-80008_040");
+        var lowered = await ProblemAsync(await _kit.As().PutAsJsonAsync($"/api/v1/asset-types/{media}/numbering/counters/{matter}", new { nextNumber = 40 }), HttpStatusCode.BadRequest);
+        lowered.GetProperty("errors").GetProperty("nextNumber")[0].GetProperty("code").GetString().ShouldBe("NEXT_NUMBER_TOO_LOW");
+        lowered.GetProperty("errors").GetProperty("nextNumber")[0].GetProperty("message").GetString()!.ShouldContain("only be raised");
+        (await CounterAsync(media, matter)).GetProperty("nextNumber").GetInt32().ShouldBe(100);
+        (await NewAssetNumberAsync(matter, media)).ShouldBe("90003-80008_100");
+
+        // The same number as the current next number (101 after the asset above) is accepted and changes nothing: no audit event.
+        await OkAsync(await _kit.As().PutAsJsonAsync($"/api/v1/asset-types/{media}/numbering/counters/{matter}", new { nextNumber = 101 }));
+        (await _factory.WithDbAsync(db => db.Set<MatterFlow.Audit.Domain.AuditEvent>().AsNoTracking().Where(e => e.EventType == "ASSET_NEXT_NUMBER_SET").CountAsync())).ShouldBe(2); // 38 and 100 only
 
         (await _kit.As().PutAsJsonAsync($"/api/v1/asset-types/{media}/numbering/counters/{matter}", new { nextNumber = 0 })).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }

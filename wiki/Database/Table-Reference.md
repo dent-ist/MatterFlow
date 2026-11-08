@@ -724,7 +724,7 @@ A data source or deliverable that belongs to one matter (for example a workspace
 
 ### AssetNumberCounter
 
-The atomic counter of the automatic asset numbering (issue #1297): one row per asset type and scope key (the matter id while the scope is per matter). `NextNumber` is the counter value the next asset gets. It is read and advanced by one `UPDATE ... OUTPUT` under an update lock inside the transaction that inserts the asset, so concurrent creates never share a number; it only goes up (an administrator may raise it with the "set next number" control; the application never lowers it below the highest assigned number), and deleting or deactivating an asset never touches it.
+The atomic counter of the automatic asset numbering (issue #1297): one row per asset type and scope key (the matter id while the scope is per matter). `NextNumber` is the counter value the next asset gets. It is read and advanced by one `UPDATE ... OUTPUT` under an update lock inside the transaction that inserts the asset, so concurrent creates never share a number; it only goes up (an administrator may raise it with the "set next number" control; the application never lowers it: the control refuses a value below the current next number), and deleting or deactivating an asset never touches it.
 
 - **Module:** Assets. **Area:** Assets.
 - **Scripts:** created by script 63.

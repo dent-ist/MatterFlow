@@ -110,8 +110,8 @@ public class AssetTypesController(AssetTypeService types, AssetNumberingService 
         this.ToActionResult(await numbering.GetAsync(assetTypeId, matterId, cancellationToken));
 
     /// <summary>
-    /// Sets the next number of the asset type in one matter, for example to continue after folders that already exist on the share; the counter is created when missing. Never lower than the highest assigned
-    /// number plus one (400 <c>NEXT_NUMBER_TOO_LOW</c>). Audited (who, matter, old, new). A matter the caller may not see is a 404.
+    /// Sets the next number of the asset type in one matter, for example to continue after folders that already exist on the share; the counter is created when missing. The next number can only be raised, never lowered: below the current next number (or, for a matter
+    /// without a counter, below the highest assigned number plus one) is 400 <c>NEXT_NUMBER_TOO_LOW</c>; the same number is accepted and changes nothing. Audited (who, matter, old, new). A matter the caller may not see is a 404.
     /// </summary>
     [HttpPut("{assetTypeId:int}/numbering/counters/{matterId:int}", Name = "SetAssetNextNumber")]
     [Authorize(Policy = AssetPolicies.AssetTypeManage)]
