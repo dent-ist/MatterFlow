@@ -17,6 +17,7 @@ import {
 import { AuthStore } from '../../../core/auth/auth.store';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { AdminListShell } from '../../../shared/ui/admin-list-shell';
+import { pageIcon } from '../../../shared/ui/tab-icons';
 import { MfTab } from '../../../shared/ui/tabs';
 import { AdminTabCounts, adminTabItems, resolveAdminTab } from '../admin-tabs';
 import { MatterListTab, MATTER_LIST_TEXTS } from './matter-list-tab';
@@ -35,7 +36,7 @@ import { MATTER_LIST_TABS, MATTER_LIST_TEXT, MatterListKind } from './matter-lis
   template: `
     <mf-admin-list-shell
       heading="Matter Lists"
-      icon="pi pi-sliders-h"
+      [icon]="icon"
       [description]="description"
       [tabs]="tabs()"
       [tab]="current()"
@@ -71,6 +72,7 @@ export class MatterListsAdminPage implements HasUnsavedChanges {
 
   private readonly can = (permission: string) => this.auth.has(permission);
   protected readonly description = MATTER_LIST_TEXT;
+  protected readonly icon = pageIcon('matter-lists');
   protected readonly canManage = computed(() => this.auth.has('MatterList.Manage'));
   protected readonly tabs = computed<MfTab[]>(() =>
     adminTabItems(MATTER_LIST_TABS, this.can, this.counts.snapshot()),

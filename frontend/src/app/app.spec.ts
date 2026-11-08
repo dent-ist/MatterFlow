@@ -185,6 +185,7 @@ describe('App shell with the stub provider', { timeout: 30_000 }, () => {
       'Labels',
       'Asset Types',
       'Custom Fields',
+      'Matter Lists',
       'Reports',
       'Audit Logs',
       'Settings',

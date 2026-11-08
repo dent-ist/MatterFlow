@@ -82,3 +82,12 @@ describe('default task columns fit the 1366 frame (D-43a, #1230)', () => {
     expect(summary).not.toContain('matter');
   });
 });
+
+describe('default Matters list columns fit the 1366 frame (D-43a, epic #1298)', () => {
+  it('CM Number, Matter Name (200 min), Client, Matter Type, Current State, Status and the actions column are at most 1,098 px', () => {
+    // matters-list-page.ts: 11.25rem, 200px, --mf-col-client-w, --mf-col-matter-type-w, --mf-col-current-state-w, 160px, --mf-col-actions-w.
+    const widths = [180, 200, 140, 160, 160, 160, 48];
+    expect(widths.reduce((a, b) => a + b, 0)).toBe(1048);
+    expect(widths.reduce((a, b) => a + b, 0)).toBeLessThanOrEqual(FRAME_1366_PX);
+  });
+});

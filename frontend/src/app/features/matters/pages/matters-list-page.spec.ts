@@ -51,7 +51,7 @@ describe('MattersListPage', () => {
         isActive: false,
       }),
     ],
-    columns: string[] = [],
+    columns?: string[],
   ) {
     localStorage.clear();
     const counts = {
@@ -161,7 +161,7 @@ describe('MattersListPage', () => {
     });
     navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true) as never;
     await TestBed.inject(AuthStore).ensureLoaded();
-    if (columns.length > 0) {
+    if (columns !== undefined) {
       // The Columns menu choice of this person (MD-28): the default columns plus the extras asked for.
       const user = TestBed.inject(AuthStore).profile()?.userId;
       const base = [
@@ -484,6 +484,10 @@ describe('MattersListPage', () => {
       undefined,
       undefined,
       undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
       1,
       1,
       'name',
@@ -561,7 +565,7 @@ describe('MattersListPage', () => {
     );
     expect(labels).toContain('Resize CM Number column');
     expect(labels).toContain('Resize Matter Name column');
-    expect(labels).toContain('Resize Primary PM column');
+    expect(labels).toContain('Resize Matter Type column');
   });
 
   it('reorders and hides columns from the shared Columns menu, remembers it per person, and resets (MD-28, #1032)', async () => {
@@ -582,18 +586,18 @@ describe('MattersListPage', () => {
       'client',
       'name',
     ]);
-    // Hide Overdue; Name cannot be hidden.
+    // Hide Current State; Name cannot be hidden.
     const box = (k: string) =>
       el.querySelector<HTMLInputElement>(`[data-grid-columns-panel] [data-column="${k}"]`)!;
     expect(box('name').disabled).toBe(true);
-    box('overdue').checked = false;
-    box('overdue').dispatchEvent(new Event('change'));
+    box('currentState').checked = false;
+    box('currentState').dispatchEvent(new Event('change'));
     await settle(fixture);
-    expect(heads()).not.toContain('Overdue');
+    expect(heads()).not.toContain('Current State');
     el.querySelector<HTMLButtonElement>('[data-grid-columns-reset]')!.click();
     await settle(fixture);
     expect(heads().slice(0, 3)).toEqual(['CM Number', 'Matter Name', 'Client']);
-    expect(heads()).toContain('Overdue');
+    expect(heads()).toContain('Current State');
     expect(localStorage.getItem(key)).toBeNull();
   });
 
@@ -602,7 +606,7 @@ describe('MattersListPage', () => {
       Array.from(el.querySelectorAll('thead tr:first-child th')).map((h) => h.textContent!.trim());
 
     it('has Reference, Name, Client, Open tasks, Overdue and Status; the counts link to the Task Queue scoped to the matter', async () => {
-      const fixture = await create(['Matter.View', 'Client.View', 'Task.View']);
+      const fixture = await create(['Matter.View', 'Client.View', 'Task.View'], {}, undefined, []);
       api.listMatters.mockReturnValue(
         ok(pageOfMatters(aMatter({ matterId: 7, openTaskCount: 5, overdueTaskCount: 2 }))),
       );
@@ -615,6 +619,9 @@ describe('MattersListPage', () => {
         'Matter Name',
         'Client',
         'Primary PM',
+        'Secondary PM',
+        'Matter Type',
+        'Current State',
         'Open Tasks',
         'Overdue',
         'Status',
@@ -635,7 +642,14 @@ describe('MattersListPage', () => {
     it('leaves the count columns out without Task.View and no longer shows the Projects count', async () => {
       const fixture = await create(['Matter.View']);
       const el: HTMLElement = fixture.nativeElement;
-      expect(heads(el)).toEqual(['CM Number', 'Matter Name', 'Client', 'Primary PM', 'Status']);
+      expect(heads(el)).toEqual([
+        'CM Number',
+        'Matter Name',
+        'Client',
+        'Matter Type',
+        'Current State',
+        'Status',
+      ]);
       expect(el.querySelector('[data-count]')).toBeNull();
     });
 
@@ -658,7 +672,7 @@ describe('MattersListPage', () => {
     });
 
     it('sorts by Overdue descending first', async () => {
-      const fixture = await create(['Matter.View', 'Task.View']);
+      const fixture = await create(['Matter.View', 'Task.View'], {}, undefined, []);
       const el: HTMLElement = fixture.nativeElement;
       const overdue = Array.from(el.querySelectorAll('thead th')).find((h) =>
         h.textContent!.includes('Overdue'),
@@ -677,11 +691,16 @@ describe('MattersListPage', () => {
     };
 
     it('shows the Primary and the Secondary manager; an empty cell stays empty', async () => {
-      const fixture = await create(['Matter.View'], {}, [
-        aMatter({ matterId: 1, primaryManager: ANN, secondaryManager: BOB }),
-        aMatter({ matterId: 2, matterRef: '00343-00013', primaryManager: undefined }),
-        aMatter({ matterId: 3, matterRef: '00343-00014', secondaryManager: BOB }),
-      ]);
+      const fixture = await create(
+        ['Matter.View'],
+        {},
+        [
+          aMatter({ matterId: 1, primaryManager: ANN, secondaryManager: BOB }),
+          aMatter({ matterId: 2, matterRef: '00343-00013', primaryManager: undefined }),
+          aMatter({ matterId: 3, matterRef: '00343-00014', secondaryManager: BOB }),
+        ],
+        [],
+      );
       const el: HTMLElement = fixture.nativeElement;
       // Secondary PM is one click away in Columns (off by default so the default columns fit 1366, D-43a).
       el.querySelector<HTMLButtonElement>('[data-grid-columns]')!.click();
@@ -705,7 +724,7 @@ describe('MattersListPage', () => {
     });
 
     it('sorts by the manager columns and offers the eligible people plus None as filter choices', async () => {
-      const fixture = await create(['Matter.View']);
+      const fixture = await create(['Matter.View'], {}, undefined, []);
       const el: HTMLElement = fixture.nativeElement;
 
       const header = Array.from(el.querySelectorAll('thead tr:first-child th')).find(

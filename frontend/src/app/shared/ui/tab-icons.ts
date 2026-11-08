@@ -25,7 +25,7 @@ export const ICONS: Readonly<Record<string, string>> = {
   'page-labels': 'pi-flag',
   'page-asset-types': 'pi-tags',
   'page-custom-fields': 'pi-sliders-h',
-  'page-matter-lists': 'pi-sliders-h',
+  'page-matter-lists': 'pi-sort-alt',
   'page-reports': 'pi-chart-bar',
   'page-audit-logs': 'pi-history',
   'page-settings': 'pi-cog',

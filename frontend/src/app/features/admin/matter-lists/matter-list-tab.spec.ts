@@ -132,7 +132,7 @@ describe('MatterListTab (Matter Types)', () => {
       m
         .textContent!.replace(/\s+/g, ' ')
         .trim()
-        .replace(/ Already (first|last)\.$/, ''),
+        .replace(/ ?Already (first|last)\.$/, ''),
     );
   };
 

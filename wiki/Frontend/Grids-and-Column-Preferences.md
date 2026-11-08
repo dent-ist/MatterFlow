@@ -88,3 +88,5 @@ Every column definition gives a `width` or `minWidth` (the tokens `--mf-col-*-w`
 - [Testing the Frontend](Testing-the-Frontend.md)
 
 Last verified against commit a8142a1.
+
+**Matters list default columns (epic #1298, owner 2026-11-08).** CM Number, Matter Name, Client, Matter Type, Current State and Status are on by default (180 + 200 + 140 + 160 + 160 + 160 + the 48 px actions column = 1048 of the 1098 px at 1366). Primary PM, Secondary PM, Open Tasks and Overdue are `defaultHidden` (one click away in Columns); a person who already chose columns keeps that choice, so Matter Type and Current State are hidden for them until turned on. Guard: `features/matters/pages/matters-list-page.spec.ts`.

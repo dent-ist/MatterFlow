@@ -449,7 +449,7 @@ export class RecordSkeleton {
     return recordTabs(
       kind,
       kind === 'matter'
-        ? { tasks: '--', projects: '--', assets: '--' }
+        ? { tasks: '--', projects: '--', assets: '--', team: '--' }
         : kind === 'project' || kind === 'asset'
           ? { tasks: '--' }
           : { matters: '--' },
