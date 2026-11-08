@@ -19,6 +19,7 @@ import { DOCUMENT } from '@angular/common';
 import { UserStateIcon, UserStateKey } from '../icons/user-state-icon';
 import { TaskTypeChip } from './task-type-chip';
 import { IntPipe } from './number-format';
+import { PopoverStack } from './dismissable';
 
 export interface DropdownItem {
   value: string;
@@ -715,6 +716,15 @@ export class Dropdown {
     });
     this.doc.addEventListener('mousedown', this.outside, true);
     this.doc.defaultView?.addEventListener('resize', this.onResize);
+    // Known to the shared dismiss rule: the list is drawn in the body, so a popover that holds this dropdown must not take a press or focus in the
+    // list for "outside", and Esc closes the list before the popover (#1313).
+    if (root) {
+      this.unregister = this.popovers.register({
+        panel: root,
+        trigger: () => this.btn().nativeElement,
+        close: (returnFocus) => this.close(returnFocus),
+      });
+    }
     queueMicrotask(() => {
       const panel = this.panel();
       (
@@ -744,7 +754,12 @@ export class Dropdown {
     if (restore) this.btn().nativeElement.focus();
   }
 
+  private unregister: (() => void) | null = null;
+  private readonly popovers = inject(PopoverStack);
+
   private destroyView(): void {
+    this.unregister?.();
+    this.unregister = null;
     this.doc.removeEventListener('mousedown', this.outside, true);
     this.doc.defaultView?.removeEventListener('resize', this.onResize);
     if (this.view) {

@@ -26,7 +26,8 @@ export interface PopoverEntry {
  *  - Esc closes the topmost open one and returns focus to its trigger; nothing else sees that Esc (a dialog, the drawer, a filled text
  *    filter keep theirs for the next press);
  *  - a pointer press or a focus move outside closes it without moving focus (a press on its trigger is left to the trigger, which toggles);
- *  - opening a popover closes the others, unless the new one sits inside the open one (a menu inside a panel); no focus return then.
+ *  - opening a popover closes the others, unless the new one sits inside the open one (a menu inside a panel) or is opened by a control inside it
+ *    (the option list of an `mf-dropdown` in a filter popover); no focus return then. Esc then closes the list first, the popover on the next press.
  * The document listeners exist only while something is open.
  */
 @Injectable({ providedIn: 'root' })
@@ -37,7 +38,12 @@ export class PopoverStack {
   /** Adds an open popover; returns the function that removes it (call it when the popover goes away). */
   register(entry: PopoverEntry): () => void {
     for (const other of [...this.stack]) {
-      if (!other.panel.contains(entry.panel) && !other.modal?.()) this.drop(other, false);
+      // "Inside the open one": the new panel is in it, or the control that opens the new one is (a dropdown in a filter popover draws its list in
+      // the page body, outside the popover's element, #1313).
+      const opener = entry.trigger();
+      const inside =
+        other.panel.contains(entry.panel) || (opener !== null && other.panel.contains(opener));
+      if (!inside && !other.modal?.()) this.drop(other, false);
     }
     this.stack.push(entry);
     this.listen();

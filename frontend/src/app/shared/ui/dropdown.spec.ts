@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Dropdown, DropdownItem } from './dropdown';
+import { Dismissable } from './dismissable';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -317,5 +318,97 @@ describe('mf-dropdown fill (issue #1284)', () => {
     fixture.componentInstance.on.set(false);
     fixture.detectChanges();
     expect(q('bound').hasAttribute('fill')).toBe(false);
+  });
+});
+
+@Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [Dropdown, Dismissable],
+  template: `
+    <button #opener id="opener" type="button" (click)="open.set(!open())">Filters</button>
+    @if (open()) {
+      <div id="pop" [mfDismissable]="opener" (dismissed)="open.set(false)">
+        <mf-dropdown id="pd" label="Primary PM" [items]="items" [(value)]="value" />
+      </div>
+    }
+    <button id="elsewhere" type="button">Elsewhere</button>
+  `,
+})
+class PopoverHost {
+  readonly open = signal(false);
+  readonly items: DropdownItem[] = [
+    { value: '', label: 'Any' },
+    { value: '7', label: 'Ada Lovelace' },
+  ];
+  readonly value = signal('');
+}
+
+describe('Dropdown inside a popover (#1313)', () => {
+  async function setup() {
+    const fixture = TestBed.createComponent(PopoverHost);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const flush = async () => {
+      fixture.detectChanges();
+      await fixture.whenStable();
+      await Promise.resolve();
+      fixture.detectChanges();
+    };
+    const q = <T extends HTMLElement>(sel: string) =>
+      fixture.nativeElement.querySelector(sel) as T | null;
+    const list = () => document.body.querySelector<HTMLElement>('.dd-panel');
+    const key = async (k: string) => {
+      (document.activeElement as HTMLElement).dispatchEvent(
+        new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }),
+      );
+      await flush();
+    };
+    q<HTMLButtonElement>('#opener')!.click();
+    await flush();
+    return { fixture, q, list, key, flush };
+  }
+  afterEach(() => document.body.querySelectorAll('.dd-panel').forEach((e) => e.remove()));
+
+  it('opening the dropdown with the mouse keeps the popover open and shows the list; picking sets the value', async () => {
+    const { fixture, q, list, flush } = await setup();
+    q<HTMLButtonElement>('#pd button')!.click();
+    await flush();
+    expect(q('#pop')).not.toBeNull();
+    expect(list()).not.toBeNull();
+    list()!.querySelectorAll<HTMLElement>('li[role=option]')[1].click();
+    await flush();
+    expect(fixture.componentInstance.value()).toBe('7');
+    expect(list()).toBeNull();
+    expect(q('#pop')).not.toBeNull();
+  });
+
+  it('opening with the keyboard keeps the popover; Esc closes the list first, then the popover', async () => {
+    const { fixture, q, list, key, flush } = await setup();
+    const btn = q<HTMLButtonElement>('#pd button')!;
+    btn.focus();
+    await key('ArrowDown');
+    expect(list()).not.toBeNull();
+    expect(q('#pop')).not.toBeNull();
+    await key('Escape');
+    expect(list()).toBeNull();
+    expect(q('#pop')).not.toBeNull();
+    expect(document.activeElement).toBe(btn);
+    await key('Escape');
+    await flush();
+    expect(q('#pop')).toBeNull();
+    expect(document.activeElement).toBe(q('#opener'));
+    expect(fixture.componentInstance.value()).toBe('');
+  });
+
+  it('a press outside both closes the list and the popover', async () => {
+    const { q, list, flush } = await setup();
+    q<HTMLButtonElement>('#pd button')!.click();
+    await flush();
+    q<HTMLButtonElement>('#elsewhere')!.dispatchEvent(
+      new Event('pointerdown', { bubbles: true, cancelable: true }),
+    );
+    await flush();
+    expect(list()).toBeNull();
+    expect(q('#pop')).toBeNull();
   });
 });
