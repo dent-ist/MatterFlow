@@ -68,7 +68,7 @@ internal sealed class AssetDirectory(DbContext db) : IAssetDirectory
         select new AssetService.AssetRow { Asset = a, AssetTypeName = t.Name, AssetTypeIsActive = t.IsActive };
 
     private static AssetSummary ToSummary(AssetService.AssetRow r) =>
-        new(r.Asset.Id, r.Asset.MatterId, r.Asset.AssetTypeId, r.AssetTypeName, r.Asset.DisplayName, r.Asset.ExternalReference, r.Asset.IsActive);
+        new(r.Asset.Id, r.Asset.MatterId, r.Asset.AssetTypeId, r.AssetTypeName, r.Asset.DisplayName, r.Asset.ExternalReference, r.Asset.IsActive, r.Asset.AssetNumber);
 }
 
 /// <summary>Counts a Matter's Assets for the Matter summary (<see cref="IMatterAssetCounts"/>); retired Assets are counted too.</summary>

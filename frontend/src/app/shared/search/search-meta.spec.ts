@@ -73,6 +73,16 @@ describe('search-meta', () => {
       expect(lines.context).toEqual(['Laptop', '00343-00012', 'Merger Review']);
     });
 
+    it('puts the Asset Number of an asset hit after its type and before the matter (#1297)', () => {
+      const lines = suggestionLines({
+        ...base,
+        type: 'asset',
+        secondary: 'Media',
+        assetNumber: '00343-00012_001',
+      });
+      expect(lines.context).toEqual(['Media', '00343-00012_001', '00343-00012', 'Merger Review']);
+    });
+
     it('drops the requestor of a task and adds the labelled status', () => {
       const lines = suggestionLines(
         { ...base, type: 'task', reference: 'TSK-1', secondary: 'Pat Partner', status: 'NEW' },

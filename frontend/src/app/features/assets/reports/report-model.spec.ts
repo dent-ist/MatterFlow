@@ -103,6 +103,7 @@ describe('report model', () => {
     expect(withStandardLabels(other).rows).toBe(other.rows);
     expect(withStandardLabels(other).groupByLabel).toBe('Asset Type');
     expect(groupByLabel('field:review_type', 'Review type')).toBe('Review type');
+    expect(groupByLabel('assetNumber', 'Asset number')).toBe('Asset Number');
     // The filter dropdown is built from the same table.
     expect(DISPOSITIONS.map((d) => d.label)).toEqual([
       'Any Disposition',

@@ -33,7 +33,10 @@ import { serverFormErrors } from '../../../shared/forms/api-errors';
 import { FORM_SCHEMA_READ_PERMISSIONS, toFormDefinition } from '../../../shared/forms/form-schema';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { AssetPickerContext } from '../../../shared/ui/asset-picker';
+import { AssignNumberButton } from '../../../shared/ui/assign-number-button';
+import { CopyButton } from '../../../shared/ui/copy-button';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
+import { formatHint, tailHashes } from '../../admin/asset-types/tail-rules';
 import { EntityPicker, PickerOption } from '../../../shared/ui/entity-picker';
 import type { Crumb } from '../../../shared/ui/page-header';
 import { TextField } from '../../../shared/ui/text-field';
@@ -70,6 +73,8 @@ export function externalReferenceError(text: string): string | null {
 @Component({
   selector: 'mf-asset-form-page',
   imports: [
+    CopyButton,
+    AssignNumberButton,
     Dropdown,
     RecordHeader,
     Badge,
@@ -189,6 +194,49 @@ export function externalReferenceError(text: string): string | null {
               }
             </div>
 
+            @if (!isEdit() && numberHint(); as hint) {
+              <div class="pg-filter" data-asset-number>
+                <span class="af__label" id="asset-number-label">Asset Number</span>
+                <span class="af__muted" aria-labelledby="asset-number-label" data-number-value
+                  >Assigned on save</span
+                >
+                <p class="mf-field__help" data-number-format>
+                  Format: {{ hint }}. Use it as the folder name on the share.
+                </p>
+              </div>
+            }
+            @if (isEdit() && original(); as o) {
+              @if (o.assetNumber; as number) {
+                <div class="pg-filter" data-asset-number>
+                  <span class="af__label" id="asset-number-label">Asset Number</span>
+                  <span class="af__number">
+                    <span class="pg-mono af__number-text" [attr.title]="number" data-number-value>{{
+                      number
+                    }}</span>
+                    <mf-copy-button [text]="number" label="asset number" />
+                  </span>
+                  <p class="mf-field__help">
+                    Assigned when the asset was created. It can't be changed.
+                  </p>
+                </div>
+              } @else if (o.assetTypeNumberingEnabled) {
+                <div class="pg-filter" data-asset-number>
+                  <span class="af__label" id="asset-number-label">Asset Number</span>
+                  <span class="af__number">
+                    <span class="af__muted" data-not-assigned>Not assigned</span>
+                    @if (canAssign()) {
+                      <mf-assign-number-button
+                        [assetId]="o.assetId"
+                        [rowVersion]="o.rowVersion"
+                        (assigned)="onAssigned($event)"
+                        (stale)="load()"
+                      />
+                    }
+                  </span>
+                </div>
+              }
+            }
+
             <mf-text-field
               inputId="asset-name"
               label="Display Name"
@@ -282,6 +330,24 @@ export function externalReferenceError(text: string): string | null {
       margin: 0;
       font-size: var(--mf-fs-h3);
     }
+    .af__label {
+      font-weight: 600;
+    }
+    .af__muted {
+      color: var(--mf-text-muted);
+    }
+    .af__number {
+      display: flex;
+      align-items: center;
+      gap: var(--mf-s1);
+      min-width: 0;
+    }
+    .af__number-text {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
   `,
 })
 export class AssetFormPage implements HasUnsavedChanges {
@@ -353,6 +419,16 @@ export class AssetFormPage implements HasUnsavedChanges {
     { value: '', label: 'Select a type...' },
     ...this.types().map((t) => ({ value: String(t.assetTypeId), label: t.name })),
   ]);
+  /** New Asset: the format hint of a numbered type (`90003-80008_###`), the tail as written before a matter is chosen; null for a type without numbering. */
+  protected readonly numberHint = computed<string | null>(() => {
+    const numbering = this.types().find((t) => t.assetTypeId === this.typeId())?.numbering;
+    if (!numbering?.enabled) return null;
+    const cm = this.matter()?.label.split(' ')[0];
+    return cm ? formatHint(cm, numbering.pattern) : `<CM Number>${tailHashes(numbering.pattern)}`;
+  });
+  protected readonly canAssign = computed(
+    () => this.auth.has('Asset.Edit') && !!this.original()?.isActive,
+  );
   protected readonly displayName = signal('');
   protected readonly externalReference = signal('');
   protected readonly description = signal('');
@@ -514,6 +590,11 @@ export class AssetFormPage implements HasUnsavedChanges {
     }
   }
 
+  /** Assign Number worked: the asset now has its number and a new row version (the typed edits stay). */
+  protected onAssigned(asset: AssetResponse): void {
+    this.original.set(asset);
+  }
+
   protected async chooseType(value: string): Promise<void> {
     const id = value ? Number(value) : null;
     this.typeId.set(id);
@@ -589,7 +670,11 @@ export class AssetFormPage implements HasUnsavedChanges {
             }),
           );
       this.saved = true;
-      this.notify.success('Asset saved', result.displayName);
+      if (!this.isEdit() && result.assetNumber) {
+        this.notify.success('Asset created', `Asset Number ${result.assetNumber}`);
+      } else {
+        this.notify.success('Asset saved', result.displayName);
+      }
       if (result.droppedFields.length > 0) {
         this.notify.info('Hidden values not saved', `${result.droppedFields.join(', ')}.`);
       }

@@ -30,6 +30,32 @@ public class AssetType : AuditedEntity<int>
 
     /// <summary>Unit of that field, one of <see cref="AssetSize.Units"/>; set and cleared together with <see cref="SizeFieldKey"/>.</summary>
     public string? SizeUnit { get; set; }
+
+    /// <summary>True when every new asset of this type gets an automatic, read-only Asset Number (issue #1297). Turning it off keeps the numbers already assigned; turning it on numbers no old asset.</summary>
+    public bool NumberingEnabled { get; set; }
+
+    /// <summary>The numbering pattern: the TAIL after the matter's CM Number (<c>_{###}</c>); rules in <see cref="AssetNumbering.Parse"/>. Changing it affects only assets created afterwards. Used only while numbering is on.</summary>
+    public string NumberingPattern { get; set; } = AssetNumbering.DefaultPattern;
+
+    /// <summary>What the counter restarts for (<see cref="AssetNumbering.ScopeMatter"/> is the only value for now).</summary>
+    public int NumberingScope { get; set; } = AssetNumbering.ScopeMatter;
+}
+
+/// <summary>
+/// The atomic counter of the automatic asset numbering: one row per asset type and scope key (the matter id while the scope is per matter). <see cref="NextNumber"/> is the number the
+/// NEXT asset gets. Only <see cref="AssetNumberGenerator"/> and the administrator's "set next number" write it; it can only be raised, never lowered; a deleted or
+/// deactivated asset does not touch it.
+/// </summary>
+public class AssetNumberCounter
+{
+    public int AssetTypeId { get; set; }
+
+    /// <summary>The matter id while the scope is per matter.</summary>
+    public int ScopeKey { get; set; }
+
+    public int NextNumber { get; set; } = 1;
+
+    public DateTime ModifiedAtUtc { get; set; }
 }
 
 /// <summary>
@@ -50,6 +76,17 @@ public class Asset : AuditedEntity<int>, IAuditScoped
     public string? ExternalReference { get; set; }
 
     public string? Description { get; set; }
+
+    /// <summary>
+    /// The generated Asset Number (for the default pattern <c>90003-80008_001</c>), null when the asset type did not number automatically when the asset was created. A snapshot: assigned once in the
+    /// transaction of the insert, never changed (database trigger, API rule), and a later change of the matter's CM Number does not rewrite it.
+    /// </summary>
+    [AuditExplicit]
+    public string? AssetNumber { get; set; }
+
+    /// <summary>The counter value <see cref="AssetNumber"/> was built from (null together with it).</summary>
+    [AuditExplicit]
+    public int? AssetNumberSeq { get; set; }
 
     /// <summary>
     /// Always equals <c>DispositionCode == Active</c> (database check <c>CK_Asset_IsActive_Disposition</c>): use <see cref="SetDisposition"/>

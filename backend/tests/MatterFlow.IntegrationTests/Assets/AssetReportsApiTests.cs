@@ -205,11 +205,11 @@ public sealed class AssetReportsApiTests(SqlServerFixture sql) : IAsyncLifetime
         numbers["volume_gb"].GetProperty("unit").GetString().ShouldBe("GB");
         numbers["pages"].GetProperty("unit").ValueKind.ShouldBe(JsonValueKind.Null);
         fields.GetProperty("groupBy").EnumerateArray().Select(g => g.GetProperty("key").GetString())
-            .ShouldBe(["disposition", "matter", "client", "assetType", "field:format"]);
+            .ShouldBe(["disposition", "matter", "client", "assetType", "assetNumber", "field:format"]);
 
         var all = await OkAsync(await pm.GetAsync("/api/v1/asset-reports/fields"));
         all.GetProperty("numberFields").GetArrayLength().ShouldBe(0);
-        all.GetProperty("groupBy").GetArrayLength().ShouldBe(4);
+        all.GetProperty("groupBy").GetArrayLength().ShouldBe(5);
         (await pm.GetAsync("/api/v1/asset-reports/fields?assetTypeId=99999")).StatusCode.ShouldBe(HttpStatusCode.NotFound);
         (await pm.GetAsync("/api/v1/asset-reports/fields?bogus=1")).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }

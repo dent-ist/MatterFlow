@@ -14,6 +14,7 @@ import {
 import { AssetDetailsTab } from './asset-details-tab';
 
 describe('AssetDetailsTab', () => {
+  const assign = vi.fn();
   let forms: { getFormVersionSchema: ReturnType<typeof vi.fn> };
   let fixture: ComponentFixture<AssetDetailsTab>;
   const el = (): HTMLElement => fixture.nativeElement;
@@ -27,7 +28,10 @@ describe('AssetDetailsTab', () => {
         { provide: FormsClient, useValue: forms },
         {
           provide: AssetsClient,
-          useValue: { getAssetDispositionHistory: vi.fn().mockReturnValue(ok({ items: [] })) },
+          useValue: {
+            getAssetDispositionHistory: vi.fn().mockReturnValue(ok({ items: [] })),
+            assignAssetNumber: assign,
+          },
         },
       ],
     });
@@ -157,6 +161,48 @@ describe('AssetDetailsTab', () => {
       expect(
         el().querySelector('[data-external-reference] .ad__ref button.mf-copy'),
       ).not.toBeNull();
+    });
+  });
+
+  describe('the Asset Number (#1297)', () => {
+    it('is the first field in mono type with a Copy button and the whole number as tooltip', async () => {
+      await create(['Asset.View'], anAsset({ assetNumber: '00343-00012_001' }));
+      const first = el().querySelector('[data-details] [data-asset-number]')!;
+      expect(first.previousElementSibling).toBeNull();
+      expect(first.textContent).toContain('Asset Number');
+      const value = first.querySelector<HTMLElement>('[data-number-value]')!;
+      expect(value.textContent).toBe('00343-00012_001');
+      expect(value.getAttribute('title')).toBe('00343-00012_001');
+      expect(first.querySelector('button[aria-label="Copy asset number"]')).not.toBeNull();
+    });
+
+    it('is not shown for an asset without a number (a type without numbering)', async () => {
+      await create(['Asset.View'], anAsset());
+      expect(el().querySelector('[data-asset-number]')).toBeNull();
+    });
+
+    it('says Not assigned with an Assign Number button for an old asset of a numbered type (Asset.Edit)', async () => {
+      await create(['Asset.View', 'Asset.Edit'], anAsset({ assetTypeNumberingEnabled: true }));
+      expect(el().querySelector('[data-not-assigned]')?.textContent).toBe('Not assigned');
+      expect(el().querySelector('[data-assign-number]')).not.toBeNull();
+    });
+
+    it('has no Assign Number button without Asset.Edit', async () => {
+      await create(['Asset.View'], anAsset({ assetTypeNumberingEnabled: true }));
+      expect(el().querySelector('[data-not-assigned]')).not.toBeNull();
+      expect(el().querySelector('[data-assign-number]')).toBeNull();
+    });
+
+    it('assigns the number and hands over the new asset', async () => {
+      await create(['Asset.View', 'Asset.Edit'], anAsset({ assetTypeNumberingEnabled: true }));
+      const done = anAsset({ assetNumber: '00343-00012_005', rowVersion: 'BBBB' });
+      assign.mockReturnValue(ok(done));
+      const got: unknown[] = [];
+      fixture.componentInstance.assigned.subscribe((a) => got.push(a));
+      el().querySelector<HTMLButtonElement>('[data-assign-number]')!.click();
+      await settle(fixture);
+      expect(assign).toHaveBeenCalledWith(9, { rowVersion: 'AAAA' });
+      expect(got).toEqual([done]);
     });
   });
 });

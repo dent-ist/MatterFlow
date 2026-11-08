@@ -459,9 +459,9 @@ erDiagram
 
 ## Assets
 
-Tables: `AssetType`, `Asset`, `AssetReport`.
+Tables: `AssetType`, `Asset`, `AssetReport`, `AssetNumberCounter`.
 
-An `Asset` belongs to one matter and one asset type. The size field and unit of an asset type tell the reports which custom NUMBER field means size. `AssetReport` is a person's saved report definition.
+An `Asset` belongs to one matter and one asset type. An asset type can number its assets automatically: `AssetNumberCounter` holds the next counter value per asset type and scope key (the matter id while the scope is per matter; no foreign key on the scope key) and `Asset.AssetNumber` keeps the generated text. The size field and unit of an asset type tell the reports which custom NUMBER field means size. `AssetReport` is a person's saved report definition.
 
 ::: mermaid
 erDiagram
@@ -471,6 +471,13 @@ erDiagram
     bit IsActive
     varchar_50 IconKey
     varchar_20 ColourKey
+    bit NumberingEnabled
+    nvarchar_150 NumberingPattern
+  }
+  AssetNumberCounter {
+    int AssetTypeId PK
+    int ScopeKey PK
+    int NextNumber
   }
   Asset {
     int AssetId PK
@@ -480,6 +487,8 @@ erDiagram
     bit IsActive
     varchar_20 DispositionCode
     int DispositionChangedByUserId FK
+    nvarchar_100 AssetNumber UK
+    int AssetNumberSeq
   }
   AssetReport {
     int AssetReportId PK
@@ -493,6 +502,7 @@ erDiagram
     int MatterId PK
   }
   AssetType ||--o{ Asset : "AssetTypeId"
+  AssetType ||--o{ AssetNumberCounter : "AssetTypeId"
   AppUser |o--o{ Asset : "DispositionChangedByUserId"
   Matter ||--o{ Asset : "MatterId"
   AppUser ||--o{ AssetReport : "OwnerUserId"

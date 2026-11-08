@@ -8,6 +8,7 @@ namespace MatterFlow.Assets.Contracts;
 /// <param name="DisplayName">Name shown in lists and pickers.</param>
 /// <param name="ExternalReference">URL, workspace id or media label, if any.</param>
 /// <param name="IsActive">Inactive assets keep their history and existing links but cannot be linked anew.</param>
+/// <param name="AssetNumber">The generated Asset Number (<c>90003-80008_001</c>), or null when the asset has none.</param>
 public sealed record AssetSummary(
     int AssetId,
     int MatterId,
@@ -15,7 +16,8 @@ public sealed record AssetSummary(
     string AssetTypeName,
     string DisplayName,
     string? ExternalReference,
-    bool IsActive);
+    bool IsActive,
+    string? AssetNumber = null);
 
 /// <summary>A Matter's active Assets in short: how many there are and the first few by name (the matter overview, epic #758).</summary>
 /// <param name="Total">All active Assets of the Matter.</param>

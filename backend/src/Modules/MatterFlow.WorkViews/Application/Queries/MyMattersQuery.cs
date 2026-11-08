@@ -298,12 +298,12 @@ public sealed class MyMattersTreeQuery : MyMattersQuery
 /// <summary>The PM's asset list (UI-03, #956): the scope plus column filters, sort and paging.</summary>
 public sealed class MyMattersAssetsQuery : MyMattersQuery
 {
-    public static readonly IReadOnlyList<string> SortFields = ["name", "client", "matter", "assetType", "created", "updated", "status", "linkedTasks"];
+    public static readonly IReadOnlyList<string> SortFields = ["name", "client", "matter", "assetType", "created", "updated", "status", "linkedTasks", "assetNumber"];
 
     public static readonly IReadOnlyList<string> Keys =
     [
         .. CommonKeys.Where(k => k is not ("from" or "to")),
-        "q", "name", "assetTypeId", "status", "createdFrom", "createdTo", "updatedFrom", "updatedTo", "sort", "dir", "page", "pageSize",
+        "q", "name", "assetNumber", "assetTypeId", "status", "createdFrom", "createdTo", "updatedFrom", "updatedTo", "sort", "dir", "page", "pageSize",
     ];
 
     /// <summary>Fragment of the asset name, external reference, asset type or matter name.</summary>
@@ -313,6 +313,10 @@ public sealed class MyMattersAssetsQuery : MyMattersQuery
     /// <summary>Column filter: fragment of the asset name.</summary>
     [FromQuery(Name = "name"), StringLength(200)]
     public string? Name { get; init; }
+
+    /// <summary>Column filter: fragment of the generated Asset Number.</summary>
+    [FromQuery(Name = "assetNumber"), StringLength(200)]
+    public string? AssetNumber { get; init; }
 
     [FromQuery(Name = "assetTypeId")]
     public int[]? AssetTypeId { get; init; }
@@ -334,7 +338,7 @@ public sealed class MyMattersAssetsQuery : MyMattersQuery
     [FromQuery(Name = "updatedTo")]
     public DateOnly? UpdatedTo { get; init; }
 
-    /// <summary><c>name</c>, <c>client</c>, <c>matter</c>, <c>assetType</c>, <c>created</c>, <c>updated</c> (default), <c>status</c>, <c>linkedTasks</c>.</summary>
+    /// <summary><c>name</c>, <c>client</c>, <c>matter</c>, <c>assetType</c>, <c>created</c>, <c>updated</c> (default), <c>status</c>, <c>linkedTasks</c>, <c>assetNumber</c>.</summary>
     [FromQuery(Name = "sort"), StringLength(20)]
     public string? Sort { get; init; }
 

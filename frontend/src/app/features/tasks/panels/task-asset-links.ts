@@ -146,7 +146,13 @@ export const ASSETS_CLOSED_NOTE =
                           }
                         </div>
                         @if (a.assetTypeName) {
-                          <p class="tl__meta" data-type>{{ a.assetTypeName }}</p>
+                          <p class="tl__meta" data-type>
+                            {{ a.assetTypeName }}
+                            @if (a.assetNumber) {
+                              -
+                              <span class="tl__number" data-asset-number>{{ a.assetNumber }}</span>
+                            }
+                          </p>
                         }
                         @if (a.externalReference) {
                           <p class="tl__meta tl__ref" data-ref>
@@ -258,6 +264,9 @@ export const ASSETS_CLOSED_NOTE =
       flex-wrap: wrap;
       align-items: center;
       gap: var(--mf-s2);
+    }
+    .tl__number {
+      font-family: var(--mf-font-mono);
     }
     .tl__meta {
       margin: 0;

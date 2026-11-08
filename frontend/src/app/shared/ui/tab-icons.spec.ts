@@ -82,6 +82,7 @@ describe('tab icons (LC-10, theme guide 11.3)', () => {
       ['used-by', 'link-roles'],
       ['all-open', 'steps'],
       ['metrics', 'page-reports'],
+      ['numbering', 'note-tags'],
     ];
     const byIcon = new Map<string, string[]>();
     for (const [key, icon] of Object.entries(ICONS))
