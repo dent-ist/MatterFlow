@@ -4,6 +4,7 @@ import { Page } from '@playwright/test';
 import { Api, Json } from '../support/api';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
+import { showMatterColumns } from '../support/matter-columns';
 import { Seeder, uid } from '../support/seed';
 import { TaskApi } from '../support/tasks';
 import { FIRM_ZONE, dateInZone } from '../support/time';
@@ -176,6 +177,8 @@ test.describe('WP9 list columns', () => {
     }) => {
       for (const url of [`/matters?name=${w.token}`, `/clients/${w.client.clientId}?tab=matters`]) {
         await page.goto(url);
+        // Open Tasks and Overdue are optional columns of the Matters list since epic #1298; the client's Matters tab keeps them.
+        if (url.startsWith('/matters')) await showMatterColumns(page, 'Open Tasks', 'Overdue');
         const region = grid(page, 'Matters list');
         const one = region.locator('tbody tr', { hasText: `Wp9 matter ${w.token} one` });
         const two = region.locator('tbody tr', { hasText: `Wp9 matter ${w.token} two` });
@@ -188,6 +191,7 @@ test.describe('WP9 list columns', () => {
         await expect(two.locator('[data-count=overdue]')).toContainText('0 overdue tasks');
       }
       await page.goto(`/matters?name=${w.token}`);
+      await showMatterColumns(page, 'Open Tasks', 'Overdue');
       const one = grid(page, 'Matters list').locator('tbody tr', {
         hasText: `Wp9 matter ${w.token} one`,
       });
@@ -432,7 +436,7 @@ test.describe('WP9 list columns', () => {
         [
           `/matters?name=${w.token}`,
           'Matters list',
-          ['CM Number', 'Matter Name', 'Client', 'Primary PM', 'Status'],
+          ['CM Number', 'Matter Name', 'Client', 'Matter Type', 'Current State', 'Status'],
         ],
         [
           `/projects?name=${w.token}`,

@@ -1,4 +1,5 @@
 import { expect, test } from '../support/fixtures';
+import { showMatterColumns } from '../support/matter-columns';
 import { axeClean, shot } from '../support/pod-work-checks';
 
 /**
@@ -17,7 +18,10 @@ test.describe('Matters list: columns and resize (MD-21)', () => {
     await expect(heads.first()).toBeVisible();
     const texts = (await heads.allTextContents()).map((t) => t.trim());
     expect(texts).toContain('CM Number');
-    expect(texts).toContain('Primary PM');
+    // Epic #1298 (owner, 2026-11-08): Matter Type and Current State are default; the PMs and the counts are one click away in Columns.
+    expect(texts).toContain('Matter Type');
+    expect(texts).toContain('Current State');
+    expect(texts).not.toContain('Primary PM');
     expect(texts).not.toContain('Secondary PM');
     expect(texts).toContain('Matter Name');
     expect(texts).not.toContain('Matter reference');

@@ -9,6 +9,8 @@ import { StateBlock } from '../../../shared/ui/state-block';
 import { CustomFieldsView } from '../../../shared/ui/custom-fields';
 import { DetailField, DetailsCard } from '../../../shared/ui/details-card';
 import { MatterRef } from '../../../shared/ui/matter-ref';
+import { Tip } from '../../../shared/ui/tip';
+import { MatterPathValue } from './matter-path-value';
 import { numericInstant, readableInstant } from '../../../shared/ui/numeric-date';
 import { personInitials } from '../../../shared/ui/person-initials';
 import { shortAccountName } from '../../../shared/ui/person-name';
@@ -22,7 +24,7 @@ import { IntPipe } from '../../../shared/ui/number-format';
  *   Assets by type: equal tiles, one per type, that scroll sideways instead of wrapping; each opens the Assets tab for the type  [Asset.View]
  *   Details: ONE full-width card (the shared `mf-details-card`, D-44f, #1253) that fits its content, sits at the top and scrolls inside itself when it is taller than the room; its Edit button is in the page header.
  *     Small muted labels over values in 3 columns (card 1100 px and wider) or 2: CM number (one highlighted line), Client, Matter number,
- *     Matter name, Status, Sensitive (only when sensitive), Primary PM, Secondary PM, AI allowed, Created, Last changed, then the custom fields (no heading).
+ *     Matter name, Matter Type, Current State, DMS Path and DFS Path (full width, with Copy; epic #1298), Status, Sensitive (only when sensitive), Primary PM, Secondary PM, AI allowed, Created, Last changed, then the custom fields (no heading).
  *
  * Only fields the Matter already has plus AI allowed. The recent activity lives on the Activities tab (owner decision, MD-42).
  */
@@ -40,6 +42,8 @@ import { IntPipe } from '../../../shared/ui/number-format';
     DetailField,
     DetailsCard,
     MatterRef,
+    MatterPathValue,
+    Tip,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
@@ -129,6 +133,14 @@ import { IntPipe } from '../../../shared/ui/number-format';
     }
     .ms__none {
       color: var(--mf-text-muted);
+    }
+    /* Matter Type and Current State: plain text on one line with an ellipsis; the full name (and "(inactive)") is the tooltip (D-45). */
+    .ms__clip {
+      min-width: 0;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .ms__btn {
       margin-block: -4px;
@@ -222,6 +234,26 @@ import { IntPipe } from '../../../shared/ui/number-format';
         </div>
         <div mfDetailField label="Matter Name">
           <span data-matter-name>{{ matter().name }}</span>
+        </div>
+        <div mfDetailField label="Matter Type">
+          @if (matter().matterType; as t) {
+            <span class="ms__clip" data-matter-type [mfTip]="listTip(t)">{{ t.name }}</span>
+          } @else {
+            <span class="ms__none" data-matter-type>Not set</span>
+          }
+        </div>
+        <div mfDetailField label="Current State">
+          @if (matter().currentState; as t) {
+            <span class="ms__clip" data-current-state [mfTip]="listTip(t)">{{ t.name }}</span>
+          } @else {
+            <span class="ms__none" data-current-state>Not set</span>
+          }
+        </div>
+        <div mfDetailField label="DMS Path" wide data-dms-path>
+          <mf-matter-path-value label="DMS Path" [value]="matter().dmsPath" />
+        </div>
+        <div mfDetailField label="DFS Path" wide data-dfs-path>
+          <mf-matter-path-value label="DFS Path" [value]="matter().dfsPath" />
         </div>
         <div mfDetailField label="Status">
           <mf-active-badge [active]="matter().isActive" />
@@ -340,6 +372,11 @@ export class MatterSummary {
     (this.assetsLoader.data() ?? []).filter((t) => t.count > 0),
   );
   protected readonly ai = computed(() => aiLabel(this.matter().aiAllowed));
+
+  /** The tooltip of a Matter Type or Current State: the full name, with " (inactive)" for an item an administrator has since deactivated (the cell shows the plain name). */
+  protected listTip(t: { name: string; isActive: boolean }): string {
+    return t.isActive ? t.name : `${t.name} (inactive)`;
+  }
 
   /** `MM/DD hh:mm AM/PM` (the year only when it is not this year, D-60); the long form with the zone is the tooltip. */
   protected stamp(instant: string | undefined): string {

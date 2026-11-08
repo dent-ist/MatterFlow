@@ -2,6 +2,7 @@ import { dropdownByAttr } from '../support/dropdown';
 import { Page } from '@playwright/test';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
+import { showMatterColumns } from '../support/matter-columns';
 import { pmFixtures } from '../support/pm-fixtures';
 import { toasts } from '../support/toasts';
 
@@ -17,12 +18,9 @@ const SIZES: [number, number][] = [
 
 const rowOf = (page: Page, name: string) => page.locator('tbody tr', { hasText: name });
 
-/** Secondary PM is off by default so the default columns fit the 1366 frame (D-43a); the Columns menu turns it on (the choice is remembered). */
+/** Primary PM and Secondary PM are off by default so the default columns fit the 1366 frame (D-43a, epic #1298); the Columns menu turns them on (the choice is remembered). */
 async function showSecondaryPm(page: Page) {
-  const columns = page.getByRole('button', { name: 'Columns', exact: true });
-  await columns.click();
-  await page.getByLabel('Secondary PM', { exact: true }).check();
-  await columns.click();
+  await showMatterColumns(page, 'Primary PM', 'Secondary PM');
 }
 
 async function noSideScroll(page: Page) {

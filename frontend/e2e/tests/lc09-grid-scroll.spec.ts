@@ -26,7 +26,7 @@ const SCREENS: Screen[] = [
     name: 'Matters',
     url: '/matters',
     region: 'Matters list, scrollable',
-    headers: ['CM Number', 'Matter Name', 'Client', 'Primary PM'],
+    headers: ['CM Number', 'Matter Name', 'Client', 'Matter Type', 'Current State'],
   },
   {
     name: 'Assets',

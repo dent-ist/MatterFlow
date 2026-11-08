@@ -12,6 +12,10 @@ export const ADMIN_FIELD_LIMITS = {
   /** `AssetLinkRole.Name`. */
   linkRoleName: 50,
   onHoldReasonName: 100,
+  /** `MatterType.Name`, `CurrentState.Name` and `TeamTitle.Name` (epic #1298). */
+  matterTypeName: 100,
+  currentStateName: 100,
+  teamTitleName: 100,
   /** `Priority.Label`. */
   priorityLabel: 50,
   /** `StatusLabel.DisplayLabel` (the code is not editable). */

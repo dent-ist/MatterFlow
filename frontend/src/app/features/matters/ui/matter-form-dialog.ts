@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  Injector,
   computed,
   effect,
   inject,
@@ -17,14 +18,26 @@ import { firstValueFrom } from 'rxjs';
 import {
   ClientResponse,
   ClientsClient,
+  CurrentStatesClient,
   MatterAiAllowed,
+  MatterListItemView,
+  MatterListRef,
   MatterResponse,
+  MatterTypesClient,
   MattersClient,
 } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { ApiError } from '../../../core/http/api-error';
+import { QuietRequests } from '../../../core/http/interceptors';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { metaNumber, serverFormErrors } from '../../../shared/forms/api-errors';
+import { focusFirstInvalid } from '../../../shared/forms/focus-invalid';
+import {
+  PATH_MAX_LENGTH,
+  pathProblem,
+  pathToSend,
+  serverPathMessage,
+} from '../../../shared/forms/matter-paths';
 import { normalizeNumber } from '../../../shared/pipes/matter-ref.pipe';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
@@ -43,10 +56,44 @@ function clientOption(c: ClientResponse): PickerOption {
   return { id: c.clientId, label: `${c.clientNumber} ${c.name}`, inactive: !c.isActive };
 }
 
+function idText(ref: MatterListRef | undefined): string {
+  return ref ? String(ref.id) : '';
+}
+
+/** The id a pick-list dropdown holds (`''` is "Not Set") as the id the API takes (undefined clears the field). */
+function listId(value: string): number | undefined {
+  const id = Number(value);
+  return Number.isInteger(id) && id > 0 ? id : undefined;
+}
+
+/**
+ * The choices of a Matter Type or Current State dropdown (UI spec 3): "Not Set" first, then the ACTIVE items in the administrator's order. A matter whose current item was
+ * deactivated since shows it as "Name (inactive)", only while it is the selected entry (choosing anything else removes it from the list for good), and it is never
+ * offered to a matter that does not have it.
+ */
+export function pickListItems(
+  list: readonly MatterListItemView[],
+  current: MatterListRef | undefined,
+  selected: string,
+): DropdownItem[] {
+  const items: DropdownItem[] = [{ value: '', label: 'Not Set' }];
+  const active = list.filter((i) => i.isActive).sort((a, b) => a.sortOrder - b.sortOrder);
+  const keep = current && selected === String(current.id) ? current : undefined;
+  const lead = keep && !active.some((i) => i.id === keep.id) && !keep.isActive ? keep : undefined;
+  if (lead) items.push({ value: String(lead.id), label: `${lead.name} (inactive)` });
+  for (const i of active) items.push({ value: String(i.id), label: i.name });
+  // The current item is always shown as the selected value, even when the list could not be loaded.
+  if (keep && !items.some((i) => i.value === String(keep.id))) {
+    items.push({ value: String(keep.id), label: keep.name });
+  }
+  return items;
+}
+
 /**
  * THE matter form (MD-43, #1061; owner decision 2026-11-03): one pop-up for "+ New Matter" and for Edit on the Summary, so the same information is entered the same way.
- * Fields, in this order: Client, Matter number, CM Number (a read-only preview of client number plus matter number, never typed), Matter name, Sensitive matter, AI allowed
- * and the custom fields. Labels, help texts, validation messages, the unsaved-changes question and the footer (Cancel left, primary right) are the same in both modes.
+ * Fields, in this order: Client, Matter number, CM Number (a read-only preview of client number plus matter number, never typed), Matter name, Sensitive matter, AI allowed,
+ * Matter Type, Current State, DMS Path, DFS Path (epic #1298; the four are optional and "Not Set" is the first choice of the two lists) and the custom fields. On Save the four
+ * are sent as full values (the API treats them so: leaving one out clears it), starting from the matter's own. Labels, help texts, validation messages, the unsaved-changes question and the footer (Cancel left, primary right) are the same in both modes.
  *
  * New (`matter` null): Client and Matter number are editable (`clientId` preselects the client, from a Client page). Edit (`matter` given): Client and Matter number sit in the
  * same places but are locked. The Matter number can be unlocked (needs `Matter.EditNumber`, the existing rule of `PUT /matters/{id}/number`) after a short confirmation, and a
@@ -267,6 +314,62 @@ function clientOption(c: ClientResponse): PickerOption {
           >
         </div>
 
+        <div class="mf-field">
+          <label class="mf-field__label" for="matter-type">Matter Type</label>
+          <mf-dropdown
+            field
+            buttonId="matter-type"
+            label="Matter Type"
+            data-matter-type
+            [items]="typeItems()"
+            [search]="typeItems().length > 10"
+            [value]="matterTypeId()"
+            (valueChange)="matterTypeId.set($any($event))"
+          />
+          <span class="mf-field__help">Optional. What kind of matter this is.</span>
+        </div>
+
+        <div class="mf-field">
+          <label class="mf-field__label" for="matter-state">Current State</label>
+          <mf-dropdown
+            field
+            buttonId="matter-state"
+            label="Current State"
+            data-current-state
+            [items]="stateItems()"
+            [search]="stateItems().length > 10"
+            [value]="currentStateId()"
+            (valueChange)="currentStateId.set($any($event))"
+          />
+          <span class="mf-field__help"
+            >Optional. Where the matter stands now. Each change is recorded in the audit log.</span
+          >
+        </div>
+
+        <mf-text-field
+          inputId="matter-dms-path"
+          label="DMS Path"
+          data-dms-path
+          help="A network path (\\servershare...) or a web address (https://...). Optional."
+          [maxLength]="pathLimit"
+          [counter]="true"
+          [error]="dmsError()"
+          (blurred)="dmsTouched.set(true)"
+          [(value)]="dmsPath"
+        />
+
+        <mf-text-field
+          inputId="matter-dfs-path"
+          label="DFS Path"
+          data-dfs-path
+          help="A network path (\\servershare...) or a web address (https://...). Optional."
+          [maxLength]="pathLimit"
+          [counter]="true"
+          [error]="dfsError()"
+          (blurred)="dfsTouched.set(true)"
+          [(value)]="dfsPath"
+        />
+
         <mf-custom-fields-editor
           [versionId]="customVersionId()"
           [values]="customValues()"
@@ -316,6 +419,10 @@ export class MatterFormDialog {
   private readonly notify = inject(NotificationService);
   private readonly auth = inject(AuthStore);
   private readonly customEditor = viewChild(CustomFieldsEditor);
+  private readonly injector = inject(Injector);
+  private readonly typesApi = inject(MatterTypesClient);
+  private readonly statesApi = inject(CurrentStatesClient);
+  private readonly quiet = inject(QuietRequests);
 
   protected readonly aiItems: DropdownItem[] = AI_OPTIONS.map((o) => ({
     value: o.value,
@@ -327,6 +434,33 @@ export class MatterFormDialog {
   protected readonly name = signal('');
   protected readonly isSensitive = signal(false);
   protected readonly aiAllowed = signal<MatterAiAllowed>(MatterAiAllowed.No);
+  /** Matter Type and Current State: the chosen item's id as text, `''` for "Not Set". */
+  protected readonly matterTypeId = signal('');
+  protected readonly currentStateId = signal('');
+  protected readonly dmsPath = signal('');
+  protected readonly dfsPath = signal('');
+  protected readonly dmsTouched = signal(false);
+  protected readonly dfsTouched = signal(false);
+  protected readonly pathLimit = PATH_MAX_LENGTH;
+  private readonly types = signal<readonly MatterListItemView[]>([]);
+  private readonly states = signal<readonly MatterListItemView[]>([]);
+  protected readonly typeItems = computed(() =>
+    pickListItems(this.types(), this.matter()?.matterType, this.matterTypeId()),
+  );
+  protected readonly stateItems = computed(() =>
+    pickListItems(this.states(), this.matter()?.currentState, this.currentStateId()),
+  );
+  /** A path is checked when the person leaves the field and on Save, never per keystroke; a server answer shows until the next Save. */
+  protected readonly dmsError = computed(
+    () =>
+      this.fieldError('dmsPath') ||
+      (this.dmsTouched() || this.submitted() ? pathProblem(this.dmsPath()) : null),
+  );
+  protected readonly dfsError = computed(
+    () =>
+      this.fieldError('dfsPath') ||
+      (this.dfsTouched() || this.submitted() ? pathProblem(this.dfsPath()) : null),
+  );
   protected readonly busy = signal(false);
   protected readonly error = signal('');
   protected readonly submitted = signal(false);
@@ -391,6 +525,10 @@ export class MatterFormDialog {
         this.number().trim() !== '' ||
         this.name().trim() !== '' ||
         this.isSensitive() ||
+        this.matterTypeId() !== '' ||
+        this.currentStateId() !== '' ||
+        this.dmsPath().trim() !== '' ||
+        this.dfsPath().trim() !== '' ||
         this.customTouched()
       );
     }
@@ -398,6 +536,10 @@ export class MatterFormDialog {
       this.name() !== m.name ||
       this.isSensitive() !== m.isSensitive ||
       this.aiAllowed() !== (m.aiAllowed ?? MatterAiAllowed.No) ||
+      this.matterTypeId() !== idText(m.matterType) ||
+      this.currentStateId() !== idText(m.currentState) ||
+      this.dmsPath().trim() !== (m.dmsPath ?? '') ||
+      this.dfsPath().trim() !== (m.dfsPath ?? '') ||
       this.numberChanged() ||
       this.customTouched()
     );
@@ -423,6 +565,13 @@ export class MatterFormDialog {
         this.name.set(m?.name ?? '');
         this.isSensitive.set(m?.isSensitive ?? false);
         this.aiAllowed.set(m?.aiAllowed ?? MatterAiAllowed.No);
+        this.matterTypeId.set(idText(m?.matterType));
+        this.currentStateId.set(idText(m?.currentState));
+        this.dmsPath.set(m?.dmsPath ?? '');
+        this.dfsPath.set(m?.dfsPath ?? '');
+        this.dmsTouched.set(false);
+        this.dfsTouched.set(false);
+        void this.loadLists();
         this.customValues.set({ ...(m?.formValues ?? {}) });
         this.customVersionId.set(m?.publishedFormVersionId ?? null);
         this.customTouched.set(false);
@@ -459,6 +608,16 @@ export class MatterFormDialog {
     this.numberLocked.set(true);
   }
 
+  /** The two pick lists, read on every opening (an administrator may have changed them); a failure leaves "Not Set" and the matter's own choice. */
+  private async loadLists(): Promise<void> {
+    const [types, states] = await Promise.all([
+      firstValueFrom(this.quiet.run(() => this.typesApi.listMatterTypes())).catch(() => []),
+      firstValueFrom(this.quiet.run(() => this.statesApi.listCurrentStates())).catch(() => []),
+    ]);
+    this.types.set(types);
+    this.states.set(states);
+  }
+
   private async loadCustomForm(): Promise<void> {
     try {
       const form = await firstValueFrom(this.api.getMatterCustomFieldForm());
@@ -488,11 +647,15 @@ export class MatterFormDialog {
     const problem = numberProblem(this.number(), 'matter number');
     if (problem) problems.push(problem);
     if (this.name().trim() === '') problems.push('Enter a matter name.');
+    for (const problem of [pathProblem(this.dmsPath()), pathProblem(this.dfsPath())]) {
+      if (problem && !problems.includes(problem)) problems.push(problem);
+    }
     this.customErrors.set([]);
     const custom = this.customEditor()?.collect(this.isEdit() ? this.customValues() : undefined);
     problems.push(...customFieldsProblems(custom));
     if (problems.length > 0) {
       this.summary.set(problems);
+      focusFirstInvalid(this.injector);
       return { ok: false };
     }
     return { ok: true, custom: custom?.values };
@@ -533,6 +696,10 @@ export class MatterFormDialog {
           name: this.name().trim(),
           isSensitive: this.isSensitive(),
           aiAllowed: this.aiAllowed(),
+          matterTypeId: listId(this.matterTypeId()),
+          currentStateId: listId(this.currentStateId()),
+          dmsPath: pathToSend(this.dmsPath()),
+          dfsPath: pathToSend(this.dfsPath()),
           formValues: custom,
         }),
       );
@@ -569,6 +736,11 @@ export class MatterFormDialog {
           name: this.name().trim(),
           isSensitive: this.isSensitive(),
           aiAllowed: this.aiAllowed(),
+          // Matter Type, Current State and the two paths are FULL values on PUT (leaving one out clears it): they start from the matter's own and are always sent.
+          matterTypeId: listId(this.matterTypeId()),
+          currentStateId: listId(this.currentStateId()),
+          dmsPath: pathToSend(this.dmsPath()),
+          dfsPath: pathToSend(this.dfsPath()),
           confirmLossOfAccess: confirmLoss || undefined,
           formValues: custom,
           rowVersion: current.rowVersion,
@@ -610,6 +782,11 @@ export class MatterFormDialog {
     // The number endpoint names its field `number`; the form calls it `matterNumber`.
     const base = { ...split.base };
     if (base['number'] && !base['matterNumber']) base['matterNumber'] = base['number'];
+    // The path messages are chosen by the API's field codes, so they read as the UI spec words them.
+    for (const field of ['dmsPath', 'dfsPath'] as const) {
+      const message = serverPathMessage(err, field);
+      if (message) base[field] = message;
+    }
     this.serverErrors.set(base);
     this.customErrors.set(split.form);
     this.summary.set(errors.summary);

@@ -82,6 +82,10 @@ describe('tab icons (LC-10, theme guide 11.3)', () => {
       ['used-by', 'link-roles'],
       ['all-open', 'steps'],
       ['metrics', 'page-reports'],
+      // Epic #1298 (UI spec): the Matter Lists page and tab icons follow the concept they list; the Team tab and the Team Titles tab never sit in one strip.
+      ['fields', 'page-custom-fields', 'page-matter-lists'],
+      ['matters', 'matter', 'page-matters', 'matter-types'],
+      ['team', 'team-titles'],
     ];
     const byIcon = new Map<string, string[]>();
     for (const [key, icon] of Object.entries(ICONS))

@@ -144,6 +144,14 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
     permissions: ['CustomField.Manage'],
   },
   {
+    // Matter Types, Current States and Team Titles: the pick lists of the Matter (epic #1298). One item, one permission.
+    label: 'Matter Lists',
+    icon: pageIcon('matter-lists'),
+    path: '/admin/matter-types',
+    alsoActive: ['/admin/current-states', '/admin/team-titles'],
+    permissions: ['MatterList.Manage'],
+  },
+  {
     // The SQL reports page (#712): reports, categories, run log, assignments and the report login. The people-facing list of reports is a
     // separate item that arrives with the user screens.
     label: 'Reports',

@@ -117,6 +117,10 @@
   --mf-col-matterName-min: 112px;
   --mf-col-matterName-max: 360px;
   --mf-col-client-w: 140px;
+  --mf-col-matter-type-w: 160px; /* Matters list, optional Matter Type column (off by default, #1301) */
+  --mf-col-current-state-w: 160px; /* Matters list, optional Current State column (off by default, #1301) */
+  --mf-col-email-w: 320px; /* Matter Team grid, Email */
+  --mf-col-title-w: 176px; /* Matter Team grid, Title */
   --mf-col-client-min: 96px;
   --mf-col-client-max: 280px;
   --mf-col-project-w: 140px;
