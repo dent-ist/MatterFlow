@@ -428,6 +428,65 @@ export function runVector(vec, ruleSchema) {
   return evaluate(vec.schema.fields, vec.values, vec.mode ?? 'submit');
 }
 
+
+// ---------------------------------------------------------------- asset numbering (issue #1297)
+/** Reference implementation of the Asset Number tail rules (backend AssetNumbering.Parse/Render); the vectors must be reproduced by .NET and TypeScript. */
+export function renderAssetNumber(tail, cmNumber, counter) {
+  const UNSAFE = '\\/:*?"<>|';
+  if (tail.length > 50) return { error: 'PATTERN_TOO_LONG' };
+  if (tail.length > 0 && (/^\s/.test(tail) || /\s$/.test(tail))) return { error: 'PATTERN_EDGE_SPACE' };
+  if (tail.endsWith('.')) return { error: 'PATTERN_TRAILING_DOT' };
+  let before = '', after = '', width = 0, i = 0;
+  while (i < tail.length) {
+    const c = tail[i];
+    if (c === '}') return { error: 'PATTERN_UNKNOWN_TOKEN' };
+    if (c !== '{') {
+      if (UNSAFE.includes(c) || /[\u0000-\u001f\u007f-\u009f]/.test(c)) return { error: 'PATTERN_FORBIDDEN_CHAR' };
+      if (width === 0) before += c; else after += c;
+      i++;
+      continue;
+    }
+    const close = tail.indexOf('}', i + 1);
+    const inner = close < 0 ? '' : tail.slice(i + 1, close);
+    if (close < 0 || inner.includes('{')) return { error: 'PATTERN_UNKNOWN_TOKEN' };
+    if (inner.length === 0 || /[^#]/.test(inner)) return { error: 'PATTERN_UNKNOWN_TOKEN' };
+    if (inner.length > 9) return { error: 'PATTERN_COUNTER_WIDTH' };
+    if (width > 0) return { error: 'PATTERN_TWO_COUNTERS' };
+    width = inner.length;
+    i = close + 1;
+  }
+  if (width === 0) return { error: 'PATTERN_NO_COUNTER' };
+  return { text: cmNumber + before + String(counter).padStart(width, '0') + after };
+}
+
+const ASSET_NUMBER_CODES = ['PATTERN_NO_COUNTER', 'PATTERN_TWO_COUNTERS', 'PATTERN_UNKNOWN_TOKEN', 'PATTERN_FORBIDDEN_CHAR', 'PATTERN_EDGE_SPACE', 'PATTERN_TRAILING_DOT', 'PATTERN_TOO_LONG', 'PATTERN_COUNTER_WIDTH'];
+
+function checkAssetNumberVectors(fail) {
+  const file = load('asset-numbering/pattern-vectors.json');
+  if (file.version !== 1 || !Array.isArray(file.vectors) || file.vectors.length === 0) { fail('asset-numbering vectors: version 1 and a non-empty vectors array are required'); return; }
+  const names = new Set();
+  const seenCodes = new Set();
+  for (const v of file.vectors) {
+    const where = `asset-numbering vector "${v.name}"`;
+    if (typeof v.name !== 'string' || !v.name) { fail('asset-numbering vector without a name'); continue; }
+    if (names.has(v.name)) fail(`${where}: duplicate name`);
+    names.add(v.name);
+    if (typeof v.tail !== 'string' || typeof v.cmNumber !== 'string' || !Number.isInteger(v.counter) || v.counter < 1) fail(`${where}: tail (string), cmNumber (string) and counter (integer >= 1) are required`);
+    const hasExpected = typeof v.expected === 'string', hasError = typeof v.expectedError === 'string';
+    if (hasExpected === hasError) { fail(`${where}: exactly one of expected and expectedError`); continue; }
+    if (hasError && !ASSET_NUMBER_CODES.includes(v.expectedError)) fail(`${where}: unknown error code ${v.expectedError}`);
+    const unknownKeys = Object.keys(v).filter((k) => !['name', 'tail', 'cmNumber', 'counter', 'expected', 'expectedError'].includes(k));
+    if (unknownKeys.length) fail(`${where}: unknown keys ${unknownKeys.join(', ')}`);
+    const actual = renderAssetNumber(v.tail, v.cmNumber, v.counter);
+    if (hasExpected && actual.text !== v.expected) fail(`${where}: expected ${JSON.stringify(v.expected)}, reference gives ${JSON.stringify(actual)}`);
+    if (hasError && actual.error !== v.expectedError) fail(`${where}: expected error ${v.expectedError}, reference gives ${JSON.stringify(actual)}`);
+    if (hasError) seenCodes.add(v.expectedError);
+    if (hasExpected && v.expected.length > 100) fail(`${where}: result longer than 100`);
+  }
+  for (const c of ASSET_NUMBER_CODES) if (!seenCodes.has(c)) fail(`asset-numbering vectors: no vector expects ${c}`);
+  console.log(`asset-numbering vectors: ${file.vectors.length}`);
+}
+
 // ---------------------------------------------------------------- main
 function main() {
   const schema = load('form-rules.schema.json');
@@ -492,6 +551,8 @@ function main() {
     for (const c of needCodes) if (!allCodes.includes(c)) fail(`no vector expects ${c}`);
     console.log(`vectors: ${vecFile.vectors.length} (${validCount} evaluation, ${invalidCount} definition-invalid)`);
   }
+
+  checkAssetNumberVectors(fail);
 
   // 4. message keys: every field error code and definition error code has at least one message
   const msgFile = load('form-rules.messages.json');

@@ -66,6 +66,8 @@ const EVENT_TYPES: Readonly<Record<string, string>> = {
   MATTER_TEAM_MEMBER_ADDED: 'Team member added',
   MATTER_TEAM_MEMBER_CHANGED: 'Team member updated',
   MATTER_TEAM_MEMBER_REMOVED: 'Team member removed',
+  ASSET_NEXT_NUMBER_SET: 'Asset next number set',
+  ASSET_NUMBER_ASSIGNED: 'Asset number assigned',
 };
 
 /** `COMMENT_ADDED` -> `Comment added`, `TASK_STATUS_CHANGED` -> `Task status changed` (the code stays the option's value, #650). */
@@ -116,6 +118,19 @@ export function fieldLabel(key: string | undefined): string {
     .trim()
     .toLowerCase();
   return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+/** The numbering scope is stored as a number (1 = per matter, #1297): the Activity drawer says the word. */
+const NUMBERING_SCOPES: Readonly<Record<string, string>> = { '1': 'Per matter' };
+
+/** The value of a field-change line: the numbering scope in words, everything else through `auditValue`. */
+export function fieldChangeValue(
+  fieldKey: string | undefined,
+  value: string | undefined | null,
+): string {
+  if (fieldKey?.toLowerCase() === 'numberingscope' && value && NUMBERING_SCOPES[value])
+    return NUMBERING_SCOPES[value];
+  return auditValue(value);
 }
 
 /** Booleans read Yes/No; a calendar date reads "10/15" ("10/15/2027" outside this year); empty reads "(empty)". */
@@ -189,8 +204,8 @@ export function describeAuditEvent(e: AuditEventDto, actor: string): string {
     const field = fieldLabel(e.fieldKey);
     const hasOld = e.oldValue !== undefined && e.oldValue !== null && e.oldValue !== '';
     return hasOld
-      ? `${field}: ${auditValue(e.oldValue)} -> ${auditValue(e.newValue)}`
-      : `${field} set to ${auditValue(e.newValue)}`;
+      ? `${field}: ${fieldChangeValue(e.fieldKey, e.oldValue)} -> ${fieldChangeValue(e.fieldKey, e.newValue)}`
+      : `${field} set to ${fieldChangeValue(e.fieldKey, e.newValue)}`;
   }
   return e.summary ?? e.eventType.toLowerCase().replace(/_/g, ' ');
 }

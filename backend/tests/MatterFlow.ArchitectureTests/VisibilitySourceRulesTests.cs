@@ -33,6 +33,7 @@ public class VisibilitySourceRulesTests
         ["VisibleTasks.cs"] = "the one place WorkViews reads tasks through the rule",
         ["AssetService.cs"] = "reads go through AssetAccess.Visible, writes through AssetAccess.OfVisibleMatters; Add for create",
         ["AssetTypeService.cs"] = "asset counts through AssetAccess.Visible",
+        ["AssetNumberingService.cs"] = "reads only the highest assigned number per matter of matters already filtered by IMatterVisibility (the counter list) or checked by AssetAccess.CanSeeMatterAsync (one counter, set next number); no asset data is returned",
         ["AssetScope.cs"] = "the scope's matters come from IManagedMatterScope.WhereManagedBy / IMatterVisibility.WhereMatterVisible (the sensitive-matter rule, epic #851); its assets are those matters' assets by subquery",
         ["AssetDataService.cs"] = "assets of the AssetScope (visible matters by construction); matter and client names only for matters that hold counted assets",
         ["AssetReportRunService.cs"] = "assets of the AssetScope (visible matters by construction); group labels (matter, client) only for the matters of counted groups",

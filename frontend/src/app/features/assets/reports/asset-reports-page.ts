@@ -718,6 +718,7 @@ export class AssetReportsPage {
         { key: 'matter', label: 'Matter' },
         { key: 'client', label: 'Client' },
         { key: 'assetType', label: 'Asset Type' },
+        { key: 'assetNumber', label: 'Asset Number' },
       ],
   );
   protected readonly needsUnit = computed(() => {

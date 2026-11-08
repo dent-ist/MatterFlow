@@ -35,6 +35,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Shared conformance vectors: linked, never forked (contracts/form-rules.md section 5). -->
+    <None Include="..\..\..\contracts\asset-numbering\pattern-vectors.json" Link="Assets\pattern-vectors.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\..\..\contracts\form-rules.vectors.json" Link="Configuration\Forms\form-rules.vectors.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>

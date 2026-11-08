@@ -211,7 +211,8 @@ public sealed class TaskAssetService(
                     role?.Name,
                     TaskSupport.Utc(r.CreatedAtUtc),
                     r.CreatedByUserId is { } by && people.TryGetValue(by, out var u) ? new TaskUserRef(u.UserId, u.DisplayName, u.IsActive) : null,
-                    TaskSupport.Encode(r.RowVersion));
+                    TaskSupport.Encode(r.RowVersion),
+                    canViewAssets ? asset?.AssetNumber : null);
             }),
         ];
     }

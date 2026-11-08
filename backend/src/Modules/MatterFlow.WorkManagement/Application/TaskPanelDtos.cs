@@ -84,6 +84,7 @@ public sealed class EditTaskCommentRequest
 /// <param name="LinkedAtUtc">When the link was made (UTC).</param>
 /// <param name="LinkedBy">Who made it.</param>
 /// <param name="RowVersion">Concurrency token (base64); optional when changing the role.</param>
+/// <param name="AssetNumber">The asset's generated Asset Number (the folder name), if it has one; <c>Asset.View</c> data like the name, so null without that permission.</param>
 public sealed record TaskAssetLinkResponse(
     [property: Required] int AssetId,
     [property: Required] string DisplayName,
@@ -94,7 +95,8 @@ public sealed record TaskAssetLinkResponse(
     string? AssetLinkRoleName,
     [property: Required] DateTime LinkedAtUtc,
     TaskUserRef? LinkedBy,
-    [property: Required] string RowVersion);
+    [property: Required] string RowVersion,
+    string? AssetNumber = null);
 
 /// <summary>The Assets linked to a Task, with whether the caller may change links now.</summary>
 /// <param name="Items">The links, newest first.</param>

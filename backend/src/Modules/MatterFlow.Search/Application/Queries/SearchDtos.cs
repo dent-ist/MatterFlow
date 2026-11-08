@@ -43,7 +43,8 @@ public sealed record SearchHit(
     DateTime? DueAtUtc = null,
     string? Disposition = null,
     decimal? SizeValue = null,
-    string? SizeUnit = null);
+    string? SizeUnit = null,
+    string? AssetNumber = null);
 
 /// <summary>
 /// The hits of one type, best first and capped; <c>HasMore</c> says the cap cut off further matches. <c>Total</c> is how many records of the type match

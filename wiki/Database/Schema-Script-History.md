@@ -4,7 +4,7 @@
 
 **What this page is for.** One line per numbered SQL script in `db/scripts/`, in order: what it did, which tables it created and which it changed. Use it to find which script introduced a column or table, and to see how the schema grew. Rules for writing a new script: [How to Change the Schema](How-to-Change-the-Schema.md).
 
-There are 59 scripts, numbered 01 to 60. **Number 16 does not exist** (a gap is allowed by the runner). Scripts are immutable once merged, so where one later fixed another (for example 32 after 31) the fix is a new script. "Created" and "changed" are derived by pattern matching on `CREATE TABLE`, `ALTER TABLE`, `CREATE INDEX` and `CREATE TRIGGER` in the script text; permission and data scripts are described in plain words.
+There are 60 scripts, numbered 01 to 60 and 63 (61 and 62 belong to the `reports` branch and are merged into dev later). **Number 16 does not exist** (a gap is allowed by the runner). Scripts are immutable once merged, so where one later fixed another (for example 32 after 31) the fix is a new script. "Created" and "changed" are derived by pattern matching on `CREATE TABLE`, `ALTER TABLE`, `CREATE INDEX` and `CREATE TRIGGER` in the script text; permission and data scripts are described in plain words.
 
 | # | File | What it did | Tables created | Tables or indexes changed |
 |---|---|---|---|---|
@@ -67,6 +67,8 @@ There are 59 scripts, numbered 01 to 60. **Number 16 does not exist** (a gap is 
 | 58 | `58-user-absence.sql` | `UserAbsence`: many Out of office entries per person (replaces the single value of script 22). | `UserAbsence` | - |
 | 59 | `59-holiday-calendars.sql` | Holiday calendars and holidays; `AppUser.HolidayCalendarId`, `Pod.DefaultHolidayCalendarId`. | `Holiday`, `HolidayCalendar` | `AppUser`, `Pod` |
 | 60 | `60-calendar-permissions.sql` | Permissions `Dashboard.ViewCalendar`, `Dashboard.ViewAbsenceReasons`, `User.ManageAvailability` and grants. | - | - |
+| 63 | `63-asset-numbering.sql` | Automatic asset numbering (issue #1297): `AssetType.NumberingEnabled`, `NumberingPattern` (the tail after the CM Number, default `_{###}`), `NumberingScope`; `Asset.AssetNumber` and `AssetNumberSeq` (null for every existing asset, no backfill) with the unique filtered index `UQ_Asset_AssetNumber`; the counter table `AssetNumberCounter` (denied for the report login); `TR_Asset_Guard` re-created so an assigned number never changes. Idempotent. | `AssetNumberCounter` | `AssetType`, `Asset` |
+| 64 | `64-matter-fields.sql` | Matter fields (epic #1298): lists `MatterType`, `CurrentState`, `TeamTitle`; `Matter.MatterTypeId`, `CurrentStateId`, `DmsPath`, `DfsPath`; `MatterTeamMember` (typed-in team contacts, email unique per matter). | `MatterType`, `CurrentState`, `TeamTitle`, `MatterTeamMember` | `Matter` |
 
 ## Related pages
 

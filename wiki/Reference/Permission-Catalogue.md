@@ -110,6 +110,7 @@ How to read it:
 | `CustomField.Manage` | Manage client, matter and project custom fields | none (System Admin only) | `FormAdminService`, `FormDefinitionResolver`, `FormsController` | `admin.routes`, `custom-fields-page`, `form-schema` and 2 more |
 | `Priority.Manage` | Manage priorities | none (System Admin only) | `PrioritiesController` | `admin-tabs`, `audit-links`, `labels-admin-page` and 4 more |
 | `OnHoldReason.Manage` | Manage the reasons for putting a task on hold | none (System Admin only) | `PrioritiesController` | `audit-links`, `labels-admin-page`, `labels-tabs` and 2 more |
+| `MatterList.Manage` | Manage matter types, current states and team titles | none (System Admin only) | `MatterTypesController`, `CurrentStatesController`, `TeamTitlesController` | the Matter Lists admin page |
 | `StatusLabel.Manage` | Manage task status labels | none (System Admin only) | `NoteControllers`, `PrioritiesController` | `admin-tabs`, `audit-links`, `labels-tabs` and 3 more |
 
 ## Dashboard

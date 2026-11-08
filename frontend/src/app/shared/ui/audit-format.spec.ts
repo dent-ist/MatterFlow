@@ -76,6 +76,8 @@ describe('audit formatting', () => {
     expect(eventTypeLabel('COMMENT_ADDED')).toBe('Comment added');
     expect(eventTypeLabel('TASK_TYPE_WORKFLOWS_CHANGED')).toBe('Task type workflows changed');
     expect(eventTypeLabel('MATTER_SENSITIVITY_CHANGED')).toBe('Matter sensitivity changed');
+    expect(eventTypeLabel('ASSET_NEXT_NUMBER_SET')).toBe('Asset next number set');
+    expect(eventTypeLabel('ASSET_NUMBER_ASSIGNED')).toBe('Asset number assigned');
     expect(eventTypeLabel('FIELD_CHANGED')).toBe('Field changed');
     expect(eventTypeLabel('SOMETHING_NEW_HAPPENED')).toBe('Something new happened');
     expect(objectTypeLabel('AssetLinkRole')).toBe('Asset link role');
@@ -154,6 +156,18 @@ describe('audit formatting', () => {
         activityText({ summary: 'Due date set to 2026-10-15', newValue: '2026-10-15' }, NOW)
           .summary,
       ).toBe('Due date set to 10/15');
+    });
+  });
+
+  describe('numbering scope in the Activity drawer (#1306)', () => {
+    it('says Per matter instead of 1', () => {
+      const event = {
+        eventType: 'FIELD_CHANGED',
+        objectType: 'AssetType',
+        fieldKey: 'NumberingScope',
+        newValue: '1',
+      } as never;
+      expect(describeAuditEvent(event, 'Kim')).toBe('Numbering scope set to Per matter');
     });
   });
 });

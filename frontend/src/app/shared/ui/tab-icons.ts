@@ -99,6 +99,8 @@ export const ICONS: Readonly<Record<string, string>> = {
   'asset-types': 'pi-tags',
   'link-roles': 'pi-link',
   fields: 'pi-sliders-h',
+  // Asset type numbering (#1297).
+  numbering: 'pi-hashtag',
   form: 'pi-file',
   // Reports
   reports: 'pi-file',

@@ -169,6 +169,8 @@ interface HitFields {
   type: string;
   reference?: string | null;
   secondary?: string | null;
+  /** The generated Asset Number of an asset hit (#1297). */
+  assetNumber?: string | null;
   matterRef?: string | null;
   matterName?: string | null;
   isSensitive: boolean;
@@ -181,7 +183,7 @@ interface HitFields {
  * - Client: reference and name only.
  * - Project: the name, then the matter number and name.
  * - Task: reference and title, then matter number, matter name and status (never the requestor).
- * - Asset: the name only, then type, matter number and matter name (never the URL reference).
+ * - Asset: the name only, then type, the Asset Number when it has one, matter number and matter name (never the URL reference).
  * Matter number and name are empty for a caller who may not view Matters (the API leaves them out).
  */
 export function suggestionLines(
@@ -208,6 +210,7 @@ export function suggestionLines(
       tooltip = reference;
       reference = null;
       if (hit.secondary) context.push(hit.secondary);
+      if (hit.assetNumber) context.push(hit.assetNumber);
       context.push(...matter);
       break;
   }

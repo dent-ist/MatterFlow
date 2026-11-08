@@ -605,6 +605,26 @@ async function ensureOrganization(admin, ctx, opts, summary) {
     'Production',
   ];
   const types = wanted.map((name) => ctx.assetTypes.find((t) => t.name === name)).filter(Boolean);
+  // Issue #1297: Physical Media is numbered automatically (matter CM Number + _001, restarting per matter), so the demo shows the feature. Older servers have no numbering: ignored.
+  const media = types.find((t) => t.name === 'Physical Media');
+  if (media && !opts.dryRun && media.numbering && media.numbering.enabled === false) {
+    try {
+      const fresh = await admin.get(`/api/v1/asset-types/${media.assetTypeId}`);
+      const updated = await admin.put(`/api/v1/asset-types/${media.assetTypeId}`, {
+        name: fresh.name,
+        description: fresh.description,
+        sortOrder: fresh.sortOrder,
+        isActive: fresh.isActive,
+        iconKey: fresh.iconKey,
+        colourKey: fresh.colourKey,
+        numbering: { enabled: true },
+        rowVersion: fresh.rowVersion,
+      });
+      media.numbering = updated.numbering;
+    } catch (error) {
+      log(`  (numbering of "Physical Media" not switched on: ${error.message.slice(0, 160)})`);
+    }
+  }
   const filler = new FormFiller(admin, createRng(opts.seed ^ 0x5eed), {
     assetIdsFor: (matterId) => (ctx.assetPool.get(matterId) ?? []).map((a) => a.assetId),
     userIds: [],

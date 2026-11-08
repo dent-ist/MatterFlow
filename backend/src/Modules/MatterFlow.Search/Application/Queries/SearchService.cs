@@ -438,6 +438,7 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions, 
                 Id = a.Id,
                 Name = a.DisplayName,
                 ExternalReference = a.ExternalReference,
+                AssetNumber = a.AssetNumber,
                 TypeName = t.Name,
                 AssetTypeId = a.AssetTypeId,
                 IsActive = a.IsActive,
@@ -460,6 +461,7 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions, 
         var tiers = new List<Tier<AssetRow>>();
         tiers.AddRange(RankedQuery.TextTiers<AssetRow>(r => r.Name, term, binary: true));
         tiers.AddRange(RankedQuery.TextTiers<AssetRow>(r => r.ExternalReference, term, binary: true));
+        tiers.AddRange(RankedQuery.TextTiers<AssetRow>(r => r.AssetNumber, term, binary: true));
         tiers.AddRange(RankedQuery.TextTiers<AssetRow>(r => r.TypeName, term, binary: true).Select(t => t with { Rank = Math.Max(t.Rank, SearchRanking.WordStart) }));
         tiers.AddRange(RelatedTiers<AssetRow>(r => r.MatterRef, term));
         return RankedQuery.Rank(rows, tiers, requireMatch: true);
@@ -478,7 +480,8 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions, 
                 x.Item.Item.IsSensitive, ShowMatter ? x.Item.Item.MatterRef : null, ShowMatter ? x.Item.Item.MatterName : null, x.Item.Item.IsActive, null, x.Mine,
                 Disposition: dispositions.GetValueOrDefault(x.Item.Item.Id),
                 SizeValue: sizes.TryGetValue(x.Item.Item.Id, out var size) ? size.Value : null,
-                SizeUnit: sizes.TryGetValue(x.Item.Item.Id, out var unitSize) ? unitSize.Unit : null)),
+                SizeUnit: sizes.TryGetValue(x.Item.Item.Id, out var unitSize) ? unitSize.Unit : null,
+                AssetNumber: x.Item.Item.AssetNumber)),
         ];
     }
 
@@ -663,6 +666,8 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions, 
         public string Name { get; init; } = string.Empty;
 
         public string? ExternalReference { get; init; }
+
+        public string? AssetNumber { get; init; }
 
         public string TypeName { get; init; } = string.Empty;
 

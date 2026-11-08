@@ -66,7 +66,7 @@ public sealed record MatterOverviewPeople(
     [property: Required] IReadOnlyList<MatterOverviewPerson> Items);
 
 /// <summary>An active asset of the matter.</summary>
-public sealed record MatterOverviewAsset([property: Required] int AssetId, [property: Required] string DisplayName, [property: Required] string AssetTypeName, string? ExternalReference);
+public sealed record MatterOverviewAsset([property: Required] int AssetId, [property: Required] string DisplayName, [property: Required] string AssetTypeName, string? ExternalReference, string? AssetNumber = null);
 
 /// <summary>The matter's active assets: the count and the first five by name. Present only for a caller with <c>Asset.View</c>.</summary>
 public sealed record MatterOverviewAssets([property: Required] int Total, [property: Required] IReadOnlyList<MatterOverviewAsset> Items);

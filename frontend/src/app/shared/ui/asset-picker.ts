@@ -38,10 +38,14 @@ interface Choice {
   inactive: boolean;
 }
 
+/** The muted text after the name: the type, and "- <Asset Number>" when the asset has one (#1297). */
+const detailOf = (a: { assetTypeName: string; assetNumber?: string | null }): string =>
+  a.assetNumber ? `${a.assetTypeName} - ${a.assetNumber}` : a.assetTypeName;
+
 const toChoice = (a: AssetLookupItem): Choice => ({
   id: a.assetId,
   label: a.displayName,
-  detail: a.assetTypeName,
+  detail: detailOf(a),
   reference: a.externalReference ?? '',
   inactive: !a.isActive,
 });
@@ -298,7 +302,7 @@ export class AssetPicker implements OnDestroy {
       this.chosen.set({
         id,
         label: asset.displayName,
-        detail: asset.assetTypeName,
+        detail: detailOf(asset),
         reference: asset.externalReference ?? '',
         inactive: !asset.isActive,
       });
