@@ -14,10 +14,18 @@ import {
   fitsCellLimit,
 } from './rich-table';
 
+const hosts: HTMLElement[] = [];
+
+// Every table lives in the document (the cell geometry needs it); remove them after each test so that they do not leak into other spec files.
+afterEach(() => {
+  hosts.splice(0).forEach((h) => h.remove());
+});
+
 function table(html: string): HTMLTableElement {
   const host = document.createElement('div');
   host.innerHTML = html;
   document.body.appendChild(host);
+  hosts.push(host);
   return host.querySelector('table')!;
 }
 

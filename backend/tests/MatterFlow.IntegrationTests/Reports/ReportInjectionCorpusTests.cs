@@ -254,7 +254,7 @@ public sealed class ReportInjectionCorpusTests(SqlServerFixture sql)
         [
             "[null]", "[{}]", "[{\"op\":\"contains\",\"value\":\"x\"}]", "[{\"column\":null,\"op\":\"contains\"}]", "[{\"column\":\"name\"}]", "[1]", "{\"column\":\"name\"}", "\"text\"", "42", "{broken", "[{\"column\":\"name\",\"op\":\"contains\",\"value\":{\"a\":1}}]",
             "[{\"column\":\"name'; DROP TABLE dbo.AppUser; --\",\"op\":\"contains\",\"value\":\"x\"}]", "[{\"column\":\"name\",\"op\":\"contains; DROP\",\"value\":\"x\"}]", "[{\"column\":\"id\",\"op\":\"gte\",\"value\":\"1; DROP TABLE dbo.AppUser\"}]",
-            "[{\"column\":\"due\",\"op\":\"on\",\"value\":\"2026-01-01' OR '1'='1\"}]", "[{\"column\":\"#0\",\"op\":\"gte\",\"value\":\"1\"}]", "[" + string.Join(",", Enumerable.Repeat("{\"column\":\"id\",\"op\":\"gt\",\"value\":\"0\"}", 21)) + "]",
+            "[{\"column\":\"due\",\"op\":\"on\",\"value\":\"2026-01-01' OR '1'='1\"}]", "[{\"column\":\"#99\",\"op\":\"gte\",\"value\":\"1\"}]", "[" + string.Join(",", Enumerable.Repeat("{\"column\":\"id\",\"op\":\"gt\",\"value\":\"0\"}", 21)) + "]",
         ];
         foreach (var filter in filters)
         {
@@ -270,7 +270,7 @@ public sealed class ReportInjectionCorpusTests(SqlServerFixture sql)
             }
         }
 
-        foreach (var columns in new[] { "?columns=nope", "?columns=id&columns=nope", "?columns=id%3B%20DROP%20TABLE%20dbo.AppUser", "?columns=%23" + "0", "?columns=" + new string('c', 5000) })
+        foreach (var columns in new[] { "?columns=nope", "?columns=id&columns=nope", "?columns=id%3B%20DROP%20TABLE%20dbo.AppUser", "?columns=%23" + "99", "?columns=" + new string('c', 5000) })
         {
             var response = await runner.GetAsync(Export(run, columns));
             response.StatusCode.ShouldBe(HttpStatusCode.BadRequest, columns.Length > 60 ? columns[..60] : columns);
