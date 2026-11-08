@@ -5,7 +5,8 @@
     <section class="mf-list" [class.mf-list--wide]="!editing()" mfScrollArea="Roles list">
       @if (!editing()) {
         <p class="mf-role-head" aria-hidden="true">
-          <span>Name</span><span>Description</span><span class="mf-role-head__n">Members</span
+          <span>Name</span><span>Description</span><span>Landing Page</span
+          ><span class="mf-role-head__n">Members</span
           ><span class="mf-role-head__n">Permissions</span>
         </p>
       }
@@ -26,6 +27,13 @@
                 }
               </span>
               <span class="mf-desc">{{ r.description }}</span>
+              <span class="mf-landing" data-landing-col>
+                @if (landingOf(r); as page) {
+                  {{ page }}
+                } @else {
+                  <span class="mf-landing--auto">Automatic</span>
+                }
+              </span>
               <span class="mf-count"
                 >{{ r.memberCount | mfInt }} {{ r.memberCount === 1 ? 'member' : 'members' }}</span
               >
@@ -149,6 +157,38 @@
                 [value]="draftDescription()"
                 [max]="descriptionMax"
               />
+            </div>
+
+            <div class="mf-fld" data-landing-field>
+              <label for="role-landing" class="mf-label">Landing Page</label>
+              <mf-dropdown
+                field
+                fill
+                data-landing
+                buttonId="role-landing"
+                label="Landing Page"
+                [mfTip]="landingTip"
+                [placeholder]="landingPlaceholder()"
+                [items]="landingItems()"
+                [value]="landingValue()"
+                [disabled]="locked()"
+                [invalid]="!!landingError()"
+                [describedBy]="
+                  landingError()
+                    ? 'role-landing-error role-landing-auto'
+                    : 'role-landing-help role-landing-auto'
+                "
+                (valueChange)="draftLanding.set($event)"
+              />
+              @if (landingError()) {
+                <p class="mf-form-error" id="role-landing-error" role="alert" data-landing-error>
+                  <i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ landingError() }}
+                </p>
+              }
+              <p class="mf-field__help" id="role-landing-help" data-landing-help>
+                {{ landingHelp() }}
+              </p>
+              <span class="mf-sr-only" id="role-landing-auto">{{ landingTip }}</span>
             </div>
 
             <div class="mf-tools">

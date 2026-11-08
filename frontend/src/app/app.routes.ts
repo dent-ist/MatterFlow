@@ -101,7 +101,8 @@ export const routes: Routes = [
       },
       {
         path: 'profile',
-        canActivate: [permissionGuard('Task.View')],
+        // Every signed-in person who is not pending (the shell's access guard decides that): the page holds the My Landing Page card (epic #1330).
+        // The work cards on it (availability, absences, holidays, notifications) are shown only with Task.View.
         loadChildren: () =>
           import('./features/profile/profile.routes').then((m) => m.PROFILE_ROUTES),
       },

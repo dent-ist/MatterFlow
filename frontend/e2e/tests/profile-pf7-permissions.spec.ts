@@ -8,10 +8,10 @@ import { toasts } from '../support/toasts';
 /**
  * My profile epic #520, WP-PF7: #584, the permission and state matrix of My profile, the account menu and the Set out of office dialog.
  * People who hold Task.View (it carries availability) get My profile, Set out of office / I'm back and the Account card with their OWN data;
- * people without it get no such entries, `/profile` is the 403 page, a pending person goes to Access Pending and a disabled one to the
- * disabled-account page. No dead entry, no toast on a denial, axe 0 on the 403 page.
+ * people without it get My Profile too since the landing pages epic (#1330: the My Landing Page card lives there), with the Account and My
+ * Landing Page cards only and no availability entries; a pending person goes to Access Pending and a disabled one to the disabled-account
+ * page. No dead entry, no toast, axe 0.
  */
-const FORBIDDEN = "You don't have access.";
 
 const MATRIX: readonly (PersonaSpec & { key: string })[] = [
   { key: 'systemAdmin', ...PERSONAS.systemAdmin },
@@ -58,10 +58,27 @@ test.describe('pf7-permissions: who gets My profile, the menu entries and the di
         await expect(me.locator('[data-ac-pod]')).toContainText(pod.name);
         await expect(me.locator('[data-ac-pod]')).toHaveCount(1);
       } else {
-        await expect(me.getByRole('heading', { name: FORBIDDEN, level: 1 })).toBeVisible();
-        await expect(me.locator('[data-account-card]')).toHaveCount(0);
+        // No Task.View: the page opens with Account and My Landing Page; the work cards are left out.
+        await expect(me.locator('[data-profile-header] h1')).toBeVisible();
+        await expect(me.locator('[data-account-card]')).toBeVisible();
+        // The card is for a person who can open at least one page (a Pod.View-only person can open none).
+        const pages = await me.evaluate(async () => {
+          const r = await fetch('/api/v1/me/landing-pages', {
+            headers: { 'X-MatterFlow-Client': 'web' },
+          });
+          return ((await r.json()) as { pages: unknown[] }).pages.length;
+        });
+        await expect(me.locator('[data-landing-card]')).toHaveCount(pages > 0 ? 1 : 0);
+        for (const gone of [
+          'mf-availability-form',
+          'mf-absence-list',
+          'mf-holiday-card',
+          'mf-notification-preferences',
+        ]) {
+          await expect(me.locator(gone)).toHaveCount(0);
+        }
         await expect(toasts(me)).toHaveCount(0);
-        if (axeAvailable()) expect(await axeViolations(me), `403 for ${who.key}`).toEqual([]);
+        if (axeAvailable()) expect(await axeViolations(me), `profile for ${who.key}`).toEqual([]);
       }
 
       await me.getByRole('button', { name: /account menu/ }).click();
@@ -78,7 +95,7 @@ test.describe('pf7-permissions: who gets My profile, the menu entries and the di
         await dialog.getByRole('button', { name: 'Cancel' }).click();
         await expect(dialog).toHaveCount(0);
       } else {
-        await expect(menu.getByRole('menuitem')).toHaveText([/Keyboard Shortcuts/]);
+        await expect(menu.getByRole('menuitem')).toHaveText([/My Profile/, /Keyboard Shortcuts/]);
         await expect(me.locator('[data-menu-identity] [data-availability-chip]')).toHaveCount(0);
       }
     });
@@ -146,20 +163,20 @@ test.describe('pf7-permissions: who gets My profile, the menu entries and the di
     await expect(disabled.locator('[data-account-card]')).toHaveCount(0);
   });
 
-  test('the 403 page at both desktop sizes: no sideways scroll, axe 0, no toast', async ({
+  test('My Profile of a person without Task.View at both desktop sizes: Account and My Landing Page, no sideways scroll, axe 0, no toast', async ({
     personas,
     asUser,
   }) => {
-    const p = await personas.create({ ...PERSONAS.clientViewOnly, label: 'pf7403' });
+    const p = await personas.create({ ...PERSONAS.clientViewOnly, label: 'pf7notv' });
     const me = await asUser(p.username);
     for (const size of SIZES) {
       await me.setViewportSize(size);
       await me.goto('/profile');
-      await expect(me.getByRole('heading', { name: FORBIDDEN, level: 1 })).toBeVisible();
+      await expect(me.locator('[data-profile-header] h1')).toBeVisible();
+      await expect(me.locator('[data-landing-card]')).toBeVisible();
       await noHorizontalScroll(me);
-      if (axeAvailable()) expect(await axeViolations(me), `403 at ${size.width}`).toEqual([]);
+      if (axeAvailable()) expect(await axeViolations(me), `profile at ${size.width}`).toEqual([]);
       await expect(toasts(me)).toHaveCount(0);
-      if (size.width === 1366) await shot(me, 'pf7-403');
     }
   });
 });

@@ -1,12 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { Router, RouterStateSnapshot, UrlTree, provideRouter } from '@angular/router';
 import { AuthStore } from './auth.store';
-import { FakeMeApi, profileOf, provideFakeMe, withPermissions } from './auth-testing';
+import { FakeMeApi, landingOf, profileOf, provideFakeMe, withPermissions } from './auth-testing';
 import {
   ErrorRequest,
   ForbiddenRequest,
   accessGuard,
   canOpenMyMatters,
+  defaultLandingPath,
   landingGuard,
   landingLink,
   pendingOnlyGuard,
@@ -336,5 +337,117 @@ describe('landingGuard', () => {
   it('goes to Access Pending for pending users', async () => {
     setup(profileOf({ status: 'ACCESS_PENDING' }));
     expect(await run(landingGuard)).toBe('/access-pending');
+  });
+});
+
+describe('the landing page resolved by the server (epic #1330)', () => {
+  function withLanding(
+    me: ReturnType<typeof profileOf>,
+    landing: ReturnType<typeof landingOf> | Error,
+  ) {
+    const api = new FakeMeApi(me);
+    api.landing = landing;
+    TestBed.configureTestingModule({ providers: [provideRouter([]), provideFakeMe(api)] });
+    return api;
+  }
+
+  const director = profileOf({
+    roles: ['Director'],
+    hasWork: true,
+    permissions: [
+      'Matter.BeManager',
+      'Matter.View',
+      'Task.View',
+      'Dashboard.View',
+      'Dashboard.ViewSummary',
+    ],
+  });
+
+  it('lands on the resolved page instead of the hardcoded rule: a Director on the Dashboard, not My Matters', async () => {
+    withLanding(
+      director,
+      landingOf({
+        roleName: 'Director',
+        roleDefault: 'dashboard',
+        resolved: 'dashboard',
+        resolvedPath: '/dashboard',
+        source: 'ROLE_DEFAULT',
+      }),
+    );
+    expect(await run(landingGuard)).toBe('/dashboard');
+    const store = TestBed.inject(AuthStore);
+    expect(landingLink(store)).toEqual({ path: '/dashboard', name: 'Dashboard' });
+  });
+
+  it('a personal choice wins and the "Go to" link names it', async () => {
+    withLanding(
+      director,
+      landingOf({
+        choice: 'task-queue',
+        resolved: 'task-queue',
+        resolvedPath: '/tasks',
+        source: 'CHOICE',
+      }),
+    );
+    expect(await run(landingGuard)).toBe('/tasks');
+    expect(landingLink(TestBed.inject(AuthStore))).toEqual({ path: '/tasks', name: 'Task Queue' });
+  });
+
+  it("resolved null applies today's rule exactly, hasWork included", async () => {
+    withLanding(
+      profileOf({
+        permissions: ['Task.View', 'Dashboard.View', 'Dashboard.ViewSummary'],
+        hasWork: true,
+      }),
+      landingOf(),
+    );
+    expect(await run(landingGuard)).toBe('/my-work');
+    TestBed.resetTestingModule();
+    withLanding(
+      profileOf({ permissions: ['Task.View', 'Dashboard.View', 'Dashboard.ViewSummary'] }),
+      landingOf(),
+    );
+    expect(await run(landingGuard)).toBe('/dashboard');
+  });
+
+  it("falls back to today's rule when the call fails, and says nothing", async () => {
+    withLanding(director, new Error('boom'));
+    expect(await run(landingGuard)).toBe('/my-matters');
+    expect(TestBed.inject(AuthStore).landing()).toBeNull();
+  });
+
+  it('never trusts a page the person cannot open: an answer for a page without the permission is ignored', async () => {
+    withLanding(
+      profileOf({ permissions: ['Task.View'], hasWork: true }),
+      landingOf({ resolved: 'reports', resolvedPath: '/reports', source: 'CHOICE' }),
+    );
+    expect(await run(landingGuard)).toBe('/my-work');
+  });
+
+  it('is read together with /me: the guard knows it before it redirects (no flash of another page)', async () => {
+    const api = withLanding(
+      director,
+      landingOf({ resolved: 'my-work', resolvedPath: '/my-work', source: 'CHOICE' }),
+    );
+    expect(await run(landingGuard)).toBe('/my-work');
+    expect(api.landingCalls).toBe(1);
+  });
+
+  it('is not read for a pending person', async () => {
+    const api = withLanding(profileOf({ status: 'ACCESS_PENDING' }), landingOf());
+    expect(await run(landingGuard)).toBe('/access-pending');
+    expect(api.landingCalls).toBe(0);
+  });
+
+  it('Check Again on Access Pending follows the refreshed answer', async () => {
+    const api = withLanding(
+      profileOf({ permissions: ['Task.View', 'Client.View'] }),
+      landingOf({ resolved: 'my-work', resolvedPath: '/my-work', source: 'CHOICE' }),
+    );
+    const store = TestBed.inject(AuthStore);
+    await store.ensureLoaded();
+    api.landing = landingOf({ resolved: 'task-queue', resolvedPath: '/tasks', source: 'CHOICE' });
+    await store.refresh();
+    expect(defaultLandingPath(store)).toBe('/tasks');
   });
 });

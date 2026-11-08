@@ -85,7 +85,7 @@ let nextId = 0;
           @if (account(); as acc) {
             <span class="um-id__account" [attr.title]="acc">{{ acc }}</span>
           }
-          @if (hasProfile() && mine.profile()) {
+          @if (hasAvailability() && mine.profile()) {
             <mf-availability-chip [availability]="mine.current()" />
           }
         </div>
@@ -138,10 +138,13 @@ export class UserMenu {
   private oooDialog: ComponentRef<SetOutOfOfficeDialog> | null = null;
   private readonly entries = viewChildren<ElementRef<HTMLButtonElement>>('entry');
 
-  /** Availability belongs to people who work Tasks (the API policy is Task.View). */
-  protected readonly hasProfile = computed(() => this.auth.has('Task.View'));
+  /**
+   * Availability (the chip, Set Out of Office) belongs to people who work Tasks (the API policy is Task.View). My Profile itself opens for
+   * every signed-in person (owner decision, epic #1330): it holds the My Landing Page card.
+   */
+  protected readonly hasAvailability = computed(() => this.auth.has('Task.View'));
   protected readonly outLabel = computed(() =>
-    this.hasProfile() ? outOfOfficeText(this.mine.current(), this.zone) : null,
+    this.hasAvailability() ? outOfOfficeText(this.mine.current(), this.zone) : null,
   );
   protected readonly account = computed(() => {
     const account = this.auth.profile()?.windowsAccount;
@@ -154,8 +157,8 @@ export class UserMenu {
 
   protected readonly items = computed<Item[]>(() => {
     const list: Item[] = [];
-    if (this.hasProfile()) {
-      list.push({ id: 'profile', label: 'My Profile', icon: 'pi-user-edit' });
+    list.push({ id: 'profile', label: 'My Profile', icon: 'pi-user-edit' });
+    if (this.hasAvailability()) {
       list.push(
         this.mine.isOut()
           ? { id: 'back', label: "I'm Back", icon: 'pi-check-circle' }
@@ -169,7 +172,7 @@ export class UserMenu {
   constructor() {
     // Once the permissions are known, read the person's own availability for the header label.
     effect(() => {
-      if (this.hasProfile()) untracked(() => void this.mine.ensureLoaded());
+      if (this.hasAvailability()) untracked(() => void this.mine.ensureLoaded());
     });
   }
 

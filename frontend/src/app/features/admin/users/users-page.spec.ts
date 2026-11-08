@@ -785,6 +785,30 @@ describe('UsersPage', () => {
       );
     });
 
+    it('names the role the landing page comes from: the first by name, following the ticks (epic #1330)', async () => {
+      await create('User.View', 'User.Manage');
+      await chooseStatus('active');
+      await openRow(2); // Dana Director: the Director role
+      const line = () => document.querySelector('[data-landing-source]');
+      expect(line()!.textContent!.trim()).toBe('Landing page comes from Director.');
+      expect(line()!.classList.contains('ud-note')).toBe(true);
+      // Project Manager sorts after Director; Data Scientist before it.
+      const tick = async (id: number, on: boolean) => {
+        const box = q<HTMLInputElement>(`[data-role="${id}"]`);
+        box.checked = on;
+        box.dispatchEvent(new Event('change'));
+        await settle();
+      };
+      await tick(3, true);
+      expect(line()!.textContent!.trim()).toBe('Landing page comes from Director.');
+      await tick(6, true);
+      expect(line()!.textContent!.trim()).toBe('Landing page comes from Data Scientist.');
+      await tick(6, false);
+      await tick(2, false);
+      await tick(3, false);
+      expect(line()).toBeNull();
+    });
+
     it('updates the summary as roles are ticked and labels it as applying after the save', async () => {
       await create('User.View', 'User.Manage');
       await chooseStatus('active');

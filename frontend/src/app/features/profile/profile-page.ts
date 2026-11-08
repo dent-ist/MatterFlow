@@ -11,6 +11,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { AccountCard } from './account-card';
+import { LandingCard } from './landing-card';
 import { NotificationPreferences } from './notification-preferences';
 import { AuthStore } from '../../core/auth/auth.store';
 import { MyAvailability } from '../../core/availability/my-availability';
@@ -31,6 +32,10 @@ import { shortAccountName } from '../../shared/ui/person-name';
  * office..." or "I'm back" (the dialog and the store of the header menu). Below it, two columns from 1100 px (Availability and Work hours
  * with the action bar on the left; Account and Notifications on the right) and one column under that, Account first of the two.
  *
+ * The page opens for every signed-in person who is not pending (owner decision, epic #1330), because it holds the My Landing Page card between
+ * Account and Notifications. The work cards (availability, absences, holidays, notifications and the person's availability chip) need
+ * Task.View, as they always did; a person without it sees Account and My Landing Page only.
+ *
  * Loading shows the skeleton of the final page; a failed load shows the shared record state (reason, error reference, Retry) under the
  * plain "My profile" header. The form loads its own data and reports its state.
  */
@@ -42,6 +47,7 @@ import { shortAccountName } from '../../shared/ui/person-name';
     AvailabilityChip,
     AvailabilityForm,
     AccountCard,
+    LandingCard,
     NotificationPreferences,
     RecordSkeleton,
     RecordState,
@@ -64,7 +70,7 @@ import { shortAccountName } from '../../shared/ui/person-name';
         <!-- The person's name and availability are the context line under the title (D-21, #1135). -->
         <span mfDescription class="pp__who" data-profile-who>
           <span class="pp__name" data-name>{{ name() }}</span>
-          @if (mine.profile()) {
+          @if (works() && mine.profile()) {
             <mf-availability-chip [availability]="mine.current()" />
           }
           @if (context()) {
@@ -76,19 +82,31 @@ import { shortAccountName } from '../../shared/ui/person-name';
     @if (shown() === 'loading') {
       <mf-record-skeleton kind="profile" />
     }
-    <div class="pp" [class.pp--off]="shown() !== 'ready'" data-profile-grid>
-      <div class="pp__col pp__col--main">
-        @if (userId(); as id) {
-          <mf-absence-list [userId]="id" [displayName]="name()" (changed)="mine.refresh()" />
-        }
-        <mf-availability-form (loadState)="onLoadState($event)" />
-      </div>
+    <div
+      class="pp"
+      [class.pp--off]="shown() !== 'ready'"
+      [class.pp--single]="!works()"
+      data-profile-grid
+    >
+      @if (works()) {
+        <div class="pp__col pp__col--main">
+          @if (userId(); as id) {
+            <mf-absence-list [userId]="id" [displayName]="name()" (changed)="mine.refresh()" />
+          }
+          <mf-availability-form (loadState)="onLoadState($event)" />
+        </div>
+      }
       <div class="pp__col pp__col--side">
-        @if (userId(); as id) {
-          <mf-holiday-card [userId]="id" />
+        @if (works()) {
+          @if (userId(); as id) {
+            <mf-holiday-card [userId]="id" />
+          }
         }
         <mf-account-card />
-        <mf-notification-preferences />
+        <mf-landing-card />
+        @if (works()) {
+          <mf-notification-preferences />
+        }
       </div>
     </div>
     <p class="mf-sr-only" role="status" aria-live="polite" data-page-live>{{ live() }}</p>
@@ -103,8 +121,11 @@ export class ProfilePage implements HasUnsavedChanges {
   private readonly form = viewChild(AvailabilityForm);
   protected readonly userId = computed(() => this.auth.profile()?.userId ?? null);
 
-  /** What the page shows: the skeleton until the form has loaded, then the page, or the record state when the load failed. */
-  protected readonly shown = signal<LoadState>('loading');
+  /** The person works Tasks (Task.View): the availability, absence, holiday and notification cards are theirs. */
+  protected readonly works = computed(() => this.auth.has('Task.View'));
+  private readonly formState = signal<LoadState>('loading');
+  /** What the page shows: the skeleton until the form has loaded, then the page, or the record state when the load failed. Without Task.View there is no form to wait for. */
+  protected readonly shown = computed<LoadState>(() => (this.works() ? this.formState() : 'ready'));
   protected readonly retrying = signal(false);
   protected readonly live = signal('');
 
@@ -135,7 +156,7 @@ export class ProfilePage implements HasUnsavedChanges {
     // A Retry from the error state keeps the error on screen (and its Retry button where it is) until the answer arrives.
     if (state === 'loading' && this.shown() === 'error' && this.retrying()) return;
     const wasRetrying = this.retrying();
-    this.shown.set(state);
+    this.formState.set(state);
     if (state === 'error') this.pageTitle.set(recordStateTitle('profile', 'error'));
     if (state !== 'loading') this.retrying.set(false);
     if (state === 'ready' && wasRetrying) {

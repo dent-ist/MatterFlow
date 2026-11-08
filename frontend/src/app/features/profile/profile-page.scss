@@ -28,6 +28,13 @@
   }
 }
 
+/* A person without Task.View has only the side column (Account, My Landing Page): one column, as wide as the cards are in the two-column page. */
+@media (min-width: 1100px) {
+  .pp--single {
+    grid-template-columns: minmax(0, 40rem);
+  }
+}
+
 /* The context line under the title: the person's name, their availability chip and their roles and Pod (D-21, #1135). */
 .pp__who {
   display: inline-flex;

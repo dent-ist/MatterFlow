@@ -5,6 +5,7 @@ import { SessionReset } from '../session/session-reset';
 import { Clock } from '../time/clock';
 import { MeApi } from './me-api';
 import { MeProfile } from './me.models';
+import type { MyLandingPageDto } from '../../api/generated/api-client';
 import { DASHBOARD_TAB_PERMISSION_CODES, Permission } from './permissions';
 
 export type AuthLoadState = 'idle' | 'loading' | 'ready' | 'error';
@@ -34,7 +35,15 @@ export class AuthStore {
   private lastLoadedAt = 0;
   private focusListening = false;
 
+  private readonly _landing = signal<MyLandingPageDto | null>(null);
+
   readonly profile = this._profile.asReadonly();
+  /**
+   * What the server resolved as this person's landing page (`GET /me/landing-page`, loaded together with /me so a guard never decides before
+   * it is known), or null: not resolved (the answer says "apply the rule", the call failed, the person is pending, a source without it).
+   * Null always means "apply the landing rule as it was before the epic" (`defaultLandingPath`).
+   */
+  readonly landing = this._landing.asReadonly();
   readonly state = this._state.asReadonly();
   readonly displayName = computed(() => this._profile()?.displayName ?? '');
   readonly isAuthenticated = computed(() => this._profile() !== null);
@@ -89,6 +98,11 @@ export class AuthStore {
     return this.has('Dashboard.View') && this.hasAny(DASHBOARD_TAB_PERMISSION_CODES);
   }
 
+  /** The person saved a landing page choice: the answer replaces the one loaded with /me, so the logo follows at once. */
+  setLanding(landing: MyLandingPageDto | null): void {
+    this._landing.set(landing);
+  }
+
   /** Loads /me once; concurrent callers share the request. Never rejects. */
   ensureLoaded(): Promise<void> {
     if (this._state() === 'ready') return Promise.resolve();
@@ -125,16 +139,21 @@ export class AuthStore {
         const earlier = this._profile();
         if (earlier && earlier.userId !== profile.userId) this.sessionReset.run();
         this._profile.set(profile);
-        this._state.set('ready');
       })
+      // The landing page is part of "who is this": it is read before the store is ready, so the first redirect never shows a wrong page.
+      // A failed read, or a pending person, means "no resolved page" and the landing rule applies (safe fallback).
+      .then(() => this.loadLanding())
+      .then(() => this._state.set('ready'))
       .catch((err: unknown) => {
         if (err instanceof ApiError && err.code === 'ACCOUNT_DISABLED') {
           if (this._profile()) this.sessionReset.run();
           this._profile.set(this.restrictedProfile('DISABLED'));
+          this._landing.set(null);
           this._state.set('ready');
         } else if (err instanceof ApiError && err.code === 'ACCESS_PENDING') {
           if (this._profile()) this.sessionReset.run();
           this._profile.set(this.restrictedProfile('ACCESS_PENDING'));
+          this._landing.set(null);
           this._state.set('ready');
         } else {
           this._state.set(this._profile() ? 'ready' : 'error');
@@ -145,6 +164,19 @@ export class AuthStore {
         this.inflight = null;
       });
     return this.inflight;
+  }
+
+  private async loadLanding(): Promise<void> {
+    const read = this.api.getLanding;
+    if (!read || this.isRestricted()) {
+      this._landing.set(null);
+      return;
+    }
+    try {
+      this._landing.set(await firstValueFrom(read.call(this.api)));
+    } catch {
+      this._landing.set(null);
+    }
   }
 
   private restrictedProfile(status: 'DISABLED' | 'ACCESS_PENDING'): MeProfile {

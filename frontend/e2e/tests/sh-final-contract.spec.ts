@@ -188,8 +188,8 @@ test.describe('Landing and menus of the personas (#632)', () => {
       {
         who: 'director',
         username: (await personas.named('director')).username,
-        // The Director holds Matter.BeManager since issue #976: the landing rule leads to My Matters.
-        lands: /\/my-matters$/,
+        // The Director's role default is the Dashboard (landing pages epic #1330).
+        lands: /\/dashboard$/,
       },
       {
         who: 'observer',

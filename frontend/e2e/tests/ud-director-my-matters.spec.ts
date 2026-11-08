@@ -22,8 +22,10 @@ test.describe('The Director and My Matters (#976)', () => {
         refused.push(`${r.status()} ${r.url()}`);
     });
 
-    // The landing rule is permission based: Matter.BeManager, Matter.View and Task.View lead to My Matters.
+    // The Director's role default is the Dashboard (epic #1330); My Matters is one click away in the menu.
     await page.goto('/');
+    await expect(page).toHaveURL(/\/dashboard/);
+    await page.goto('/my-matters');
     await expect(page).toHaveURL(/\/my-matters/);
     const nav = page.getByRole('navigation').first();
     await expect(nav.getByRole('link', { name: 'My Matters' })).toHaveCount(1);
@@ -46,8 +48,11 @@ test.describe('The Director and My Matters (#976)', () => {
     await expect(page).toHaveURL(/\/matters/);
     await expect(page.getByRole('heading', { name: 'Matters', level: 1 })).toBeVisible();
 
-    // The route opens from the menu as well.
-    await nav.getByRole('link', { name: 'My Matters' }).click();
+    // The route opens from the menu as well (the main menu: the Matters list now has a pager, which is a navigation landmark too).
+    await page
+      .getByRole('navigation', { name: 'Main' })
+      .getByRole('link', { name: 'My Matters' })
+      .click();
     await expect(page).toHaveURL(/\/my-matters/);
     expect(refused, 'refused requests').toEqual([]);
   });

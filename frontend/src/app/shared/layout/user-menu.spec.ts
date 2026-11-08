@@ -148,11 +148,11 @@ describe('UserMenu (header user area)', () => {
     expect(document.activeElement).toBe(button);
   });
 
-  it('offers only Keyboard shortcuts to someone who cannot work Tasks (no availability API for them)', async () => {
+  it('offers My Profile and Keyboard shortcuts, not Set out of office, to someone who cannot work Tasks (no availability API for them)', async () => {
     const fixture = await create([]);
     trigger(fixture).click();
     await settle(fixture);
-    expect(items(fixture)).toEqual(['Keyboard Shortcuts']);
+    expect(items(fixture)).toEqual(['My Profile', 'Keyboard Shortcuts']);
     expect(client.getMyAvailability).not.toHaveBeenCalled();
   });
 
@@ -224,14 +224,14 @@ describe('UserMenu (header user area)', () => {
       expect(row.querySelector('.um-id__account')).toBeNull();
     });
 
-    it('a person without Task.View gets the name only, and no chip', async () => {
+    it('a person without Task.View gets the name, no chip, and My Profile (the landing page card lives there)', async () => {
       const fixture = await create([]);
       trigger(fixture).click();
       await settle(fixture);
       const row = fixture.nativeElement.querySelector('[data-menu-identity]')!;
       expect(row.querySelector('[data-availability-chip]')).toBeNull();
-      expect(items(fixture)).toEqual(['Keyboard Shortcuts']);
-      expect(fixture.nativeElement.querySelector('[role=separator]')).toBeNull();
+      expect(items(fixture)).toEqual(['My Profile', 'Keyboard Shortcuts']);
+      expect(fixture.nativeElement.querySelector('[data-menu-item=out]')).toBeNull();
     });
 
     it('the dot sits on the icon only while out of office, with a tooltip; the trigger name says so', async () => {

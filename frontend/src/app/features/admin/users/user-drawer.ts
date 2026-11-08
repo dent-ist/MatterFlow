@@ -192,6 +192,18 @@ export class UserDrawer {
     const admin = this.roles().find((r) => r.isSystemAdmin);
     return !!admin && this.draftRoleIds().includes(admin.roleId);
   });
+  /**
+   * The role whose landing page the person gets: the first of their roles by name (the order `/me` returns, epic #1330). Follows the
+   * ticks, so the line says what will be true after Save; null for a person with no role.
+   */
+  protected readonly landingRole = computed(() => {
+    const ids = this.draftRoleIds();
+    const names = this.roles()
+      .filter((r) => ids.includes(r.roleId))
+      .map((r) => r.name)
+      .sort((a, b) => a.localeCompare(b));
+    return names[0] ?? null;
+  });
   /** The role the person is in or about to be in, for the `Data Technician` of the grant message. */
   private roleNames(ids: readonly number[]): string {
     return this.roles()

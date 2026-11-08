@@ -1,8 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ddChoose } from '../../../testing/dropdown-testing.spec-util';
+import {
+  ddChoose,
+  ddOptionTexts,
+  ddText,
+  ddValue,
+} from '../../../testing/dropdown-testing.spec-util';
 import { provideRouter } from '@angular/router';
-import { firstValueFrom, of } from 'rxjs';
+import { firstValueFrom, of, throwError } from 'rxjs';
 import { ReportAssignmentClient } from '../../../api/generated/api-client';
+import { ApiError } from '../../../core/http/api-error';
+import { HttpErrorResponse } from '@angular/common/http';
+import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/auth-testing';
+import { LandingApi } from '../../../core/landing/landing-api';
+import { NotificationService } from '../../../core/notify/notification.service';
 import { IdentityAdminApi } from '../../../core/identity-admin/identity-admin-api';
 import { InMemoryIdentityAdminApi } from '../../../core/identity-admin/in-memory-identity-admin-api';
 import { RolesPage, prerequisiteOf, roleChanges } from './roles-page';
@@ -87,6 +97,17 @@ describe('RolesPage', () => {
     await settle();
   };
 
+  /** The landing endpoints: what each role has saved (by id), and what a save does. */
+  const savedLanding: Record<number, string | undefined> = {};
+  const landing = {
+    role: vi.fn((roleId: number) =>
+      of({ roleId, landingPage: savedLanding[roleId], pages: [], rowVersion: `v${roleId}` }),
+    ),
+    setRole: vi.fn((roleId: number, page: string | null, rowVersion: string) =>
+      of({ roleId, landingPage: page ?? undefined, pages: [], rowVersion: rowVersion + '+' }),
+    ),
+  };
+
   const assignment = {
     getReportsOfRole: vi.fn(),
     setReportsOfRole: vi.fn(),
@@ -125,8 +146,13 @@ describe('RolesPage', () => {
         InMemoryIdentityAdminApi,
         { provide: IdentityAdminApi, useExisting: InMemoryIdentityAdminApi },
         { provide: ReportAssignmentClient, useValue: assignment },
+        { provide: LandingApi, useValue: landing },
+        provideFakeMe(new FakeMeApi(withPermissions('Role.Manage'))),
       ],
     });
+    for (const k of Object.keys(savedLanding)) delete savedLanding[Number(k)];
+    landing.role.mockClear();
+    landing.setRole.mockClear();
     api = TestBed.inject(InMemoryIdentityAdminApi);
     fixture = TestBed.createComponent(RolesPage);
     await settle();
@@ -515,4 +541,210 @@ describe('RolesPage', () => {
       expect(q('[data-locked]')).not.toBeNull();
     });
   });
+});
+
+describe('RolesPage Landing Page field (epic #1330)', () => {
+  let fixture: ComponentFixture<RolesPage>;
+  const el = (): HTMLElement => fixture.nativeElement;
+  const q = <T extends HTMLElement = HTMLElement>(sel: string): T => el().querySelector<T>(sel)!;
+  const saved: Record<number, string | undefined> = {};
+  const landing = {
+    role: vi.fn((roleId: number) =>
+      of({ roleId, landingPage: saved[roleId], pages: [], rowVersion: `v${roleId}` }),
+    ),
+    setRole: vi.fn((roleId: number, page: string | null, rowVersion: string) =>
+      of({ roleId, landingPage: page ?? undefined, pages: [], rowVersion: rowVersion + '+' }),
+    ),
+  };
+
+  async function settle(): Promise<void> {
+    for (let i = 0; i < 3; i++) {
+      await new Promise((r) => setTimeout(r));
+      fixture.detectChanges();
+    }
+    await fixture.whenStable();
+  }
+
+  const open = async (roleId: number): Promise<void> => {
+    q(`[data-role="${roleId}"]`).click();
+    await settle();
+  };
+  const check = async (code: string, checked: boolean): Promise<void> => {
+    const box = q<HTMLInputElement>(`[data-perm="${code}"]`);
+    box.checked = checked;
+    box.dispatchEvent(new Event('change'));
+    await settle();
+  };
+  const save = async (): Promise<void> => {
+    q<HTMLButtonElement>('[data-save] button').click();
+    await settle();
+  };
+  const options = (): string[] => ddOptionTexts(el(), 'Landing Page');
+
+  beforeEach(async () => {
+    for (const k of Object.keys(saved)) delete saved[Number(k)];
+    landing.role.mockClear();
+    landing.setRole.mockClear();
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        InMemoryIdentityAdminApi,
+        { provide: IdentityAdminApi, useExisting: InMemoryIdentityAdminApi },
+        { provide: ReportAssignmentClient, useValue: { getReportsOfRole: vi.fn() } },
+        { provide: LandingApi, useValue: landing },
+        provideFakeMe(new FakeMeApi(withPermissions('Role.Manage'))),
+      ],
+    });
+    fixture = TestBed.createComponent(RolesPage);
+    await settle();
+  });
+
+  it('sits between Description and Search Permissions, 480 px field with the help line', async () => {
+    await open(6);
+    const order = Array.from(
+      el().querySelectorAll(
+        '#role-name, #role-description, #role-landing, #role-permission-search',
+      ),
+    ).map((n) => n.id);
+    expect(order).toEqual([
+      'role-name',
+      'role-description',
+      'role-landing',
+      'role-permission-search',
+    ]);
+    expect(q('label[for="role-landing"]').textContent).toBe('Landing Page');
+    expect(q('[data-landing-help]').textContent!.trim()).toBe(
+      'Where people with this role start after signing in. People can choose their own page under My Profile.',
+    );
+    expect(ddText(el(), 'Landing Page')).toBe('Automatic');
+    expect(landing.role).toHaveBeenCalledWith(6);
+  });
+
+  it('offers Automatic and the pages the role can open with the permissions ticked right now', async () => {
+    await open(6);
+    // Data Scientist: Client, Matter, Project View and Task.View.
+    expect(options()).toEqual([
+      'Automatic',
+      'My Work',
+      'Clients',
+      'Matters',
+      'Projects',
+      'Task Queue',
+    ]);
+    await check('Asset.View', true);
+    expect(options()).toContain('Assets');
+    await check('Matter.View', false); // also clears what needs it
+    expect(options()).not.toContain('Matters');
+  });
+
+  it('shows the saved page and keeps the editor clean until something changes', async () => {
+    saved[6] = 'clients';
+    await open(6);
+    expect(ddValue(el(), 'Landing Page')).toBe('clients');
+    expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
+    ddChoose(el(), 'Landing Page', 'Projects');
+    await settle();
+    expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
+  });
+
+  it("saves the choice after the role, against the role's row version, with the existing toast", async () => {
+    const notify = TestBed.inject(NotificationService);
+    const success = vi.spyOn(notify, 'success');
+    await open(6);
+    ddChoose(el(), 'Landing Page', 'Task Queue');
+    await settle();
+    await save();
+    expect(landing.setRole).toHaveBeenCalledTimes(1);
+    const [roleId, page] = landing.setRole.mock.calls[0];
+    expect([roleId, page]).toEqual([6, 'task-queue']);
+    expect(success).toHaveBeenCalledWith(
+      'Role saved',
+      "Changes apply on each user's next request.",
+    );
+    expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
+  });
+
+  it('sends nothing for the landing page when it did not change, and null for Automatic', async () => {
+    saved[6] = 'clients';
+    await open(6);
+    await save();
+    expect(landing.setRole).not.toHaveBeenCalled();
+    ddChoose(el(), 'Landing Page', 'Automatic');
+    await settle();
+    await save();
+    expect(landing.setRole).toHaveBeenCalledWith(6, null, expect.any(String));
+  });
+
+  it('a new role starts on Automatic and saves its page once the role exists', async () => {
+    fixture.componentInstance.startNew();
+    await settle();
+    expect(ddText(el(), 'Landing Page')).toBe('Automatic');
+    await check('Task.View', true);
+    ddChoose(el(), 'Landing Page', 'My Work');
+    await settle();
+    q<HTMLInputElement>('[data-name]').value = 'Reviewer';
+    q<HTMLInputElement>('[data-name]').dispatchEvent(new Event('input'));
+    await save();
+    expect(landing.setRole).toHaveBeenCalledWith(expect.any(Number), 'my-work', expect.any(String));
+  });
+
+  it('a permission cleared under the chosen page shows "<page> (not available)", the sentence, and blocks Save', async () => {
+    saved[6] = 'matters';
+    await open(6);
+    await check('Matter.View', false);
+    expect(ddText(el(), 'Landing Page')).toBe('Matters (not available)');
+    expect(q('[data-landing-error]').textContent).toContain(
+      "This role can't open Matters. Choose another landing page.",
+    );
+    expect(q('#role-landing').getAttribute('aria-invalid')).toBe('true');
+    expect(options()).not.toContain('Matters');
+    await save();
+    expect(landing.setRole).not.toHaveBeenCalled();
+    // Ticked again: the error goes and Save works.
+    await check('Matter.View', true);
+    expect(el().querySelector('[data-landing-error]')).toBeNull();
+    expect(ddText(el(), 'Landing Page')).toBe('Matters');
+  });
+
+  it("shows the API's PAGE_NOT_OPENABLE sentence when the server refuses", async () => {
+    landing.setRole.mockReturnValueOnce(
+      throwError(
+        () =>
+          new ApiError(
+            400,
+            'PAGE_NOT_OPENABLE',
+            "This role can't open Clients. Choose another landing page.",
+            undefined,
+            new HttpErrorResponse({ status: 400 }),
+          ),
+      ),
+    );
+    await open(6);
+    ddChoose(el(), 'Landing Page', 'Clients');
+    await settle();
+    await save();
+    expect(q('[data-error]').textContent).toContain("This role can't open Clients.");
+    // The role itself is saved; the landing page stays a pending change.
+    expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
+  });
+
+  it('is disabled for the locked System Admin role, with its own help line', async () => {
+    await open(1);
+    expect(ddButtonDisabled()).toBe(true);
+    expect(ddText(el(), 'Landing Page')).toBe('Automatic');
+    expect(q('[data-landing-help]').textContent!.trim()).toBe(
+      'System Admin always uses the automatic rule. People with this role can still choose their own page.',
+    );
+  });
+
+  it('adds a Landing Page column to the wide list: the page name, or a muted Automatic', async () => {
+    const head = Array.from(el().querySelectorAll('.mf-role-head span')).map((s) => s.textContent);
+    expect(head).toEqual(['Name', 'Description', 'Landing Page', 'Members', 'Permissions']);
+    expect(q('[data-role="6"] [data-landing-col]').textContent!.trim()).toBe('Automatic');
+    expect(q('[data-role="6"] .mf-landing--auto')).not.toBeNull();
+  });
+
+  function ddButtonDisabled(): boolean {
+    return q<HTMLButtonElement>('#role-landing').disabled;
+  }
 });

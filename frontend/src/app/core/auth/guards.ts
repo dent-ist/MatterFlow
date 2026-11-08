@@ -3,6 +3,7 @@ import { ActivatedRouteSnapshot, Router, RouterStateSnapshot, UrlTree } from '@a
 import { ADMIN_NAV_ITEMS, NAV_ITEMS } from '../../shared/layout/nav-items';
 import { AuthStore } from './auth.store';
 import { Permission } from './permissions';
+import { LANDING_PAGES, canOpenPage } from '../landing/landing-pages';
 
 export const APP_PATHS = {
   accessPending: '/access-pending',
@@ -25,8 +26,22 @@ const LANDING_FALLBACKS: readonly { path: string; permissions: Permission[] }[] 
 ];
 
 /**
- * Default landing, the one rule behind the home address, the logo, the "Go to ..." link of the 403 and 404 pages and Access Pending's
- * "Check Again" (S4a, #628; UX 2.2 amended; Project Managers, #691):
+ * Default landing, the one function behind the home address, the logo, the "Go to ..." link of the 403 and 404 pages and Access Pending's
+ * "Check Again" (S4a, #628; UX 2.2 amended; Project Managers, #691; landing pages, epic #1330). The server resolves the person's landing page
+ * (their own choice if they can still open it, else the default of their first role if they can open it) and `GET /me/landing-page` hands it over
+ * with `/me`, so a guard knows it before it redirects. When there is none (`resolvedPath` null: nothing chosen or set, or the choice cannot be
+ * opened), the call failed, or the person is pending, the rule that applied before the epic decides ({@link todaysLandingPath}).
+ */
+export function defaultLandingPath(store: AuthStore): string {
+  const resolved = store.landing()?.resolvedPath;
+  // The server's answer is checked against the same rule in the browser: nobody ever lands on a page they cannot open.
+  const page = resolved ? LANDING_PAGES.find((p) => p.path === resolved) : undefined;
+  if (page && canOpenPage(page, (code) => store.has(code))) return page.path;
+  return todaysLandingPath(store);
+}
+
+/**
+ * The landing rule as it was before the epic, and still the last step of the chain (what "Automatic" means):
  *   0. My Matters, if the person can be a matter's project manager (`Matter.BeManager`) and may see matters and tasks (`Matter.View`,
  *      `Task.View`): the marker permission decides; My Work stays in the menu. The System Admin holds every permission implicitly, so the
  *      permissions say nothing about them: they keep the landing below unless they also hold the Project Manager role (`landsOnMyMatters`);
@@ -37,7 +52,7 @@ const LANDING_FALLBACKS: readonly { path: string; permissions: Permission[] }[] 
  *   5. else /403 (a pending person never gets here: the guards send them to Access Pending first).
  * Nobody lands on a page the navigation hides: My Work and Task Queue need Task.View, the Dashboard needs a tab.
  */
-export function defaultLandingPath(store: AuthStore): string {
+export function todaysLandingPath(store: AuthStore): string {
   if (landsOnMyMatters(store)) return APP_PATHS.myMatters;
   if (store.has('Task.View') && store.profile()?.hasWork) return APP_PATHS.myWork;
   if (store.hasAnyDashboardTab()) return APP_PATHS.dashboard;

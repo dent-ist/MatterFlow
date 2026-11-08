@@ -5,6 +5,8 @@ import { MyAvailabilityClient, UserAvailabilityClient } from '../../api/generate
 import { FakeMeApi, profileOf, provideFakeMe } from '../../core/auth/auth-testing';
 import { AuthStore } from '../../core/auth/auth.store';
 import { MeProfile } from '../../core/auth/me.models';
+import { LandingApi } from '../../core/landing/landing-api';
+import { landingOf } from '../../core/auth/auth-testing';
 import { iconForPath } from '../../shared/layout/section-icons';
 import { apiError, ok, settle } from '../../shared/testing/org-testing';
 import { PROFILE_ROUTES } from './profile.routes';
@@ -45,6 +47,13 @@ describe('ProfilePage', () => {
         ),
         { provide: MyAvailabilityClient, useValue: { getMyAvailability: get } },
         { provide: UserAvailabilityClient, useValue: {} },
+        {
+          provide: LandingApi,
+          useValue: {
+            mine: () => ok(landingOf()),
+            myPages: () => ok({ pages: [{ key: 'my-work', label: 'My Work', path: '/my-work' }] }),
+          },
+        },
         ...provideCalendarFixtures(),
       ],
     });
@@ -144,5 +153,33 @@ describe('ProfilePage', () => {
     await settle(fixture);
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
     expect(PROFILE_ROUTES[0].canDeactivate?.length).toBe(1);
+  });
+
+  it('puts My Landing Page between Account and Notifications (epic #1330)', async () => {
+    const { root } = await create();
+    const side = Array.from(
+      root.querySelectorAll(
+        '.pp__col--side > mf-account-card, .pp__col--side > mf-landing-card, .pp__col--side > mf-notification-preferences',
+      ),
+    ).map((n) => n.tagName.toLowerCase());
+    expect(side).toEqual(['mf-account-card', 'mf-landing-card', 'mf-notification-preferences']);
+  });
+
+  it('opens for a person without Task.View: Account and My Landing Page only, the work cards are left out', async () => {
+    const { root } = await create({ me: { permissions: ['Client.View'] } });
+    expect(text(root, 'h1')).toBe('My Profile');
+    expect(root.querySelector('[data-profile-skeleton]')).toBeNull();
+    expect(root.querySelector('[data-profile-grid]')?.classList.contains('pp--off')).toBe(false);
+    expect(root.querySelector('mf-account-card')).not.toBeNull();
+    expect(root.querySelector('mf-landing-card')).not.toBeNull();
+    for (const gone of [
+      'mf-availability-form',
+      'mf-absence-list',
+      'mf-holiday-card',
+      'mf-notification-preferences',
+      'mf-availability-chip',
+    ]) {
+      expect(root.querySelector(gone), gone).toBeNull();
+    }
   });
 });

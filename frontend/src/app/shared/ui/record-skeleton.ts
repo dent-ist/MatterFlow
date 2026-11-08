@@ -186,6 +186,11 @@ const ROWS = [0, 1, 2, 3, 4] as const;
               <span class="rk__bar rk__line"></span>
             }
           </div>
+          <div class="rk__card rk__card--landing">
+            <span class="rk__bar rk__h2"></span>
+            <span class="rk__bar rk__line rk__line--s"></span>
+            <span class="rk__bar rk__line"></span>
+          </div>
           <div class="rk__card rk__card--notes">
             <span class="rk__bar rk__h2"></span>
             @for (i of [0, 1, 2, 3, 4, 5]; track i) {
@@ -352,6 +357,9 @@ const ROWS = [0, 1, 2, 3, 4] as const;
     }
     .rk__card--account {
       min-height: 252px;
+    }
+    .rk__card--landing {
+      min-height: 176px;
     }
     .rk__card--notes {
       min-height: 357px;

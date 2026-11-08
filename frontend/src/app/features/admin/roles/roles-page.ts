@@ -16,7 +16,16 @@ import {
   RoleDetailDto,
   RoleSummaryDto,
 } from '../../../core/identity-admin/identity-admin-api';
+import { LandingApi } from '../../../core/landing/landing-api';
+import {
+  LandingPage,
+  landingLabel,
+  landingPageOf,
+  openablePages,
+} from '../../../core/landing/landing-pages';
 import { NotificationService } from '../../../core/notify/notification.service';
+import { AuthStore } from '../../../core/auth/auth.store';
+import { Tip } from '../../../shared/ui/tip';
 import { CharCounter } from '../../../shared/ui/char-counter';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import { Badge } from '../../../shared/ui/badge';
@@ -88,6 +97,7 @@ export function roleChanges(
     RoleReportsTab,
     ScrollArea,
     Tabs,
+    Tip,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill' },
@@ -97,6 +107,8 @@ export function roleChanges(
 export class RolesPage implements OnInit, HasUnsavedChanges {
   private readonly api = inject(IdentityAdminApi);
   private readonly notify = inject(NotificationService);
+  private readonly landingApi = inject(LandingApi);
+  private readonly auth = inject(AuthStore);
   private readonly reportCount = AdminTabCounts.report('roles');
 
   /**
@@ -123,6 +135,12 @@ export class RolesPage implements OnInit, HasUnsavedChanges {
   protected readonly draftName = signal('');
   protected readonly draftDescription = signal('');
   protected readonly draftCodes = signal<ReadonlySet<string>>(new Set());
+  /** The landing page key chosen in the editor; '' is "Automatic" (no fixed page). Saved with the role by Save Changes (epic #1330). */
+  protected readonly draftLanding = signal('');
+  /** What the role had when it was opened or last saved ('' = Automatic). */
+  private readonly savedLanding = signal('');
+  /** The row version the landing page is saved against (the role's own, updated by every save). */
+  private landingVersion = '';
   protected readonly filter = signal('');
   protected readonly note = signal('');
   protected readonly error = signal('');
@@ -160,15 +178,50 @@ export class RolesPage implements OnInit, HasUnsavedChanges {
       }))
       .filter((g) => g.permissions.length > 0);
   });
+  /** The landing pages the role can open with the permissions ticked right now (the shared catalogue rule; the locked System Admin role holds all). */
+  private readonly openable = computed<LandingPage[]>(() =>
+    openablePages((code) => this.locked() || this.draftCodes().has(code)),
+  );
+  protected readonly landingItems = computed<DropdownItem[]>(() => [
+    { value: '', label: 'Automatic' },
+    ...this.openable().map((p) => ({ value: p.key, label: p.label })),
+  ]);
+  /** The chosen page when the role can no longer open it (a permission was cleared); null when fine or Automatic. */
+  protected readonly landingGone = computed<LandingPage | null>(() => {
+    const page = landingPageOf(this.draftLanding());
+    return page && !this.openable().some((p) => p.key === page.key) ? page : null;
+  });
+  protected readonly landingError = computed(() => {
+    const page = this.landingGone();
+    return page ? `This role can't open ${page.label}. Choose another landing page.` : '';
+  });
+  /** The value the dropdown shows: a page the role cannot open is not in the list, so the button says so through its placeholder. */
+  protected readonly landingValue = computed(() =>
+    this.landingGone() ? '__gone' : this.draftLanding(),
+  );
+  protected readonly landingPlaceholder = computed(() => {
+    const page = this.landingGone();
+    return page ? `${page.label} (not available)` : 'Automatic';
+  });
+  /** The help line under the field; the locked System Admin role says why it is fixed. */
+  protected readonly landingHelp = computed(() =>
+    this.locked()
+      ? 'System Admin always uses the automatic rule. People with this role can still choose their own page.'
+      : 'Where people with this role start after signing in. People can choose their own page under My Profile.',
+  );
+  protected readonly landingTip =
+    'Automatic: My Matters for project managers, My Work for people who have work, otherwise Dashboard or the first page they can open.';
   /** What the editor held when it was opened or last saved; the editor is dirty when the draft differs. */
   private readonly baseline = signal('');
-  private readonly draftKey = computed(() =>
-    JSON.stringify([
+  private keyOf(landing: string): string {
+    return JSON.stringify([
       this.draftName().trim(),
       this.draftDescription().trim(),
       [...this.draftCodes()].sort(),
-    ]),
-  );
+      landing,
+    ]);
+  }
+  private readonly draftKey = computed(() => this.keyOf(this.draftLanding()));
   protected readonly dirty = computed(
     () => this.editing() && !this.locked() && this.draftKey() !== this.baseline(),
   );
@@ -176,6 +229,11 @@ export class RolesPage implements OnInit, HasUnsavedChanges {
     const r = this.selected();
     return !!r && !r.isSystemAdmin;
   });
+
+  /** The "Landing Page" column of the wide list: the page name, or null for Automatic (shown muted). */
+  protected landingOf(role: RoleSummaryDto): string | null {
+    return landingLabel(role.landingPage);
+  }
 
   /** Keeps the list and the `Roles (n)` tab of the shell in step. */
   private setRoles(roles: RoleSummaryDto[]): void {
@@ -208,6 +266,9 @@ export class RolesPage implements OnInit, HasUnsavedChanges {
     this.draftName.set('');
     this.draftDescription.set('');
     this.draftCodes.set(new Set());
+    this.draftLanding.set('');
+    this.savedLanding.set('');
+    this.landingVersion = '';
     this.baseline.set(this.draftKey());
     this.resetMessages();
   }
@@ -229,10 +290,27 @@ export class RolesPage implements OnInit, HasUnsavedChanges {
       this.draftName.set(detail.name);
       this.draftDescription.set(detail.description ?? '');
       this.draftCodes.set(new Set(detail.permissionCodes));
+      await this.loadLanding(detail);
       this.baseline.set(this.draftKey());
     } catch {
       this.error.set("Couldn't load this role. Try again.");
     }
+  }
+
+  /** The role's saved landing page (`GET /roles/{id}/landing-page`); when that read fails the detail's own value stands. */
+  private async loadLanding(detail: RoleDetailDto): Promise<void> {
+    let page = detail.landingPage ?? '';
+    let version = detail.rowVersion;
+    try {
+      const saved = await firstValueFrom(this.landingApi.role(detail.roleId));
+      page = saved.landingPage ?? '';
+      version = saved.rowVersion;
+    } catch {
+      // The editor still opens with what the role detail carries.
+    }
+    this.draftLanding.set(landingPageOf(page) ? page : '');
+    this.savedLanding.set(this.draftLanding());
+    this.landingVersion = version;
   }
 
   protected warningOf(code: string): string | null {
@@ -336,7 +414,9 @@ export class RolesPage implements OnInit, HasUnsavedChanges {
     const name = this.draftName().trim();
     this.nameError.set(name ? '' : 'Enter a name.');
     if (!name) queueMicrotask(() => document.getElementById('role-name')?.focus());
-    if (!name || this.locked()) return;
+    // A landing page the role cannot open is blocked here with the sentence the API answers with.
+    if (this.landingGone()) queueMicrotask(() => document.getElementById('role-landing')?.focus());
+    if (!name || this.locked() || this.landingGone()) return;
 
     this.saving.set(true);
     this.error.set('');
@@ -354,8 +434,17 @@ export class RolesPage implements OnInit, HasUnsavedChanges {
         : await firstValueFrom(this.api.createRole(request));
       this.selected.set(saved);
       this.draftCodes.set(new Set(saved.permissionCodes));
-      this.baseline.set(this.draftKey());
+      this.landingVersion = saved.rowVersion;
+      let landingFailure: unknown = null;
+      try {
+        await this.saveLanding(saved);
+      } catch (e) {
+        landingFailure = e;
+      }
+      // The role is saved either way; a landing page that could not be saved stays in the draft (the editor stays dirty) and says why.
+      this.baseline.set(this.keyOf(this.savedLanding()));
       this.setRoles(await firstValueFrom(this.api.listRoles()));
+      if (landingFailure) throw landingFailure;
       this.notify.success('Role saved', "Changes apply on each user's next request.");
     } catch (err) {
       this.handleError(err);
@@ -369,6 +458,22 @@ export class RolesPage implements OnInit, HasUnsavedChanges {
         }
       });
     }
+  }
+
+  /** Saves the landing page after the role itself (the API checks it against the permissions just saved); nothing is sent when it did not change. */
+  private async saveLanding(role: RoleDetailDto): Promise<void> {
+    const wanted = this.draftLanding();
+    if (wanted === this.savedLanding()) return;
+    const landing = await firstValueFrom(
+      this.landingApi.setRole(role.roleId, wanted || null, this.landingVersion),
+    );
+    this.landingVersion = landing.rowVersion;
+    this.savedLanding.set(landing.landingPage ?? '');
+    this.selected.update((r) =>
+      r ? { ...r, rowVersion: landing.rowVersion, landingPage: landing.landingPage } : r,
+    );
+    // The signed-in person may hold this role: their own landing follows (the logo, the next sign-in).
+    void this.auth.refresh();
   }
 
   protected async remove(): Promise<void> {
@@ -400,6 +505,8 @@ export class RolesPage implements OnInit, HasUnsavedChanges {
           ? `${count === 1 ? '1 user has' : `${count} users have`} this role. Remove them from it before deleting.`
           : 'People still have this role. Remove them from it before deleting.',
       );
+    } else if (err.code === 'PAGE_NOT_OPENABLE') {
+      this.error.set(err.message);
     } else if (err.code === 'CONCURRENCY_CONFLICT') {
       this.error.set('This role was changed by someone else. Reopen it to see the latest values.');
     } else {

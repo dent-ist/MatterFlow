@@ -73,7 +73,7 @@ describe('mf-record-skeleton (#247, #615)', () => {
     const el = await render('profile');
     expect(el.querySelector('[data-profile-skeleton]')).not.toBeNull();
     expect(el.querySelectorAll('.rk__pf-col')).toHaveLength(2);
-    expect(el.querySelectorAll('.rk__card').length).toBe(5);
+    expect(el.querySelectorAll('.rk__card').length).toBe(6);
     expect(el.querySelector('[data-record-header], mf-tabs')).toBeNull();
     expect(el.querySelector('[role=status]')?.textContent).toContain('Loading profile');
   });

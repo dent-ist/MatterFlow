@@ -158,6 +158,9 @@
                     </label>
                   }
                 </fieldset>
+                @if (landingRole(); as role) {
+                  <p class="ud-note" data-landing-source>Landing page comes from {{ role }}.</p>
+                }
                 @if (sysAdminTicked()) {
                   <p class="ud-warn" role="status" data-sysadmin-warning>
                     <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>

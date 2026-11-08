@@ -1,0 +1,80 @@
+:host {
+  display: block;
+}
+
+/* The card look and its 16 / 600 title are the global .mf-card and .mf-card__title. One field, 480 px at most (D-35). */
+.lc__help,
+.lc__muted {
+  margin: 0 0 var(--mf-s3);
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+}
+
+.lc__muted {
+  margin: 0;
+}
+
+.lc__field {
+  display: grid;
+  gap: var(--mf-s1);
+  max-width: var(--mf-field-max, 480px);
+  margin-bottom: var(--mf-s2);
+}
+
+.lc__result {
+  margin: 0;
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+}
+
+.lc__error {
+  display: flex;
+  gap: var(--mf-s1);
+  align-items: baseline;
+  margin: 0 0 var(--mf-s2);
+}
+
+/* The amber banner is the shared .pg-banner; inside the card it sits above the field with the card's rhythm. */
+.pg-banner {
+  margin: 0 0 var(--mf-s3);
+}
+
+/* The card's skeleton has the final layout (title and description are real): label, field, result line. */
+.lc__skeleton {
+  display: grid;
+  gap: var(--mf-s2);
+  max-width: var(--mf-field-max, 480px);
+}
+
+.lc__bar {
+  display: block;
+  border-radius: var(--mf-radius);
+  background: var(--mf-border);
+  opacity: 0.55;
+}
+
+.lc__bar--label {
+  width: 6rem;
+  height: 13px;
+}
+
+.lc__bar--field {
+  height: var(--mf-ctl-h);
+}
+
+.lc__bar--line {
+  width: 70%;
+  height: 13px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .lc__bar {
+    animation: lc-pulse 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes lc-pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
