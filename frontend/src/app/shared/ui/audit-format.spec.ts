@@ -152,4 +152,16 @@ describe('audit formatting', () => {
       ).toBe('Due date set to 10/15');
     });
   });
+
+  describe('numbering scope in the Activity drawer (#1306)', () => {
+    it('says Per matter instead of 1', () => {
+      const event = {
+        eventType: 'FIELD_CHANGED',
+        objectType: 'AssetType',
+        fieldKey: 'NumberingScope',
+        newValue: '1',
+      } as never;
+      expect(describeAuditEvent(event, 'Kim')).toBe('Numbering scope set to Per matter');
+    });
+  });
 });

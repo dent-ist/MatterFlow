@@ -81,6 +81,10 @@ function problemCode(e: unknown): string | undefined {
     :host {
       display: grid;
       gap: var(--mf-s3);
+    }
+    /* The form card keeps 720 px; the Next Numbers grid takes the whole tab (spec 2.1). */
+    .an__card {
+      display: block;
       max-width: 720px;
     }
     .an__stack {
@@ -167,7 +171,7 @@ function problemCode(e: unknown): string | undefined {
         </button>
       </mf-state-block>
     } @else {
-      <mf-details-card title="Automatic Numbering" data-numbering-card>
+      <mf-details-card class="an__card" title="Automatic Numbering" data-numbering-card>
         <form class="an__stack" novalidate (submit)="$event.preventDefault(); requestSave()">
           <div>
             <label class="an__check">

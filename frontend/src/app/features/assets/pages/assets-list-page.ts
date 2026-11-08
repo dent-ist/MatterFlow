@@ -885,8 +885,9 @@ export class AssetsListPage extends ServerListPage<AssetListItem> {
         Number.isInteger(matterId) && matterId > 0 ? matterId : undefined,
         typeIds.length > 0 ? typeIds : undefined,
         isActive,
-        undefined,
+        // The Search box (and the Name filter) is `q`: it matches the name, the type, the external reference and the Asset Number (#1297, N5).
         this.filters.text('name') || undefined,
+        undefined,
         this.filters.text('extref') || undefined,
         this.filters.text('assetNumber') || undefined,
         this.filters.text('matter') || undefined,

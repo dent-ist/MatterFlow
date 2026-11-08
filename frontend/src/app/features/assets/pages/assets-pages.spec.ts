@@ -306,6 +306,13 @@ describe('Assets pages', { timeout: 20_000 }, () => {
       expect(calls()).toEqual([undefined]);
     });
 
+    it('sends the Search box text as q, so an Asset Number finds the asset too (N5, #1297)', async () => {
+      await create(['Asset.View'], { name: '00343-00012_004' });
+      const call = assets.listAssets.mock.calls.at(-1)!;
+      expect(call[3]).toBe('00343-00012_004'); // q
+      expect(call[4]).toBeUndefined(); // name
+    });
+
     it('lists assets with type, matter reference, external reference and status; the name is a link', async () => {
       await create(['Asset.View', 'Asset.Create', 'Matter.View']);
       const rows = el().querySelectorAll('tbody tr');
@@ -862,8 +869,8 @@ describe('Assets pages', { timeout: 20_000 }, () => {
         7,
         [4],
         undefined,
-        undefined,
         'dms',
+        undefined,
         'WS-1',
         undefined,
         '00343',
