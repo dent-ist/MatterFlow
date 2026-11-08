@@ -4,6 +4,7 @@ import { ADMIN_NAV_ITEMS, NAV_ITEMS } from '../../shared/layout/nav-items';
 import { AuthStore } from './auth.store';
 import { Permission } from './permissions';
 import { LANDING_PAGES, canOpenPage } from '../landing/landing-pages';
+import { ScopeService } from '../../shared/scope/scope.service';
 
 export const APP_PATHS = {
   accessPending: '/access-pending',
@@ -116,9 +117,12 @@ export const accessGuard = async (
   const store = inject(AuthStore);
   const router = inject(Router);
   const failed = inject(ErrorRequest);
+  const scope = inject(ScopeService);
   await store.ensureLoaded();
   if (!store.isAuthenticated()) return errorPage(router, failed, state);
   if (store.isRestricted()) return router.createUrlTree([APP_PATHS.accessPending]);
+  // The lists default to "All" for a project manager who manages no matter (epic #1330, #1334): know it before the first list asks for a page.
+  await scope.ensureKnown();
   return true;
 };
 

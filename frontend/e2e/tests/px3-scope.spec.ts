@@ -125,7 +125,7 @@ test.describe('My matters / All: lists', () => {
     await expect(page.locator('tbody tr', { hasText: fx.projectOther.name })).toHaveCount(1);
   });
 
-  test('a PM with no matter sees why the list is empty and can show all matters', async ({
+  test('a PM with no matter opens on All (epic #1330); asking for My matters says why the list is empty and offers all matters', async ({
     seed,
     personas,
     asUser,
@@ -133,7 +133,11 @@ test.describe('My matters / All: lists', () => {
     const fx = await pmFixtures(seed, personas);
     const page = await asUser(fx.pmNone.username);
     await page.goto('/matters');
-    await expect(page.locator('[data-empty]')).toContainText('You do not manage any matter yet.');
+    await expect(page).toHaveURL(/scope=all/);
+    await page.goto('/matters?scope=mine');
+    await expect(page.locator('[data-empty="none"]')).toContainText(
+      'You do not manage any matter yet.',
+    );
     await scopeLine(page).waitFor();
     await page.locator('[data-show-all-matters]').click();
     await expect(page).toHaveURL(/scope=all/);
@@ -163,7 +167,7 @@ test.describe('My matters / All: lists', () => {
     await expect(page).toHaveURL(/scope=mine/);
   });
 
-  test('Director (Matter.BeManager since #976, and Matter.AssignManagers): the switch is offered, a plain link opens on My matters (none yet), All shows the rest', async ({
+  test('Director (Matter.BeManager since #976, and Matter.AssignManagers): the switch is offered, a plain link opens on All because they manage no matter (epic #1330), My matters shows none', async ({
     seed,
     personas,
     asUser,
@@ -172,11 +176,16 @@ test.describe('My matters / All: lists', () => {
     const page = await asUser(fx.director.username);
     await page.goto('/matters?size=100');
     await expect(page.locator('[data-scope-switch]')).toBeVisible();
-    await expect(page).toHaveURL(/scope=mine/);
-    await expect(page.locator('[data-empty]')).toContainText('You do not manage any matter yet.');
-    await page.locator('[data-scope="all"]').click();
     await expect(page).toHaveURL(/scope=all/);
     await expect(page.locator('tbody tr').first()).toBeVisible();
+    await page.locator('[data-scope="mine"]').click();
+    await expect(page).toHaveURL(/scope=mine/);
+    await expect(page.locator('[data-empty="none"]')).toContainText(
+      'You do not manage any matter yet.',
+    );
+    // The choice is remembered: the next plain visit comes back to My matters.
+    await page.goto('/matters?size=100');
+    await expect(page).toHaveURL(/scope=mine/);
   });
 
   for (const [label, key] of [

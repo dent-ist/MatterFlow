@@ -1,12 +1,23 @@
 import { TestBed } from '@angular/core/testing';
+import { Observable, of, throwError } from 'rxjs';
+import { MattersClient } from '../../api/generated/api-client';
 import { FakeMeApi, profileOf, provideFakeMe } from '../../core/auth/auth-testing';
 import { AuthStore } from '../../core/auth/auth.store';
 import { Permission } from '../../core/auth/permissions';
 import { ScopeService } from './scope.service';
 
+/** The matters list as the default scope reads it: the total of the active matters the person manages, or a failure. */
+function mattersTotal(total: number | Error): { provide: typeof MattersClient; useValue: unknown } {
+  const listMatters = vi.fn((): Observable<unknown> =>
+    total instanceof Error ? throwError(() => total) : of({ items: [], total }),
+  );
+  return { provide: MattersClient, useValue: { listMatters } };
+}
+
 async function service(
   permissions: Permission[],
   extra: Parameters<typeof profileOf>[0] = {},
+  managed: number | Error | null = null,
 ): Promise<ScopeService> {
   localStorage.clear();
   TestBed.configureTestingModule({
@@ -14,6 +25,7 @@ async function service(
       provideFakeMe(
         new FakeMeApi(profileOf({ userId: 7, permissions, roles: ['Test'], ...extra })),
       ),
+      ...(managed === null ? [] : [mattersTotal(managed)]),
     ],
   });
   await TestBed.inject(AuthStore).ensureLoaded();
@@ -76,5 +88,69 @@ describe('ScopeService', () => {
     const pmAdmin = await service([], { isSystemAdmin: true, roles: ['Project Manager'] });
     expect(pmAdmin.eligible()).toBe(true);
     expect(pmAdmin.canAll()).toBe(true);
+  });
+
+  describe('the default scope (epic #1330, #1334)', () => {
+    const director: Permission[] = ['Matter.View', 'Matter.BeManager', 'Matter.AssignManagers'];
+
+    it('is All for a person who manages no matter and may choose All', async () => {
+      const s = await service(director, {}, 0);
+      await s.ensureKnown();
+      expect(s.managesMatters()).toBe(false);
+      expect(s.defaultFor('matters')).toBe('all');
+      expect(s.defaultFor('task-queue')).toBe('all');
+    });
+
+    it('is My matters for a person who manages at least one matter', async () => {
+      const s = await service(director, {}, 3);
+      await s.ensureKnown();
+      expect(s.managesMatters()).toBe(true);
+      expect(s.defaultFor('matters')).toBe('mine');
+    });
+
+    it('an explicit remembered choice wins in both directions', async () => {
+      const none = await service(director, {}, 0);
+      await none.ensureKnown();
+      none.remember('clients', 'mine');
+      expect(none.defaultFor('clients')).toBe('mine');
+      TestBed.resetTestingModule();
+      const some = await service(director, {}, 2);
+      await some.ensureKnown();
+      some.remember('clients', 'all');
+      expect(some.defaultFor('clients')).toBe('all');
+    });
+
+    it('stays My matters for a person who cannot choose All, however few matters they manage', async () => {
+      const s = await service(['Matter.View', 'Matter.BeManager'], {}, 0);
+      await s.ensureKnown();
+      expect(s.defaultFor('matters')).toBe('mine');
+    });
+
+    it('stays My matters while the answer is unknown and when reading it fails', async () => {
+      const waiting = await service(director, {}, 0);
+      expect(waiting.defaultFor('matters')).toBe('mine');
+      TestBed.resetTestingModule();
+      const failed = await service(director, {}, new Error('boom'));
+      await failed.ensureKnown();
+      expect(failed.managesMatters()).toBeNull();
+      expect(failed.defaultFor('matters')).toBe('mine');
+    });
+
+    it('asks once, and not at all for a person the switch does not apply to', async () => {
+      const s = await service(director, {}, 0);
+      await Promise.all([s.ensureKnown(), s.ensureKnown()]);
+      await s.ensureKnown();
+      const client = TestBed.inject(MattersClient) as unknown as {
+        listMatters: { mock: { calls: unknown[] } };
+      };
+      expect(client.listMatters.mock.calls).toHaveLength(1);
+      TestBed.resetTestingModule();
+      const other = await service(['Matter.View'], {}, 0);
+      await other.ensureKnown();
+      const none = TestBed.inject(MattersClient) as unknown as {
+        listMatters: { mock: { calls: unknown[] } };
+      };
+      expect(none.listMatters.mock.calls).toHaveLength(0);
+    });
   });
 });
