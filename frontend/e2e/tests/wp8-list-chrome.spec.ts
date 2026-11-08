@@ -562,7 +562,12 @@ test.describe('WP8 list chrome', () => {
       await expect(page.getByRole('list', { name: 'Active filters' })).toContainText(
         'Sensitive: Yes',
       );
-      await expect(page.getByRole('button', { name: 'Other Filters' })).toHaveCount(0);
+      // Sensitive has its own select in the filter row. The Matters list now has an "Other Filters" button (the filters of the hidden Primary PM and
+      // Secondary PM columns, #1308); Sensitive is not among them.
+      await toggle(page).click();
+      await page.getByRole('button', { name: 'Other Filters' }).click();
+      await expect(page.locator('[data-more-filter]')).toHaveCount(2);
+      await expect(page.locator('[data-more-filter="isSensitive"]')).toHaveCount(0);
     });
 
     test('the client Matters tab has Sensitive too; Clients and Projects have no "Other Filters"', async ({
