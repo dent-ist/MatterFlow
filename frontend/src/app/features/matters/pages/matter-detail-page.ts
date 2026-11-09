@@ -49,6 +49,7 @@ import { ManagerTarget, MatterManagersDialog } from '../ui/matter-managers-dialo
 import { MatterProjects } from './matter-projects';
 import { ProductionsTab } from '../../productions/productions-tab';
 import { NotesTab } from '../../notes/notes-tab';
+import { NotesHeightPref } from '../../notes/notes-height-pref';
 import { IntPipe } from '../../../shared/ui/number-format';
 
 /** The API's largest page (`PageRequest.MaxPageSize`). */
@@ -127,7 +128,12 @@ type Tab = MatterTabKey;
       <span class="pg-sr" role="status" data-record-live>{{ flow.live() }}</span>
       @switch (state()) {
         @case ('loading') {
-          <mf-record-skeleton kind="matter" [activeTab]="current()" (retry)="load()" />
+          <mf-record-skeleton
+            kind="matter"
+            [activeTab]="current()"
+            [foldHeader]="headerFolded()"
+            (retry)="load()"
+          />
         }
         @case ('ready') {
           @if (matter(); as m) {
@@ -136,6 +142,7 @@ type Tab = MatterTabKey;
               [newItems]="newItems()"
               [moreItems]="moreItems()"
               [canEdit]="canEdit()"
+              [folded]="headerFolded()"
               (edit)="openEdit()"
             />
 
@@ -428,6 +435,11 @@ export class MatterDetailPage {
       return tab;
     });
   });
+  private readonly heightPref = inject(NotesHeightPref);
+  /** The Notes tab is showing and the person folded the header (#1342); any other tab shows it in full. */
+  protected readonly headerFolded = computed(
+    () => this.current() === 'notes' && this.heightPref.folded(),
+  );
   protected readonly current = computed<Tab>(() =>
     matterTabFromParam(
       this.tab(),

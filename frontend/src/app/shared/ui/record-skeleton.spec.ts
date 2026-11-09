@@ -10,12 +10,14 @@ import { RecordKind } from './record-state';
   template: `<mf-record-skeleton
     [kind]="kind()"
     [activeTab]="tab()"
+    [foldHeader]="fold()"
     (retry)="retried = retried + 1"
   />`,
 })
 class Host {
   readonly kind = signal<RecordKind>('client');
   readonly tab = signal('details');
+  readonly fold = signal(false);
   retried = 0;
 }
 
@@ -156,5 +158,19 @@ describe('mf-record-skeleton (#247, #615)', () => {
     ]);
     expect(recordTabLabel('matter', 'tasks')).toBe('Tasks');
     expect(recordTabLabel('client', 'nonsense')).toBe('Overview');
+  });
+
+  it('draws no matter header when the Notes height choice is folded, but keeps the tab strip (#1342)', async () => {
+    TestBed.configureTestingModule({ providers: [provideRouter([])] });
+    const fixture = TestBed.createComponent(Host);
+    fixture.componentInstance.kind.set('matter');
+    fixture.componentInstance.tab.set('notes');
+    await fixture.whenStable();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-matter-header-skeleton]')).not.toBeNull();
+    fixture.componentInstance.fold.set(true);
+    await fixture.whenStable();
+    expect(el.querySelector('[data-matter-header-skeleton]')).toBeNull();
+    expect(el.querySelectorAll('[role=tab]').length).toBeGreaterThan(0);
   });
 });

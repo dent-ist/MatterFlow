@@ -48,6 +48,8 @@ import { SearchBox } from '../../shared/ui/search-box';
 import { FormDialog } from '../../shared/ui/form-dialog';
 import { SlidePanel } from '../../shared/ui/slide-panel';
 import { StateBlock } from '../../shared/ui/state-block';
+import { Tip } from '../../shared/ui/tip';
+import { NotesHeightPref } from './notes-height-pref';
 import { TextField } from '../../shared/ui/text-field';
 import { EmbedContent, NoteEditor, RefInfo, SuggestItem, SuggestKind } from './note-editor';
 import { NoteTagChip } from './note-tag-chip';
@@ -136,6 +138,7 @@ interface RefChip {
     StateBlock,
     TagChip,
     TextField,
+    Tip,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'mf-fill', '(keydown)': 'onKey($event)' },
@@ -193,6 +196,9 @@ interface RefChip {
                   >
                     <i class="pi pi-plus" aria-hidden="true"></i><span>New Note</span>
                   </button>
+                }
+                @if (draft() === null) {
+                  <ng-container [ngTemplateOutlet]="heightBtn" />
                 }
               </div>
               <div class="nt__lc2">
@@ -766,13 +772,11 @@ interface RefChip {
                     @if (!stacked()) {
                       <button
                         type="button"
-                        class="mf-btn mf-btn--icon"
+                        class="mf-btn mf-btn--icon mf-btn--toggle"
                         data-note-wide
                         [attr.aria-pressed]="wide()"
-                        [attr.aria-label]="
-                          wide() ? 'Show the list again' : 'Expand to the full width'
-                        "
-                        [title]="wide() ? 'Show list' : 'Full width'"
+                        [attr.aria-label]="widthLabel()"
+                        [mfTip]="widthLabel()"
                         (click)="wide.set(!wide())"
                       >
                         <i
@@ -782,6 +786,7 @@ interface RefChip {
                         ></i>
                       </button>
                     }
+                    <ng-container [ngTemplateOutlet]="heightBtn" />
                     <span class="nt__vdiv" aria-hidden="true"></span>
                     <span class="nt__cs">
                       <button type="button" class="mf-btn" data-note-cancel (click)="cancel()">
@@ -841,13 +846,11 @@ interface RefChip {
                   @if (!stacked()) {
                     <button
                       type="button"
-                      class="mf-btn mf-btn--icon"
+                      class="mf-btn mf-btn--icon mf-btn--toggle"
                       data-note-wide
                       [attr.aria-pressed]="wide()"
-                      [attr.aria-label]="
-                        wide() ? 'Show the list again' : 'Expand to the full width'
-                      "
-                      [title]="wide() ? 'Show list' : 'Full width'"
+                      [attr.aria-label]="widthLabel()"
+                      [mfTip]="widthLabel()"
                       (click)="wide.set(!wide())"
                     >
                       <i
@@ -857,6 +860,7 @@ interface RefChip {
                       ></i>
                     </button>
                   }
+                  <ng-container [ngTemplateOutlet]="heightBtn" />
                   <button
                     type="button"
                     class="mf-btn mf-btn--icon"
@@ -1526,6 +1530,21 @@ interface RefChip {
       }
     </ng-template>
 
+    <!-- The height toggle (#1342, D-46a): folds the matter header so the card is taller. One button in the pane header while a note is open, else at the end of the list's first row. -->
+    <ng-template #heightBtn>
+      <button
+        type="button"
+        class="mf-btn mf-btn--icon mf-btn--toggle"
+        data-note-height
+        [attr.aria-pressed]="folded()"
+        [attr.aria-label]="heightLabel()"
+        [mfTip]="heightLabel()"
+        (click)="heightPref.toggle()"
+      >
+        <i class="pi pi-arrows-v" aria-hidden="true"></i>
+      </button>
+    </ng-template>
+
     <!-- Tags: the firm-wide list; people only pick (owner decision: a side panel) -->
     <mf-slide-panel
       title="Tags"
@@ -1870,6 +1889,15 @@ export class NotesTab {
   protected readonly split = signal(this.readSplit());
   protected readonly dragging = signal(false);
   protected readonly wide = signal(false);
+  protected readonly heightPref = inject(NotesHeightPref);
+  protected readonly folded = this.heightPref.folded;
+  /** Tooltip and accessible name are the same text and follow the state (D-46). */
+  protected readonly widthLabel = computed(() =>
+    this.wide() ? 'Show the list again' : 'Expand to the full width',
+  );
+  protected readonly heightLabel = computed(() =>
+    this.folded() ? 'Show the matter header again' : 'Expand to the full height',
+  );
   protected readonly stacked = computed(() => this.cardWidth() > 0 && this.cardWidth() < 760);
   protected readonly splitMaxNow = computed(() =>
     splitLimit(this.cardWidth() || SPLIT_DEFAULT + 420),
@@ -2193,6 +2221,8 @@ export class NotesTab {
   };
 
   constructor() {
+    // Read the remembered height choice once when the tab is created (#1342).
+    this.heightPref.refresh();
     inject(DestroyRef).onDestroy(() => {
       this.stopDrag();
       this.stopWatch?.();

@@ -94,7 +94,9 @@ const ROWS = [0, 1, 2, 3, 4] as const;
         } @else if (kind() === 'profile') {
           <ng-container *ngTemplateOutlet="profileTpl" />
         } @else if (kind() === 'matter') {
-          <ng-container *ngTemplateOutlet="matterHeaderTpl" />
+          @if (!foldHeader()) {
+            <ng-container *ngTemplateOutlet="matterHeaderTpl" />
+          }
           <mf-tabs
             [label]="kind() + ' sections'"
             idPrefix="rk"
@@ -412,6 +414,8 @@ export class RecordSkeleton {
   readonly retry = output<void>();
   /** The tab that is open (the address's `tab`); the first tab when it is not one of the page's. */
   readonly activeTab = input('details');
+  /** Matter page: the Notes height choice is folded, so the header is not drawn (the page does not jump when the data arrives). */
+  readonly foldHeader = input(false);
 
   /** The Task page's layout share is remembered per person; the page passes its key so the columns are drawn where they will be. */
   readonly splitKey = input('');

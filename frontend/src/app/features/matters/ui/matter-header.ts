@@ -15,12 +15,17 @@ import { SENSITIVE_LEAD, SENSITIVE_TEXT } from '../../../shared/ui/record-header
   selector: 'mf-matter-header',
   imports: [RouterLink, ActionMenu, TitleIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[class.mh--folded]': 'folded()', '[class.mh--bar]': 'matter().isSensitive' },
   styles: `
     :host {
       display: block;
       position: relative;
       z-index: 8;
       margin-bottom: var(--mf-s2);
+    }
+    /* Folded (Notes height toggle, #1342): the breadcrumb and title row are gone; with no sensitive bar left there is nothing to space from the tab strip. */
+    :host(.mh--folded:not(.mh--bar)) {
+      margin-bottom: 0;
     }
     .mh__crumbs ol {
       display: flex;
@@ -92,41 +97,51 @@ import { SENSITIVE_LEAD, SENSITIVE_TEXT } from '../../../shared/ui/record-header
   `,
   template: `
     <header data-matter-header data-record-header data-kind="matter">
-      <nav class="mh__crumbs" aria-label="Breadcrumb">
-        <ol>
-          <li><a routerLink="/matters">Matters</a></li>
-          <li aria-current="page" data-crumb-current>
-            <span class="mh__crumb-name" [attr.title]="matter().name">{{ matter().name }}</span>
-          </li>
-        </ol>
-      </nav>
-      <div class="mh__row">
-        <h1 class="mh__title" data-page-title>
-          <mf-title-icon icon="pi pi-briefcase" />
-          <span
-            class="mh__name"
-            data-name
-            [attr.title]="matter().clientName + ' > ' + matter().name"
-            >{{ matter().clientName }}<span class="mh__sep" aria-hidden="true"> &gt; </span
-            ><span class="mf-sr-only">, </span>{{ matter().name }}</span
-          >
-        </h1>
-        <div class="mh__actions" data-page-actions>
-          @if (canEdit()) {
-            <button
-              type="button"
-              class="mf-btn"
-              data-action="edit"
-              data-edit-matter
-              (click)="edit.emit()"
+      @if (folded()) {
+        <!-- Folded: only the page heading stays, visually hidden, for assistive technology and the route announcer. -->
+        <h1 class="mf-sr-only" data-page-title>{{ matter().clientName }}, {{ matter().name }}</h1>
+      } @else {
+        <nav class="mh__crumbs" aria-label="Breadcrumb">
+          <ol>
+            <li><a routerLink="/matters">Matters</a></li>
+            <li aria-current="page" data-crumb-current>
+              <span class="mh__crumb-name" [attr.title]="matter().name">{{ matter().name }}</span>
+            </li>
+          </ol>
+        </nav>
+        <div class="mh__row">
+          <h1 class="mh__title" data-page-title>
+            <mf-title-icon icon="pi pi-briefcase" />
+            <span
+              class="mh__name"
+              data-name
+              [attr.title]="matter().clientName + ' > ' + matter().name"
+              >{{ matter().clientName }}<span class="mh__sep" aria-hidden="true"> &gt; </span
+              ><span class="mf-sr-only">, </span>{{ matter().name }}</span
             >
-              Edit
-            </button>
-          }
-          <mf-action-menu label="Create" triggerText="New" [primary]="true" [items]="newItems()" />
-          <mf-action-menu label="More actions" [items]="moreItems()" />
+          </h1>
+          <div class="mh__actions" data-page-actions>
+            @if (canEdit()) {
+              <button
+                type="button"
+                class="mf-btn"
+                data-action="edit"
+                data-edit-matter
+                (click)="edit.emit()"
+              >
+                Edit
+              </button>
+            }
+            <mf-action-menu
+              label="Create"
+              triggerText="New"
+              [primary]="true"
+              [items]="newItems()"
+            />
+            <mf-action-menu label="More actions" [items]="moreItems()" />
+          </div>
         </div>
-      </div>
+      }
       @if (matter().isSensitive) {
         <p class="mh__note" role="note" [id]="noteId" data-sensitive-banner>
           <i class="pi pi-lock" aria-hidden="true"></i>
@@ -148,4 +163,6 @@ export class MatterHeader {
   /** Edit is a header button (D-21, #1136), first in the row: Edit, the New menu (the primary), the overflow. */
   readonly canEdit = input(false);
   readonly edit = output<void>();
+  /** The Notes height toggle is on (#1342): hides the breadcrumb and title row; the sensitive bar stays. */
+  readonly folded = input(false);
 }

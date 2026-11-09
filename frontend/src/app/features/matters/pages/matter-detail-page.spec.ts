@@ -1220,4 +1220,78 @@ describe('MatterDetailPage', () => {
       expect(el().querySelector('[data-primary-manager]')?.textContent).toBe('Bob Roe');
     });
   });
+
+  describe('Notes height toggle (#1342, D-46a)', () => {
+    const heightBtn = () => el().querySelector<HTMLButtonElement>('[data-note-height]')!;
+    const title = () => el().querySelector('h1[data-page-title]')!;
+    const userKey = () => String(TestBed.inject(AuthStore).profile()?.userId || 'anon');
+
+    it('folds the breadcrumb and title row, keeps the sensitive bar and the tab strip, and keeps the same Notes tab and toggle node', async () => {
+      await create(['Matter.View', 'MatterNote.View'], aMatter({ isSensitive: true }));
+      await openTab('notes');
+      expect(heightBtn().getAttribute('aria-pressed')).toBe('false');
+      expect(heightBtn().getAttribute('aria-label')).toBe('Expand to the full height');
+      expect(el().querySelector('[data-crumb-current]')).not.toBeNull();
+      const notes = el().querySelector('[data-notes-tab]');
+      const btn = heightBtn();
+      btn.focus();
+
+      btn.click();
+      await settle(fixture);
+      expect(heightBtn()).toBe(btn);
+      expect(el().querySelector('[data-notes-tab]')).toBe(notes);
+      expect(document.activeElement).toBe(btn);
+      expect(btn.getAttribute('aria-pressed')).toBe('true');
+      expect(btn.getAttribute('aria-label')).toBe('Show the matter header again');
+      expect(el().querySelector('[data-crumb-current]')).toBeNull();
+      expect(el().querySelector('[data-page-actions]')).toBeNull();
+      expect(title().classList.contains('mf-sr-only')).toBe(true);
+      expect(title().textContent).toContain('Merger Review');
+      expect(el().querySelector('[data-sensitive-banner]')).not.toBeNull();
+      expect(el().querySelector('[role=tablist]')).not.toBeNull();
+      expect(localStorage.getItem('mf.notes.height.v1.' + userKey())).toBe('1');
+
+      // Another tab shows the full header; coming back folds it again.
+      await openTab('summary');
+      expect(el().querySelector('[data-crumb-current]')).not.toBeNull();
+      await openTab('notes');
+      expect(el().querySelector('[data-crumb-current]')).toBeNull();
+
+      heightBtn().click();
+      await settle(fixture);
+      expect(el().querySelector('[data-crumb-current]')).not.toBeNull();
+      expect(localStorage.length).toBe(0);
+    });
+
+    it('works for the visit when storage is blocked and ignores a corrupt entry', async () => {
+      await create(['Matter.View', 'MatterNote.View']);
+      localStorage.setItem('mf.notes.height.v1.' + userKey(), 'yes');
+      await openTab('notes');
+      expect(heightBtn().getAttribute('aria-pressed')).toBe('false');
+
+      vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+        throw new Error('blocked');
+      });
+      vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+        throw new Error('blocked');
+      });
+      try {
+        heightBtn().click();
+        await settle(fixture);
+        expect(heightBtn().getAttribute('aria-pressed')).toBe('true');
+        expect(el().querySelector('[data-crumb-current]')).toBeNull();
+      } finally {
+        vi.restoreAllMocks();
+      }
+    });
+
+    it('starts folded from the remembered choice of this person only', async () => {
+      await create(['Matter.View', 'MatterNote.View']);
+      localStorage.setItem('mf.notes.height.v1.' + userKey(), '1');
+      localStorage.setItem('mf.notes.height.v1.999', '1');
+      await openTab('notes');
+      expect(heightBtn().getAttribute('aria-pressed')).toBe('true');
+      expect(el().querySelector('[data-crumb-current]')).toBeNull();
+    });
+  });
 });

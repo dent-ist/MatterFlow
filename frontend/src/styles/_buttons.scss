@@ -288,3 +288,11 @@ td .mf-btn--icon,
     min-height: 44px;
   }
 }
+
+/* D-46a (#1342): a square icon button that is a switch (`aria-pressed`): while it is on, the fill is the selected background and the icon the primary colour. The fill is the
+   signal; the icon stays. Hover keeps the fill so the state never reads as "off". Add it to `mf-btn mf-btn--icon`; never a private paint per page. */
+.mf-btn--toggle[aria-pressed='true'],
+.mf-btn--toggle[aria-pressed='true']:hover:not(:disabled, [aria-disabled='true']) {
+  background: var(--mf-selected-bg);
+  color: var(--mf-primary);
+}
