@@ -23,7 +23,7 @@ What the client must NOT use for the catalogue counts: `openTaskCount`, `taskCou
 | Read | `Matter.View` or `MatterList.Manage` | same | same |
 | Write | `MatterList.Manage` | same | same |
 | Item fields | `id, name, sortOrder, isActive, rowVersion, inUseCount` | same | same |
-| Name rule | required, max 100, unique (exact match as the database collation compares) | same | same |
+| Name rule | required, max 100, unique | same | same |
 | Reorder | `PUT order {ids}`: every id exactly once, else 400 `INVALID` on `ids`; returns full list | same | same |
 | Deactivate | `PUT {id}` with `isActive=false`, sends name + rowVersion; always allowed | same | same |
 | Delete | 204 only when inUseCount is 0, else 409 `IN_USE` | same | same |
@@ -68,7 +68,6 @@ What the client must NOT use for the catalogue counts: `openTaskCount`, `taskCou
 - **In use:** `inUseCount` (number) only on the three matter lists; Priorities/Status Labels/Link Roles have an optional, permission-dependent count with other semantics; Note Tags have `isInUse` (boolean) + `visibleNoteCount`; On-Hold Reasons have nothing. The editor should treat "in use" as unknown unless a list supplies the exact field, and rely on `IN_USE` 409 from delete as the truth.
 - **Row version:** all lists have `rowVersion` (base64), sent in the PUT body; Note Tags also need it as a query parameter on DELETE; other deletes take none.
 - **Create body:** `{name, isActive?}` for matter lists, On-Hold and Link Roles; `{label, color, isActive?}` for Priorities; `{name, colourKey?}` for Note Tags (always created active); Status Labels cannot be created.
-- **Status codes:** all creates return 201; only the matter lists and others set a `Location`; Note Tags returns 201 without one. Not relevant to the client.
 - **Duplicate error shape:** top-level `code` is `DUPLICATE_NAME` for all eight, but the per-field error code is `DUPLICATE` in Configuration lists and `DUPLICATE_NAME` in Note Tags. Key off the top-level code.
 - **Note Tags list default hides inactive tags.** The editor must call `?includeInactive=true` (and any other query parameter is a 400). Counts then include inactive rows like the other lists.
 - **Priorities extras:** `POST {id}/default` and the `isDefault` flag, `DEFAULT_REQUIRED` on deactivate/delete of the default. Needs an optional per-list action.
