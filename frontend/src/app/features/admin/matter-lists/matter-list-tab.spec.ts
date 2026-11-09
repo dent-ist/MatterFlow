@@ -17,7 +17,7 @@ import {
   deactivateBody,
   duplicateMessage,
 } from './matter-list-tab';
-import { MATTER_LIST_TABS } from './matter-lists-tabs';
+import { ADMIN_LISTS } from '../lists/admin-lists';
 
 const item = (
   id: number,
@@ -63,13 +63,14 @@ describe('Matter Lists wording (UI spec 7.3)', () => {
     );
   });
 
-  it('has three tabs on one permission, in the specified order', () => {
-    expect(MATTER_LIST_TABS.map((t) => t.label)).toEqual([
-      'Matter Types',
-      'Current States',
-      'Team Titles',
-    ]);
-    for (const t of MATTER_LIST_TABS) expect(t.permission).toEqual(['MatterList.Manage']);
+  it('has three lists on one permission, in the specified order', () => {
+    const matter = ADMIN_LISTS.filter((l) => l.group === 'Matter');
+    expect(matter.map((l) => l.label)).toEqual(['Matter Types', 'Current States', 'Team Titles']);
+    for (const l of matter) expect(l.permission).toBe('MatterList.Manage');
+    // The registry and this tab name the New button the same way.
+    expect(matter.map((l) => l.newLabel)).toEqual(
+      matter.map((l) => MATTER_LIST_TEXTS[l.key as keyof typeof MATTER_LIST_TEXTS].newButton),
+    );
     expect(types.newButton).toBe('New Matter Type');
     expect(MATTER_LIST_TEXTS['current-states'].newButton).toBe('New State');
     expect(titles.newButton).toBe('New Title');

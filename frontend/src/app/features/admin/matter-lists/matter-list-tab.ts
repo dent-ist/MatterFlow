@@ -9,7 +9,9 @@ import {
   input,
   signal,
   untracked,
+  forwardRef,
 } from '@angular/core';
+import { LIST_BODY } from '../lists/list-body';
 import { RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
 import { Observable, firstValueFrom } from 'rxjs';
@@ -38,9 +40,11 @@ import { TextField } from '../../../shared/ui/text-field';
 import { Tip } from '../../../shared/ui/tip';
 import { AdminTabCounts } from '../admin-tabs';
 import { ADMIN_FIELD_LIMITS } from '../shared/field-limits';
-import { MatterListKind } from './matter-lists-tabs';
 
 type LoadState = 'loading' | 'ready' | 'error';
+
+/** The three lists this tab edits (the address segment of each on the Lists page). */
+export type MatterListKind = 'matter-types' | 'current-states' | 'team-titles';
 
 /** Everything that differs between the three lists: the words (UI spec 7.2 to 7.4 and the glossary) and the API calls. */
 export interface MatterListText {
@@ -141,12 +145,13 @@ interface ListApi {
 }
 
 /**
- * One tab of Administration > Matter Lists (epic #1298, UI spec 7): a reorder list built like On-Hold Reasons (the admin kit table: Order with the grip, Name, In Use, Status and
+ * One of the three Matter lists of Administration > Lists (epic #1298, #1314): a reorder list built like On-Hold Reasons (the admin kit table: Order with the grip, Name, In Use, Status and
  * the row menu with Rename, Move Up, Move Down, Deactivate or Activate and Delete). An item that is in use is deactivated, never deleted: Delete is offered only when In Use is
- * 0 (the API checks again: 409 `IN_USE`). Needs `MatterList.Manage`; the page header owns the primary New button and opens the New dialog through `openNew()`.
+ * 0 (the API checks again: 409 `IN_USE`). Needs `MatterList.Manage`; the editor header (`mf-list-editor`) owns the primary New button and opens the New dialog through `openNew()`.
  */
 @Component({
   selector: 'mf-matter-list-tab',
+  providers: [{ provide: LIST_BODY, useExisting: forwardRef(() => MatterListTab) }],
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     Button,

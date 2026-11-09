@@ -10,7 +10,9 @@ import {
   input,
   signal,
   untracked,
+  forwardRef,
 } from '@angular/core';
+import { LIST_BODY } from '../lists/list-body';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { OnHoldReasonView, OnHoldReasonsClient } from '../../../api/generated/api-client';
@@ -45,13 +47,14 @@ const DROP_ORDER = 768;
 /** The address of the dialogs of this tab: `?edit=<id>` or `edit=new` (the name link, the row menu and the New button go there). */
 
 /**
- * Admin: On-Hold Reasons (PM v2, #876), the third tab of the Labels page, built like Link Roles: the grid contract (44 px rows, Order, Name,
+ * Admin: On-Hold Reasons (PM v2, #876), a Task list of Administration > Lists (it was the third tab of the Labels page), built like Link Roles: the grid contract (44 px rows, Order, Name,
  * Status, one overflow menu), phone cards below 640 px and the lookup dialog for New reason and Rename. The reasons a person picks when a task
  * is put On Hold (Waiting for client data, ...). The menu has Rename, Move up, Move down and Deactivate or Activate; a reason is never deleted
- * (a used one is deactivated, so a task on hold and the history keep its name). Needs `OnHoldReason.Manage`. The header belongs to `LabelsAdminPage`.
+ * (a used one is deactivated, so a task on hold and the history keep its name). Needs `OnHoldReason.Manage`. The header belongs to `mf-list-editor`.
  */
 @Component({
   selector: 'mf-on-hold-reasons-page',
+  providers: [{ provide: LIST_BODY, useExisting: forwardRef(() => OnHoldReasonsPage) }],
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     Button,
@@ -217,7 +220,7 @@ export class OnHoldReasonsPage implements OnInit, HasUnsavedChanges {
   }
 
   /** The empty list's own New button (the same action as the page header's, spec 15.3). */
-  protected newReason(): void {
+  openNew(): void {
     void this.router.navigate([], { queryParams: { edit: 'new' }, queryParamsHandling: 'merge' });
   }
 
@@ -444,7 +447,7 @@ export class OnHoldReasonsPage implements OnInit, HasUnsavedChanges {
   /** The phone card of a role (#640): the same data and the same row menu as the table row. */
   protected readonly cardOf = (r: OnHoldReasonView): AdminCardSpec => ({
     title: r.name,
-    link: ['/admin/on-hold-reasons'],
+    link: ['/admin/lists/on-hold-reasons'],
     queryParams: { edit: r.id },
     rowKey: r.id,
     badges: [activeCardBadge(r.isActive)],

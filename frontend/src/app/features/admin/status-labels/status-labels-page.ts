@@ -8,7 +8,9 @@ import {
   input,
   signal,
   untracked,
+  forwardRef,
 } from '@angular/core';
+import { LIST_BODY } from '../lists/list-body';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { StatusLabelView, StatusLabelsClient } from '../../../api/generated/api-client';
@@ -41,13 +43,14 @@ type LoadState = 'loading' | 'ready' | 'error';
 const tasksQuery = (code: string) => ({ status: code });
 
 /**
- * Admin: Status Labels (UX S18), the second tab of the Labels page. Five fixed rows (#622): the name is the badge with the display label
+ * Admin: Status Labels (UX S18), the Task list of Administration > Lists (it was the second tab of the Labels page). Five fixed rows (#622): the name is the badge with the display label
  * (the internal code is its tooltip; a renamed status also says what it was), Tasks counts every task in the status and links to the Task
  * Queue, and the row menu has Rename. Rename is the lookup dialog (#564) with a live badge, the code and the sentence that says where the
  * name shows; below 640 px the rows are cards. Statuses can be neither added nor removed. Needs `StatusLabel.Manage`.
  */
 @Component({
   selector: 'mf-status-labels-page',
+  providers: [{ provide: LIST_BODY, useExisting: forwardRef(() => StatusLabelsPage) }],
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     IntPipe,
@@ -268,7 +271,7 @@ export class StatusLabelsPage implements OnInit, HasUnsavedChanges {
   /** The phone card of a status (#622): the same data and the same row menu as the table row. */
   protected readonly cardOf = (row: StatusLabelView): AdminCardSpec => ({
     title: row.displayLabel,
-    link: ['/admin/status-labels'],
+    link: ['/admin/lists/status-labels'],
     queryParams: { edit: row.code },
     rowKey: row.code,
     meta: [

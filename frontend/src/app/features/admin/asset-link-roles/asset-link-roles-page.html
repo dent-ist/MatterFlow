@@ -51,7 +51,7 @@
             *mfHasPermission="'AssetType.Manage'"
             label="New Link Role"
             icon="pi pi-plus"
-            (onClick)="newRole()"
+            (onClick)="openNew()"
           />
           @for (r of paging.slice(rows()); track r.id; let idx = $index) {
             @let i = paging.offset() + idx;

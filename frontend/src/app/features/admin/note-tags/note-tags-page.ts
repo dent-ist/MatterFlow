@@ -1,4 +1,13 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  forwardRef,
+  inject,
+  signal,
+} from '@angular/core';
+import { LIST_BODY } from '../lists/list-body';
+import { AdminTabCounts } from '../admin-tabs';
 import { firstValueFrom } from 'rxjs';
 import { NoteTagResponse, NoteTagsClient } from '../../../api/generated/api-client';
 import { ApiError } from '../../../core/http/api-error';
@@ -25,13 +34,14 @@ import { Button } from 'primeng/button';
 import { TagChip } from '../../../shared/ui/tag-chip';
 
 /**
- * Admin: Note Tags (epic #1001, MD-19; mockup notes-mockup-r3), the fourth tab of the Labels page. The firm-wide tags people pick in a note: name, colour of the
+ * Admin: Note Tags (epic #1001, MD-19; mockup notes-mockup-r3), the Notes list of Administration > Lists (it was the fourth tab of the Labels page). The firm-wide tags people pick in a note: name, colour of the
  * ten-colour palette, active or not, and how many notes the person can see that use it. A tag that notes use is deactivated, not deleted (the server says 409 IN_USE).
- * Needs `StatusLabel.Manage`. The page header belongs to `LabelsAdminPage`, which calls `openNew()`. The list is the shared record grid (#1205, D-44a): the
+ * Needs `StatusLabel.Manage`. The header belongs to `mf-list-editor`, which calls `openNew()`. The list is the shared record grid (#1205, D-44a): the
  * empty, error and loading bodies are the grid's.
  */
 @Component({
   selector: 'mf-note-tags-page',
+  providers: [{ provide: LIST_BODY, useExisting: forwardRef(() => NoteTagsPage) }],
   imports: [
     Button,
     IntPipe,
@@ -140,6 +150,7 @@ import { TagChip } from '../../../shared/ui/tag-chip';
 export class NoteTagsPage {
   private readonly api = inject(NoteTagsClient);
   private readonly notify = inject(NotificationService);
+  private readonly report = AdminTabCounts.report('note-tags');
 
   protected readonly paging = new LocalPaging();
   protected readonly tags = signal<NoteTagResponse[]>([]);
@@ -222,10 +233,23 @@ export class NoteTagsPage {
     if (this.tags().length === 0) this.state.set('loading');
     try {
       this.tags.set(await firstValueFrom(this.api.listNoteTags(true)));
+      this.reportCount();
       this.state.set('ready');
     } catch {
       this.state.set('error');
     }
+  }
+
+  /** The catalogue and the editor header count the ACTIVE tags (the list is asked with `includeInactive=true`, so inactive ones are in it). */
+  private reportCount(): void {
+    this.report(this.tags().filter((t) => t.isActive).length);
+  }
+
+  /** Leaving with the New or Edit panel open and the text changed is unsaved work (the dialog itself asks nothing, as before). */
+  hasUnsavedChanges(): boolean {
+    if (!this.panel()) return false;
+    const t = this.editing();
+    return t ? this.name().trim() !== t.name : this.name().trim() !== '';
   }
 
   openNew(): void {

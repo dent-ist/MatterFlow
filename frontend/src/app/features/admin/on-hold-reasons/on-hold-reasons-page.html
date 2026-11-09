@@ -48,7 +48,7 @@
             *mfHasPermission="'OnHoldReason.Manage'"
             label="New Reason"
             icon="pi pi-plus"
-            (onClick)="newReason()"
+            (onClick)="openNew()"
           />
           @for (r of paging.slice(rows()); track r.id; let idx = $index) {
             @let i = paging.offset() + idx;
@@ -69,7 +69,7 @@
                     class="mf-name"
                     mfRowLink="on-hold-reasons"
                     [rowKey]="r.id"
-                    [routerLink]="['/admin/on-hold-reasons']"
+                    [routerLink]="['/admin/lists/on-hold-reasons']"
                     [queryParams]="{ edit: r.id }"
                     [attr.title]="r.name"
                     data-edit

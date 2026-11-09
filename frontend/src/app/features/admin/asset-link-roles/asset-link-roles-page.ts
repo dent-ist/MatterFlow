@@ -10,7 +10,9 @@ import {
   input,
   signal,
   untracked,
+  forwardRef,
 } from '@angular/core';
+import { LIST_BODY } from '../lists/list-body';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AssetLinkRoleView, AssetLinkRolesClient } from '../../../api/generated/api-client';
@@ -44,14 +46,11 @@ type LoadState = 'loading' | 'ready' | 'error';
 /** The Order column leaves below this window width (the kit's column-drop rule). */
 const DROP_ORDER = 768;
 
-/** The address of the dialogs of this tab: `?tab=link-roles&edit=<id>` or `edit=new` (the name link, the row menu and the New button go there). */
-const TAB = 'link-roles';
-
 /**
- * Admin: Link Roles (UX S17, #640 to #642), the second tab of the Asset Types page and built exactly like its first one: the grid contract
+ * Admin: Link Roles (UX S17, #640 to #642), the Assets list of Administration > Lists (it was the second tab of the Asset Types page): the grid contract
  * (44 px rows, Order, Name, Links, Status, one overflow menu), phone cards below 640 px and the lookup dialog (#564) for New link role and Rename
- * (one field, a counter of 50). The roles an Asset can have on a Task (Source, Destination, Subject, Result, ...). The header (name, crumb, tabs
- * with their counts, the New link role action and the one-line description) belongs to `AssetAdminPage`.
+ * (one field, a counter of 50). The roles an Asset can have on a Task (Source, Destination, Subject, Result, ...). The header (name, active count, the New Link Role
+ * button, "Shown on" and the rule line) belongs to `mf-list-editor`. The dialogs sit on the list's address: `/admin/lists/link-roles?edit=<id>` or `edit=new`.
  *
  * Links counts the task-asset links that use the role (`linkCount`; no number for a person without Task.View and Asset.View). The menu has Rename,
  * Move up, Move down, Deactivate or Activate, and Delete only for a role no link uses (a role with links says "14 links keep this role" in the
@@ -59,6 +58,7 @@ const TAB = 'link-roles';
  */
 @Component({
   selector: 'mf-asset-link-roles-page',
+  providers: [{ provide: LIST_BODY, useExisting: forwardRef(() => AssetLinkRolesPage) }],
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     Button,
@@ -227,20 +227,19 @@ export class AssetLinkRolesPage implements OnInit, HasUnsavedChanges {
     this.saveError.set('');
   }
 
-  /** The empty list's own New button (the same action as the page header's, spec 15.3). */
-  protected newRole(): void {
+  /** The editor header's New Link Role button and the empty list's own one. */
+  openNew(): void {
     void this.router.navigate([], { queryParams: { edit: 'new' }, queryParamsHandling: 'merge' });
   }
 
   protected closeDialog(): void {
     this.clearErrors();
     if (this.edit() !== undefined && !this.closing) {
-      // The Asset Types route re-runs its guards on a query change: the close itself is not "leaving with unsaved text" (the dialog asked
-      // already). The dialog reports its closing twice (visibility and cancel): the first one navigates, the second finds it under way.
+      // The close itself is not "leaving with unsaved text" (the dialog asked already). The dialog reports its closing twice (visibility and cancel): the first one navigates, the second finds it under way.
       this.closing = true;
       void this.router
         .navigate([], {
-          queryParams: { tab: TAB, edit: null },
+          queryParams: { edit: null },
           queryParamsHandling: 'merge',
           replaceUrl: true,
         })
@@ -453,7 +452,7 @@ export class AssetLinkRolesPage implements OnInit, HasUnsavedChanges {
               permission: 'AssetType.Manage',
               run: () =>
                 void this.router.navigate([], {
-                  queryParams: { tab: TAB, edit: r.id },
+                  queryParams: { edit: r.id },
                   queryParamsHandling: 'merge',
                 }),
             },
@@ -510,8 +509,8 @@ export class AssetLinkRolesPage implements OnInit, HasUnsavedChanges {
   /** The phone card of a role (#640): the same data and the same row menu as the table row. */
   protected readonly cardOf = (r: AssetLinkRoleView): AdminCardSpec => ({
     title: r.name,
-    link: ['/admin/asset-types'],
-    queryParams: { tab: TAB, edit: r.id },
+    link: ['/admin/lists/link-roles'],
+    queryParams: { edit: r.id },
     rowKey: r.id,
     badges: [activeCardBadge(r.isActive)],
     meta: this.linksShown() && typeof r.linkCount === 'number' ? [this.linkSentence(r)] : [],

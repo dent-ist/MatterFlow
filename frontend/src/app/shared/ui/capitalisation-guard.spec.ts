@@ -5,7 +5,7 @@ import { NAV_ITEMS } from '../layout/nav-items';
 import { DASHBOARD_TAB_LABELS } from '../../features/dashboard/dashboard-prefs';
 import { TAB_LABELS as MY_WORK_TABS } from '../../features/my-work/pages/my-work-page';
 import { TAB_LABELS as MY_MATTERS_TABS } from '../../features/my-matters/ui/mm-scope';
-import { LABEL_TABS } from '../../features/admin/labels-tabs';
+import { ADMIN_LISTS } from '../../features/admin/lists/admin-lists';
 
 /**
  * Guard for D-20 (#1149): "click it or name it = Title Case; read it = sentence case". A button label, a page heading, a dialog title, a column heading and a one-line
@@ -150,7 +150,8 @@ describe('capitalisation of what is clicked or named (D-20, #1149)', () => {
       ...Object.values(DASHBOARD_TAB_LABELS),
       ...Object.values(MY_WORK_TABS),
       ...Object.values(MY_MATTERS_TABS),
-      ...LABEL_TABS.map((t) => t.label),
+      ...ADMIN_LISTS.map((l) => l.label),
+      ...ADMIN_LISTS.flatMap((l) => (l.newLabel ? [l.newLabel] : [])),
     ];
     const offenders = labels.filter((label) => !isTitleCase(label));
     for (const file of sources(APP).filter((f) => f.endsWith('.routes.ts'))) {

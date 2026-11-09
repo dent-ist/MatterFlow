@@ -8,7 +8,9 @@ import {
   inject,
   input,
   signal,
+  forwardRef,
 } from '@angular/core';
+import { LIST_BODY } from '../lists/list-body';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { PrioritiesClient, PriorityView } from '../../../api/generated/api-client';
@@ -46,7 +48,7 @@ const DROP_COLOR = 900;
 const DROP_ORDER = 768;
 
 /**
- * Admin: Priorities (UX S18), the first tab of the Labels page (`LabelsAdminPage` holds the header, tabs and the New priority action).
+ * Admin: Priorities (UX S18), the Task list of Administration > Lists (`mf-list-editor` holds the header and the New Priority action).
  * Labels only (users never see numbers). The grid (#605) shows Order, the priority badge with a Default badge, Color, Open tasks, Status
  * and ONE row menu; a pointer drag on a row still reorders (as shipped; no handle, no shortcut). Everything else is in the row menu
  * (#614): Edit (a dialog, #609), Move up and Move down (announced politely, focus stays on the menu button), Set as default (one-line
@@ -55,6 +57,7 @@ const DROP_ORDER = 768;
  */
 @Component({
   selector: 'mf-priorities-page',
+  providers: [{ provide: LIST_BODY, useExisting: forwardRef(() => PrioritiesPage) }],
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     Button,
@@ -213,7 +216,7 @@ export class PrioritiesPage implements OnInit, HasUnsavedChanges {
   // ---- New and Edit (the lookup dialog, #609)
 
   /** The empty list's own New button (the same action as the page header's, spec 15.3). */
-  protected newPriority(): void {
+  openNew(): void {
     void this.router.navigate([], { queryParams: { edit: 'new' }, queryParamsHandling: 'merge' });
   }
 
@@ -531,7 +534,7 @@ export class PrioritiesPage implements OnInit, HasUnsavedChanges {
   /** The phone card of a priority (#605): the same data and the same row menu as the table row. */
   protected readonly cardOf = (p: PriorityView): AdminCardSpec => ({
     title: p.label,
-    link: ['/admin/priorities'],
+    link: ['/admin/lists/priorities'],
     queryParams: { edit: p.id },
     rowKey: p.id,
     badges: [

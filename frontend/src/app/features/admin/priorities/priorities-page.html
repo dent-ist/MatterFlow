@@ -52,7 +52,7 @@
             *mfHasPermission="'Priority.Manage'"
             label="New Priority"
             icon="pi pi-plus"
-            (onClick)="newPriority()"
+            (onClick)="openNew()"
           />
           @for (p of paging.slice(rows()); track p.id; let idx = $index) {
             @let i = paging.offset() + idx;
