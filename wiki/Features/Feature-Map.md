@@ -57,11 +57,13 @@
 | Task Types | Configuration | `TaskType`, `TaskTypeWorkflowEligibility`, `FormDefinition`, `FormVersion`, `FormField` | `/task-types`, `/forms` | `/admin/task-types`; `admin/task-types/` | `TaskType.Manage` | e2e `ty*` |
 | Workflows | WorkflowEngine | `WorkflowDefinition`, `WorkflowVersion`, `WorkflowVersionStep` | `/workflows` | `/admin/workflows`; `admin/workflows/` | `Workflow.Manage` | `Workflows/`; e2e `workflow-version`, `ty5-workflow`, `ty6-*` |
 | Workflow Steps | WorkflowEngine | `StepDefinition`, `StepDefinitionTag`, `StepTag` | `/step-definitions` | `/admin/steps`; `admin/steps/` | `Workflow.Manage` | e2e `ty7-step`, `workflow-tabs-tags-screens` |
-| Labels: Priorities | Configuration | `Priority` | `/priorities` | `/admin/priorities`; `admin/priorities/` | `Priority.Manage` | e2e `ad3-priorities-*` |
-| Labels: Status Labels | Configuration | `TaskStatusLabel` | `/status-labels` | `/admin/status-labels`; `admin/status-labels/` | `StatusLabel.Manage` | e2e `ad3-status-labels` |
-| Labels: On-Hold Reasons | Configuration | `OnHoldReason` | `/on-hold-reasons` | `/admin/on-hold-reasons`; `admin/on-hold-reasons/` | `OnHoldReason.Manage` | `Tasks/OnHoldReasonTests`; e2e `pv-task-types-on-hold` |
-| Labels: Note Tags | Notes | `NoteTag` | `/note-tags` | `/admin/note-tags`; `admin/note-tags/` | `StatusLabel.Manage` (see Routing) | |
-| Asset Types and Link Roles | Assets, Configuration | `AssetType`, `AssetLinkRole`, `FormDefinition` | `/asset-types`, `/asset-link-roles` | `/admin/asset-types`; `admin/asset-types/`, `admin/asset-link-roles/` | `AssetType.Manage` | e2e `ad4-*`, `ad5-link-roles` |
+| Lists: Priorities (Task) | Configuration | `Priority` | `/priorities` | `/admin/lists/priorities`; `admin/priorities/` (grid), `admin/lists/` (page) | `Priority.Manage` | e2e `ad3-priorities-*`, `lists-*` |
+| Lists: Status Labels (Task) | Configuration | `TaskStatusLabel` | `/status-labels` | `/admin/lists/status-labels`; `admin/status-labels/` | `StatusLabel.Manage` | e2e `ad3-status-labels` |
+| Lists: On-Hold Reasons (Task) | Configuration | `OnHoldReason` | `/on-hold-reasons` | `/admin/lists/on-hold-reasons`; `admin/on-hold-reasons/` | `OnHoldReason.Manage` | `Tasks/OnHoldReasonTests`; e2e `pv-task-types-on-hold` |
+| Lists: Note Tags (Notes) | Notes | `NoteTag` | `/note-tags` | `/admin/lists/note-tags`; `admin/note-tags/` | `StatusLabel.Manage` (see Routing) | |
+| Lists: Matter Types, Current States, Team Titles (Matter) | Configuration | `MatterType`, `CurrentState`, `TeamTitle` | `/matter-types`, `/current-states`, `/team-titles` | `/admin/lists/matter-types` and the other two; `admin/matter-lists/` | `MatterList.Manage` | e2e `lists-*` |
+| Lists: Link Roles (Assets) | Assets, Configuration | `AssetLinkRole` | `/asset-link-roles` | `/admin/lists/link-roles`; `admin/asset-link-roles/` | `AssetType.Manage` | e2e `ad5-link-roles` |
+| Asset Types | Assets, Configuration | `AssetType`, `FormDefinition` | `/asset-types` | `/admin/asset-types`; `admin/asset-types/` | `AssetType.Manage` | e2e `ad4-*` |
 | Custom Fields | Configuration | `FormDefinition`, `FormVersion`, `FormField` | `/forms/custom-fields` and `/forms/...` | `/admin/custom-fields`; `admin/custom-fields/` | `CustomField.Manage` | e2e `ad6-custom-fields` |
 | Reports | Reports | Report tables | `/report-admin/*`, `/reports/*` | `/admin/reports`; `admin/reports/` | `Report.Manage`, `Report.Assign`, `Report.Run` | `Reports/`; e2e `rp5-reports-admin` |
 | Audit Logs | Audit | `AuditEvent` | `/audit/search`, `/audit/facets`, `/audit/events` | `/admin/audit`; `admin/audit/` | `Audit.View` | `Audit/`; e2e `ad7-audit` |

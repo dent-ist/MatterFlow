@@ -62,10 +62,11 @@ The `/admin` route is open to anyone who may open any admin menu item (`ADMIN_NA
 | `/admin/task-types/new`, `/:id`, `/:ownerId/form` | `task-types` | task type edit and request form designer | `TaskType.Manage` |
 | `/admin/steps/new`, `/:stepId`, `/:ownerId/form` | `steps` | `StepEditPage`, step form designer | `Workflow.Manage` |
 | `/admin/workflows/new`, `/:workflowId`, `/:workflowId/versions/:versionId` | `workflows` | `WorkflowEditPage`, version page | `Workflow.Manage` |
-| `/admin/asset-types` (`?tab=link-roles` for link roles; `/admin/asset-link-roles` redirects there) | `asset-types`, `asset-link-roles` | `AssetAdminPage` | `AssetType.Manage` |
+| `/admin/asset-types` (one page, no tab strip; `?tab=link-roles` and `/admin/asset-link-roles` redirect to the Link Roles list) | `asset-types` | `AssetAdminPage` | `AssetType.Manage` |
 | `/admin/asset-types/new`, `/:id`, `/:ownerId/form` | `asset-types` | `AssetTypeRecordPage`, form designer | `AssetType.Manage` |
 | `/admin/custom-fields`, `/:ownerId/form` | `custom-fields` | `CustomFieldsPage`, designer | `CustomField.Manage` |
-| `/admin/priorities`, `/status-labels`, `/on-hold-reasons`, `/note-tags` (tabs of Labels) | `priorities`, `status-labels`, `on-hold-reasons`, `note-tags` | `LabelsAdminPage` | per tab (`labels-tabs.ts`): Priorities `Priority.Manage`, Status Labels `StatusLabel.Manage`, On-Hold Reasons `OnHoldReason.Manage`, Note Tags `StatusLabel.Manage` (there is no separate note tag permission) |
+| `/admin/lists`, `/admin/lists/:list` (the eight lists of choices: `matter-types`, `current-states`, `team-titles`, `priorities`, `status-labels`, `on-hold-reasons`, `note-tags`, `link-roles`; one route with a matcher, `/admin/lists` and an unknown or forbidden key open the first permitted list) | `lists` (registry, catalogue page, editor frame), `matter-lists`, `priorities`, `status-labels`, `on-hold-reasons`, `note-tags`, `asset-link-roles` (the grids) | `ListsPage` (`mf-list-catalogue` + `mf-list-editor`) | per list (`lists/admin-lists.ts`): Matter Types, Current States, Team Titles `MatterList.Manage`; Priorities `Priority.Manage`; Status Labels and Note Tags `StatusLabel.Manage` (no separate note tag permission); On-Hold Reasons `OnHoldReason.Manage`; Link Roles `AssetType.Manage`. The page opens for any one of them; a person with one list gets no catalogue, with two to four no search box |
+| Old list addresses `/admin/priorities`, `/status-labels`, `/on-hold-reasons`, `/note-tags`, `/matter-types`, `/current-states`, `/team-titles`, `/asset-link-roles`, `/admin/asset-types?tab=link-roles` | redirects (`lists/lists-routing.ts`) | none | They go to `/admin/lists/<key>`, keep `?edit=` and add a one-time `?moved=<key>` that the page reads (a blue "has moved here" notice with Dismiss) and removes from the address |
 | `/admin/reports` (`?tab=` is `categories`, `runs`, `assignments` or `health`; the page and menu item are called Report Setup) | `reports` | `ReportsAdminPage` | `Report.Manage` |
 | `/admin/reports/new`, `/admin/reports/:id` | `reports` | `ReportEditorPage` | `Report.Manage` |
 | `/admin/settings` (tabs Branding, Dashboard, Holidays) | `settings`, `holidays` | `SettingsPage` | `Settings.Manage` |
@@ -88,7 +89,7 @@ Items are hidden, never disabled, without the permission. A person whose resolve
 | Task Queue | `/tasks` | `Task.View` |
 | Reports | `/reports` | `Report.Run` (shown also when nothing is assigned; the page explains it; it is not hidden in the compact menu of the Project Manager) |
 
-Administration menu (`ADMIN_NAV_ITEMS`): Users, Task Types, Labels, Asset Types, Custom Fields, Report Setup, Audit Logs, Settings (each with the permissions listed above).
+Administration menu (`ADMIN_NAV_ITEMS`): Users, Task Types, Lists, Asset Types, Custom Fields, Report Setup, Audit Logs, Settings (each with the permissions listed above). Lists replaces the former Labels and Matter Lists items and shows for any of `Priority.Manage`, `StatusLabel.Manage`, `OnHoldReason.Manage`, `MatterList.Manage`, `AssetType.Manage`.
 
 Keyboard shortcuts are defined in `shared/layout/shortcut-registry.ts`; no new or changed shortcuts are allowed in the current phase (issue #420).
 

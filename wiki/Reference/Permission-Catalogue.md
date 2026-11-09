@@ -106,11 +106,11 @@ How to read it:
 | `Role.Manage` | Create and edit roles, their permissions and their landing page | none (System Admin only) | `RolesController`, `LandingPagesController` | `admin.routes`, `audit-links`, `nav-items` and 2 more |
 | `TaskType.Manage` | Manage task types and their workflows | none (System Admin only) | `FormDefinitionResolver`, `FormsController`, `PrioritiesController`, `WorkflowControllers` | `admin-counts`, `admin.routes`, `audit-links` and 6 more |
 | `Workflow.Manage` | Manage step definitions and workflows | none (System Admin only) | `FormDefinitionResolver`, `FormsController`, `WorkflowAdminService`, `WorkflowControllers` | `admin-counts`, `admin.routes`, `audit-links` and 6 more |
-| `AssetType.Manage` | Manage asset types and asset link roles | none (System Admin only) | `AssetControllers`, `FormDefinitionResolver`, `FormsController`, `PrioritiesController` | `admin.routes`, `asset-link-roles-page`, `asset-tabs` and 5 more |
+| `AssetType.Manage` | Manage asset types and asset link roles | none (System Admin only) | `AssetControllers`, `FormDefinitionResolver`, `FormsController`, `PrioritiesController` | `admin.routes`, `asset-link-roles-page`, `lists/admin-lists` and 5 more |
 | `CustomField.Manage` | Manage client, matter and project custom fields | none (System Admin only) | `FormAdminService`, `FormDefinitionResolver`, `FormsController` | `admin.routes`, `custom-fields-page`, `form-schema` and 2 more |
 | `Priority.Manage` | Manage priorities | none (System Admin only) | `PrioritiesController` | `admin-tabs`, `audit-links`, `labels-admin-page` and 4 more |
 | `OnHoldReason.Manage` | Manage the reasons for putting a task on hold | none (System Admin only) | `PrioritiesController` | `audit-links`, `labels-admin-page`, `labels-tabs` and 2 more |
-| `MatterList.Manage` | Manage matter types, current states and team titles | none (System Admin only) | `MatterTypesController`, `CurrentStatesController`, `TeamTitlesController` | the Matter Lists admin page |
+| `MatterList.Manage` | Manage matter types, current states and team titles | none (System Admin only) | `MatterTypesController`, `CurrentStatesController`, `TeamTitlesController` | the Matter group of the Lists admin page |
 | `StatusLabel.Manage` | Manage task status labels | none (System Admin only) | `NoteControllers`, `PrioritiesController` | `admin-tabs`, `audit-links`, `labels-tabs` and 3 more |
 
 ## Dashboard

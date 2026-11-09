@@ -82,15 +82,8 @@ test.describe('Asset Types page chrome (#633)', () => {
       page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Asset Types' }),
     ).toHaveAttribute('href', '/admin/asset-types');
 
-    // The tabs name the active records: Asset Types (n), Link Roles (n).
-    const activeTypes = (await admin.get('/api/v1/asset-types?isActive=true&pageSize=1')).total;
-    const activeRoles = (await admin.get('/api/v1/asset-link-roles')).filter(
-      (r: { isActive: boolean }) => r.isActive,
-    ).length;
-    const tabs = page.getByRole('tab');
-    await expect(tabs.nth(0)).toHaveAccessibleName(`Asset Types, ${activeTypes} active`);
-    await expect(tabs.nth(1)).toHaveAccessibleName(`Link Roles, ${activeRoles} active`);
-    await expect(tabs.nth(0)).toContainText(`(${activeTypes})`);
+    // One tab only (Link Roles moved to Lists, epic #1314): no tab strip at all.
+    await expect(page.getByRole('tab')).toHaveCount(0);
 
     // The primary action and Filters are in the header, not on a row of their own.
     const header = page.locator('mf-page-header, [data-page-header]').first();
@@ -98,18 +91,13 @@ test.describe('Asset Types page chrome (#633)', () => {
     await expect(header.getByRole('button', { name: /^Filters/ })).toBeVisible();
     await expect(header).toContainText('Each type has its own fields.');
 
+    // The old Link Roles addresses go to the Link Roles list under Lists.
     await page.goto('/admin/asset-link-roles');
-    await expect(page).toHaveURL(/\/admin\/asset-types\?tab=link-roles$/);
-    await expect(page).toHaveTitle('Asset Types: Link Roles - MatterFlow');
-    await expect(page.getByRole('tab', { name: /^Link Roles/ })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
-    // Filters belong to the Asset Types tab: the Link Roles tab has none.
-    await expect(
-      page.locator('mf-page-header').getByRole('button', { name: /^Filters/ }),
-    ).toHaveCount(0);
-    await shot(page, 'asset-types-link-roles-tab');
+    await expect(page).toHaveURL(/\/admin\/lists\/link-roles$/);
+    await expect(page).toHaveTitle('Lists: Link Roles - MatterFlow');
+    await page.goto('/admin/asset-types?tab=link-roles');
+    await expect(page).toHaveURL(/\/admin\/lists\/link-roles$/);
+    await shot(page, 'asset-types-link-roles-moved');
   });
 
   test('"Skip to Table" is the first Tab stop and moves focus to the table', async ({ page }) => {

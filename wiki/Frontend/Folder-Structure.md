@@ -43,7 +43,7 @@
 | Folder | What it is | Size (non-spec files) |
 |---|---|---|
 | `access-pending` | Page for people with no role yet | 2 |
-| `admin` | All Administration pages (subfolders: `users`, `roles`, `pods`, `task-types`, `workflows`, `steps`, `priorities`, `status-labels`, `on-hold-reasons`, `note-tags`, `asset-types`, `asset-link-roles`, `custom-fields`, `reports`, `audit`, `settings`, `holidays`, `shared`) | 108 |
+| `admin` | All Administration pages (subfolders: `users`, `roles`, `pods`, `task-types`, `workflows`, `steps`, `lists` (the Lists page: registry, catalogue page, editor frame), `matter-lists`, `priorities`, `status-labels`, `on-hold-reasons`, `note-tags`, `asset-types`, `asset-link-roles`, `custom-fields`, `reports`, `audit`, `settings`, `holidays`, `shared`) | 108 |
 | `assets` | Assets list, record page, form, reports, disposition | 14 |
 | `clients` | Clients list, detail, form | 7 |
 | `dashboard` | Dashboard page and tabs (`summary`, `swimlane`, `users`, `calendar`, `ui` for breakdowns and trends) | 99 |

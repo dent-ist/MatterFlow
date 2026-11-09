@@ -10,7 +10,7 @@ test.describe('Administration menu and tabbed admin pages', () => {
     expect(names).toEqual([
       'Users',
       'Task Types',
-      'Labels',
+      'Lists',
       'Asset Types',
       'Custom Fields',
       'Report Setup',
@@ -37,17 +37,15 @@ test.describe('Administration menu and tabbed admin pages', () => {
     await expect(page).toHaveURL(/status=all/);
   });
 
-  test('Asset Types and Link Roles are counted tabs; the old link roles address redirects', async ({
+  test('Asset Types has no tab strip; the old link roles addresses redirect to Lists', async ({
     page,
   }) => {
     await page.goto('/admin/asset-link-roles');
-    await expect(page).toHaveURL(/\/admin\/asset-types\?tab=link-roles$/);
-    await expect(page.getByRole('heading', { name: 'Asset Types', level: 1 })).toBeVisible();
-    await expect(page.getByRole('tab', { name: /^Link Roles/ })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
-    await page.getByRole('tab', { name: /^Asset Types/ }).click();
+    await expect(page).toHaveURL(/\/admin\/lists\/link-roles$/);
+    await expect(page.getByRole('heading', { name: 'Lists', level: 1 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Link Roles', level: 2 })).toBeVisible();
+    await page.goto('/admin/asset-types');
+    await expect(page.getByRole('tab')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'New asset type' })).toBeVisible();
   });
 

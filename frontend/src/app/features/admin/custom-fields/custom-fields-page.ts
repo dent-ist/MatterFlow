@@ -39,6 +39,7 @@ import { rowActions } from '../../../shared/ui/row-actions';
 import { CUSTOM_FIELD_OBJECTS } from './custom-field-form-designer-api';
 import { DrillReturn } from '../../../shared/work-queue/drill';
 import { ADMIN_LIST, AdminListLeave } from '../list-return';
+import { ADMIN_LIST_PERMISSIONS } from '../lists/admin-lists';
 import { FormStatusCell } from '../shared/form-status-cell';
 import { NumericDatePipe } from '../../../shared/ui/numeric-date';
 
@@ -97,6 +98,13 @@ const BONES: Record<string, string> = {
       description="Extra fields on Clients, Matters and Projects. Publishing a new version never changes saved values."
       tableId="custom-fields-table"
     >
+      @if (canOpenLists()) {
+        <p class="pg-banner pg-banner--info" role="status" data-lists-banner>
+          <i class="pi pi-info-circle" aria-hidden="true"></i>
+          <span>Looking for the choices of a dropdown, such as Priority or Matter Type?</span>
+          <a class="mf-btn mf-btn--text" routerLink="/admin/lists" data-open-lists>Open Lists</a>
+        </p>
+      }
       <div class="mf-sr-only" role="status" aria-live="polite" data-announce>
         {{ announcement() }}
       </div>
@@ -226,6 +234,10 @@ export class CustomFieldsPage implements OnInit {
   private readonly auth = inject(AuthStore);
   private readonly injector = inject(Injector);
   private readonly router = inject(Router);
+  /** The pointer to Lists is wayfinding for a person who manages at least one list (UI spec 3.5). */
+  protected readonly canOpenLists = computed(() =>
+    ADMIN_LIST_PERMISSIONS.some((p) => this.auth.has(p)),
+  );
   private readonly drill = inject(DrillReturn);
 
   protected readonly listId = ADMIN_LIST.customFields.id;

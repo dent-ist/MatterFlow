@@ -41,7 +41,7 @@ Conventions common to all modules:
 - **Key services:** `PriorityService`, `StatusLabelService`, `TaskTypeService`, `OnHoldReasonService`, `AssetLinkRoleService`, `FormAdminService`, `FormValueStore`, `FormIndexService`, `AppSettingsService`, `BrandingService`, `DashboardSettingsService`, `CalendarSettingsService`, `ConfigurationSeeder`. Domain: the rule evaluator and validator (`FormEvaluator`, `FormValidation`, `FormSchema*`), `SettingDefinitions`.
 - **Contracts:** catalogs (`IPriorityCatalog`, `ITaskTypeCatalog`, ...), `IConfigurationNameDirectory`, form validator interfaces under `Contracts/Forms`, `DashboardGaugeSettings`, `CalendarSettings`, task type colours and icons.
 - **Permissions:** `Priority.Manage`, `StatusLabel.Manage`, `TaskType.Manage`, `OnHoldReason.Manage`, `AssetType.Manage`, `CustomField.Manage`, `Settings.Manage`, plus `Task.View` for lookups.
-- **Frontend:** `features/admin/task-types`, `priorities`, `status-labels`, `on-hold-reasons`, `asset-link-roles`, `custom-fields`, `settings`; the shared engine is `frontend/projects/form-engine`.
+- **Frontend:** `features/admin/task-types`, `lists` (the Lists page), `priorities`, `status-labels`, `on-hold-reasons`, `asset-link-roles`, `custom-fields`, `settings`; the shared engine is `frontend/projects/form-engine`.
 - **Tests:** `IntegrationTests/Configuration`, `Forms`, `Settings`; `UnitTests/Configuration`; contract vectors `contracts/form-rules.vectors.json`.
 - **Related:** the startup starter configuration is seeded by the host (`MatterFlow.Api/Seeding`).
 
@@ -154,7 +154,7 @@ Conventions common to all modules:
 - **Controllers:** `/notes`, `/note-tags`, `/note-templates` (`NoteControllers.cs`).
 - **Key services:** `NoteService`, `NoteTagService`, `NoteTemplateService`, `NoteAccess`, `NoteContent` (sanitises HTML with `RichHtml` and the `Note` profile).
 - **Permissions:** `MatterNote.View/Edit/Delete`.
-- **Frontend:** `features/notes`, Notes tab of the matter detail, Administration > Labels > Note Tags.
+- **Frontend:** `features/notes`, Notes tab of the matter detail, Administration > Lists > Note Tags.
 - **Tests:** `IntegrationTests/Security/MatterContentApiTests`, `UnitTests/Notes`.
 
 ## Loading an entity for writing under the Sensitive matter rule

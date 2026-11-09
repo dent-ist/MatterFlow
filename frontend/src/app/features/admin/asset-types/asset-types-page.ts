@@ -72,7 +72,7 @@ const BONES: Record<string, string> = {
 const LOAD_PAGE_SIZE = 100;
 
 /**
- * Admin: the Asset Types tab of the Asset Types page (UX S17, #634). The header (name, crumb, tabs with their counts, Filters, New asset type)
+ * Admin: the Asset Types tab of the Asset Types page (UX S17, #634). The header (name, crumb, Filters, New asset type)
  * belongs to `AssetAdminPage` on the admin list shell; this is the list: a health strip (Active, No published fields, Inactive, counted over
  * the whole list), 44 px rows with the name as the link to the record page, the Fields cell (`mf-form-status-cell`: published and draft
  * version, field count, date), the Assets count (only for a person who may see assets), the status and ONE overflow menu (Edit, Edit fields,

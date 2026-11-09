@@ -105,6 +105,29 @@ describe('CustomFieldsPage (#644)', () => {
     expect(forms.ensureFormDefinition).not.toHaveBeenCalled();
   });
 
+  it('points to Lists with one blue banner and an Open Lists button (UI spec 3.5)', async () => {
+    await open(['CustomField.Manage', 'Priority.Manage']);
+    const banner = el().querySelector('.pg-banner')!;
+    expect(banner.classList.contains('pg-banner--info')).toBe(true);
+    expect(banner.getAttribute('role')).toBe('status');
+    expect(banner.textContent).toContain(
+      'Looking for the choices of a dropdown, such as Priority or Matter Type?',
+    );
+    const open_ = banner.querySelector<HTMLAnchorElement>('a.mf-btn')!;
+    expect(open_.textContent!.trim()).toBe('Open Lists');
+    expect(open_.getAttribute('href')).toBe('/admin/lists');
+    // It is wayfinding, not news: there is nothing to dismiss.
+    expect(banner.querySelector('[data-dismiss]')).toBeNull();
+  });
+
+  it('shows the banner for any one Lists permission and hides it for a person with none', async () => {
+    await open(['CustomField.Manage', 'AssetType.Manage']);
+    expect(el().querySelector('[data-lists-banner]')).not.toBeNull();
+    TestBed.resetTestingModule();
+    await open(['CustomField.Manage', 'Audit.View']);
+    expect(el().querySelector('[data-lists-banner]')).toBeNull();
+  });
+
   it('lists Client, Matter and Project with the Object as the one link to the designer', async () => {
     await open();
     expect(
