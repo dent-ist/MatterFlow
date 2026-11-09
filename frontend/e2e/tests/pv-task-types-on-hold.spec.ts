@@ -46,7 +46,9 @@ test.describe('Task type colour, target and the badge', () => {
     expect(saved.targetDays).toBe(4);
 
     await page.goto(`/admin/task-types?name=${encodeURIComponent(world.taskType.name)}`);
-    const row = page.locator(`[data-row="${world.taskType.name}"]`);
+    const row = page.locator('tr', {
+      has: page.locator(`[data-row="${world.taskType.name}"]`),
+    });
     await expect(row.locator('[data-target]')).toHaveText('4');
     await expect(row.locator('mf-task-type-cell mf-task-type-chip')).toHaveAttribute(
       'data-colour',

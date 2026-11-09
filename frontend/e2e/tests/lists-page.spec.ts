@@ -98,7 +98,10 @@ test.describe('the Lists page (epic #1314)', () => {
           page.locator('mf-list-editor').getByRole('button', { name: newLabel }).first(),
         ).toBeVisible();
       else await expect(page.locator('mf-list-editor [data-new]')).toHaveCount(0);
-      await expect(page.locator('[data-active-count]')).toContainText('active');
+      // Status Labels have no active state: their badge counts the five statuses.
+      await expect(page.locator('[data-active-count]')).toContainText(
+        key === 'status-labels' ? '5 statuses' : 'active',
+      );
       await shot(page, `lists-${key}`);
       if (axeAvailable()) expect(await axeViolations(page), `${key} axe`).toEqual([]);
     });

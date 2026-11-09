@@ -203,8 +203,8 @@ test.describe('Links, Delete only when unused, Move, Deactivate (#641, #640)', (
     await openRowMenu(page, menu(page, used));
     await expect(page.getByRole('menuitem')).toHaveText([
       /Rename/,
-      /Move up/,
-      /Move down/,
+      /Move Up/,
+      /Move Down/,
       /Deactivate/,
     ]);
     await page.keyboard.press('Escape');

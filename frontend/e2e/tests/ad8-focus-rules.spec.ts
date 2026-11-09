@@ -142,7 +142,7 @@ test.describe('Focus rules: Asset Types (#657)', () => {
     await admin.post('/api/v1/asset-types', { name: `${name} 2`, description: null });
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/admin/asset-types?name=${encodeURIComponent(name)}`);
-    await expect(page.locator(`tr[data-row="${name}"]`)).toBeVisible();
+    await expect(page.locator(`tr:has(td[data-row="${name}"])`)).toBeVisible();
 
     await openRowMenu(page, menu(page, `${name} 2`));
     await page.getByRole('menuitem', { name: 'Move Up' }).click();
@@ -154,7 +154,7 @@ test.describe('Focus rules: Asset Types (#657)', () => {
     await dialog(page, 'Deactivate Asset Type').getByRole('button', { name: 'Cancel' }).click();
     await expect(menu(page, name)).toBeFocused();
 
-    const link = page.locator(`tr[data-row="${name}"] [data-open]`);
+    const link = page.locator(`tr:has(td[data-row="${name}"]) [data-open]`);
     await link.click();
     await expect(page).toHaveURL(new RegExp(`/admin/asset-types/${type.assetTypeId}$`));
     await page.goBack();

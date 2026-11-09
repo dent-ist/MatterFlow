@@ -146,7 +146,7 @@ test.describe('Asset Types list (#634, #637)', () => {
     const published = row(page, s.published.name).locator('[data-fields]');
     await expect(published).toContainText('Published v1');
     await expect(published).toContainText('8 fields');
-    await expect(published).toContainText(/Updated [A-Z][a-z]{2} \d{1,2}/);
+    await expect(published).toContainText(/Updated \d{2}\/\d{2}/);
     await expect(row(page, s.draft.name).locator('[data-fields]')).toContainText(
       'No Published Fields',
     );
@@ -175,7 +175,7 @@ test.describe('Asset Types list (#634, #637)', () => {
     await page.goto(`/admin/asset-types?name=${s.token}`);
     const strip = page.locator('[data-strip]');
     await expect(strip).toContainText('Active');
-    await strip.getByRole('button', { name: /^No published fields/ }).click();
+    await strip.getByRole('button', { name: /^No Published Fields/ }).click();
     await expect(page).toHaveURL(/fields=none/);
     await expect(row(page, s.published.name)).toHaveCount(0);
     await expect(row(page, s.none.name)).toBeVisible();
@@ -205,10 +205,10 @@ test.describe('Asset Types list (#634, #637)', () => {
     await button.click();
     await expect(page.getByRole('menuitem')).toHaveText([
       /Edit$/,
-      /Edit fields/,
+      /Edit Fields/,
       /History/,
-      /Move up/,
-      /Move down/,
+      /Move Up/,
+      /Move Down/,
       /Deactivate/,
     ]);
     await page.keyboard.press('Escape');
@@ -306,9 +306,9 @@ test.describe('Asset Types list (#634, #637)', () => {
     expect(await order()).toEqual(['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon']);
 
     await menuButton(page, s.published.name).click();
-    await expect(page.getByRole('menuitem', { name: /Move up/ })).toBeDisabled();
+    await expect(page.getByRole('menuitem', { name: /Move Up/ })).toBeDisabled();
     await expect(page.getByText('Already first.')).toBeVisible();
-    await page.getByRole('menuitem', { name: /Move down/ }).click();
+    await page.getByRole('menuitem', { name: /Move Down/ }).click();
     await expect(page.locator('[data-announce]')).toContainText(
       `${s.published.name} moved to position 2 of 5.`,
     );
@@ -324,7 +324,7 @@ test.describe('Asset Types list (#634, #637)', () => {
     await expect(row(page, s.published.name)).toBeVisible();
     expect(await order()).toEqual(['Beta', 'Alpha', 'Gamma', 'Epsilon']);
     await menuButton(page, s.none.name).click();
-    await page.getByRole('menuitem', { name: /Move down/ }).click();
+    await page.getByRole('menuitem', { name: /Move Down/ }).click();
     await expect(page.locator('[data-announce]')).toContainText('moved to position 4 of 4');
     await page.goto(`/admin/asset-types?name=${s.token}&status=all`);
     await expect(row(page, s.inactive.name)).toBeVisible();

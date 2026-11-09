@@ -178,6 +178,8 @@ test.describe('Keyboard-only flows (#659)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/admin/lists/link-roles');
     const opener = page.getByRole('button', { name: 'New Link Role' });
+    // The New button is disabled until the list has loaded.
+    await expect(opener).toBeEnabled();
     await opener.focus();
     await page.keyboard.press('Enter');
     await expect(page.getByRole('dialog', { name: 'New Link Role' })).toBeVisible();

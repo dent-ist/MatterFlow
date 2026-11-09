@@ -110,7 +110,7 @@ test.describe('Axe and reflow of the administration areas, overlays open (#660)'
     for (const size of SIZES) {
       await page.setViewportSize(size);
       await page.goto('/admin/custom-fields');
-      await expect(page.locator('tr[data-row="Matter"], li.rc').first()).toBeVisible();
+      await expect(page.locator('tr:has(td[data-row="Matter"]), li.rc').first()).toBeVisible();
       await check(page, 'custom fields', size.width);
       await page
         .getByRole('button', { name: /^Actions for / })
