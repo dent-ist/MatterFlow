@@ -713,3 +713,7 @@ Loading shows a skeleton of the grid; an error shows `mf-dash-state` with Retry;
 - **Off Hours** is the state name in the Dashboard Summary capacity legend; "Outside work hours, still counted" is its tooltip (`LegendItem.hint`).
 - **Inline messages** (field, dialog and card errors that are not toasts) read like the toasts: "Couldn't save the tag.", "Couldn't delete the calendar. Try again.", never "The tag could not be saved." or "We could not ...".
 - **Left as they are:** the role name "Project Manager" (a role the admin may rename), activity sentences that name the verb ("Assigned to Bob"), the pager and toast wording of #1144, "Welcome back" and "Link role saved" toasts, "Reload Page" in the connection banner.
+
+### 13.12 Catalogue width (D-44y, epic #1314)
+
+`--mf-catalogue-w: 320px` is the width of the catalogue card of Administration > Lists (`mf-list-catalogue`, `shared/ui/list-catalogue.ts`); it equals the Roles list column of the Users page (D-44l). It is the only fixed width of the page: the editor pane takes the rest (about 762 px at 1366 and about 1332 px at 1920), so the Name column of the list grid is the spring at both sizes. The selected option uses `--mf-selected-bg` with a 2 px inset `--mf-primary` (the selected card of D-05), the hover `--mf-row-hover`, the count chip is `mf-count-chip`, and the pointer block at the foot is `--mf-surface-alt`.

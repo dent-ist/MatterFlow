@@ -104,6 +104,7 @@
      never stored. A unit test (column-prefs.spec.ts) keeps these equal to WORK_COLUMNS in column-prefs.ts. */
   --mf-col-actions-w: 48px; /* the row-action column of every grid: fixed, never resized, never stored (#1245) */
   --mf-col-count-w: 96px; /* a count column (Matters, Open Tasks, Overdue): D-43 */
+  --mf-catalogue-w: 320px; /* the list catalogue card of Administration > Lists (D-44y); the same width as the Roles list column (D-44l) */
   --mf-col-ref-w: 100px;
   --mf-col-ref-min: 80px;
   --mf-col-ref-max: 120px;

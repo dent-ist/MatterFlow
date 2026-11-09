@@ -22,10 +22,9 @@ export const ICONS: Readonly<Record<string, string>> = {
   'page-task-queue': 'pi-list-check',
   'page-users': 'pi-id-card',
   'page-task-types': 'pi-file-edit',
-  'page-labels': 'pi-flag',
+  'page-lists': 'pi-list',
   'page-asset-types': 'pi-tags',
   'page-custom-fields': 'pi-sliders-h',
-  'page-matter-lists': 'pi-sort-alt',
   'page-reports': 'pi-chart-bar',
   // The Administration item of the same feature ("Report Setup"): a different glyph, so the two menu items differ in the icon rail too.
   'page-report-setup': 'pi-wrench',
@@ -57,11 +56,8 @@ export const ICONS: Readonly<Record<string, string>> = {
   asset: 'pi-database',
   productions: 'pi-send',
   notes: 'pi-file-edit',
-  // The Matter's Team tab and the three Matter Lists tabs (epic #1298).
+  // The Matter's Team tab (epic #1298).
   team: 'pi-address-book',
-  'matter-types': 'pi-briefcase',
-  'current-states': 'pi-map-marker',
-  'team-titles': 'pi-address-book',
   activities: 'pi-history',
   activity: 'pi-history',
   history: 'pi-history',
@@ -99,7 +95,6 @@ export const ICONS: Readonly<Record<string, string>> = {
   // Asset types (the Asset Types page and its tab): pi-tags.
   types: 'pi-tags',
   'asset-types': 'pi-tags',
-  'link-roles': 'pi-link',
   fields: 'pi-sliders-h',
   // Asset type numbering (#1297).
   numbering: 'pi-hashtag',
@@ -121,10 +116,6 @@ export const ICONS: Readonly<Record<string, string>> = {
   dashboard: 'pi-gauge',
   // Settings > Holidays (epic #1074): the flag of the holiday chips.
   holidays: 'pi-flag',
-  priorities: 'pi-flag',
-  'status-labels': 'pi-tag',
-  'on-hold-reasons': 'pi-pause',
-  'note-tags': 'pi-hashtag',
 };
 
 /** The icon of a tab concept (its key or label); an unlisted concept gets a generic bookmark, and the guard spec lists none in use. */

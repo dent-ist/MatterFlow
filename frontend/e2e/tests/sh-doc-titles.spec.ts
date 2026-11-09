@@ -22,9 +22,9 @@ const SAMPLE: [string, string][] = [
   ['/admin/pods', 'Users: Pods - MatterFlow'],
   ['/admin/workflows', 'Task Types: Workflows - MatterFlow'],
   ['/admin/steps', 'Task Types: Workflow Steps - MatterFlow'],
-  ['/admin/priorities', 'Labels: Priorities - MatterFlow'],
-  ['/admin/status-labels', 'Labels: Status Labels - MatterFlow'],
-  ['/admin/asset-types?tab=link-roles', 'Asset Types: Link Roles - MatterFlow'],
+  ['/admin/priorities', 'Lists: Priorities - MatterFlow'],
+  ['/admin/status-labels', 'Lists: Status Labels - MatterFlow'],
+  ['/admin/lists/link-roles', 'Lists: Link Roles - MatterFlow'],
   ['/admin/workflows/new', 'Task Types: New Workflow - MatterFlow'],
   ['/no-such-page', 'Page Not Found - MatterFlow'],
 ];
@@ -47,9 +47,9 @@ test.describe('Document titles: the colon rule (#606)', () => {
     await expect(page).toHaveTitle('Users: Roles - MatterFlow');
     await page.getByRole('tab', { name: /^Pods/ }).click();
     await expect(page).toHaveTitle('Users: Pods - MatterFlow');
-    await page.goto('/admin/priorities');
-    await page.getByRole('tab', { name: /Status Labels/ }).click();
-    await expect(page).toHaveTitle('Labels: Status Labels - MatterFlow');
+    await page.goto('/admin/lists/priorities');
+    await page.getByRole('option', { name: /^Status Labels/ }).click();
+    await expect(page).toHaveTitle('Lists: Status Labels - MatterFlow');
   });
 
   test('a record and its tab, and the task Activity drawer, follow the same rule', async ({

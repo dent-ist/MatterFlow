@@ -109,7 +109,7 @@ test.describe('Focus rules: Link roles (#657)', () => {
     const name = `Focus ${uid()}`;
     await admin.post('/api/v1/asset-link-roles', { name, isActive: true });
     await page.setViewportSize({ width: 1366, height: 768 });
-    await page.goto('/admin/asset-types?tab=link-roles');
+    await page.goto('/admin/lists/link-roles');
     const opener = page.getByRole('button', { name: 'New Link Role' });
     await opener.click();
     const field = page.locator('#link-role-name');

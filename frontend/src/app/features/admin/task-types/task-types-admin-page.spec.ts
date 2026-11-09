@@ -93,10 +93,9 @@ describe('Task Types page tabs (Task Types, Workflows, Workflow Steps)', () => {
       expect(labels).toEqual([
         'Users',
         'Task Types',
-        'Labels',
+        'Lists',
         'Asset Types',
         'Custom Fields',
-        'Matter Lists',
         'Report Setup',
         'Audit Logs',
         'Settings',

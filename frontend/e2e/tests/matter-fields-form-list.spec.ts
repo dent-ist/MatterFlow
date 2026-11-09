@@ -103,19 +103,18 @@ test.describe('Matter fields: dialog, list and Matter Lists (#1301)', () => {
     await expect(page.locator('tbody tr', { hasText: `Typed ${token}` })).toHaveCount(1);
   });
 
-  test('Matter Lists: three tabs, add, rename, deactivate, delete an unused item', async ({
+  test('Matter group of Lists: three lists, add, rename, deactivate, delete an unused item', async ({
     page,
     seed,
   }) => {
     const token = uid();
     await page.setViewportSize(SIZES[1]);
     await page.goto('/admin/matter-types');
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Matter Lists');
-    await expect(page.getByRole('tab')).toHaveText([
-      /Matter Types \(\d+\)/,
-      /Current States \(\d+\)/,
-      /Team Titles \(\d+\)/,
-    ]);
+    await expect(page).toHaveURL(/\/admin\/lists\/matter-types$/);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Lists');
+    await expect(
+      page.getByRole('option').filter({ hasText: /Matter Types|Current States|Team Titles/ }),
+    ).toHaveCount(3);
     await page.getByRole('button', { name: 'New Matter Type' }).click();
     await page.locator('#matter-list-name').fill(`Antitrust ${token}`);
     await page.getByRole('button', { name: 'Add Matter Type' }).click();
@@ -133,11 +132,15 @@ test.describe('Matter fields: dialog, list and Matter Lists (#1301)', () => {
     await page.getByRole('button', { name: 'Delete Matter Type' }).click();
     await expect(page.getByText('Matter type deleted')).toBeVisible();
     await expect(row).toHaveCount(0);
-    for (const url of ['/admin/current-states', '/admin/team-titles']) {
+    for (const [url, name] of [
+      ['/admin/current-states', 'Current States'],
+      ['/admin/team-titles', 'Team Titles'],
+    ]) {
       await page.goto(url);
-      await expect(page.getByRole('heading', { level: 1 })).toHaveText('Matter Lists');
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText('Lists');
+      await expect(page.getByRole('heading', { level: 2 })).toHaveText(name);
     }
-    if (axeAvailable()) expect(await axeViolations(page), 'Matter Lists').toEqual([]);
+    if (axeAvailable()) expect(await axeViolations(page), 'Lists').toEqual([]);
     void seed;
   });
 });

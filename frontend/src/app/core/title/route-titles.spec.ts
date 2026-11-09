@@ -153,12 +153,12 @@ const TABLE: Row[] = [
   }),
   ADMIN('workflows/new', 'Task Types: New Workflow - MatterFlow'),
   ADMIN('asset-types', 'Asset Types - MatterFlow'),
-  ADMIN('asset-types', 'Asset Types: Link Roles - MatterFlow', { query: { tab: 'link-roles' } }),
   ADMIN('custom-fields', 'Custom Fields - MatterFlow'),
-  ADMIN('labelsTabsMatcher', 'Labels: Priorities - MatterFlow', { params: { tab: 'priorities' } }),
-  ADMIN('labelsTabsMatcher', 'Labels: Status Labels - MatterFlow', {
-    params: { tab: 'status-labels' },
-  }),
+  // Lists (epic #1314): `Lists: <List>`, plain `Lists` for the bare address.
+  ADMIN('listsMatcher', 'Lists - MatterFlow', { params: {} }),
+  ADMIN('listsMatcher', 'Lists: Matter Types - MatterFlow', { params: { list: 'matter-types' } }),
+  ADMIN('listsMatcher', 'Lists: Priorities - MatterFlow', { params: { list: 'priorities' } }),
+  ADMIN('listsMatcher', 'Lists: Link Roles - MatterFlow', { params: { list: 'link-roles' } }),
   ADMIN('reports', 'Report Setup - MatterFlow'),
   ADMIN('reports', 'Report Setup: Categories - MatterFlow', { query: { tab: 'categories' } }),
   ADMIN('reports', 'Report Setup: Run Log - MatterFlow', { query: { tab: 'runs' } }),
@@ -198,7 +198,7 @@ function allTitles(): { where: string; title: string }[] {
     'priorities',
     'status-labels',
   ];
-  const queryTabs = ['link-roles', 'categories', 'runs', 'assignments', 'health', 'other'];
+  const queryTabs = ['categories', 'runs', 'assignments', 'health', 'other'];
   for (const [name, routes] of sets) {
     for (const r of routes) {
       const t = r.title as string | TitleFn | undefined;
@@ -206,7 +206,10 @@ function allTitles(): { where: string; title: string }[] {
       if (typeof t === 'string') out.push({ where, title: t });
       else if (typeof t === 'function') {
         for (const tab of tabs)
-          out.push({ where: `${where}[${tab}]`, title: t({ params: { tab }, queryParams: {} }) });
+          out.push({
+            where: `${where}[${tab}]`,
+            title: t({ params: { tab, list: tab }, queryParams: {} }),
+          });
         for (const tab of queryTabs)
           out.push({
             where: `${where}[?tab=${tab}]`,

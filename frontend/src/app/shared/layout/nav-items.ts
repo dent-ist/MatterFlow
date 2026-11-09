@@ -130,19 +130,26 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
     permissions: ['TaskType.Manage', 'Workflow.Manage'],
   },
   {
-    label: 'Labels',
-    icon: pageIcon('labels'),
-    path: '/admin/priorities',
-    alsoActive: ['/admin/status-labels', '/admin/on-hold-reasons', '/admin/note-tags'],
-    permissions: ['Priority.Manage', 'StatusLabel.Manage', 'OnHoldReason.Manage'],
+    // Administration > Lists (epic #1314): the eight lists of choices (Matter Types, Current States, Team Titles, Priorities, Status Labels, On-Hold Reasons, Note Tags, Link Roles) in one
+    // master-detail page. It replaces Labels and Matter Lists. Shown when the person manages any one of them (Note Tags use StatusLabel.Manage, Link Roles AssetType.Manage);
+    // `/admin/lists` opens the first list they may manage. `admin-lists.spec.ts` keeps this list in step with the registry.
+    label: 'Lists',
+    icon: pageIcon('lists'),
+    path: '/admin/lists',
+    permissions: [
+      'Priority.Manage',
+      'StatusLabel.Manage',
+      'OnHoldReason.Manage',
+      'MatterList.Manage',
+      'AssetType.Manage',
+    ],
   },
   {
-    // The Asset Types and Asset Link Roles tabs. Not the Assets data records above: the rail says "Asset types" (S5, #620), so the two
-    // items differ in words as well as in icon in the 56 px rail and its tooltip. The page's own H1, crumb and tabs keep "Asset Types".
+    // The Asset Types page (one tab; Link Roles moved to Lists). Not the Assets data records above: the rail says "Asset types" (S5, #620), so the two
+    // items differ in words as well as in icon in the 56 px rail and its tooltip. The page's own H1 and crumb keep "Asset Types".
     label: 'Asset Types',
     icon: pageIcon('asset-types'),
     path: '/admin/asset-types',
-    alsoActive: ['/admin/asset-link-roles'],
     permissions: ['AssetType.Manage'],
   },
   {
@@ -150,14 +157,6 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
     icon: pageIcon('custom-fields'),
     path: '/admin/custom-fields',
     permissions: ['CustomField.Manage'],
-  },
-  {
-    // Matter Types, Current States and Team Titles: the pick lists of the Matter (epic #1298). One item, one permission.
-    label: 'Matter Lists',
-    icon: pageIcon('matter-lists'),
-    path: '/admin/matter-types',
-    alsoActive: ['/admin/current-states', '/admin/team-titles'],
-    permissions: ['MatterList.Manage'],
   },
   {
     // The SQL reports setup page (#712): reports, categories, run log, assignments and the report login. Named "Report Setup" so that it differs

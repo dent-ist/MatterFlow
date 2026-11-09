@@ -97,7 +97,7 @@ export class LookupStore {
 
   /**
    * Which lists this person may read (AD-D #519): priorities with `Task.View` or `Priority.Manage`, status labels with `Task.View` or
-   * `StatusLabel.Manage`, so the Labels page of a person who manages only one of them asks for that one only (no refused request, no
+   * `StatusLabel.Manage`, so the Lists page of a person who manages only one of them asks for that one only (no refused request, no
    * toast). Until the profile is loaded (specs, early calls) both lists are asked for, as before.
    */
   private permitted(): { priorities: boolean; statusLabels: boolean } {

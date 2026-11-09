@@ -7,11 +7,11 @@ import { openRowMenu } from '../support/labels';
 import { toasts } from '../support/toasts';
 
 /**
- * WP-AD5 (AD-E): the Link Roles tab on the same chrome as Asset Types. New link role and Rename in the lookup dialog (#640), the Links column and
+ * WP-AD5 (AD-E): the Link Roles list (a list of Administration > Lists since epic #1314; it was a tab of Asset Types). New link role and Rename in the lookup dialog (#640), the Links column and
  * Delete only for an unused role (#641), the one-line description, the clamped name and the counter (#642). Screenshots go to E2E_SCREENSHOTS
  * (docs/ux/admin-pages-review/fixes/ad5-link-roles). The axe checks FAIL when axe-core is missing (set E2E_AXE_PATH to axe.min.js).
  */
-const TAB_URL = '/admin/asset-types?tab=link-roles';
+const TAB_URL = '/admin/lists/link-roles';
 const dialog = (page: Page) => page.getByRole('dialog', { name: /link role/i });
 const field = (page: Page) => page.locator('#link-role-name');
 const ask = (page: Page) => page.getByRole('dialog', { name: 'Unsaved Changes' });
@@ -26,34 +26,32 @@ function requireAxe(): void {
 }
 
 test.describe('Link Roles tab chrome and list (#640)', () => {
-  test('the header names the tab: crumb, title, counted tabs, New link role, one-line description', async ({
+  test('the editor names the list: crumb, Lists title, active count, New Link Role, Shown on and the rule line', async ({
     page,
     admin,
   }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(TAB_URL);
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Asset Types');
-    await expect(page).toHaveTitle('Asset Types: Link Roles - MatterFlow');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Lists');
+    await expect(page.getByRole('heading', { level: 2 })).toHaveText('Link Roles');
+    await expect(page).toHaveTitle('Lists: Link Roles - MatterFlow');
     await expect(page.getByRole('navigation', { name: 'Breadcrumb' }).locator('li')).toHaveText([
       /Administration/,
-      /Asset Types/,
+      /Lists/,
     ]);
     const active = (await admin.get('/api/v1/asset-link-roles')).filter(
       (r: { isActive: boolean }) => r.isActive,
     ).length;
-    await expect(page.getByRole('tab', { name: /^Link Roles/ })).toHaveAccessibleName(
-      `Link Roles, ${active} active`,
-    );
-    const header = page.locator('mf-page-header');
-    await expect(header.getByRole('button', { name: 'New Link Role' })).toBeVisible();
-    await expect(header.getByRole('button', { name: 'New asset type' })).toHaveCount(0);
-    const description = page.locator('[data-page-description]');
-    await expect(description).toHaveText(
+    await expect(page.locator('[data-active-count]')).toContainText(`${active} active`);
+    const editor = page.locator('mf-list-editor');
+    await expect(editor.getByRole('button', { name: 'New Link Role' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'New asset type' })).toHaveCount(0);
+    await expect(page.locator('[data-rule]')).toContainText(
       'The roles an asset can have on a task, such as Source, Destination or Result.',
     );
-    expect(
-      await description.evaluate((el) => (el as HTMLElement).scrollWidth <= el.clientWidth),
-    ).toBe(true);
+    await expect(page.locator('[data-shown-on]')).toHaveText(
+      'Shown on: Link Asset dialog, Asset page, Linked Tasks tab.',
+    );
     // No Add form under the table and no paragraph of hints.
     await expect(page.getByRole('heading', { name: 'Add asset link role' })).toHaveCount(0);
     await shot(page, 'link-roles-list');
@@ -96,7 +94,7 @@ test.describe('Link Roles tab chrome and list (#640)', () => {
     await page.keyboard.press('Tab');
     await expect(page.getByRole('link', { name: 'Skip to Table' })).toBeFocused();
     await page.keyboard.press('Enter');
-    await expect(page.locator('#link-roles-table')).toBeFocused();
+    await expect(page.locator('#lists-editor')).toBeFocused();
   });
 });
 

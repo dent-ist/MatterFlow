@@ -79,7 +79,7 @@ test.describe('fixed-header screenshots', () => {
       { name: 'admin-priorities', url: '/admin/priorities', ready: /./ },
       { name: 'admin-status-labels', url: '/admin/status-labels', ready: /./ },
       { name: 'admin-asset-types', url: '/admin/asset-types', ready: /./ },
-      { name: 'admin-link-roles', url: '/admin/asset-types?tab=link-roles', ready: /./ },
+      { name: 'admin-link-roles', url: '/admin/lists/link-roles', ready: /./ },
       { name: 'admin-custom-fields', url: '/admin/custom-fields', ready: 'Custom Fields' },
       { name: 'admin-audit', url: '/admin/audit', ready: 'Audit Logs' },
     ];

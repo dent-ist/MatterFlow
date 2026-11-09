@@ -96,13 +96,13 @@ test.describe('Task type colour, target and the badge', () => {
 });
 
 test.describe('On-Hold Reasons', () => {
-  test('the Labels page has the On-Hold Reasons tab: the seeded list, add, rename, deactivate and the API', async ({
+  test('the Lists page has the On-Hold Reasons list: the seeded list, add, rename, deactivate and the API', async ({
     page,
     admin,
   }) => {
     await page.goto('/admin/on-hold-reasons');
-    await expect(page.getByRole('heading', { name: 'Labels', level: 1 })).toBeVisible();
-    await expect(page.getByRole('tab', { name: /On-Hold Reasons/ })).toHaveAttribute(
+    await expect(page.getByRole('heading', { name: 'Lists', level: 1 })).toBeVisible();
+    await expect(page.getByRole('option', { name: /^On-Hold Reasons/ })).toHaveAttribute(
       'aria-selected',
       'true',
     );
@@ -130,7 +130,7 @@ test.describe('On-Hold Reasons', () => {
   });
 
   for (const size of SIZES) {
-    test(`the On-Hold Reasons tab is clean at ${size.name}`, async ({ page }) => {
+    test(`the On-Hold Reasons list is clean at ${size.name}`, async ({ page }) => {
       await page.setViewportSize({ width: size.width, height: size.height });
       await page.goto('/admin/on-hold-reasons');
       await expect(page.getByText('Waiting for client data').first()).toBeVisible();

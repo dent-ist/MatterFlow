@@ -372,8 +372,9 @@ test.describe('Column filters on the administration lists', () => {
       await select(page, 'Status').selectOption('all');
       await expect(rows).toHaveCount(2);
 
-      await page.getByRole('tab', { name: /^Link Roles/ }).click();
-      await expect(page).toHaveURL(/tab=link-roles/);
+      // Link Roles moved to Lists: the old address redirects there and carries none of the Asset Types filters.
+      await page.goto('/admin/asset-types?tab=link-roles');
+      await expect(page).toHaveURL(/\/admin\/lists\/link-roles$/);
       await expect(page).not.toHaveURL(/name=|status=/);
     });
   });

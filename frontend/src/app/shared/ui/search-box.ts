@@ -43,7 +43,7 @@ export const SEARCH_DEBOUNCE_MS = 300;
           [id]="inputId()"
           [placeholder]="placeholder()"
           [value]="draft()"
-          [attr.aria-describedby]="inputId() + '-hint'"
+          [attr.aria-describedby]="hideHint() ? null : inputId() + '-hint'"
           (input)="onInput($any($event.target).value)"
           (keydown.enter)="$event.preventDefault(); commit($any($event.target).value)"
           (keydown.escape)="draft() && clear()"
@@ -61,14 +61,16 @@ export const SEARCH_DEBOUNCE_MS = 300;
           </button>
         }
       </div>
-      <span
-        class="sb__hint"
-        [class.sb__hint--float]="hintOnFocus()"
-        [class.sb__hint--show]="focused()"
-        [id]="inputId() + '-hint'"
-        data-search-hint
-        >{{ hintText() }}</span
-      >
+      @if (!hideHint()) {
+        <span
+          class="sb__hint"
+          [class.sb__hint--float]="hintOnFocus()"
+          [class.sb__hint--show]="focused()"
+          [id]="inputId() + '-hint'"
+          data-search-hint
+          >{{ hintText() }}</span
+        >
+      }
     </div>
   `,
   styles: `
@@ -219,6 +221,8 @@ export class SearchBox {
   readonly hint = input('');
   /** Hides the visible label (it stays the accessible name); the page shows a placeholder instead. */
   readonly hideLabel = input(false);
+  /** No hint line at all (a box inside a narrow card, where the floating hint would cover what is under it: the catalogue's "Find a list"). */
+  readonly hideHint = input(false);
   /** Shows the hint only while the box has focus, floating over the page instead of taking a line. */
   readonly hintOnFocus = input(false);
   /** Draws a decorative search icon at the left inside the box (the look of the global search). */

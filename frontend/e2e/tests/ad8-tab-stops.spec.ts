@@ -40,7 +40,7 @@ const PAGES: Stop[] = [
   },
   {
     key: 'link-roles',
-    url: '/admin/asset-types?tab=link-roles',
+    url: '/admin/lists/link-roles',
     rows: '[data-roles] tbody tr[data-row]',
     target: 2,
   },
@@ -148,7 +148,7 @@ test.describe('Keyboard-only flows (#659)', () => {
     await page.keyboard.press('Tab');
     await expect(page.getByRole('link', { name: 'Skip to Table' })).toBeFocused();
     await page.keyboard.press('Enter');
-    await expect(page.locator('#labels-table')).toBeFocused();
+    await expect(page.locator('#lists-editor')).toBeFocused();
 
     const link = page.locator(`tr[data-row="${a.label}"] [data-edit]`);
     await link.focus();
@@ -176,7 +176,7 @@ test.describe('Keyboard-only flows (#659)', () => {
     const name = `Kbd ${uid()}`;
     await admin.post('/api/v1/asset-link-roles', { name, isActive: true });
     await page.setViewportSize({ width: 1366, height: 768 });
-    await page.goto('/admin/asset-types?tab=link-roles');
+    await page.goto('/admin/lists/link-roles');
     const opener = page.getByRole('button', { name: 'New Link Role' });
     await opener.focus();
     await page.keyboard.press('Enter');

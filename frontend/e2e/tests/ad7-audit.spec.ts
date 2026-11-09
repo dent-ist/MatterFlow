@@ -200,7 +200,7 @@ test.describe('Object links by permission (#648)', () => {
     await expect(plain.locator('tr[data-event]').first()).toContainText(
       `Asset type: ${s.assetType.name}`,
     );
-    // The priority goes to the Labels page only with Priority.Manage.
+    // The priority goes to the Lists page only with Priority.Manage.
     await filterTo(plain, `objectType=Priority&objectId=${s.priority.id}`);
     await expect(plain.locator('tr[data-event]').first()).toContainText(
       `Priority: ${s.priority.label}`,
@@ -208,7 +208,7 @@ test.describe('Object links by permission (#648)', () => {
     await expect(plain.locator('a.au-linkout')).toHaveCount(0);
   });
 
-  test('a priority event links to the Labels page for Priority.Manage', async ({
+  test('a priority event links to its list on the Lists page for Priority.Manage', async ({
     personas,
     asUser,
   }) => {
@@ -219,8 +219,8 @@ test.describe('Object links by permission (#648)', () => {
     const page = await asUser(labeler.username);
     await filterTo(page, `objectType=Priority&objectId=${s.priority.id}`);
     await page.locator('tr[data-event] a.au-linkout').first().click();
-    await expect(page).toHaveURL(/\/admin\/priorities$/);
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Labels');
+    await expect(page).toHaveURL(/\/admin\/lists\/priorities$/);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Lists');
   });
 });
 

@@ -326,14 +326,14 @@ test.describe('Round 4: administration naming', () => {
     ['/admin/task-types', 'Task Types', 'Task Types - MatterFlow'],
     ['/admin/workflows', 'Task Types', 'Task Types: Workflows - MatterFlow'],
     ['/admin/steps', 'Task Types', 'Task Types: Workflow Steps - MatterFlow'],
-    ['/admin/priorities', 'Labels', 'Labels: Priorities - MatterFlow'],
-    ['/admin/status-labels', 'Labels', 'Labels: Status Labels - MatterFlow'],
+    ['/admin/priorities', 'Lists', 'Lists: Priorities - MatterFlow'],
+    ['/admin/status-labels', 'Lists', 'Lists: Status Labels - MatterFlow'],
     ['/admin/custom-fields', 'Custom Fields', 'Custom Fields - MatterFlow'],
     ['/admin/audit', 'Audit Logs', 'Audit Logs - MatterFlow'],
     ['/admin/users', 'Users', 'Users - MatterFlow'],
     ['/admin/roles', 'Users', 'Users: Roles - MatterFlow'],
     ['/admin/asset-types', 'Asset Types', 'Asset Types - MatterFlow'],
-    ['/admin/asset-types?tab=link-roles', 'Asset Types', 'Asset Types: Link Roles - MatterFlow'],
+    ['/admin/lists/link-roles', 'Lists', 'Lists: Link Roles - MatterFlow'],
   ];
 
   for (const [path, heading, title] of titles) {

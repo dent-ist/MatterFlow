@@ -604,9 +604,9 @@ describe('audit links', () => {
   it('links the configuration objects only with the matching Manage permission (every object x permission)', () => {
     const cases: [string, string, string, string[], Record<string, string> | undefined][] = [
       ['AssetType', '6', 'AssetType.Manage', ['/admin/asset-types', '6'], undefined],
-      ['AssetLinkRole', '3', 'AssetType.Manage', ['/admin/asset-types'], { tab: 'link-roles' }],
-      ['Priority', '8', 'Priority.Manage', ['/admin/priorities'], undefined],
-      ['StatusLabel', 'ON_HOLD', 'StatusLabel.Manage', ['/admin/status-labels'], undefined],
+      ['AssetLinkRole', '3', 'AssetType.Manage', ['/admin/lists/link-roles'], undefined],
+      ['Priority', '8', 'Priority.Manage', ['/admin/lists/priorities'], undefined],
+      ['StatusLabel', 'ON_HOLD', 'StatusLabel.Manage', ['/admin/lists/status-labels'], undefined],
       ['Role', '2', 'Role.Manage', ['/admin/roles'], undefined],
       ['TaskType', '5', 'TaskType.Manage', ['/admin/task-types', '5'], undefined],
       ['WorkflowDefinition', '4', 'Workflow.Manage', ['/admin/workflows', '4'], undefined],

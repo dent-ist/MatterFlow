@@ -90,7 +90,7 @@ test.describe('Axe and reflow of the administration areas, overlays open (#660)'
       await expect(page.getByRole('heading', { level: 1 })).toContainText(name.slice(0, 20));
       await check(page, 'asset type record', size.width);
 
-      await page.goto('/admin/asset-types?tab=link-roles');
+      await page.goto('/admin/lists/link-roles');
       await expect(page.getByRole('button', { name: `Actions for ${role}` })).toBeVisible();
       await check(page, 'link roles', size.width);
       await openRowMenu(page, page.getByRole('button', { name: `Actions for ${role}` }));

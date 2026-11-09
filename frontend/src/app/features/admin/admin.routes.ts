@@ -1,15 +1,19 @@
-import { inject } from '@angular/core';
-import { Route, Router, Routes, UrlMatchResult, UrlSegment } from '@angular/router';
+import { Route, Routes, UrlMatchResult, UrlSegment } from '@angular/router';
 import { permissionGuard } from '../../core/auth/guards';
 import { pageTab } from '../../core/title/page-title';
 import { unsavedChangesGuard } from '../../shared/guards/unsaved-changes.guard';
 import { AssetTypeFormDesignerApi } from './asset-types/asset-type-form-designer-api';
 import { CustomFieldFormDesignerApi } from './custom-fields/custom-field-form-designer-api';
-import { labelsTabGuard } from './labels-tabs';
-import { matterListsTabGuard } from './matter-lists/matter-lists-tabs';
 import { FormDesignerApi } from './task-types/form-designer-api';
 import { TASK_TYPE_TAB_PROVIDERS } from './task-types/task-types-providers';
 import { StepFormDesignerApi } from './steps/step-form-designer-api';
+import {
+  legacyLinkRolesRedirect,
+  listsGuard,
+  listsMatcher,
+  listsTitle,
+  redirectToList,
+} from './lists/lists-routing';
 
 const lazy = (
   path: string,
@@ -137,28 +141,23 @@ function usersRolesMatcher(segments: UrlSegment[]): UrlMatchResult | null {
     : null;
 }
 
-/** `priorities`, `status-labels` and `on-hold-reasons` are the tabs of the Labels page; `:tab` is the segment. */
-function labelsTabsMatcher(segments: UrlSegment[]): UrlMatchResult | null {
-  return segments.length === 1 &&
-    ['priorities', 'status-labels', 'on-hold-reasons', 'note-tags'].includes(segments[0].path)
-    ? { consumed: segments, posParams: { tab: segments[0] } }
-    : null;
-}
-
-/** `matter-types`, `current-states` and `team-titles` are the three tabs of the Matter Lists page; `:tab` is the segment. */
-function matterListsTabsMatcher(segments: UrlSegment[]): UrlMatchResult | null {
-  return segments.length === 1 &&
-    ['matter-types', 'current-states', 'team-titles'].includes(segments[0].path)
-    ? { consumed: segments, posParams: { tab: segments[0] } }
-    : null;
-}
-
 /** `task-types`, `workflows` and `steps` are the three tabs of one page (the Task Types menu item); `:tab` is the segment. */
 function taskTypesTabsMatcher(segments: UrlSegment[]): UrlMatchResult | null {
   return segments.length === 1 && ['task-types', 'workflows', 'steps'].includes(segments[0].path)
     ? { consumed: segments, posParams: { tab: segments[0] } }
     : null;
 }
+
+/** The old top-level addresses of seven lists (Labels and Matter Lists pages). */
+const OLD_LIST_ADDRESSES = [
+  'priorities',
+  'status-labels',
+  'on-hold-reasons',
+  'note-tags',
+  'matter-types',
+  'current-states',
+  'team-titles',
+] as const;
 
 /** Administration (UX 2.1). Each screen needs its own *.Manage / View permission. */
 export const ADMIN_ROUTES: Routes = [
@@ -204,21 +203,19 @@ export const ADMIN_ROUTES: Routes = [
   ...STEP_ROUTES,
   ...WORKFLOW_ROUTES,
   {
-    // The Asset Types page of the Administration menu (not the Assets data list): title = page name plus the open tab (#588).
-    ...lazyGuarded('asset-types', 'Asset Types', 'AssetType.Manage', () =>
+    // The Asset Types page of the Administration menu (not the Assets data list): one page, no tab strip (Link Roles moved to Lists, epic #1314). The old Link Roles tab
+    // address (`?tab=link-roles`) redirects to the list; the guard runs again on a query change so an in-app link to it is caught too.
+    ...lazy('asset-types', 'Asset Types', 'AssetType.Manage', () =>
       import('./asset-types/asset-admin-page').then((m) => m.AssetAdminPage),
     ),
-    title: (route) =>
-      route.queryParams['tab'] === 'link-roles'
-        ? pageTab('Asset Types', 'Link Roles')
-        : 'Asset Types',
+    canActivate: [permissionGuard('AssetType.Manage'), legacyLinkRolesRedirect],
     runGuardsAndResolvers: 'paramsOrQueryParamsChange',
   },
   {
-    // The old Asset link roles screen is the second tab of the Assets page.
+    // The old Asset link roles screen: Link Roles is a list of Administration > Lists now.
     path: 'asset-link-roles',
     pathMatch: 'full',
-    redirectTo: () => inject(Router).parseUrl('/admin/asset-types?tab=link-roles'),
+    redirectTo: redirectToList('link-roles'),
   },
   {
     // The asset type record page (#635): `new` is the same page with a plain header; the address is the record's own page, the designer is below it.
@@ -243,35 +240,20 @@ export const ADMIN_ROUTES: Routes = [
   ),
   customFieldForm('custom-fields/:ownerId/form'),
   {
-    // Administration > Matter Lists (epic #1298): the three pick lists of the Matter in one page; `MatterList.Manage` opens all of them.
-    matcher: matterListsTabsMatcher,
-    title: (route) =>
-      route.params['tab'] === 'current-states'
-        ? pageTab('Matter Lists', 'Current States')
-        : route.params['tab'] === 'team-titles'
-          ? pageTab('Matter Lists', 'Team Titles')
-          : pageTab('Matter Lists', 'Matter Types'),
-    canActivate: [matterListsTabGuard()],
+    // Administration > Lists (epic #1314): the eight lists of choices in one master-detail page. `/admin/lists` and `/admin/lists/:list` are one route, so the page stays alive when the
+    // list changes; each list needs its own permission and `listsGuard` sends a list the person may not manage to the first one they may.
+    matcher: listsMatcher,
+    title: listsTitle,
+    canActivate: [listsGuard],
     canDeactivate: [unsavedChangesGuard],
-    loadComponent: () =>
-      import('./matter-lists/matter-lists-admin-page').then((m) => m.MatterListsAdminPage),
+    loadComponent: () => import('./lists/lists-page').then((m) => m.ListsPage),
   },
-  {
-    // /admin/priorities and /admin/status-labels are the two tabs of one page (Labels, #593); the component stays alive when the tab
-    // changes. Each tab needs its own permission: the other tab's address falls back to the allowed one (labelsTabGuard).
-    matcher: labelsTabsMatcher,
-    title: (route) =>
-      route.params['tab'] === 'status-labels'
-        ? pageTab('Labels', 'Status Labels')
-        : route.params['tab'] === 'on-hold-reasons'
-          ? pageTab('Labels', 'On-Hold Reasons')
-          : route.params['tab'] === 'note-tags'
-            ? pageTab('Labels', 'Note Tags')
-            : pageTab('Labels', 'Priorities'),
-    canActivate: [labelsTabGuard()],
-    canDeactivate: [unsavedChangesGuard],
-    loadComponent: () => import('./labels-admin-page').then((m) => m.LabelsAdminPage),
-  },
+  // The addresses of the former Labels, Matter Lists and Link Roles pages keep working: each goes to its list (`?edit=` is kept, `?moved=` says so once).
+  ...OLD_LIST_ADDRESSES.map((key): Route => ({
+    path: key,
+    pathMatch: 'full',
+    redirectTo: redirectToList(key),
+  })),
   {
     // The Reports page (#712): tabs in `?tab=`. Needs Report.Manage; the 403 page shows without a request for a person without it.
     ...lazyGuarded('reports', 'Report Setup', 'Report.Manage', () =>

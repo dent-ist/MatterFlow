@@ -171,7 +171,7 @@ function targets(): Target[] {
     { name: 'Asset Types', url: '/admin/asset-types', need: ['AssetType.Manage'] },
     {
       name: 'Asset Link Roles',
-      url: '/admin/asset-types?tab=link-roles',
+      url: '/admin/lists/link-roles',
       need: ['AssetType.Manage'],
     },
     { name: 'Asset Type', url: `/admin/asset-types/${assetType.id}`, need: ['AssetType.Manage'] },
@@ -402,11 +402,11 @@ test.describe('#417: permission matrix of the Task Types area', () => {
 });
 
 /**
- * AD-D (#526, with #523 and #533): the same matrix for the Labels pages (Priorities, Status Labels) and the Audit page. Roles are the
+ * AD-D (#526, with #523 and #533): the same matrix for the Priorities and Status Labels lists of the Lists page (epic #1314) and the Audit page. Roles are the
  * Priority.Manage alone, StatusLabel.Manage alone, both, Audit.View alone, Audit.View with Task.View, System Admin, Task.View alone and a
  * person with no admin permission. For each role the three addresses are opened: a permitted address opens with no refused request, no toast,
- * no error text; the other Labels tab falls back to the tab the person may use; a forbidden address shows the 403 page. The "Labels" menu
- * item opens the first allowed tab, the tab strip is offered only to a person who may use both tabs, and an audit object is a link only
+ * no error text; the other list falls back to the list the person may use; a forbidden address shows the 403 page. The "Lists" menu
+ * item opens the first allowed list, the catalogue is offered only to a person who may manage more than one list, and an audit object is a link only
  * when the person can open its target. Living file: later issues add rows for the pages they change.
  */
 type LabelPerm =
@@ -444,7 +444,7 @@ function auditNeed(href: string): LabelPerm[] | null {
   return null;
 }
 
-test.describe('AD-D: permission matrix of the Labels and Audit pages', () => {
+test.describe('AD-D: permission matrix of the Lists and Audit pages', () => {
   test.beforeAll(async ({ seed }: { seed: Seeder }) => {
     // Audit rows with a Client and a Task object, so the object links can be examined.
     await seed.task(await seed.world());
@@ -475,10 +475,10 @@ test.describe('AD-D: permission matrix of the Labels and Audit pages', () => {
         await settle(page);
       };
 
-      // The Labels addresses.
+      // The Lists addresses (the old ones redirect to these).
       for (const [url, mine, other, otherUrl] of [
-        ['/admin/priorities', canPr, canSl, '/admin/status-labels'],
-        ['/admin/status-labels', canSl, canPr, '/admin/priorities'],
+        ['/admin/lists/priorities', canPr, canSl, '/admin/lists/status-labels'],
+        ['/admin/lists/status-labels', canSl, canPr, '/admin/lists/priorities'],
       ] as const) {
         await visit(url);
         if (!mine && !other) {
@@ -487,44 +487,53 @@ test.describe('AD-D: permission matrix of the Labels and Audit pages', () => {
         }
         if (await isForbiddenPage(page))
           problems.push(`${url}: the 403 page for a permitted person`);
-        const want = mine ? url : otherUrl;
+        // A list the person may not manage goes to the first they may (the System Admin's first list is Matter Types).
+        const want = mine ? url : role.perms === null ? '/admin/lists/matter-types' : otherUrl;
         if (!page.url().endsWith(want)) problems.push(`${url}: expected ${want}, at ${page.url()}`);
         await expectQuiet(page, url).catch((e: Error) =>
           problems.push(`${url}: ${e.message.split('\n')[0]}`),
         );
         if (seen.failed.length > 0) problems.push(`${url}: refused ${seen.failed.join(', ')}`);
         const tabLinks = await page.locator('#mf-main [role="tab"]').count();
-        // Two tabs for Priority and Status; a third, On-Hold Reasons (#876), for whoever holds OnHoldReason.Manage (the System Admin does).
-        if (mine && other ? tabLinks < 2 || tabLinks > 3 : tabLinks !== 0)
-          problems.push(`${url}: ${tabLinks} tab links for Priority=${canPr}, Status=${canSl}`);
+        if (tabLinks !== 0) problems.push(`${url}: ${tabLinks} tab links on the Lists page`);
+        // The catalogue: Priorities (1) and Status Labels with Note Tags (2); all eight for the System Admin; none for a single list.
+        const permitted = role.perms === null ? 8 : (canPr ? 1 : 0) + (canSl ? 2 : 0);
+        const options = await page.locator('#mf-main [role="option"]').count();
+        if (options !== (permitted > 1 ? permitted : 0))
+          problems.push(`${url}: ${options} catalogue options for ${permitted} permitted lists`);
         // The page lists its rows, so the data loaded (not an empty error state).
         await expect(page.locator('#mf-main table tbody tr').first(), `${url}: rows`).toBeVisible();
       }
 
-      // The Labels menu item opens the first allowed tab.
+      // The Lists menu item opens the first allowed list.
       if (canPr || canSl) {
         await visit(
           role.perms === null || role.perms.includes('Task.View')
             ? '/dashboard'
-            : '/admin/priorities',
+            : '/admin/lists/priorities',
         );
         const item = page
           .getByRole('list', { name: 'Administration' })
-          .getByRole('link', { name: 'Labels' });
+          .getByRole('link', { name: 'Lists' });
         await item.click();
         await settle(page);
-        if (!page.url().endsWith(canPr ? '/admin/priorities' : '/admin/status-labels'))
-          problems.push(`Labels menu item opened ${page.url()}`);
-        if (await isForbiddenPage(page)) problems.push('Labels menu item: the 403 page');
+        const first =
+          role.perms === null
+            ? '/admin/lists/matter-types'
+            : canPr
+              ? '/admin/lists/priorities'
+              : '/admin/lists/status-labels';
+        if (!page.url().endsWith(first)) problems.push(`Lists menu item opened ${page.url()}`);
+        if (await isForbiddenPage(page)) problems.push('Lists menu item: the 403 page');
         if (seen.failed.length > 0)
-          problems.push(`Labels menu item: refused ${seen.failed.join(', ')}`);
+          problems.push(`Lists menu item: refused ${seen.failed.join(', ')}`);
       } else {
         await visit('/403');
         const count = await page
           .getByRole('list', { name: 'Administration' })
-          .getByRole('link', { name: 'Labels' })
+          .getByRole('link', { name: 'Lists' })
           .count();
-        if (count > 0) problems.push('Labels menu item shown without a Labels permission');
+        if (count > 0) problems.push('Lists menu item shown without a Lists permission');
       }
 
       // Audit.
@@ -571,8 +580,8 @@ test.describe('AD-D: permission matrix of the Labels and Audit pages', () => {
       // Accessibility and widths on every page the person may use (screenshots of the narrowest roles when E2E_SCREENSHOTS is set).
       {
         const pages = [
-          ...(canPr ? ['/admin/priorities'] : []),
-          ...(canSl && !canPr ? ['/admin/status-labels'] : []),
+          ...(canPr ? ['/admin/lists/priorities'] : []),
+          ...(canSl && !canPr ? ['/admin/lists/status-labels'] : []),
           ...(canAudit ? ['/admin/audit'] : []),
         ];
         for (const width of [1366, 1920]) {

@@ -92,10 +92,8 @@ const FIXED_URLS = [
   '/admin/task-types',
   '/admin/workflows',
   '/admin/steps',
-  '/admin/priorities',
-  '/admin/status-labels',
+  '/admin/lists/priorities',
   '/admin/asset-types',
-  '/admin/asset-types?tab=link-roles',
   '/admin/custom-fields',
   '/admin/audit',
   // Fixed-height Dashboard (#137): the page never scrolls, only regions inside each tab do.

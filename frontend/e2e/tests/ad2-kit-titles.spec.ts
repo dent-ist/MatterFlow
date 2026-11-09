@@ -28,16 +28,16 @@ test.describe('titles and crumbs on the administration routes (#588)', () => {
   const LISTS: [string, string, string, string[]][] = [
     ['/admin/audit', 'Audit Logs - MatterFlow', 'Audit Logs', ['Administration', 'Audit Logs']],
     [
-      '/admin/priorities',
-      'Labels: Priorities - MatterFlow',
-      'Labels',
-      ['Administration', 'Labels'],
+      '/admin/lists/priorities',
+      'Lists: Priorities - MatterFlow',
+      'Lists',
+      ['Administration', 'Lists'],
     ],
     [
-      '/admin/status-labels',
-      'Labels: Status Labels - MatterFlow',
-      'Labels',
-      ['Administration', 'Labels'],
+      '/admin/lists/status-labels',
+      'Lists: Status Labels - MatterFlow',
+      'Lists',
+      ['Administration', 'Lists'],
     ],
     [
       '/admin/asset-types',
@@ -46,10 +46,10 @@ test.describe('titles and crumbs on the administration routes (#588)', () => {
       ['Administration', 'Asset Types'],
     ],
     [
-      '/admin/asset-types?tab=link-roles',
-      'Asset Types: Link Roles - MatterFlow',
-      'Asset Types',
-      ['Administration', 'Asset Types'],
+      '/admin/lists/link-roles',
+      'Lists: Link Roles - MatterFlow',
+      'Lists',
+      ['Administration', 'Lists'],
     ],
     [
       '/admin/custom-fields',

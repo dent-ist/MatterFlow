@@ -1579,7 +1579,7 @@ interface RefChip {
         <p class="nt__byline">
           Missing a tag?
           @if (isAdmin()) {
-            <a routerLink="/admin/note-tags" target="_blank" data-tags-admin-link
+            <a routerLink="/admin/lists/note-tags" target="_blank" data-tags-admin-link
               >Create one under Labels, Note Tags</a
             >.
           } @else {

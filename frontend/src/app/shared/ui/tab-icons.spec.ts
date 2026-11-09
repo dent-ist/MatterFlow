@@ -66,7 +66,6 @@ describe('tab icons (LC-10, theme guide 11.3)', () => {
       ['swimlane', 'lane'],
       ['types', 'asset-types', 'page-asset-types'],
       ['task-types', 'page-task-types'],
-      ['priorities', 'page-labels'],
       ['fields', 'page-custom-fields'],
       ['by-member', 'pods', 'page-pod-work'],
       ['request-form', 'form'],
@@ -77,15 +76,9 @@ describe('tab icons (LC-10, theme guide 11.3)', () => {
       ['notes', 'page-task-types', 'task-types'],
       ['page-profile', 'created-by-me'],
       ['page-access-pending', 'permissions'],
-      ['holidays', 'priorities', 'page-labels'],
       ['unassigned', 'inputs'],
-      ['used-by', 'link-roles'],
-      ['all-open', 'steps'],
+      ['all-open', 'steps', 'page-lists'],
       ['metrics', 'page-reports'],
-      // Epic #1298 (UI spec): the Matter Lists page and tab icons follow the concept they list; the Team tab and the Team Titles tab never sit in one strip.
-      ['matters', 'matter', 'page-matters', 'matter-types'],
-      ['team', 'team-titles'],
-      ['numbering', 'note-tags'],
     ];
     const byIcon = new Map<string, string[]>();
     for (const [key, icon] of Object.entries(ICONS))

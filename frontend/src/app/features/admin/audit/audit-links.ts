@@ -19,8 +19,8 @@ export interface AuditLink {
  * Where an audited object lives in the app, or null when it has no page or the viewer may not open it (decision V of the Clients epic:
  * a link exists only when its target opens; an `Audit.View`-only person gets plain text, never the 403 page). Events of a Task's parts
  * (comments, steps, links) open the Task, so they need `Task.View` too. The configuration objects of the Administration pages link to
- * their page only for the matching `*.Manage` permission (#648): an asset type to its record, a priority and a status label to the Labels
- * tab, a link role to the Link Roles tab, a role to Roles, a task type, workflow and step to theirs.
+ * their page only for the matching `*.Manage` permission (#648): an asset type to its record, a priority, a status label, an on-hold reason and a link role to
+ * their list on the Lists page, a role to Roles, a task type, workflow and step to theirs.
  */
 export function auditObjectLink(item: AuditSearchItem, can: CanFn): AuditLink | null {
   const { type, id } = item.object;
@@ -57,13 +57,13 @@ export function auditObjectLink(item: AuditSearchItem, can: CanFn): AuditLink | 
     case 'AssetType':
       return numeric ? admin('AssetType.Manage', ['/admin/asset-types', id]) : null;
     case 'AssetLinkRole':
-      return admin('AssetType.Manage', ['/admin/asset-types'], { tab: 'link-roles' });
+      return admin('AssetType.Manage', ['/admin/lists/link-roles']);
     case 'Priority':
-      return admin('Priority.Manage', ['/admin/priorities']);
+      return admin('Priority.Manage', ['/admin/lists/priorities']);
     case 'StatusLabel':
-      return admin('StatusLabel.Manage', ['/admin/status-labels']);
+      return admin('StatusLabel.Manage', ['/admin/lists/status-labels']);
     case 'OnHoldReason':
-      return admin('OnHoldReason.Manage', ['/admin/on-hold-reasons']);
+      return admin('OnHoldReason.Manage', ['/admin/lists/on-hold-reasons']);
     case 'Role':
       return admin('Role.Manage', ['/admin/roles']);
     case 'Pod':
