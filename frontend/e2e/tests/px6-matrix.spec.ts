@@ -347,7 +347,7 @@ test.describe('Keyboard: Tab stops of the new areas (existing keys only)', () =>
       const result = await tabStops(page, 'h1', 'main, mf-fixed-page, body > *:not(nav)', 40);
       evidence('scoped-matters-list', `${size.width}`, result);
       const names = result.stops.map((s) => s.name);
-      const mine = names.findIndex((n) => /^My matters/.test(n));
+      const mine = names.findIndex((n) => /^My matters/i.test(n));
       const all = names.findIndex((n) => /^All/.test(n));
       expect(mine, 'My matters is a stop').toBeGreaterThanOrEqual(0);
       expect(all, 'All is reached with the arrow keys, not with Tab (issue #919)').toBe(-1);

@@ -84,9 +84,9 @@ test.describe('Landing for oversight roles (#628)', () => {
     await expect(page.getByRole('heading', { name: 'My Matters', level: 1 })).toBeVisible();
     // A positive empty state with a way to My Work (no counts of unmanaged matters, no warning).
     await expect(page.locator('[data-no-matters]')).toContainText(
-      'You are not the project manager of any matter yet.',
+      'You do not manage any matter yet.',
     );
-    const nav = page.getByRole('navigation').first();
+    const nav = page.getByRole('navigation', { name: 'Main' });
     // The one menu order (MM-59, #951): My Matters, then My Work; no More button.
     await expect(nav.getByRole('button', { name: 'More' })).toHaveCount(0);
     const items = await nav.getByRole('link').allInnerTexts();
@@ -132,10 +132,14 @@ test.describe('Landing for oversight roles (#628)', () => {
     await directorPage.goto('/');
     await expect(directorPage).toHaveURL(/\/dashboard/);
     await expect(
-      directorPage.getByRole('navigation').first().getByRole('link', { name: 'My Matters' }),
+      directorPage
+        .getByRole('navigation', { name: 'Main' })
+        .getByRole('link', { name: 'My Matters' }),
     ).toHaveCount(1);
     await expect(
-      directorPage.getByRole('navigation').first().getByRole('link', { name: 'Dashboard' }),
+      directorPage
+        .getByRole('navigation', { name: 'Main' })
+        .getByRole('link', { name: 'Dashboard' }),
     ).toHaveCount(1);
     const tech = await personas.named('technician');
     await seed.pod(undefined, [tech.userId]);
@@ -161,8 +165,7 @@ test.describe('Landing for oversight roles (#628)', () => {
     await expect(adminPage).toHaveURL(/\/dashboard/);
     // Menu item and route are unchanged: the administrator can still open My Matters from the menu.
     await adminPage
-      .getByRole('navigation')
-      .first()
+      .getByRole('navigation', { name: 'Main' })
       .getByRole('link', { name: 'My Matters' })
       .click();
     await expect(adminPage).toHaveURL(/\/my-matters/);

@@ -106,7 +106,8 @@ test.describe('Sensitive matters: the screens', () => {
       .getByRole('dialog', { name: 'Mark Matter Sensitive' })
       .getByRole('button', { name: 'Mark Matter Sensitive', exact: true })
       .click();
-    await expect(page).toHaveURL(/\/matters(\?scope=mine)?$/); // the list opens on the person's own matters (epic #758)
+    // The list opens on All for a person who manages no matter (landing pages epic #1330, #1334), on the person's own matters otherwise (epic #758).
+    await expect(page).toHaveURL(/\/matters(\?scope=(mine|all))?$/);
     await expect(toasts(page).first()).toContainText('you no longer see it');
     expect((await admin.get<Json>(`/api/v1/matters/${matter.matterId}`)).isSensitive).toBe(true);
     const p5 = await Api.as(u.people.p5.username);

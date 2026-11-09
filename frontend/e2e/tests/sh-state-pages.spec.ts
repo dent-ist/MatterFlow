@@ -130,7 +130,7 @@ test.describe('State pages are one family (#607)', () => {
     await atEverySize(t, 'state-axe-403');
   });
 
-  test('keyboard only: Tab reaches "Go to ...", then Copy address', async ({
+  test('keyboard only: Tab reaches Copy address, then "Go to ..."', async ({
     personas,
     asUser,
   }) => {
@@ -142,10 +142,11 @@ test.describe('State pages are one family (#607)', () => {
       h.setAttribute('tabindex', '-1');
       (h as HTMLElement).focus();
     });
-    await page.keyboard.press('Tab');
-    await expect(page.locator('[data-back-link]')).toBeFocused();
+    // The address block (with Copy address) comes before the actions in the page, so Tab reaches Copy address first, then "Go to ...".
     await page.keyboard.press('Tab');
     await expect(page.getByRole('button', { name: 'Copy address' })).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.locator('[data-back-link]')).toBeFocused();
   });
 
   test('permission variants: the 404 link follows the landing rule for every kind of person', async ({

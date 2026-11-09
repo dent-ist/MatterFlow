@@ -67,10 +67,10 @@ test.describe('The Director and My Matters (#976)', () => {
       roles: ['Director'],
       displayName: name,
     });
-    const found = await seed.admin.get<{ id: number }[]>(
+    const found = await seed.admin.get<{ userId: number }[]>(
       `/api/v1/users/matter-managers?q=${encodeURIComponent(name)}`,
     );
-    expect(found.map((u) => u.id)).toContain(director.userId);
+    expect(found.map((u) => u.userId)).toContain(director.userId);
 
     const api = await Api.as(director.username);
     try {

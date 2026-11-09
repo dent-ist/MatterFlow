@@ -256,7 +256,9 @@ test.describe('Landing and menus of the personas (#632)', () => {
       /^Matters$/,
       /Projects/,
       /Assets/,
-      /Tasks/,
+      /Task Queue/,
+      // The Project Manager role holds Report.Run (owner decision 8, #784).
+      /Reports/,
     ]);
     await expect(nav.locator('[data-nav-more-toggle]')).toHaveCount(0);
     await expect(nav.getByRole('link', { name: 'Dashboard' })).toHaveCount(0);
