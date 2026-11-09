@@ -1,0 +1,24 @@
+# Allow-list for the MatterFlow -> LPT Hub rename (issue #1346, epic #1345).
+# Format: <path glob> | <reason>. Paths are repository-relative with "/" separators, matched against the OLD path.
+#   **  any number of folders      *  anything inside one path segment
+# A line starting with "!" removes a path from the allow-list again (the last matching line wins).
+# Everything that matches is left exactly as it is: no content rule, no path rename, and --check ignores it.
+
+db/scripts/archive/**                       | archived schema scripts 01 to 66: immutable history (CLAUDE.md schema rule)
+docs/rename/**                              | the rename map and dry-run record name the old identifiers on purpose
+tools/rename/**                             | the rename script and this list define the old identifiers
+docs/adr/**                                 | architecture decision records are dated history
+docs/qa/**                                  | dated QA records (security reviews, UAT rounds, final passes, E2E findings)
+!docs/qa/e2e.md                             | living how-to-run document, must show the new names
+!docs/qa/test-plan.md                       | living plan
+!docs/qa/traceability.md                    | living matrix
+!docs/qa/risk-register.md                   | living register
+!docs/qa/permission-matrix-tests.md         | living description of a current test
+docs/ux/**                                  | dated design records: review rounds, mock-ups, walkthrough evidence (JSON, PDF, HTML)
+!docs/ux/ux-spec.md                         | living UX specification
+!docs/ux/design-guidelines.md               | living guideline
+!docs/ux/theme-guide.md                     | living guideline
+!docs/ux/tokens.css                         | living design tokens
+!docs/ux/**/*.sh                            | runnable helper scripts: must not keep pointing at the old container, database or connection-string key
+!docs/ux/ui-update/stack-howto.md           | describes how to start the local stack (container and volume names)
+!docs/ux/pm-review/fixtures.md              | describes how to run the seed against the local container
