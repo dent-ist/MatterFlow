@@ -4,7 +4,13 @@ import { Router, provideRouter } from '@angular/router';
 import { MyAvailabilityClient, SearchClient } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
 import { Permission } from '../../core/auth/permissions';
-import { FakeMeApi, profileOf, provideFakeMe, withPermissions } from '../../core/auth/auth-testing';
+import {
+  FakeMeApi,
+  landingOf,
+  profileOf,
+  provideFakeMe,
+  withPermissions,
+} from '../../core/auth/auth-testing';
 import { ok, settle } from '../testing/org-testing';
 import { AppShell } from './app-shell';
 import { versionLabel, versionName } from './app-version';
@@ -287,6 +293,67 @@ describe('AppShell header search', () => {
       await settle(admin);
       expect(navLabels(admin)).toContain('Pod Work');
       expect(navLabels(admin)).toContain('Task Queue');
+    });
+  });
+
+  describe('the menu follows the resolved landing page (epic #1330)', () => {
+    const MANAGER: Permission[] = [
+      'Matter.BeManager',
+      'Matter.View',
+      'Task.View',
+      'Pod.View',
+      'Dashboard.View',
+      'Dashboard.ViewSummary',
+    ];
+
+    async function shell(landing: ReturnType<typeof landingOf> | Error | undefined) {
+      const api = new FakeMeApi(withPermissions(...MANAGER));
+      api.landing = landing;
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [
+          provideRouter([]),
+          { provide: MyAvailabilityClient, useValue: { getMyAvailability: () => NEVER } },
+          provideFakeMe(api),
+          { provide: SearchClient, useValue: { search: vi.fn() } },
+        ],
+      });
+      await TestBed.inject(AuthStore).ensureLoaded();
+      const fixture = TestBed.createComponent(AppShell);
+      await settle(fixture);
+      return Array.from(fixture.nativeElement.querySelectorAll('nav a')).map((a) =>
+        (a as HTMLElement).textContent!.trim(),
+      );
+    }
+
+    it('keeps Pod Work for a manager who lands on the Dashboard (a Director)', async () => {
+      const labels = await shell(
+        landingOf({ resolved: 'dashboard', resolvedPath: '/dashboard', source: 'ROLE' }),
+      );
+      expect(labels).toContain('Pod Work');
+      expect(labels).toContain('My Matters');
+    });
+
+    it('hides Pod Work for a person whose resolved page is My Matters, even one who could land elsewhere', async () => {
+      const labels = await shell(
+        landingOf({ resolved: 'my-matters', resolvedPath: '/my-matters', source: 'CHOICE' }),
+      );
+      expect(labels).not.toContain('Pod Work');
+    });
+
+    it("falls back to today's rule when nothing is resolved: a manager still gets the compact menu", async () => {
+      expect(await shell(landingOf())).not.toContain('Pod Work');
+    });
+
+    it("falls back to today's rule when the landing call failed", async () => {
+      expect(await shell(new Error('boom'))).not.toContain('Pod Work');
+    });
+
+    it("ignores a resolved page the person cannot open and uses today's rule", async () => {
+      // /reports needs Report.Run, which this person lacks: the answer is not trusted, the old rule (My Matters) applies.
+      expect(
+        await shell(landingOf({ resolved: 'reports', resolvedPath: '/reports', source: 'CHOICE' })),
+      ).not.toContain('Pod Work');
     });
   });
 

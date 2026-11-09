@@ -28,7 +28,7 @@ import { PendingUsersStore } from '../../core/identity-admin/pending-users.store
 import { HasPermissionDirective } from '../directives/has-permission.directive';
 import { SEARCH_TYPES } from '../search/search-meta';
 import { GlobalSearch } from '../search/global-search';
-import { landsOnMyMatters } from '../../core/auth/guards';
+import { landsOnMyMattersPage } from '../../core/auth/guards';
 import { ADMIN_NAV_ITEMS, NAV_ITEMS, NavItem, mainNav } from './nav-items';
 import { originNav, parseOrigin } from '../work-queue/drill';
 import { ShortcutHelpState } from './shortcut-help-state';
@@ -121,8 +121,8 @@ export class AppShell {
   /** The shortcut list loads the first time it is opened. */
   protected readonly helpHost = signal<Type<unknown> | null>(null);
   protected readonly navItems = computed(() => this.visible(NAV_ITEMS));
-  /** A person who lands on My Matters (epic #758) sees no Pod Work (the Task Queue keeps its name for everybody, #978); the rule is the landing test (permissions), not a role name. */
-  private readonly compact = computed(() => landsOnMyMatters(this.auth));
+  /** A person whose landing page is My Matters (epic #758, #1330) sees no Pod Work (the Task Queue keeps its name for everybody, #978); the rule is the resolved landing page (permissions as the fallback), not a role name. */
+  private readonly compact = computed(() => landsOnMyMattersPage(this.auth));
   /** The main menu in its one order (MM-59, #951); Projects and Assets are indented children of Matters. */
   protected readonly mainItems = computed(() => mainNav(this.navItems(), this.compact()));
   protected readonly adminItems = computed(() => this.visible(ADMIN_NAV_ITEMS));

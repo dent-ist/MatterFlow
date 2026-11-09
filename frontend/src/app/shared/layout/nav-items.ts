@@ -18,7 +18,7 @@ export interface NavItem {
   alsoActive?: string[];
   /** Drawn indented under the item before it (Projects and Assets under Matters, MM-59 #951); a normal link, not a collapsible group. */
   child?: boolean;
-  /** Left out of the menu of a person who lands on My Matters (epic #758; the rule is `landsOnMyMatters`, never a role name). The address still works. */
+  /** Left out of the menu of a person who lands on My Matters (epic #758; the rule is `landsOnMyMattersPage`, the resolved landing page, never a role name). The address still works. */
   hideWhenCompact?: boolean;
 }
 

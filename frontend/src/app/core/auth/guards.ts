@@ -85,6 +85,16 @@ export function landsOnMyMatters(store: AuthStore): boolean {
   return !store.isSystemAdmin() || (store.profile()?.roles ?? []).includes(PROJECT_MANAGER_ROLE);
 }
 
+/**
+ * True when the person's landing page is My Matters (epic #1330): the menu of such a person leaves out Pod Work. It follows the RESOLVED landing page
+ * (their own choice, else the default of their first role, as `GET /me/landing-page` answers), so a Director who holds `Matter.BeManager` but lands on
+ * the Dashboard keeps Pod Work, and a person who chose My Matters loses it. Without a resolved page (nothing set, the call failed) it is today's rule
+ * (`landsOnMyMatters`), through {@link defaultLandingPath}.
+ */
+export function landsOnMyMattersPage(store: AuthStore): boolean {
+  return defaultLandingPath(store) === APP_PATHS.myMatters;
+}
+
 /** The landing rule by its name in the delivery plan (`landingFor(permissions)`): the address a person's home, logo and "Go to ..." links lead to. */
 export const landingFor = defaultLandingPath;
 
