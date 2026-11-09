@@ -81,7 +81,7 @@ Pressed fills as in section 2 in every row; the tab strip is visible in every ro
 Measured gain on top of "both on": the top bar (+53 px height: card 696 / 999) and the left rail (+220 px width, `--mf-nav-w`: card about 1318 / 1872 wide). Recommendation: do not build it now. The height gain is 53 px (+8 %), the width gain does not help reading lines that are already long with the list hidden, and it hides global search, Create Task, notifications and the user menu. If the owner still wants it after review:
 
 - Entry: icon button `pi-expand`, "Enter full screen" / "Exit full screen" tooltips, placed after the height button; state not remembered (always starts off).
-- Exit: a visible secondary button **"Exit Full Screen"** (icon `pi-compress`-style `pi-arrow-down-left-and-arrow-up-right-to-center`, text always shown) at the right end of the tab strip row, always visible, never auto-hidden; no keyboard shortcut, no browser Fullscreen API.
+- Exit: a visible secondary button **"Exit Full Screen"** (icon `pi-arrow-down-left-and-arrow-up-right-to-center`, text always shown) at the right end of the tab strip row, always visible, never auto-hidden; no keyboard shortcut, no browser Fullscreen API.
 - Implies width off or on as chosen and height folded; leaving restores the previous toggles.
 
 ## 9. Acceptance
