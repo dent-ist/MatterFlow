@@ -168,7 +168,7 @@ interface ListApi {
     TextField,
     Tip,
   ],
-  host: { class: 'mf-fill', style: 'display: block' },
+  host: { class: 'mf-fill' },
   templateUrl: './matter-list-tab.html',
 })
 export class MatterListTab {

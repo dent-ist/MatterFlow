@@ -52,6 +52,7 @@ const tasksQuery = (code: string) => ({ status: code });
   selector: 'mf-status-labels-page',
   providers: [{ provide: LIST_BODY, useExisting: forwardRef(() => StatusLabelsPage) }],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'mf-fill' },
   imports: [
     IntPipe,
     RouterLink,

@@ -59,6 +59,7 @@ const DROP_ORDER = 768;
   selector: 'mf-priorities-page',
   providers: [{ provide: LIST_BODY, useExisting: forwardRef(() => PrioritiesPage) }],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'mf-fill' },
   imports: [
     Button,
     HasPermissionDirective,

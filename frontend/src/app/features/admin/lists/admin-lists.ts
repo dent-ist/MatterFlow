@@ -78,7 +78,7 @@ export const ADMIN_LISTS: readonly AdminListDef[] = [
     group: 'Matter',
     label: 'Matter Types',
     permission: 'MatterList.Manage',
-    hint: 'Kind of matter, chosen on the matter form',
+    hint: 'Kind of matter, set on the matter form',
     shownOn: MATTER_SHOWN_ON,
     rule: MATTER_RULE,
     newLabel: 'New Matter Type',

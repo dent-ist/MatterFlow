@@ -283,6 +283,9 @@ describe('Administration > Lists page', () => {
         expect(q('h2')!.textContent).toBe('Status Labels');
         expect(q('[data-new]')).toBeNull();
         expect(q('mf-status-labels-page')).not.toBeNull();
+        // The five statuses have no active state: the badge counts statuses, not "active" ones.
+        expect(q('[data-active-count]')!.textContent).toContain('5 statuses');
+        expect(q('[data-active-count]')!.textContent).not.toContain('active');
       },
       SLOW,
     );

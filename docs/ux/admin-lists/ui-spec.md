@@ -58,7 +58,7 @@ One constant `ADMIN_LISTS` (key, group, label, permission, hint, shown-on, count
 
 | Group | List (catalogue label) | Key / address | Permission | Today's component | "Used for" hint (one line, exact) | "Shown on" (editor sentence, exact) |
 | --- | --- | --- | --- | --- | --- | --- |
-| Matter | Matter Types | `matter-types` | `MatterList.Manage` | `MatterListTab` | Kind of matter, chosen on the matter form | Shown on: Matter form, Matters list (column and filter), Matter page. |
+| Matter | Matter Types | `matter-types` | `MatterList.Manage` | `MatterListTab` | Kind of matter, set on the matter form | Shown on: Matter form, Matters list (column and filter), Matter page. |
 | Matter | Current States | `current-states` | `MatterList.Manage` | `MatterListTab` | Where a matter stands now | Shown on: Matter form, Matters list (column and filter), Matter page. |
 | Matter | Team Titles | `team-titles` | `MatterList.Manage` | `MatterListTab` | Title of each person on a matter team | Shown on: Matter page, Team tab. |
 | Task | Priorities | `priorities` | `Priority.Manage` | `PrioritiesPage` | Urgency of every task | Shown on: New Task form, task lists (column and filter), Task page. |
@@ -67,7 +67,7 @@ One constant `ADMIN_LISTS` (key, group, label, permission, hint, shown-on, count
 | Notes | Note Tags | `note-tags` | `StatusLabel.Manage` (owner decision) | `NoteTagsPage` | Tags people put on matter notes | Shown on: Matter Notes tab (tag picker and filter), note templates. |
 | Assets | Link Roles | `link-roles` | `AssetType.Manage` | `AssetLinkRolesPage` | How an asset relates to a task | Shown on: Link Asset dialog, Asset page, Linked Tasks tab. |
 
-The hint and "Shown on" strings are static copy in the registry (no endpoint). The frontend verifies each "Shown on" against the screens when building and corrects the copy in this table, not by inventing a new place. Hints are at most 40 characters of 12 px text (the 320 px card shows about 38; longer ones ellipsize with the full text as `title`).
+The hint and "Shown on" strings are static copy in the registry (no endpoint). The frontend verifies each "Shown on" against the screens when building and corrects the copy in this table, not by inventing a new place. Hints are at most 40 characters of 12 px text (the Matter Types hint was 41 and was shortened to "set on", #1321) (the 320 px card shows about 38; longer ones ellipsize with the full text as `title`).
 
 ### 3.2 Catalogue rows
 
@@ -103,7 +103,7 @@ In the one-list view the Custom Fields pointer (3.5) is a single muted line at t
 
 ### 4.1 Header, "Shown on", rule line
 
-- **Header row** (36 px): H2 (16/600, the list's plural name, focus target after a selection by pointer only if the person asked, see 7), `mf-badge` success "**6 active**" (`pi-check-circle`), spring, the list's **primary button** (last, D-41): `+ New Matter Type`, `+ New State`, `+ New Title`, `+ New Priority`, `+ New Reason`, `+ New Tag`, `+ New Link Role`. **Status Labels have no New button** (fixed five statuses). Hidden if the person lacks the list's permission (cannot happen: the list would not be offered).
+- **Header row** (36 px): H2 (16/600, the list's plural name, focus target after a selection by pointer only if the person asked, see 7), `mf-badge` success "**6 active**" (`pi-check-circle`; **Status Labels**, which have no active state, show the neutral badge "**5 statuses**" with `pi-list` instead: QA review of #1321), spring, the list's **primary button** (last, D-41): `+ New Matter Type`, `+ New State`, `+ New Title`, `+ New Priority`, `+ New Reason`, `+ New Tag`, `+ New Link Role`. **Status Labels have no New button** (fixed five statuses). Hidden if the person lacks the list's permission (cannot happen: the list would not be offered).
 - **"Shown on" sentence** under the header (13 px muted): the exact string of 3.1.
 - **Rule line**: the foot of the grid frame, 13 px muted with `pi-info-circle`, the list's existing sentence (exact):
 

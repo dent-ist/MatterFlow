@@ -51,9 +51,16 @@ export const MATTER_LIST_KEYS: readonly AdminListKey[] = [
     <div class="le__head">
       <h2 class="le__title" [id]="headingId">{{ def().label }}</h2>
       @if (count() !== null) {
-        <mf-badge tone="success" icon="pi-check-circle" data-active-count
-          >{{ count() }} active</mf-badge
-        >
+        @if (def().hasActive) {
+          <mf-badge tone="success" icon="pi-check-circle" data-active-count
+            >{{ count() }} active</mf-badge
+          >
+        } @else {
+          <!-- Status Labels have no active state: the five fixed statuses are all there is -->
+          <mf-badge tone="neutral" icon="pi-list" data-active-count
+            >{{ count() }} statuses</mf-badge
+          >
+        }
       }
       @if (def().newLabel; as newLabel) {
         @if (canManage()) {

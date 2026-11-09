@@ -124,15 +124,17 @@ import { TagChip } from '../../../shared/ui/tag-chip';
           [maxLength]="60"
           [(value)]="name"
         />
-        <span class="mf-field__label" id="nt-colour-label">Color</span>
-        <mf-dropdown
-          field
-          buttonId="nt-colour"
-          label="Color"
-          [items]="colourItems"
-          [value]="colour()"
-          (valueChange)="colour.set($event)"
-        />
+        <div class="nt-colour">
+          <label class="mf-label" id="nt-colour-label" for="nt-colour">Color</label>
+          <mf-dropdown
+            field
+            buttonId="nt-colour"
+            label="Color"
+            [items]="colourItems"
+            [value]="colour()"
+            (valueChange)="colour.set($event)"
+          />
+        </div>
       }
     </mf-form-dialog>
     <mf-confirm-dialog
@@ -145,6 +147,14 @@ import { TagChip } from '../../../shared/ui/tag-chip';
     >
       <p>{{ target()?.name }} is deleted; no note or template uses it. This cannot be undone.</p>
     </mf-confirm-dialog>
+  `,
+  styles: `
+    .nt-colour {
+      display: grid;
+      gap: var(--mf-s1);
+      justify-items: start;
+      margin-top: var(--mf-s3);
+    }
   `,
 })
 export class NoteTagsPage {

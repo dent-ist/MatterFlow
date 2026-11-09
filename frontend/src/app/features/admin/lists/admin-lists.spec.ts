@@ -33,8 +33,8 @@ describe('Administration > Lists registry (UI spec 3.1)', () => {
 
   it('keeps the hints to one short line and the sentences exact', () => {
     for (const l of ADMIN_LISTS) {
-      // The spec says 40 characters of 12 px text; its own first hint is 41 and the catalogue ellipsizes (full text as tooltip).
-      expect(l.hint.length, l.key).toBeLessThanOrEqual(42);
+      // The spec says at most 40 characters of 12 px text (the card shows about 38; a longer hint ellipsizes with the full text as tooltip).
+      expect(l.hint.length, l.key).toBeLessThanOrEqual(40);
       expect(l.shownOn.startsWith('Shown on: '), l.key).toBe(true);
       expect(l.shownOn.endsWith('.'), l.key).toBe(true);
       expect(l.rule.endsWith('.'), l.key).toBe(true);
