@@ -17,14 +17,16 @@ test.describe('Export (#879)', () => {
     await page.goto(`/tasks?matter=${world.matter.matterId}`);
     await expect(page.locator('tbody tr[data-task]')).toHaveCount(3);
 
-    const trigger = page.locator('[data-export-menu] [data-overflow]');
-    await expect(trigger).toHaveAttribute('aria-label', /not a status report/);
-    await trigger.focus();
-    await page.keyboard.press('Enter');
-    await expect(page.getByRole('menuitem', { name: 'Download CSV' })).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'Copy as Text' })).toBeVisible();
+    // Export lives in the toolbar's Options menu (#894): its two choices are plain buttons in a labelled group.
+    await page.locator('[data-options-trigger]').click();
+    await expect(page.locator('[data-export-menu]')).toHaveAttribute(
+      'aria-label',
+      /not a status report/,
+    );
+    await expect(page.getByRole('button', { name: 'Download CSV' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Copy as Text' })).toBeVisible();
     const download = page.waitForEvent('download');
-    await page.getByRole('menuitem', { name: 'Download CSV' }).click();
+    await page.getByRole('button', { name: 'Download CSV' }).click();
     const file = await download;
     expect(file.suggestedFilename()).toBe('task-queue.csv');
     const bytes = await (await import('node:fs/promises')).readFile((await file.path())!);
@@ -41,8 +43,9 @@ test.describe('Export (#879)', () => {
     expect(body).toContain('"Plain, with a comma"');
     await expect(page.locator('[data-export-status]')).toContainText('Downloaded 3 rows.');
 
-    await trigger.click();
-    await page.getByRole('menuitem', { name: 'Copy as Text' }).click();
+    if (!(await page.locator('[data-export-menu]').isVisible()))
+      await page.locator('[data-options-trigger]').click();
+    await page.getByRole('button', { name: 'Copy as Text' }).click();
     await expect(page.locator('[data-export-status]')).toContainText('Copied 3 rows.');
     const pasted = await page.evaluate(() => navigator.clipboard.readText());
     const rows = pasted.split('\n').filter(Boolean);
@@ -58,10 +61,9 @@ test.describe('Export (#879)', () => {
 
   test('Export of an empty list is unavailable with a reason', async ({ page }) => {
     await page.goto('/tasks?matter=99999999');
-    await page.locator('[data-export-menu] [data-overflow]').click();
-    await expect(page.getByRole('menuitem', { name: 'Download CSV' })).toHaveAttribute(
-      'aria-disabled',
-      'true',
-    );
+    await page.locator('[data-options-trigger]').click();
+    const csv = page.getByRole('button', { name: 'Download CSV' });
+    await expect(csv).toBeDisabled();
+    await expect(csv).toHaveAttribute('title', /.+/); // the reason
   });
 });

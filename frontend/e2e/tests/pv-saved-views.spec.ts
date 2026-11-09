@@ -46,8 +46,9 @@ test.describe('Saved views (#880)', () => {
       await noSidewaysScroll(page, `Views open at ${size.name}`);
       await clean(page, `Views open at ${size.name}`);
       await page.keyboard.press('Escape');
-      await page.locator('[data-export-menu] [data-overflow]').click();
-      await expect(page.getByRole('menuitem', { name: 'Download CSV' })).toBeVisible();
+      if (!(await page.locator('[data-export-menu]').isVisible()))
+        await page.locator('[data-options-trigger]').click();
+      await expect(page.getByRole('button', { name: 'Download CSV' })).toBeVisible();
       await clean(page, `Export open at ${size.name}`);
     });
   }

@@ -131,7 +131,7 @@ test.describe('PM v2 final gate', () => {
     await expect(page.locator('mf-mm-task-list a[data-task-link]').first()).toBeVisible();
 
     // The Filter button is a plain disclosure: Tab reaches it, Enter opens the column filters.
-    const filter = page.locator('[data-filter-toggle]');
+    const filter = page.locator('[data-filters-toggle]');
     await filter.focus();
     await expect(filter).toBeFocused();
     await page.keyboard.press('Enter');
@@ -153,23 +153,16 @@ test.describe('PM v2 final gate', () => {
     await expect(page).toHaveURL(/\/my-matters\?.*(show|status)=/);
     await expect(page.locator('mf-mm-task-list')).toBeVisible();
 
-    // The Task Queue's Views and Export menus: same rule.
+    // The Task Queue's Options menu holds Views and Export (#894): same rule (keyboard opens it, Escape closes it, focus returns to its button).
     await page.goto('/tasks');
-    const views = page.locator('[data-views-trigger]');
-    await views.focus();
+    const options = page.locator('[data-options-trigger]');
+    await options.focus();
     await page.keyboard.press('Enter');
-    await expect(page.locator('[data-view-name-input]')).toBeVisible();
+    await expect(page.locator('[data-views-trigger]')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Download CSV' })).toBeVisible();
     await page.keyboard.press('Escape');
-    await expect(page.locator('[data-view-name-input]')).toBeHidden();
-    await expect(views).toBeFocused();
-
-    const exportButton = page.locator('[data-export-menu] [data-overflow]');
-    await exportButton.focus();
-    await page.keyboard.press('Enter');
-    await expect(page.getByRole('menuitem', { name: 'Download CSV' })).toBeVisible();
-    await page.keyboard.press('Escape');
-    await expect(page.getByRole('menuitem', { name: 'Download CSV' })).toBeHidden();
-    await expect(exportButton).toBeFocused();
+    await expect(page.getByRole('button', { name: 'Download CSV' })).toBeHidden();
+    await expect(options).toBeFocused();
   });
 
   test('reduced motion: nothing animates on the Breakdown, the Data tab or the report chart, and the pie hover transition is off', async ({

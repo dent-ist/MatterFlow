@@ -250,3 +250,18 @@ Second run (`npm run e2e -- sensitive-`, switch on): **13 of 14 passed, includin
 ## 6. Recommendation
 
 Do not release on the e2e side yet. (1) Fix #1285 and #1281 in the application; (2) finish the 177 spec files of 3.2 (390 tests; the Users, Profile and list-measure families first), proving each stale before editing; (3) run the whole suite again and require 0 failures except what waits for an open application issue. The application itself shows no sign of a broken flow in the first run beyond those items, but a stale spec can hide a real regression, so the 414 are not cleared.
+
+
+## 7. Stage 6 (targeted runs only; the owner asked for no full run)
+
+Branch `qa-e2e-fixes-3` from dev 2d7da13. Only the spec files named below were run (kept stack, own database); no full suite was run in stage 6, so the totals of section 1 are still those of the stage 5 full run (2,139 passed, 279 failed, 97 skipped).
+
+Baseline of the stage 6 families (one targeted run before the edits, 496 tests): 405 passed, 81 failed, 10 skipped. Failing per file: users-tab 9, ty9-keyboard 5, clients-final 4, clients-keyboard 4, ty3-lists 4, as3-list 3, pv-saved-views 3, px5-matter 3, px6-matrix 3, ty2-shell 3, ty2-states 3, ty2-strips 3, ty3-narrow-columns 3, ty3-task-types 3, ty3-workflows-steps 3, users-capacity 3, pv-asset-report-builder 2, pv-export 2, ty4-task-type 2, ty7-step 2, and one each in as5-forms, pv-asset-disposition, pv-assets-pages, pv-final-gate, pv-task-types-on-hold, rich-description, sr5-filters, ty5-workflow, ty6-version-bar, ty8-designer-owners, ty8-designer-readonly, ty9-audit, users-us1-bugs, wp22-columns-widths.
+
+Fixed and verified in targeted runs:
+- pv-export: Export lives in the toolbar Options menu as two plain buttons; 2 of 2 pass (the file was 9 + 2 tests in the slice, all pass).
+- pv-final-gate: filter toggle attribute is `data-filters-toggle`; the Views and Export check now opens Options; 3 of 3 pass.
+- pv-saved-views: the Export check opens Options; 2 of 3 pass, 1 still fails (the saved view row's apply button is not clickable: `[data-view-apply]`).
+- ty9-keyboard: the "25 versus 30 rows" is a page-size fact, not extra links: the Workflows, Task Types and Steps lists default to 50 rows per page and the seeded 30 to 35 rows all fit on one page, so the count was the number of rows, not 25 plus hidden links. The three URLs now ask for `size=25`, and row links are counted as `tbody tr a[data-row-key]`; 19 of 21 pass, 2 still fail (the Discard draft and Create new draft buttons of the version bar, a different cause).
+
+Not touched in stage 6 (unverified, still failing as in section 3.2): the Dashboard Users tab rest (users-tab 9, users-capacity 3), px5, px6, wp7-matter-overview, clients-final, clients-keyboard, as2, as3, as5, rich-description, email-intake, sr5, ty2 to ty8, wp22 row 10, users-us1-bugs Esc focus return (a probe showed focus on the Edit availability button 800 ms after Esc, so the failure may be timing). Rows 17 and 18 of the measures doc wait for the designer.

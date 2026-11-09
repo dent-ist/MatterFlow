@@ -102,9 +102,9 @@ async function seedLists(seed: Seeder, admin: Api): Promise<Data> {
   }
   return {
     token,
-    types: `${LISTS.types.list}?name=Kbd${token}`,
-    workflows: `${LISTS.workflows.list}?name=Kbd${token}`,
-    steps: `${LISTS.steps.list}?title=Kbd${token}`,
+    types: `${LISTS.types.list}?name=Kbd${token}&size=25`,
+    workflows: `${LISTS.workflows.list}?name=Kbd${token}&size=25`,
+    steps: `${LISTS.steps.list}?title=Kbd${token}&size=25`,
   };
 }
 
@@ -116,7 +116,7 @@ test.beforeAll(async ({ seed, admin }) => {
 const KINDS: ListKind[] = ['types', 'workflows', 'steps'];
 const urlOf = (k: ListKind): string => data[k];
 
-const NAME_LINK = 'a[data-row-key]';
+const NAME_LINK = 'tbody tr a[data-row-key]';
 
 /** The first row's name link (table) or card name link (phone). */
 const firstName = (page: Page): Locator =>
@@ -202,7 +202,7 @@ test.describe('#413: skip link and Tab stops on the three lists', () => {
     await freshTop(page, urlOf('workflows'));
     // The first row is "Base" (30 task types use it); the others have a draft v1 only.
     const row = page.locator('tr:is([data-row], [data-record-id])').first();
-    await row.locator(NAME_LINK).focus();
+    await row.locator('a[data-row-key]').focus();
     await page.keyboard.press('ArrowRight');
     expect(await active(page)).toMatch(/^a:(Draft|Open draft|30 task types)/);
     await page.keyboard.press('ArrowRight');
@@ -214,7 +214,7 @@ test.describe('#413: skip link and Tab stops on the three lists', () => {
     await page.keyboard.press('ArrowLeft');
     await page.keyboard.press('ArrowLeft');
     await page.keyboard.press('ArrowLeft');
-    await expect(row.locator(NAME_LINK)).toBeFocused();
+    await expect(row.locator('a[data-row-key]')).toBeFocused();
   });
 });
 
