@@ -32,7 +32,8 @@
 | **My Matters** (Project Manager home: Overview, Calendar, Assets, Metrics, Activity) | WorkViews | `Matter`, `Task`, `Asset`, `AuditEvent`, `UserMatterActivitySeen`, `UserView` | `/my-matters/*` (summary, attention, deadlines, activity, activity/seen, since-last-visit, breakdown, data, data/volume, calendar, events, feed, task-counts, tree, assets, workload) | `/my-matters`; `my-matters/` | `WorkViews/`, `Visibility/`; e2e `mm-qa`, `mm-ui-update`, `px5-matter` |
 | **Search** | Search | all searched tables (read) | `/search`, `/search/{type}` | `/search`; `search/`, `shared/search/` | `Search/`; e2e `search`, `sr1-*` to `sr7-*` |
 | **Notifications** | Notifications | `Notification`, `NotificationPreference` | `/me/notifications`, `/me/notification-preferences` | `/notifications`; bell in `shared/layout/notification-bell.ts` | `Notifications/`; e2e `notifications-bell` |
-| **Profile and Out of Office** | Identity | `UserAvailability`, `UserWorkHour`, `UserAbsence`, `UserIdentity`, `HolidayCalendar` | `/me`, `/me/availability`, `/users/{id}/absences`, `/me/notification-preferences` | `/profile`; `profile/`, `shared/availability/` | `Identity/`; e2e `profile-*` |
+| **Profile and Out of Office** (also the My Landing Page card; opens for every non-pending person, the work cards need `Task.View`) | Identity | `UserAvailability`, `UserWorkHour`, `UserAbsence`, `UserIdentity`, `HolidayCalendar`, `UserView` | `/me`, `/me/availability`, `/me/landing-page`, `/me/landing-pages`, `/users/{id}/absences`, `/me/notification-preferences` | `/profile`; `profile/`, `shared/availability/` | `Identity/`; e2e `profile-*` |
+| **Landing page** (role default in Role Setup, personal choice, resolution chain, list default scope) | Identity | `Role.LandingPage`, `UserView` (surface `landing-page`) | `/me/landing-page`, `/me/landing-pages`, `/roles/{id}/landing-page` | `/profile` (card), `/admin/roles` (field); `core/landing/`, `profile/landing-card.ts`, `core/auth/guards.ts` | `contracts/landing-pages.json`; e2e `landing-pages`, `landing-list-scope`, `sh-landing` |
 | **Access Pending, sign-in** | Identity | `AppUser`, `UserIdentity`, `UserRole` | `GET /me` | `/access-pending`; `access-pending/` | `Identity/WalkingSkeletonTests`; e2e `sh-landing` |
 
 ## Dashboard
@@ -51,7 +52,7 @@
 | Page (menu) | Backend module | Tables | Endpoints | Frontend route and folder | Permission | Tests |
 |---|---|---|---|---|---|---|
 | Users | Identity | `AppUser`, `UserIdentity`, `UserRole`, `PodMember` | `/users` (list, counts, get, put, `PUT /users/{id}/roles`, `PUT /users/{id}/status`), `GET/PUT /users/{id}/pods` (PodsController), `/users/lookup` | `/admin/users`; `admin/users/` | `User.View`, `User.Manage` | `Identity/`; e2e `users-*` |
-| Roles | Identity | `Role`, `RolePermission`, `Permission` | `/roles`, `/permissions` | `/admin/roles`; `admin/roles/` | `Role.Manage` | e2e `users-us6-editors` |
+| Roles (incl. the Landing Page field) | Identity | `Role`, `RolePermission`, `Permission` | `/roles`, `/permissions`, `/roles/{id}/landing-page` | `/admin/roles`; `admin/roles/` | `Role.Manage` | e2e `users-us6-editors` |
 | Pods | Identity | `Pod`, `PodMember` | `/pods` (list, get, create, update, members, primary, `member-candidates`) | `/admin/pods`; `admin/pods/` | `Pod.Manage`, `Pod.ManageMembers` | e2e `users-pods` |
 | Task Types | Configuration | `TaskType`, `TaskTypeWorkflowEligibility`, `FormDefinition`, `FormVersion`, `FormField` | `/task-types`, `/forms` | `/admin/task-types`; `admin/task-types/` | `TaskType.Manage` | e2e `ty*` |
 | Workflows | WorkflowEngine | `WorkflowDefinition`, `WorkflowVersion`, `WorkflowVersionStep` | `/workflows` | `/admin/workflows`; `admin/workflows/` | `Workflow.Manage` | `Workflows/`; e2e `workflow-version`, `ty5-workflow`, `ty6-*` |
@@ -72,7 +73,7 @@
 
 | Feature | Where |
 |---|---|
-| Authentication, `/me`, landing page | [Authentication and Authorization](../Architecture/Authentication-and-Authorization.md) |
+| Authentication, `/me`, landing page (role default, personal choice, chain) | [Authentication and Authorization](../Architecture/Authentication-and-Authorization.md) |
 | Sensitive matters | [Sensitive Matter Visibility](../Architecture/Sensitive-Matter-Visibility.md); `Matter.IsSensitive`, `Matter.ViewSensitive` |
 | Audit trail | [Notifications Audit and Settings](../Architecture/Notifications-Audit-and-Settings.md) |
 | Saved views and remembered state | `Identity` `UserViewsController` (`/me/views`), `UserView`; `core/views/` |
@@ -162,4 +163,4 @@ Every controller class in `backend/src/Modules/*/Api` and `backend/src/MatterFlo
 - [Routing and Navigation](../Frontend/Routing-and-Navigation.md)
 - [Permission Catalogue](../Reference/Permission-Catalogue.md)
 
-Last verified against commit 777383d.
+Last verified against commit a8f9659.

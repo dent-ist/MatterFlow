@@ -18,7 +18,7 @@
 |---|---|---|---|
 | `/access-pending` | `features/access-pending` | `AccessPendingPage` | `pendingOnlyGuard` (only Access Pending people) |
 | `/error` | `features/system/pages` | `ErrorPage` | none |
-| `/` | (redirect) | `landingGuard` sends to the landing page | `accessGuard` |
+| `/` | (redirect) | `landingGuard` sends to the landing page (own choice, else first role's default, else the Automatic rule; see [Authentication and Authorization](../Architecture/Authentication-and-Authorization.md)) | `accessGuard` |
 | `/dashboard` | `features/dashboard` | `DashboardPage`; tabs `?tab=summary`, `breakdowns`, `trends`, `swimlane`, `users` (`?view=coverage`), `calendar` | `Dashboard.View`, and one tab permission per tab |
 | `/my-matters` | `features/my-matters` | `MyMattersPage` (`ui/shell.ts`); tabs `overview`, `calendar`, `assets`, `metrics`, `activity` | all of `Matter.BeManager`, `Matter.View`, `Task.View` |
 | `/my-work` | `features/my-work` | `MyWorkPage` | `Task.View` |
@@ -45,7 +45,7 @@
 | `/assets/:assetId` | | `AssetRecordPage` | `Asset.View` |
 | `/reports` | `features/reports` | `ReportsListPage` (`?q=` search, `?category=` filter, `?favourites=true` the Favourites chip) | `Report.Run` |
 | `/reports/:reportId` | | `ReportRunPage`; the parameter values travel as `?NAME=value` (a date range as `NAME.from` and `NAME.to`, a list repeats the name); opening such an address fills the form and never runs the report | `Report.Run` (the server decides whether the report is assigned; unknown, inactive and unassigned look the same) |
-| `/profile` | `features/profile` | `ProfilePage` | `Task.View` |
+| `/profile` | `features/profile` | `ProfilePage` (the My Landing Page card for everybody; the availability, absence and holiday cards need `Task.View`) | any person who is not pending |
 | `/notifications` | `features/notifications` | `NotificationsPage` | `Task.View` |
 | `/search` | `features/search` | `SearchResultsPage` | any one of `Matter.View`, `Client.View`, `Task.View`, `Project.View`, `Asset.View` |
 | `/search/advanced` | | redirect to `/search` with the filters panel open | |
@@ -73,7 +73,7 @@ The `/admin` route is open to anyone who may open any admin menu item (`ADMIN_NA
 
 ## Navigation menus (`shared/layout/nav-items.ts`)
 
-Items are hidden, never disabled, without the permission. A person who lands on My Matters gets a compact menu (`compact` flags on `NAV_ITEMS`).
+Items are hidden, never disabled, without the permission. A person whose resolved landing page is My Matters gets a compact menu (`compact` flags on `NAV_ITEMS`; the rule is `landsOnMyMattersPage`).
 
 | Main menu item | Path | Permission rule |
 |---|---|---|
@@ -98,4 +98,4 @@ Keyboard shortcuts are defined in `shared/layout/shortcut-registry.ts`; no new o
 - [Authentication and Authorization](../Architecture/Authentication-and-Authorization.md)
 - [Feature Map](../Features/Feature-Map.md)
 
-Last verified against commit a8142a1.
+Last verified against commit a8f9659.

@@ -22,6 +22,7 @@
 | 14 and 15 PM v2 | Assets disposition and size, filter index, On hold reasons, At risk, export, saved views | [Feature Map](../Features/Feature-Map.md) |
 | 16 Application name and icon | Branding settings | [Settings Catalogue](../Reference/Settings-Catalogue.md) |
 | 17 Matter detail: Productions, Notes, AI switch | Operations notes for epic #1001 | [Module Guide](../Backend/Module-Guide.md) |
+| 18 Landing pages | Set a role's landing page, personal choice, "I land on the wrong page" | [Authentication and Authorization](../Architecture/Authentication-and-Authorization.md) |
 
 Other operational documents: `docs/frontend-bundle.md` (bundle size), `docs/qa/performance-round-1.md` and `docs/qa/sensitive-matters-performance.md` (performance), `tools/perf/README.md` (load test tools), `docs/qa/risk-register.md`, `docs/qa/security-review-1.md` and `security-review-2.md` (with resolutions).
 
@@ -31,4 +32,4 @@ Other operational documents: `docs/frontend-bundle.md` (bundle size), `docs/qa/p
 - [Troubleshooting](Troubleshooting.md)
 - [Documentation Map](../Reference/Documentation-Map.md)
 
-Last verified against commit 6c2e523.
+Last verified against commit a8f9659.

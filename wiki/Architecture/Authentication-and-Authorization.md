@@ -30,9 +30,9 @@ flowchart LR
 - The catalog is `contracts/permissions.json` (code, group, description). The `Identity` module embeds it and syncs it into `dbo.Permission` at every startup (`IdentitySeeder`, `PermissionCatalog.cs`). The C# constants are in `Identity.Contracts/Permissions.cs`; the TypeScript list is `frontend/src/app/core/auth/permissions.ts`. A unit test fails when they differ. Full list: [Permission Catalogue](../Reference/Permission-Catalogue.md).
 - **System Admin** is a built-in role row (`dbo.Role.IsSystemAdmin`). It holds every permission implicitly, including permissions added later. At least one active System Admin must remain (`LAST_ADMIN`).
 - **Starter roles** (`Seeding/StarterRoles.cs`): Director, Project Manager, Pod Lead, Data Technician, Data Scientist. They are seeded once, only when no non-system role exists, and administrators edit them afterwards. A script may also grant a new permission to existing roles (for example script 46 grants `Asset.Dispose`, script 65 grants `Report.Run` to the Project Manager role only while it still has the starter description). `Report.Run` is held by the Project Manager starter role and no other (owner decision 8); it shows only the reports an administrator has assigned to the person's roles, so per-report access is the assignment, not the permission.
-- **Director and `Matter.BeManager` (issue #976, owner decision 2026-11-07).** The starter Director holds `Matter.BeManager` (no new permission) so that it opens My Matters, which needs `Matter.BeManager`, `Matter.View` and `Task.View`. Side effects: the Director lands on My Matters, can be named Primary or Secondary project manager, and gets the "My matters / All" switch on the lists (default My matters; All through `Matter.AssignManagers`). Who sees sensitive matters is unchanged (`Matter.ViewSensitive`). Existing databases: `66-director-be-manager.sql`.
+- **Director and `Matter.BeManager` (issue #976, owner decision 2026-11-07).** The starter Director holds `Matter.BeManager` (no new permission) so that it opens My Matters, which needs `Matter.BeManager`, `Matter.View` and `Task.View`. Side effects: the Director can be named Primary or Secondary project manager and gets the "My matters / All" switch on the lists (the default scope depends on whether the person manages a matter, see Landing page below; All through `Matter.AssignManagers`). The Director's landing page is the Dashboard, set as the role's landing page (script 67), so My Matters stays in the menu but is not the start page. Who sees sensitive matters is unchanged (`Matter.ViewSensitive`). Existing databases: `66-director-be-manager.sql`.
 - A user's **effective permissions** are the union of the permissions of their active roles. An account with none is **Access Pending**. A disabled account gets 403 `ACCOUNT_DISABLED`.
-- **No code branches on role names.** Only permission codes (architecture test `Authorization_never_uses_role_names`). The one place a role name appears is the frontend landing rule for the Project Manager (`PROJECT_MANAGER_ROLE` in `guards.ts`), which only chooses the landing page.
+- **No code branches on role names.** Only permission codes (architecture test `Authorization_never_uses_role_names`). The one place a role name appears is the frontend landing rule for the Project Manager (`PROJECT_MANAGER_ROLE` in `guards.ts`), which only matters in step 3 of the landing rule (Automatic).
 
 ## Policies on endpoints
 
@@ -68,7 +68,19 @@ sequenceDiagram
 
 ## Landing page
 
-`defaultLandingPath` (`guards.ts`), in order: My Matters when `landsOnMyMatters` (all of `Matter.BeManager`, `Matter.View`, `Task.View`: the Project Manager and, since issue #976 (script 66), the Director; a System Admin only if the Project Manager role is on their profile); My Work when the person has `Task.View` and has work (`hasWork` from `/me`); the Dashboard when any Dashboard tab permission is held; the Task Queue with `Task.View`; otherwise the first page they can open (Clients, Matters, Projects, Assets, Administration); otherwise `/403`.
+Epic #1330 (script 67). One function, `defaultLandingPath` (`core/auth/guards.ts`, also called `landingFor`), gives the page behind `/`, the logo, the "Go to ..." link on the 403 and 404 pages and Check Again on Access Pending. A pending or disabled person goes to Access Pending first. The chain, in order:
+
+1. **The person's own choice** (My Profile > My Landing Page), if they can still open that page.
+2. **The default of their first role**, if it is set and they can open it. "First" is first by role name (alphabetical, ignoring case, inactive roles left out), the same order `GET /me` and the Users grid return; there is no primary-role field. If that role is Automatic or its page is not openable, the chain goes to step 3, not to the second role.
+3. **Automatic**, the older rule: My Matters when `landsOnMyMatters` (all of `Matter.BeManager`, `Matter.View`, `Task.View`; a System Admin only if the Project Manager role is on their profile); My Work when the person has `Task.View` and has work (`hasWork` from `/me`); the Dashboard when any Dashboard tab permission is held; the Task Queue with `Task.View`; otherwise the first page they can open (Clients, Matters, Projects, Assets, Administration); otherwise `/403`.
+
+- **Pages** are stable keys in `contracts/landing-pages.json` (`dashboard`, `my-matters`, `my-work`, `clients`, `matters`, `projects`, `assets`, `pod-work`, `task-queue`, `reports`, `administration`), never URLs. The same file holds the rule for who can open each page (the navigation and route-guard rule); the backend embeds it as `LandingPageCatalog`.
+- **Role default:** `dbo.Role.LandingPage`, empty = Automatic. Set in Administration > Users > Roles, field **Landing Page**; the role must be able to open the page (`Role.Manage`). Starter defaults: Project Manager = My Matters, Director = Dashboard; Pod Lead, Data Technician, Data Scientist, System Admin and custom roles = Automatic.
+- **Personal choice:** stored in `dbo.UserView` (surface `landing-page`). Set in **My Profile > My Landing Page**; saved at once. If the page is no longer openable (a permission was removed), the person silently falls through the chain, the card says so, and the stored choice is kept in case access returns.
+- **API:** `GET/PUT /me/landing-page`, `GET /me/landing-pages` (pages the person can open now), `GET/PUT /roles/{id}/landing-page`. See the [Module Guide](../Backend/Module-Guide.md).
+- **My Profile** opens for every person who is not pending, so everybody can reach the picker. The work cards (availability, absences, holidays) need `Task.View`.
+- **Compact menu:** the shorter menu (no Pod Work) follows the resolved landing page (`landsOnMyMattersPage`): it applies to a person whose landing page is My Matters, not to everybody who holds `Matter.BeManager`.
+- **Default list scope:** Clients, Matters, Projects, Assets and Task Queue open on **All** unless the person manages at least one matter, in which case they open on "My matters". A stored choice always wins. A person who may not choose All stays on "My matters". Code: `ScopeService.defaultFor`.
 
 ## Related pages
 
@@ -77,4 +89,4 @@ sequenceDiagram
 - [Request Lifecycle](Request-Lifecycle.md)
 - [Demo Data and Personas](../Operations/Demo-Data-and-Personas.md)
 
-Last verified against commit ba461d2.
+Last verified against commit a8f9659.

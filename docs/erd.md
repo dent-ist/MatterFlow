@@ -239,6 +239,7 @@ erDiagram
     nvarchar_500 Description
     bit IsSystemAdmin "built-in, locked"
     bit IsActive
+    varchar_40 LandingPage "nullable page key, script 67"
     rowversion RowVersion
   }
   Permission {

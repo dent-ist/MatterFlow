@@ -71,6 +71,8 @@
 | Report login | The separate read-only SQL login that reports use |
 | nswag | The tool that generates the Angular API client from the OpenAPI document |
 | Form engine | The Angular library that renders and designs dynamic forms and evaluates their rules |
+| Landing page | The page a person sees first after signing in and on a logo click: their own choice, else the default of their first role by name, else the Automatic rule. Stored as a stable page key |
+| Automatic (landing page) | No fixed page: My Matters for managers, My Work when the person has work, else Dashboard or the first page they can open |
 | Starter roles / starter configuration | Roles and configuration seeded once on a new install |
 | UI2, WPx, epic #n | Labels in commit messages and docs: the UI update 2 round, work packages, GitHub epics |
 | Sensitive access catalog | The test table that classifies every endpoint for the Sensitive matter rule |
@@ -81,4 +83,4 @@
 - [Conventions](Conventions.md)
 - [Decision Index](Decision-Index.md)
 
-Last verified against commit c4bfdaf.
+Last verified against commit a8f9659.

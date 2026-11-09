@@ -31,7 +31,7 @@ Every list uses the same anatomy: rows 44 px (36 compact), header 40 px, pager 2
 | Order and visibility of columns, per grid and person | Browser `localStorage` | `mf.grid.v1.<grid>.<userId or anon>`; sparse and safe: unknown keys ignored, new columns placed by the definitions, locked columns always shown; every access in try/catch |
 | Column widths | Browser `localStorage` (separate store) | `mf.col-widths.v1.<grid>.<userId or anon>` (`resizable-columns.ts`); resetting order or visibility never loses widths |
 | Screen state per surface (filters, sort, Focus, scope) and named saved views | Server table `dbo.UserView` through `/api/v1/me/views`, with a `localStorage` write-through cache | `core/views/view-state.service.ts`; works with storage blocked or the endpoint failing (defaults); **the address always wins over a remembered state** |
-| Page scope (All, Mine, a pod) | `localStorage` per person and page | `shared/scope/scope.service.ts`; "All" only with `Matter.AssignManagers` on My Matters |
+| Page scope (All, Mine, a pod) | `localStorage` per person and page | `shared/scope/scope.service.ts`; "All" only with `Matter.AssignManagers` on My Matters; the default is All on Clients, Matters, Projects, Assets and Task Queue unless the person manages a matter, and a stored choice wins |
 | Dashboard preferences (for example the hidden right panel) | Dashboard prefs | `features/dashboard/dashboard-prefs.ts` |
 | Task grid column widths | Browser `localStorage` | `mf.work-widths.v1.<scope>.<userId or anon>` (`shared/work-queue/work-widths.ts`). The Title is the spring until a person drags its divider; then its width is stored (96 to 1600 px). **"Reset Width" removes it** and the spring returns: in the Title header menu (with "Fit to Content", both enabled only while a width is stored), in the Columns panel > Column Widths (a Title row with the stepper), on a double-click of the Title divider, and with "Reset Columns" and "Reset All Widths" (#1243). |
 
@@ -95,6 +95,6 @@ Every column definition gives a `width` or `minWidth` (the tokens `--mf-col-*-w`
 - [UI Standard](UI-Standard.md)
 - [Testing the Frontend](Testing-the-Frontend.md)
 
-Last verified against commit a8142a1.
+Last verified against commit a8f9659.
 
 **Matters list default columns (epic #1298, owner 2026-11-08).** CM Number, Matter Name, Client, Matter Type, Current State and Status are on by default (180 + 200 + 140 + 160 + 160 + 160 + the 48 px actions column = 1048 of the 1098 px at 1366). Primary PM, Secondary PM, Open Tasks and Overdue are `defaultHidden` (one click away in Columns); a person who already chose columns keeps that choice, so Matter Type and Current State are hidden for them until turned on. Guard: `features/matters/pages/matters-list-page.spec.ts`.

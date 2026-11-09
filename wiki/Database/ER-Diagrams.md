@@ -57,6 +57,7 @@ erDiagram
     nvarchar_100 Name UK
     bit IsSystemAdmin
     bit IsActive
+    varchar_40 LandingPage "nullable page key"
   }
   Permission {
     int PermissionId PK
@@ -863,4 +864,4 @@ erDiagram
 - [Schema Script History](Schema-Script-History.md)
 - [How to Change the Schema](How-to-Change-the-Schema.md)
 
-Last verified against commit a80aa5a.
+Last verified against commit a8f9659.

@@ -41,6 +41,7 @@
 | 401 | No identity: with Dev auth set `Auth__Dev__DefaultUser` or send `X-Dev-User` |
 | 403 `ACCESS_PENDING` | The user has no role yet; grant one in Administration > Users |
 | 403 `PERMISSION_DENIED` | The policy names a permission the user lacks (the detail names it). The role may need it, or a script that grants new permissions to existing roles has not run (roles are seeded once) |
+| A person lands on the wrong page after sign-in | Follow `docs/runbook.md` section 18: own choice (My Profile > My Landing Page), then the default of the first role by name (Administration > Users > Roles, Landing Page), then the Automatic rule. The Users drawer names the role that decides |
 | 404 on a record that exists | The Sensitive matter rule, if `Features:SensitiveMatterAccess` is on and the person cannot see the matter |
 | 409 `CONCURRENCY_CONFLICT` | Stale `rowVersion`, or a SQL deadlock retry message; reload and retry |
 | 429 | A per-user rate limit (`RateLimits:*`); the response advertises the wait. The demo seeder paces itself |
@@ -82,4 +83,4 @@
 - [Fix a Bug](../How-To/Fix-a-Bug.md)
 - [Continuous Integration](../Getting-Started/Continuous-Integration.md)
 
-Last verified against commit 6c2e523.
+Last verified against commit a8f9659.

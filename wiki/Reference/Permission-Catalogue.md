@@ -103,7 +103,7 @@ How to read it:
 
 | Code | Meaning | Default roles | Backend | Frontend |
 |---|---|---|---|---|
-| `Role.Manage` | Create and edit roles and their permissions | none (System Admin only) | `RolesController`, `LandingPagesController` | `admin.routes`, `audit-links`, `nav-items` and 2 more |
+| `Role.Manage` | Create and edit roles, their permissions and their landing page | none (System Admin only) | `RolesController`, `LandingPagesController` | `admin.routes`, `audit-links`, `nav-items` and 2 more |
 | `TaskType.Manage` | Manage task types and their workflows | none (System Admin only) | `FormDefinitionResolver`, `FormsController`, `PrioritiesController`, `WorkflowControllers` | `admin-counts`, `admin.routes`, `audit-links` and 6 more |
 | `Workflow.Manage` | Manage step definitions and workflows | none (System Admin only) | `FormDefinitionResolver`, `FormsController`, `WorkflowAdminService`, `WorkflowControllers` | `admin-counts`, `admin.routes`, `audit-links` and 6 more |
 | `AssetType.Manage` | Manage asset types and asset link roles | none (System Admin only) | `AssetControllers`, `FormDefinitionResolver`, `FormsController`, `PrioritiesController` | `admin.routes`, `asset-link-roles-page`, `asset-tabs` and 5 more |
@@ -150,7 +150,7 @@ How to read it:
 
 ## Notes on special permissions
 
-- `Matter.BeManager` is a marker: it lets a person be named Primary or Secondary project manager of a matter (and shows My Matters together with `Matter.View` and `Task.View`). The Director holds it since issue #976 (script 66 for existing databases), so a Director opens My Matters, lands there, and can be named as a project manager; on My Matters a Director who manages no matter sees "You do not manage any matter yet.". `Matter.AssignManagers` lets a person change a matter's managers and use the All scope and manager picker in My Matters.
+- `Matter.BeManager` is a marker: it lets a person be named Primary or Secondary project manager of a matter (and shows My Matters together with `Matter.View` and `Task.View`). The Director holds it since issue #976 (script 66 for existing databases), so a Director opens My Matters and can be named as a project manager (the Director's landing page is the Dashboard, set on the role, not My Matters); on My Matters a Director who manages no matter sees "You do not manage any matter yet.". `Matter.AssignManagers` lets a person change a matter's managers and use the All scope and manager picker in My Matters.
 - `Matter.ViewSensitive` lets a person see all Sensitive matters (effective only when `Features:SensitiveMatterAccess` is on).
 - `Dashboard.View` opens the Dashboard; every tab needs its own `Dashboard.View<Tab>` permission as well (a Dashboard with no tab permission is hidden). `Dashboard.ViewAbsenceReasons` only shows the absence type in the Calendar.
 - `Settings.Manage` and the three Reports permissions are granted to no starter role; only the System Admin holds them until an administrator grants them.
@@ -163,4 +163,4 @@ How to read it:
 - [Routing and Navigation](../Frontend/Routing-and-Navigation.md)
 - [Authentication and Authorization](../Architecture/Authentication-and-Authorization.md)
 
-Last verified against commit c4bfdaf.
+Last verified against commit a8f9659.
