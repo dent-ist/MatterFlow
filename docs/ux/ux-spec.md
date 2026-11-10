@@ -2044,7 +2044,7 @@ Use per screen. Pass requires all items true. IDs `UAT-<screen>-<n>`. "A11y" ite
 - [ ] UAT-S26-6 axe 0 at 1366, 1920, 768 and 375 px on the dialog, the matter form with the refusal, the Roles editor, the assignee's task page and the Matters list; no new shortcut.
 
 ### S27 Settings: Branding (epic #850)
-- [ ] UAT-S27-1 As a System Administrator: Administration shows **Settings**; the page opens with the tab title "Settings: Branding - LPT Hub", the name field shows LPT Hub with "10 / 40", Save changes is off until something changes.
+- [ ] UAT-S27-1 As a System Administrator: Administration shows **Settings**; the page opens with the tab title "Settings: Branding - LPT Hub", the name field shows LPT Hub with "7 / 40", Save changes is off until something changes.
 - [ ] UAT-S27-2 Type a new name and choose a PNG, SVG or ICO file: the preview of the tab and the header follows; Save shows the toast "Saved. Other users see it the next time they load the page."; after a reload the header, the tab title and the tab icon show the new name and icon; another person sees it on their next page load (within about two minutes).
 - [ ] UAT-S27-3 A file with a script in an SVG, a text file called logo.png and a file over 256 KB are each refused with a message under the icon field; the name `<b>x</b>` is refused under the name field; nothing is stored.
 - [ ] UAT-S27-4 Reset to default for each field fills LPT Hub and the built-in icon without saving; Save then restores them everywhere (header, title, tab icon, 403/404/error pages).

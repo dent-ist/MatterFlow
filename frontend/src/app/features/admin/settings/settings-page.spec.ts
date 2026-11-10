@@ -154,7 +154,7 @@ describe('SettingsPage: Administration > Settings > Branding (epic #850, BR-05)'
       'Branding',
     );
     expect(q<HTMLInputElement>('#st-name')!.value).toBe('LPT Hub');
-    expect(text('#st-name-count')).toBe('10 / 40');
+    expect(text('#st-name-count')).toBe('7 / 40');
     expect(q('#st-name')!.getAttribute('maxlength')).toBe('40');
     expect(text('[data-icon-help]')).toContain('up to 256 KB');
     expect(text('[data-icon-help]')).toContain('at least 64 x 64 pixels');
