@@ -1,16 +1,16 @@
 using System.Globalization;
-using MatterFlow.Audit.Contracts;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Identity.Domain;
-using MatterFlow.Identity.Holidays;
-using MatterFlow.SharedKernel.Availability;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Time;
+using LptHub.Audit.Contracts;
+using LptHub.Identity.Contracts;
+using LptHub.Identity.Domain;
+using LptHub.Identity.Holidays;
+using LptHub.SharedKernel.Availability;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Time;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 
-namespace MatterFlow.Identity.Application;
+namespace LptHub.Identity.Application;
 
 /// <summary>Stable error codes of the availability API.</summary>
 public static class AvailabilityErrorCodes

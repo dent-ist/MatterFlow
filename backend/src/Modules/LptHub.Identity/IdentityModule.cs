@@ -1,11 +1,11 @@
-using MatterFlow.Identity.Access;
-using MatterFlow.Identity.Authentication;
-using MatterFlow.Identity.Authorization;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Identity.DirectoryLookup;
-using MatterFlow.Identity.Pods;
-using MatterFlow.Identity.Seeding;
-using MatterFlow.SharedKernel.Identity;
+using LptHub.Identity.Access;
+using LptHub.Identity.Authentication;
+using LptHub.Identity.Authorization;
+using LptHub.Identity.Contracts;
+using LptHub.Identity.DirectoryLookup;
+using LptHub.Identity.Pods;
+using LptHub.Identity.Seeding;
+using LptHub.SharedKernel.Identity;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Negotiate;
 using Microsoft.AspNetCore.Authorization;
@@ -15,7 +15,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 
-namespace MatterFlow.Identity;
+namespace LptHub.Identity;
 
 /// <summary>Composition entry point of the Identity module.</summary>
 public static class IdentityModule
@@ -57,9 +57,9 @@ public static class IdentityModule
         services.AddScoped<IUserDirectory, Application.UserDirectory>();
         services.AddScoped<Application.MatterManagerEligibility>();
         services.AddScoped<IMatterManagerEligibility>(sp => sp.GetRequiredService<Application.MatterManagerEligibility>());
-        services.TryAddScoped<MatterFlow.SharedKernel.Tasks.IUserTaskCounts, MatterFlow.SharedKernel.Tasks.NoTasksUserTaskCounts>();
-        services.TryAddScoped<MatterFlow.SharedKernel.Tasks.IAssigneeLoadReader, MatterFlow.SharedKernel.Tasks.NoTasksAssigneeLoadReader>();
-        services.TryAddScoped<MatterFlow.SharedKernel.Tasks.IAssigneeExperienceReader, MatterFlow.SharedKernel.Tasks.NoTasksAssigneeExperienceReader>();
+        services.TryAddScoped<LptHub.SharedKernel.Tasks.IUserTaskCounts, LptHub.SharedKernel.Tasks.NoTasksUserTaskCounts>();
+        services.TryAddScoped<LptHub.SharedKernel.Tasks.IAssigneeLoadReader, LptHub.SharedKernel.Tasks.NoTasksAssigneeLoadReader>();
+        services.TryAddScoped<LptHub.SharedKernel.Tasks.IAssigneeExperienceReader, LptHub.SharedKernel.Tasks.NoTasksAssigneeExperienceReader>();
         // The one assignee ranking every picker uses (#757); a smarter rule replaces this registration only.
         services.AddSingleton<IAssigneeRanker, Application.LoadBalancedAssigneeRanker>();
         services.AddScoped<Application.UserAdministration>();
@@ -74,10 +74,10 @@ public static class IdentityModule
         services.AddScoped<Views.UserViewService>();
         services.AddScoped<LandingPages.LandingPageService>();
 
-        services.Configure<MatterFlow.SharedKernel.Visibility.SensitiveMatterAccessOptions>(configuration.GetSection(MatterFlow.SharedKernel.Visibility.SensitiveMatterAccessOptions.Section));
+        services.Configure<LptHub.SharedKernel.Visibility.SensitiveMatterAccessOptions>(configuration.GetSection(LptHub.SharedKernel.Visibility.SensitiveMatterAccessOptions.Section));
         services.AddScoped<MatterVisibility>();
-        services.AddScoped<MatterFlow.SharedKernel.Visibility.IMatterVisibility>(sp => sp.GetRequiredService<MatterVisibility>());
-        services.AddScoped<MatterFlow.SharedKernel.Visibility.IManagedMatterScope, ManagedMatterScope>();
+        services.AddScoped<LptHub.SharedKernel.Visibility.IMatterVisibility>(sp => sp.GetRequiredService<MatterVisibility>());
+        services.AddScoped<LptHub.SharedKernel.Visibility.IManagedMatterScope, ManagedMatterScope>();
 
         services.AddScoped<CurrentUser>();
         services.Replace(ServiceDescriptor.Scoped<ICurrentUser>(sp => sp.GetRequiredService<CurrentUser>()));

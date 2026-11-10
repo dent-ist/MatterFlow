@@ -1,4 +1,4 @@
--- MatterFlow performance dataset (ticket 64). Run with sqlcmd -b -v Scale=1 -i seed-perf-data.sql against a throwaway database that
+-- LPT Hub performance dataset (ticket 64). Run with sqlcmd -b -v Scale=1 -i seed-perf-data.sql against a throwaway database that
 -- the API has already migrated and seeded with the starter configuration (see README.md in this folder).
 --
 -- Scale=1 produces about: 300 users with roles, 40 Pods, 200 Clients, 1,000 Matters, 3,000 Projects, 52,500 Assets (250 each in 50 Matters),

@@ -1,4 +1,4 @@
-namespace MatterFlow.Notifications.Contracts;
+namespace LptHub.Notifications.Contracts;
 
 /// <summary>The kinds of object a notification points at (the client builds the link from kind and id).</summary>
 public static class NotificationObjectKinds

@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
-using MatterFlow.SharedKernel.Results;
+using LptHub.SharedKernel.Results;
 
-namespace MatterFlow.Organization.Application;
+namespace LptHub.Organization.Application;
 
 /// <summary>
 /// Input rules of the matter fields (epic #1298): the DMS and DFS paths (a UNC path or an http/https address; drive letters are refused; UI spec section 3.3),

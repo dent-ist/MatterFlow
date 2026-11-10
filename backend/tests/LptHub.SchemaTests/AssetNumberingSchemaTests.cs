@@ -1,9 +1,9 @@
-using MatterFlow.Data.SchemaMigrations;
+using LptHub.Data.SchemaMigrations;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 
-namespace MatterFlow.SchemaTests;
+namespace LptHub.SchemaTests;
 
 /// <summary>Asset numbering (issue #1297; baseline, formerly script 63): the numbering settings, the number columns, the unique index, the counter table and the guard trigger.</summary>
 [Collection(SqlServerCollection.Name)]

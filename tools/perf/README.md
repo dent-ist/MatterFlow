@@ -1,6 +1,6 @@
 # Performance tooling (ticket 64)
 
-Everything needed to load a realistic MatterFlow dataset into a throwaway SQL Server and to measure the published API and the built web app
+Everything needed to load a realistic LPT Hub dataset into a throwaway SQL Server and to measure the published API and the built web app
 against it. Results of the first round: `docs/qa/performance-round-1.md`.
 
 | File | What it does |
@@ -25,15 +25,15 @@ process are removed again unless `PERF_KEEP=1`. The full list of variables is at
 
 ## By hand
 
-1. Start SQL Server and create an empty database `MatterFlow` (`RECOVERY SIMPLE`, `READ_COMMITTED_SNAPSHOT ON`, files pre-sized to avoid growth pauses).
+1. Start SQL Server and create an empty database `LptHub` (`RECOVERY SIMPLE`, `READ_COMMITTED_SNAPSHOT ON`, files pre-sized to avoid growth pauses).
 2. Start the API once against it with `Seed__StarterConfiguration__Enabled=true` and a `Dev:Users` entry for `perf.admin` with the System Admin role. That
    applies the schema baseline (and any later scripts) and creates the starter roles, task types, workflows and forms the seeder builds on. Stop it again.
-3. `sqlcmd -I -b -d MatterFlow -v Scale=1 -i seed-perf-data.sql` (`-I` is required: the schema has filtered indexes). The script refuses a database
+3. `sqlcmd -I -b -d LptHub -v Scale=1 -i seed-perf-data.sql` (`-I` is required: the schema has filtered indexes). The script refuses a database
    that already holds Tasks or Clients, and a second run (`dbo.SeedMarker`). Take a backup now and restore it before every run, so that runs start
    from the same data.
 4. Start the API again (`Release` build, `ASPNETCORE_ENVIRONMENT=Development` for Dev auth) and run
    `node loadtest.mjs --base http://127.0.0.1:PORT --vus 50 --duration 60 --warmup 10 --out result.json`.
-5. `sqlcmd -I -d MatterFlow -W -w 400 -i top-queries.sql` before the plan cache is cleared.
+5. `sqlcmd -I -d LptHub -W -w 400 -i top-queries.sql` before the plan cache is cleared.
 
 ## The dataset
 
@@ -79,7 +79,7 @@ Each virtual user is one persona user and loops: pick a scenario by the persona'
 (25 rows), filtered (priority, Pod, overdue, Matter, type, due range, text, assignee, Client, requestor), sorted (every sort field, pages 1-5, 25/50/100 rows); My Work and
 Pod Work with their views; dashboard; global search typeahead with text and with numbers (Client number, Matter reference, `TSK-n`, bare digits, `client-matter`);
 advanced search (task, matter, asset, project); Task detail alone and as the Task page's four parallel calls (Task, comments, activity, assets); audit search (every filter); Task
-create; the workflow cycle (create, start the first step, save its values, complete it) and comment add. Every request carries `X-MatterFlow-Client: web`
+create; the workflow cycle (create, start the first step, save its values, complete it) and comment add. Every request carries `X-LptHub-Client: web`
 and `X-Time-Zone: America/New_York`. A request counts as an error for any status outside 200-399, including 429.
 
 The numbers depend on the machine; compare runs from the same machine and the same restored database. The load generator shares the CPU with the API and SQL Server

@@ -1,4 +1,4 @@
-namespace MatterFlow.SharedKernel.Tasks;
+namespace LptHub.SharedKernel.Tasks;
 
 /// <summary>
 /// Open Task counts for the Task Type, Workflow and Workflow Version administration screens (#372, #391). The Task table belongs to the Work

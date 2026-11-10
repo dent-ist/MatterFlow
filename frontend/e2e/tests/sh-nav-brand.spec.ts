@@ -5,7 +5,7 @@ import { noHorizontalScroll, shot, SIZES } from '../support/screens';
 
 /**
  * S5 (#620), S6 (#621), S2 / S22 (#626): the rail says "Asset Types" for the administrator's page next to "Assets" for the records, the
- * main items are one list in one order with Projects and Assets indented under Matters (MM-59, a small gap in the 56 px rail), and the header carries the MatterFlow mark, which is also the favicon.
+ * main items are one list in one order with Projects and Assets indented under Matters (MM-59, a small gap in the 56 px rail), and the header carries the LPT Hub mark, which is also the favicon.
  */
 const nav = (page: Page) => page.getByRole('navigation', { name: 'Main' });
 
@@ -139,7 +139,7 @@ test.describe('The menu: order, indent and names (#620, #621, MM-59)', () => {
   });
 });
 
-test.describe('The MatterFlow mark (#626)', () => {
+test.describe('The LPT Hub mark (#626)', () => {
   test.setTimeout(120_000);
 
   test('the header shows the mark beside the name and the favicon files are the mark', async ({
@@ -149,10 +149,10 @@ test.describe('The MatterFlow mark (#626)', () => {
     for (const size of SIZES) {
       await page.setViewportSize(size);
       await page.goto('/dashboard');
-      const logo = page.getByRole('link', { name: 'MatterFlow home' });
+      const logo = page.getByRole('link', { name: 'LPT Hub home' });
       await expect(logo).toBeVisible();
       await expect(logo.locator('img.mf-logo__mark')).toBeVisible();
-      await expect(logo).toContainText('MatterFlow');
+      await expect(logo).toContainText('LPT Hub');
       const imgOk = await logo
         .locator('img')
         .evaluate((i: HTMLImageElement) => i.complete && i.naturalWidth > 0);

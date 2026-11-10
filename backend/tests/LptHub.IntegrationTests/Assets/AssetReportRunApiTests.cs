@@ -2,13 +2,13 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.WorkViews.Application.Queries;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.WorkViews.Application.Queries;
 using Microsoft.Data.SqlClient;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Assets;
+namespace LptHub.IntegrationTests.Assets;
 
 /// <summary>Running asset reports (epic #851, issue #873): Count, Sum and Average, group-by choices, units, limits, visibility and the hidden-matter sentinel sweep.</summary>
 [Collection(SqlServerCollection.Name)]
@@ -209,7 +209,7 @@ public sealed class AssetReportRunApiTests(SqlServerFixture sql) : IAsyncLifetim
         Cell((await RunAsync(_fx.PmFew, Def(_gbType, "sum", "matter"))).GetProperty("totals"), 1).ShouldBe(60m);
     }
 
-    private static int AssetReportCap() => MatterFlow.WorkViews.Application.Queries.AssetReportRunService.MaxGroups;
+    private static int AssetReportCap() => LptHub.WorkViews.Application.Queries.AssetReportRunService.MaxGroups;
 
     [Fact]
     public async Task Reports_and_the_data_tab_agree_on_the_same_assets()

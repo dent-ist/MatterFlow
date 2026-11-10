@@ -1,9 +1,9 @@
 using System.Data;
 using System.Text.Json;
-using MatterFlow.Reports.Application;
+using LptHub.Reports.Application;
 using Microsoft.Data.SqlClient;
 
-namespace MatterFlow.Reports.Infrastructure;
+namespace LptHub.Reports.Infrastructure;
 
 /// <summary>
 /// Startup probe of the report login (spec 6.3 layer 4). It connects with the report connection and asks SQL Server what the login may do:
@@ -21,8 +21,8 @@ internal static class ReportLoginProbe
           CAST(ISNULL(IS_MEMBER('db_owner'), 0) AS int) AS IsDbOwner,
           CAST(ISNULL(IS_MEMBER('db_datareader'), 0) + ISNULL(IS_MEMBER('db_datawriter'), 0) + ISNULL(IS_MEMBER('db_ddladmin'), 0)
              + ISNULL(IS_MEMBER('db_securityadmin'), 0) + ISNULL(IS_MEMBER('db_accessadmin'), 0)
-             + ISNULL(IS_MEMBER('mf_app'), 0) + ISNULL(IS_MEMBER('mf_migrator'), 0) AS int) AS BroadRoleCount,
-          CAST(ISNULL(IS_MEMBER('mf_report_reader'), 0) AS int) AS InReaderRole,
+             + ISNULL(IS_MEMBER('lpt_app'), 0) + ISNULL(IS_MEMBER('lpt_migrator'), 0) AS int) AS BroadRoleCount,
+          CAST(ISNULL(IS_MEMBER('lpt_report_reader'), 0) AS int) AS InReaderRole,
           (SELECT COUNT(*) FROM sys.tables t
             WHERE ISNULL(HAS_PERMS_BY_NAME(QUOTENAME(SCHEMA_NAME(t.schema_id)) + N'.' + QUOTENAME(t.name), 'OBJECT', 'INSERT'), 0) = 1
                OR ISNULL(HAS_PERMS_BY_NAME(QUOTENAME(SCHEMA_NAME(t.schema_id)) + N'.' + QUOTENAME(t.name), 'OBJECT', 'UPDATE'), 0) = 1

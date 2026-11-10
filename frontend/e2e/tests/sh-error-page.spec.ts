@@ -20,7 +20,7 @@ test.describe('The error page (#608)', () => {
     await expect(page).toHaveURL(/\/error$/);
     await expect(page.getByRole('heading', { name: TITLE, level: 1 })).toBeVisible();
     await expect(page.locator('[data-error-reference]')).toContainText('e2e-500-trace');
-    await expect(page.locator('[data-state-brand]')).toHaveText('MatterFlow');
+    await expect(page.locator('[data-state-brand]')).toHaveText('LPT Hub');
     // The reference is on the page, not only in a toast that goes away after 8 seconds.
     await page.waitForTimeout(9000);
     await expect(page.locator('[data-error-reference]')).toContainText('e2e-500-trace');

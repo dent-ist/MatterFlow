@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace MatterFlow.WorkManagement.Application;
+namespace LptHub.WorkManagement.Application;
 
 /// <summary>Where the selected tasks go: a person, a pod or both. A person alone keeps each task's pod; a pod alone moves the task to that pod's queue and clears its person.</summary>
 public sealed class BulkReassignTo

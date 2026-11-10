@@ -1,4 +1,4 @@
-namespace MatterFlow.SharedKernel.Visibility;
+namespace LptHub.SharedKernel.Visibility;
 
 /// <summary>
 /// Marks a controller or action that reads whole sets of tasks under the sensitive-matter rule (queue, My Work, dashboard, search): before it runs, the request loads the short

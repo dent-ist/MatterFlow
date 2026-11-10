@@ -1,12 +1,12 @@
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Intake.Application;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Identity.Contracts;
+using LptHub.Intake.Application;
+using LptHub.SharedKernel.Results;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 
-namespace MatterFlow.Intake.Api;
+namespace LptHub.Intake.Api;
 
 /// <summary>Multipart body of the file variant of <c>parse-email</c>.</summary>
 public sealed class ParseEmailFileForm

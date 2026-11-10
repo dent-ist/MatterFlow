@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
-using MatterFlow.Assets.Domain;
+using LptHub.Assets.Domain;
 
-namespace MatterFlow.Assets.Application;
+namespace LptHub.Assets.Application;
 
 /// <summary>An Asset Type with its form status.</summary>
 /// <param name="AssetTypeId">Internal id.</param>

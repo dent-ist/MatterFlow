@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 
-namespace MatterFlow.Organization.Application;
+namespace LptHub.Organization.Application;
 
 /// <summary>One of the eight fixed event types (UI-05). The code list lives in code; <c>IconKey</c> and <c>ColourKey</c> are keys of the frontend icon map and of the <c>--mf-event-*</c> design tokens.</summary>
 public sealed record MatterEventTypeInfo(

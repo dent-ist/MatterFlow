@@ -1,10 +1,10 @@
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.IntegrationTests.Tasks;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Tasks;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.WorkViews;
+namespace LptHub.IntegrationTests.WorkViews;
 
 /// <summary>
 /// One seeded database for the coverage tests. Completed Tasks get their completion time set with SQL so the period and zone boundaries can be

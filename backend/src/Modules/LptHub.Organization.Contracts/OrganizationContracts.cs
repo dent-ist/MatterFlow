@@ -1,4 +1,4 @@
-namespace MatterFlow.Organization.Contracts;
+namespace LptHub.Organization.Contracts;
 
 /// <summary>A Matter as other modules see it (display reference, state flags and its Client).</summary>
 /// <param name="MatterId">Internal id.</param>

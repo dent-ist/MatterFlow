@@ -1,6 +1,6 @@
 using System.Security.Claims;
 
-namespace MatterFlow.Identity.Authentication;
+namespace LptHub.Identity.Authentication;
 
 /// <summary>The authenticated external login as the provider reports it (architecture 6.1). Nothing outside the Identity module sees this type.</summary>
 /// <param name="Provider">'Windows', 'Dev' or later 'Entra'.</param>

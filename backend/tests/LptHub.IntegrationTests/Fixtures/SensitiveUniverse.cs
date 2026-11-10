@@ -1,7 +1,7 @@
-using MatterFlow.IntegrationTests.Tasks;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using LptHub.IntegrationTests.Tasks;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Fixtures;
+namespace LptHub.IntegrationTests.Fixtures;
 
 /// <summary>
 /// The "universe" of the sensitive-matter tests (epic #788, README 12.1): users, matters and tasks for the six personas, with a sentinel

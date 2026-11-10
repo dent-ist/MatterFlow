@@ -1,8 +1,8 @@
-using MatterFlow.SharedKernel.Results;
+using LptHub.SharedKernel.Results;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 
-namespace MatterFlow.Api.Http;
+namespace LptHub.Api.Http;
 
 /// <summary>
 /// Module controllers cannot reference the host's <see cref="Problems"/> helpers (dependency rules), so they return

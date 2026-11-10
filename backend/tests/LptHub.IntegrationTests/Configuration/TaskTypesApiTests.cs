@@ -2,15 +2,15 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using MatterFlow.Audit.Domain;
-using MatterFlow.Configuration.Contracts;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.Audit.Domain;
+using LptHub.Configuration.Contracts;
+using LptHub.Identity.Contracts;
+using LptHub.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Configuration;
+namespace LptHub.IntegrationTests.Configuration;
 
 /// <summary>
 /// Task Types (ticket #34) against a real SQL Server through the full HTTP pipeline: create/edit/deactivate, the request form linkage,
@@ -28,7 +28,7 @@ public sealed class TaskTypesApiTests(SqlServerFixture sql) : IAsyncLifetime
     private HttpClient As(string user = DatabaseApiFactory.AdminAccount)
     {
         var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        client.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         client.DefaultRequestHeaders.Add("X-Dev-User", user);
         return client;
     }
@@ -126,7 +126,7 @@ public sealed class TaskTypesApiTests(SqlServerFixture sql) : IAsyncLifetime
         var form = await ReadAsync(await admin.GetAsync($"/api/v1/forms/by-owner?ownerKind=TaskType&ownerId={Id(created)}"));
         form.GetProperty("formDefinitionId").GetInt32().ShouldBe(created.GetProperty("formDefinitionId").GetInt32());
         form.GetProperty("versions").GetArrayLength().ShouldBe(0);
-        (await _factory.CountAsync<MatterFlow.Configuration.Domain.TaskType>()).ShouldBe(1);
+        (await _factory.CountAsync<LptHub.Configuration.Domain.TaskType>()).ShouldBe(1);
     }
 
     [Fact]
@@ -151,7 +151,7 @@ public sealed class TaskTypesApiTests(SqlServerFixture sql) : IAsyncLifetime
         var badDefault = await admin.PostAsJsonAsync("/api/v1/task-types", new { name = "Bad", eligibleWorkflowIds = new[] { 1 }, defaultWorkflowDefinitionId = 2 });
         badDefault.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         (await ReadAsync(badDefault)).GetProperty("errors").GetProperty("defaultWorkflowDefinitionId")[0].GetProperty("code").GetString().ShouldBe("NOT_ELIGIBLE");
-        (await _factory.CountAsync<MatterFlow.Configuration.Domain.TaskType>()).ShouldBe(1);
+        (await _factory.CountAsync<LptHub.Configuration.Domain.TaskType>()).ShouldBe(1);
     }
 
     // ---- update, concurrency, deactivate
@@ -389,7 +389,7 @@ public sealed class TaskTypesApiTests(SqlServerFixture sql) : IAsyncLifetime
         rejected.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         var error = (await ReadAsync(rejected)).GetProperty("errors").GetProperty("iconKey")[0].GetProperty("code").GetString();
         error.ShouldBeOneOf("UNKNOWN_ICON", "REQUIRED");
-        (await _factory.CountAsync<MatterFlow.Configuration.Domain.TaskType>()).ShouldBe(0);
+        (await _factory.CountAsync<LptHub.Configuration.Domain.TaskType>()).ShouldBe(0);
 
         var created = await CreateAsync(admin, new { name = "Good icon", iconKey = "book" });
         var update = await admin.PutAsJsonAsync($"/api/v1/task-types/{Id(created)}", UpdateBody(created, iconKey: key));

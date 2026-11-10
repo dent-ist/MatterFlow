@@ -1,7 +1,7 @@
-using MatterFlow.Api.Security;
+using LptHub.Api.Security;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Identity;
+namespace LptHub.IntegrationTests.Identity;
 
 /// <summary>Security review SEC-04: what the host does when the API's database identity can modify the audit table.</summary>
 public class AuditStoreGuardTests

@@ -1,18 +1,18 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.Audit.Domain;
-using MatterFlow.Configuration.Application.Lookups;
-using MatterFlow.Configuration.Contracts;
-using MatterFlow.Configuration.Domain;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.Audit.Domain;
+using LptHub.Configuration.Application.Lookups;
+using LptHub.Configuration.Contracts;
+using LptHub.Configuration.Domain;
+using LptHub.Identity.Contracts;
+using LptHub.IntegrationTests.Fixtures;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Configuration;
+namespace LptHub.IntegrationTests.Configuration;
 
 /// <summary>
 /// Priorities, status labels and asset link roles (tickets #33 and #36) against a real SQL Server through the full HTTP pipeline:
@@ -36,7 +36,7 @@ public sealed class LookupsApiTests(SqlServerFixture sql) : IAsyncLifetime
     private static HttpClient Client(DatabaseApiFactory factory, string user)
     {
         var client = factory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        client.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         client.DefaultRequestHeaders.Add("X-Dev-User", user);
         return client;
     }
@@ -303,7 +303,7 @@ public sealed class LookupsApiTests(SqlServerFixture sql) : IAsyncLifetime
         }));
         var admin = Client(_factory, DatabaseApiFactory.AdminAccount);
         var client = factory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        client.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         client.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
         var low = (await PrioritiesAsync(admin)).Single(p => p.GetProperty("label").GetString() == "Low");
         var source = (await JsonAsync(await admin.GetAsync("/api/v1/asset-link-roles"))).EnumerateArray().First();

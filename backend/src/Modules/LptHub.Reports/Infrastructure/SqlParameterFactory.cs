@@ -1,8 +1,8 @@
 using System.Data;
-using MatterFlow.Reports.Domain.Parameters;
+using LptHub.Reports.Domain.Parameters;
 using Microsoft.Data.SqlClient;
 
-namespace MatterFlow.Reports.Infrastructure;
+namespace LptHub.Reports.Infrastructure;
 
 /// <summary>Creates the typed <c>SqlParameter</c> for a bound value: explicit type, size, precision and scale; never <c>AddWithValue</c>.</summary>
 internal static class SqlParameterFactory

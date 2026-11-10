@@ -33,13 +33,13 @@ jobs:
         run: deploy/publish.sh "$GITHUB_WORKSPACE/artifacts/publish" win-x64
       - name: Check the package contents
         run: |
-          test -f artifacts/publish/MatterFlow.Api.dll
+          test -f artifacts/publish/LptHub.Api.dll
           test -f artifacts/publish/web.config
           test -f artifacts/publish/wwwroot/index.html
           test -f artifacts/publish/appsettings.Production.template.json
       - uses: actions/upload-artifact@v4
         with:
-          name: matterflow-publish-${{ github.sha }}
+          name: lpt-hub-publish-${{ github.sha }}
           path: artifacts/publish
           if-no-files-found: error
           retention-days: 30

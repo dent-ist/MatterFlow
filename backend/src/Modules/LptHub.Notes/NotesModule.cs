@@ -1,7 +1,7 @@
-using MatterFlow.Notes.Application;
+using LptHub.Notes.Application;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace MatterFlow.Notes;
+namespace LptHub.Notes;
 
 /// <summary>Composition entry point of the Notes module (matter notes, their tags, references, lock and templates).</summary>
 public static class NotesModule
@@ -15,7 +15,7 @@ public static class NotesModule
         services.AddScoped<NoteService>();
         services.AddScoped<NoteTagService>();
         services.AddScoped<NoteTemplateService>();
-        services.AddScoped<MatterFlow.Notes.Contracts.INoteLabels, NoteLabels>();
+        services.AddScoped<LptHub.Notes.Contracts.INoteLabels, NoteLabels>();
         return services;
     }
 }

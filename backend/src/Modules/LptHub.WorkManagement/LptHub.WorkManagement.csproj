@@ -1,17 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <ProjectReference Include="..\..\MatterFlow.SharedKernel\MatterFlow.SharedKernel.csproj" />
-    <ProjectReference Include="..\MatterFlow.WorkManagement.Contracts\MatterFlow.WorkManagement.Contracts.csproj" />
-    <ProjectReference Include="..\MatterFlow.Organization.Contracts\MatterFlow.Organization.Contracts.csproj" />
-    <ProjectReference Include="..\MatterFlow.Assets.Contracts\MatterFlow.Assets.Contracts.csproj" />
-    <ProjectReference Include="..\MatterFlow.WorkflowEngine.Contracts\MatterFlow.WorkflowEngine.Contracts.csproj" />
-    <ProjectReference Include="..\MatterFlow.Configuration.Contracts\MatterFlow.Configuration.Contracts.csproj" />
-    <ProjectReference Include="..\MatterFlow.Identity.Contracts\MatterFlow.Identity.Contracts.csproj" />
-    <ProjectReference Include="..\MatterFlow.Audit.Contracts\MatterFlow.Audit.Contracts.csproj" />
-    <ProjectReference Include="..\MatterFlow.Notifications.Contracts\MatterFlow.Notifications.Contracts.csproj" />
+    <ProjectReference Include="..\..\LptHub.SharedKernel\LptHub.SharedKernel.csproj" />
+    <ProjectReference Include="..\LptHub.WorkManagement.Contracts\LptHub.WorkManagement.Contracts.csproj" />
+    <ProjectReference Include="..\LptHub.Organization.Contracts\LptHub.Organization.Contracts.csproj" />
+    <ProjectReference Include="..\LptHub.Assets.Contracts\LptHub.Assets.Contracts.csproj" />
+    <ProjectReference Include="..\LptHub.WorkflowEngine.Contracts\LptHub.WorkflowEngine.Contracts.csproj" />
+    <ProjectReference Include="..\LptHub.Configuration.Contracts\LptHub.Configuration.Contracts.csproj" />
+    <ProjectReference Include="..\LptHub.Identity.Contracts\LptHub.Identity.Contracts.csproj" />
+    <ProjectReference Include="..\LptHub.Audit.Contracts\LptHub.Audit.Contracts.csproj" />
+    <ProjectReference Include="..\LptHub.Notifications.Contracts\LptHub.Notifications.Contracts.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <InternalsVisibleTo Include="MatterFlow.UnitTests" />
+    <InternalsVisibleTo Include="LptHub.UnitTests" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />

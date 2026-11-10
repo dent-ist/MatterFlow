@@ -1,8 +1,8 @@
-using MatterFlow.Notifications.Contracts;
-using MatterFlow.SharedKernel.Visibility;
+using LptHub.Notifications.Contracts;
+using LptHub.SharedKernel.Visibility;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Notifications.Application;
+namespace LptHub.Notifications.Application;
 
 /// <summary>
 /// The creation-time check of the sensitive-matter rule (epic #788, README section 8): a notification is only created for a recipient who can see its

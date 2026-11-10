@@ -2,12 +2,12 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Forms;
+namespace LptHub.IntegrationTests.Forms;
 
 /// <summary>
 /// <c>GET /api/v1/forms/custom-fields</c> (#643): the Client, Matter and Project custom-field forms with their numbers, read-only. Looking creates no
@@ -26,7 +26,7 @@ public sealed class CustomFieldFormsApiTests(SqlServerFixture sql) : IAsyncLifet
     private HttpClient As(string user = DatabaseApiFactory.AdminAccount)
     {
         var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        client.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         client.DefaultRequestHeaders.Add("X-Dev-User", user);
         return client;
     }
@@ -75,7 +75,7 @@ public sealed class CustomFieldFormsApiTests(SqlServerFixture sql) : IAsyncLifet
     [Fact]
     public async Task Looking_at_the_three_objects_writes_nothing()
     {
-        var definitions = await _factory.CountAsync<MatterFlow.Configuration.Domain.Forms.FormDefinition>();
+        var definitions = await _factory.CountAsync<LptHub.Configuration.Domain.Forms.FormDefinition>();
         var events = await DefinitionEventsAsync();
 
         var list = await OkAsync(await As().GetAsync("/api/v1/forms/custom-fields"));
@@ -84,7 +84,7 @@ public sealed class CustomFieldFormsApiTests(SqlServerFixture sql) : IAsyncLifet
 
         list.GetArrayLength().ShouldBe(3);
         list.EnumerateArray().Select(o => o.GetProperty("ownerKind").GetString()).ShouldBe(["Client", "Matter", "Project"]);
-        (await _factory.CountAsync<MatterFlow.Configuration.Domain.Forms.FormDefinition>()).ShouldBe(definitions, "viewing provisions nothing");
+        (await _factory.CountAsync<LptHub.Configuration.Domain.Forms.FormDefinition>()).ShouldBe(definitions, "viewing provisions nothing");
         (await DefinitionEventsAsync()).ShouldBe(events, "viewing writes no FORM_DEFINITION_CREATED event");
 
         // An object that never had custom fields is "none", with no form id and no numbers.
@@ -168,7 +168,7 @@ public sealed class CustomFieldFormsApiTests(SqlServerFixture sql) : IAsyncLifet
             logging.AddProvider(commands);
         })));
         var http = logged.CreateClient();
-        http.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        http.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         http.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
 
         async Task<int> MeasureAsync()

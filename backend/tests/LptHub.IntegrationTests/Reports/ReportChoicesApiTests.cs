@@ -1,10 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Reports;
+namespace LptHub.IntegrationTests.Reports;
 
 /// <summary>Choice lists: fixed, SELECT through the same engine and validator, lookups, and the value re-check at run time (epic #671, issue #711).</summary>
 [Collection(SqlServerCollection.Name)]

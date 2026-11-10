@@ -68,7 +68,7 @@ const visibleNames = (page: Page) => page.locator('td[data-report] a[data-open]'
 /** Runs a report as the person of the page (the request carries the same sign-in as the page). */
 async function runReport(page: Page, reportId: number): Promise<void> {
   const response = await page.request.post(`/api/v1/reports/${reportId}/runs`, {
-    headers: { 'X-MatterFlow-Client': 'web' },
+    headers: { 'X-LptHub-Client': 'web' },
     data: { parameters: {} },
   });
   expect(response.ok(), await response.text()).toBe(true);
@@ -296,7 +296,7 @@ test.describe('favourites and recent: the API refuses what the person may not ru
   }) => {
     const none = await personas.create({ label: 'rp10-none', permissions: ['Report.Run'] });
     const manage = await personas.create({ label: 'rp10-manage', permissions: ['Report.Manage'] });
-    const headers = { 'X-MatterFlow-Client': 'web' };
+    const headers = { 'X-LptHub-Client': 'web' };
 
     const runner = await asUser(none.username);
     expect(

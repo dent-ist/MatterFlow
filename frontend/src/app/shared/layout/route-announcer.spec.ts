@@ -52,7 +52,7 @@ describe('RouteAnnouncer (S9a, #624)', () => {
     await router.navigateByUrl('/matters');
     expect(text()).toBe('');
     vi.advanceTimersByTime(ANNOUNCE_QUIET_MS + 10);
-    expect(text()).toBe('Matters - MatterFlow');
+    expect(text()).toBe('Matters - LPT Hub');
     expect(text()).toBe(TestBed.inject(Title).getTitle());
   });
 
@@ -67,7 +67,7 @@ describe('RouteAnnouncer (S9a, #624)', () => {
     vi.advanceTimersByTime(ANNOUNCE_QUIET_MS - 50);
     expect(text()).toBe('');
     vi.advanceTimersByTime(100);
-    expect(text()).toBe('00107-00001 Merger: Tasks - MatterFlow');
+    expect(text()).toBe('00107-00001 Merger: Tasks - LPT Hub');
   });
 
   it('says nothing for a change of the query only', async () => {
@@ -75,11 +75,11 @@ describe('RouteAnnouncer (S9a, #624)', () => {
     await router.navigateByUrl('/clients');
     await router.navigateByUrl('/matters');
     vi.advanceTimersByTime(ANNOUNCE_QUIET_MS + 10);
-    expect(text()).toBe('Matters - MatterFlow');
+    expect(text()).toBe('Matters - LPT Hub');
     await router.navigateByUrl('/matters?tab=closed');
-    expect(text()).toBe('Matters - MatterFlow'); // not cleared, nothing new
+    expect(text()).toBe('Matters - LPT Hub'); // not cleared, nothing new
     vi.advanceTimersByTime(ANNOUNCE_QUIET_MS + 10);
-    expect(text()).toBe('Matters - MatterFlow');
+    expect(text()).toBe('Matters - LPT Hub');
   });
 
   it('says nothing for a Back navigation', async () => {
@@ -87,16 +87,16 @@ describe('RouteAnnouncer (S9a, #624)', () => {
     await router.navigateByUrl('/clients');
     await router.navigateByUrl('/matters');
     vi.advanceTimersByTime(ANNOUNCE_QUIET_MS + 10);
-    expect(text()).toBe('Matters - MatterFlow');
+    expect(text()).toBe('Matters - LPT Hub');
     await router.navigateByUrl('/clients');
     vi.advanceTimersByTime(ANNOUNCE_QUIET_MS + 10);
-    expect(text()).toBe('Clients - MatterFlow');
+    expect(text()).toBe('Clients - LPT Hub');
 
     TestBed.inject(Location).back(); // Back to /matters is a popstate navigation
     await vi.waitFor(() => expect(router.url).toBe('/matters'));
-    expect(text()).toBe('Clients - MatterFlow'); // not cleared, not changed
+    expect(text()).toBe('Clients - LPT Hub'); // not cleared, not changed
     vi.advanceTimersByTime(ANNOUNCE_MAX_MS + 100);
-    expect(text()).toBe('Clients - MatterFlow');
+    expect(text()).toBe('Clients - LPT Hub');
   });
 
   it('clears the region at the start of an announcement so the same title is read again', async () => {
@@ -104,10 +104,10 @@ describe('RouteAnnouncer (S9a, #624)', () => {
     await router.navigateByUrl('/clients');
     await router.navigateByUrl('/matters');
     vi.advanceTimersByTime(ANNOUNCE_QUIET_MS + 10);
-    expect(text()).toBe('Matters - MatterFlow');
+    expect(text()).toBe('Matters - LPT Hub');
     await router.navigateByUrl('/clients');
     expect(text()).toBe(''); // cleared first
     vi.advanceTimersByTime(ANNOUNCE_QUIET_MS + 10);
-    expect(text()).toBe('Clients - MatterFlow');
+    expect(text()).toBe('Clients - LPT Hub');
   });
 });

@@ -1,9 +1,9 @@
-using MatterFlow.Data.SchemaMigrations;
+using LptHub.Data.SchemaMigrations;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 
-namespace MatterFlow.SchemaTests;
+namespace LptHub.SchemaTests;
 
 /// <summary>Baseline (archived 33-my-matters-indexes.sql) (epic #667, issue #686): the two covering indexes keep their names and carry the columns the My Matters reads need.</summary>
 [Collection(SqlServerCollection.Name)]

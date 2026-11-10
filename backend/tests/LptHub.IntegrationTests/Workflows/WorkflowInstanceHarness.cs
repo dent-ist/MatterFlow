@@ -2,16 +2,16 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using MatterFlow.Audit.Domain;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Tasks;
-using MatterFlow.WorkflowEngine.Contracts;
+using LptHub.Audit.Domain;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Tasks;
+using LptHub.WorkflowEngine.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Workflows;
+namespace LptHub.IntegrationTests.Workflows;
 
 /// <summary>
 /// Test support for workflow execution against a real SQL Server: configures steps and workflows (published through the real admin API, so the
@@ -36,7 +36,7 @@ public sealed class WorkflowInstanceHarness
     {
         _factory = factory;
         _admin = factory.CreateClient();
-        _admin.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        _admin.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         _admin.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
     }
 

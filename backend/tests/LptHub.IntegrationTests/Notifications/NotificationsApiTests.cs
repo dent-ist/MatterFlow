@@ -1,17 +1,17 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.IntegrationTests.Tasks;
-using MatterFlow.Notifications.Contracts;
-using MatterFlow.Notifications.Domain;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Tasks;
+using LptHub.Notifications.Contracts;
+using LptHub.Notifications.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Notifications;
+namespace LptHub.IntegrationTests.Notifications;
 
 /// <summary>
 /// WP-NT1 (#729 to #734): the Notification table, the publisher (same transaction), the permission re-check on read, list / read / read-all,
@@ -75,7 +75,7 @@ public sealed class NotificationsApiTests(SqlServerFixture sql) : IAsyncLifetime
     public async Task Anonymous_is_401_and_a_user_without_Task_View_is_403_on_every_endpoint()
     {
         var anonymous = _factory.CreateClient();
-        anonymous.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        anonymous.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         (await anonymous.GetAsync(List)).StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
         (await anonymous.GetAsync(Poll)).StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
         (await anonymous.GetAsync(Prefs)).StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
@@ -382,7 +382,7 @@ public sealed class NotificationsApiTests(SqlServerFixture sql) : IAsyncLifetime
             logging.AddProvider(commands);
         })));
         var http = logged.CreateClient();
-        http.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        http.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         http.DefaultRequestHeaders.Add("X-Dev-User", @"KE\ann");
 
         async Task<(int Poll, int Page)> CountAsync()

@@ -143,7 +143,7 @@ CREATE TABLE dbo.AppSigningKey (
   Kid             VARCHAR(40) NOT NULL CONSTRAINT UQ_AppSigningKey_Kid UNIQUE,
   Status          VARCHAR(10) NOT NULL,            -- PENDING|ACTIVE|RETIRING|RETIRED|REVOKED
   PublicJwk       NVARCHAR(1000) NOT NULL,
-  PrivateKeyProtected VARBINARY(MAX) NOT NULL,     -- Data Protection, purpose MatterFlow.Apps.Signing.v1
+  PrivateKeyProtected VARBINARY(MAX) NOT NULL,     -- Data Protection, purpose LptHub.Apps.Signing.v1
   CreatedAtUtc    DATETIME2(3) NOT NULL CONSTRAINT DF_AppSigningKey_C DEFAULT SYSUTCDATETIME(),
   ActivateAtUtc   DATETIME2(3) NOT NULL,
   RetireAtUtc     DATETIME2(3) NULL,
@@ -185,7 +185,7 @@ CREATE TABLE dbo.AppConfig (                         -- non-secret values, per a
 CREATE TABLE dbo.AppSecret (                         -- write-only through the API
   AppId     INT NOT NULL,
   SecretKey VARCHAR(40) NOT NULL,
-  ValueProtected VARBINARY(MAX) NOT NULL,            -- Data Protection, purpose MatterFlow.Apps.Secret.v1
+  ValueProtected VARBINARY(MAX) NOT NULL,            -- Data Protection, purpose LptHub.Apps.Secret.v1
   ModifiedAtUtc DATETIME2(3) NOT NULL, ModifiedByUserId INT NOT NULL,
   CONSTRAINT PK_AppSecret PRIMARY KEY (AppId, SecretKey),
   CONSTRAINT FK_AppSecret_App FOREIGN KEY (AppId) REFERENCES dbo.App(AppId)
@@ -208,7 +208,7 @@ CREATE TABLE dbo.AppUsageDaily (
   CONSTRAINT PK_AppUsageDaily PRIMARY KEY (AppId, UsageDate),
   CONSTRAINT FK_AppUsageDaily_App FOREIGN KEY (AppId) REFERENCES dbo.App(AppId)
 );
--- plus: DENY UPDATE, DELETE, ALTER on AppLaunchAudit (and AppServiceAudit in 28) to mf_app; extend AuditStoreGuard.
+-- plus: DENY UPDATE, DELETE, ALTER on AppLaunchAudit (and AppServiceAudit in 28) to lpt_app; extend AuditStoreGuard.
 ```
 
 ### Script `28-apps-platform-services.sql` (Phase 3; sketch)
@@ -396,8 +396,8 @@ The task Apps panel lists (a) apps linked to any step of the task's pinned workf
 | App removed | "This app is no longer available." |
 | No permission | "You don't have access to this app. Ask an administrator." |
 | Back end down | "<App name> is starting or unavailable. Try again in a minute." |
-| Session ended | "Your session in this app ended. Open it again from MatterFlow." |
+| Session ended | "Your session in this app ended. Open it again from LptHub." |
 | Popup/new window blocked | Not applicable: links, not scripts |
 | Loading | skeleton cards; errors keep the retry button and trace id |
 
-Accessibility: WCAG 2.1 AA as in the rest of MatterFlow; link-with-new-window warning in name; focus order; contrast tokens from `docs/ux/tokens.css`; status chips never colour-only (text + icon).
+Accessibility: WCAG 2.1 AA as in the rest of LPT Hub; link-with-new-window warning in name; focus order; contrast tokens from `docs/ux/tokens.css`; status chips never colour-only (text + icon).

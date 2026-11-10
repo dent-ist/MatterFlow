@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://matterflow.internal/schemas/form-rule.v1.json",
+  "$id": "https://lpt-hub.internal/schemas/form-rule.v1.json",
   "$comment": "Root = one rule node (ShowWhenJson / RequiredWhenJson / AvailableWhenJson). $defs/formFragment and $defs/vectorFile describe the conformance-vector file. Semantics (types, null handling, depth, cycles) live in form-rules.md; this schema covers structure only. Only the keyword subset checked by validate-contracts.mjs is used.",
   "$ref": "#/$defs/node",
   "examples": [

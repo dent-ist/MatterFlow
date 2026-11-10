@@ -1,10 +1,10 @@
 using System.Reflection;
 using System.Text.Json;
 
-namespace MatterFlow.Reports.Application;
+namespace LptHub.Reports.Application;
 
 /// <summary>
-/// The access catalogue of the report login (<c>db/report-access.json</c>, embedded): which tables the role <c>mf_report_reader</c> may read.
+/// The access catalogue of the report login (<c>db/report-access.json</c>, embedded): which tables the role <c>lpt_report_reader</c> may read.
 /// The database is the enforcement; this copy lets the startup probe and the schema browser check the effective rights against the intent.
 /// </summary>
 public sealed class ReportAccessCatalogue

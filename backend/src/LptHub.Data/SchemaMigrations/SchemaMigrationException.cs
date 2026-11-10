@@ -1,4 +1,4 @@
-namespace MatterFlow.Data.SchemaMigrations;
+namespace LptHub.Data.SchemaMigrations;
 
 /// <summary>Any schema migration failure. Startup must abort when this is thrown.</summary>
 public sealed class SchemaMigrationException : Exception

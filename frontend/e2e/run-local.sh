@@ -37,7 +37,7 @@ fi
 rid="${E2E_RID:-linux-x64}"
 publish_dir="$root/artifacts/e2e-publish"
 sql_name="mf-e2e-sql-$$"
-sql_password='MatterFlow_Dev1!'
+sql_password='LptHub_Dev1!'
 api_pid=""
 
 # The go-live switch of the sensitive-matter rule: off for the ordinary suite, on for the sensitive-* specs (named in the arguments or by E2E_SENSITIVE_ACCESS=1).
@@ -62,7 +62,7 @@ trap cleanup EXIT
 mkdir -p "$root/artifacts"
 [ -d "$root/frontend/node_modules" ] || (cd "$root/frontend" && npm ci)
 
-if [ "${E2E_SKIP_BUILD:-0}" != "1" ] || [ ! -x "$publish_dir/MatterFlow.Api" ]; then
+if [ "${E2E_SKIP_BUILD:-0}" != "1" ] || [ ! -x "$publish_dir/LptHub.Api" ]; then
   echo "==> Build and publish (Angular build inside wwwroot)"
   SKIP_FRONTEND_INSTALL=1 "$root/deploy/publish.sh" "$publish_dir" "$rid"
 fi
@@ -73,7 +73,7 @@ docker run -d --name "$sql_name" -e ACCEPT_EULA=Y -e "MSSQL_SA_PASSWORD=$sql_pas
 sql_port="$(docker port "$sql_name" 1433/tcp | head -n1 | sed 's/.*://')"
 for _ in $(seq 1 90); do
   if docker exec "$sql_name" /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$sql_password" -b \
-    -Q "IF DB_ID('MatterFlow') IS NULL CREATE DATABASE MatterFlow" >/dev/null 2>&1; then
+    -Q "IF DB_ID('LptHub') IS NULL CREATE DATABASE LptHub" >/dev/null 2>&1; then
     break
   fi
   sleep 2
@@ -81,16 +81,16 @@ done
 echo "    SQL Server on 127.0.0.1:$sql_port"
 
 echo "==> API on http://127.0.0.1:$api_port (sensitive-matter rule: $sensitive_switch)"
-conn="Server=127.0.0.1,$sql_port;Database=MatterFlow;User Id=sa;Password=$sql_password;TrustServerCertificate=True"
-reports_conn="Server=127.0.0.1,$sql_port;Database=MatterFlow;User Id=mf_reports;Password=MatterFlow_Reports1!;TrustServerCertificate=True;Encrypt=True;Application Name=MatterFlow.Reports;ApplicationIntent=ReadOnly;Connect Timeout=10;Max Pool Size=8"
+conn="Server=127.0.0.1,$sql_port;Database=LptHub;User Id=sa;Password=$sql_password;TrustServerCertificate=True"
+reports_conn="Server=127.0.0.1,$sql_port;Database=LptHub;User Id=lpt_reports;Password=LptHub_Reports1!;TrustServerCertificate=True;Encrypt=True;Application Name=LptHub.Reports;ApplicationIntent=ReadOnly;Connect Timeout=10;Max Pool Size=8"
 (
   cd "$publish_dir"
   export ASPNETCORE_ENVIRONMENT=Development
   export ASPNETCORE_URLS="http://127.0.0.1:$api_port"
   export ConnectionStrings__Default="$conn"
-  export ConnectionStrings__MatterFlow="$conn"
+  export ConnectionStrings__LptHub="$conn"
   # The read-only report login (epic #671): every report runs under it, never under the application login. The login itself is created below,
-  # once the API has applied the schema (which creates the database role mf_report_reader); Reports stay "not ready" until it exists.
+  # once the API has applied the schema (which creates the database role lpt_report_reader); Reports stay "not ready" until it exists.
   export ConnectionStrings__ReportsReadOnly="$reports_conn"
   export Hosting__ServeSpa=true
   export Auth__Provider=Dev
@@ -115,7 +115,7 @@ reports_conn="Server=127.0.0.1,$sql_port;Database=MatterFlow;User Id=mf_reports;
   # Reports allow 30 runs and previews per person and hour (Reports:RunsPerUserPerHour). The Reports specs and the suite's setup calls all run as
   # one System Admin, so a full run used the budget up (429 REPORT_RATE_LIMITED on a preview). Raised for this throwaway stack only.
   export Reports__RunsPerUserPerHour=1000000
-  exec ./MatterFlow.Api
+  exec ./LptHub.Api
 ) >"$root/artifacts/e2e-api.log" 2>&1 &
 api_pid=$!
 
@@ -128,9 +128,9 @@ done
 
 echo "==> Read-only report login (tools/db/provision-report-login.sql, the same script npm start runs)"
 docker cp "$root/tools/db/provision-report-login.sql" "$sql_name:/tmp/provision-report-login.sql" >/dev/null
-docker exec "$sql_name" /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$sql_password" -d MatterFlow -b -i /tmp/provision-report-login.sql >/dev/null
+docker exec "$sql_name" /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$sql_password" -d LptHub -b -i /tmp/provision-report-login.sql >/dev/null
 # The API probed the login at its start, before it existed: ask it to probe again (the admin page's "Check again").
-curl -sf -X POST -H 'X-Dev-User: ke\kekim' -H 'X-MatterFlow-Client: web' "http://127.0.0.1:$api_port/api/v1/report-admin/status/check" >/dev/null \
+curl -sf -X POST -H 'X-Dev-User: ke\kekim' -H 'X-LptHub-Client: web' "http://127.0.0.1:$api_port/api/v1/report-admin/status/check" >/dev/null \
   || { echo "Reports are not ready"; tail -n 40 "$root/artifacts/e2e-api.log"; exit 1; }
 
 echo "==> Playwright"

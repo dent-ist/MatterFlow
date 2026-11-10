@@ -1,12 +1,12 @@
-using MatterFlow.Identity.Contracts;
-using MatterFlow.SharedKernel.Paging;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.WorkViews.Application.Queries;
+using LptHub.Identity.Contracts;
+using LptHub.SharedKernel.Paging;
+using LptHub.SharedKernel.Results;
+using LptHub.WorkViews.Application.Queries;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MatterFlow.WorkViews.Api;
+namespace LptHub.WorkViews.Api;
 
 /// <summary>
 /// The shared Task Queue: every Task for anyone with Task.View (Phase 1 has no per-record visibility; addendum E). Filters are flat query
@@ -15,7 +15,7 @@ namespace MatterFlow.WorkViews.Api;
 /// </summary>
 [ApiController]
 [Route("api/v1/task-queue")]
-[MatterFlow.SharedKernel.Visibility.PreparesViewer]
+[LptHub.SharedKernel.Visibility.PreparesViewer]
 public class TaskQueueController(TaskQueueService queue, TaskQueueExportService export) : ControllerBase
 {
     /// <summary>Lists Tasks with server-side filtering, sorting and paging (offset paging: page, pageSize, total).</summary>
@@ -51,7 +51,7 @@ public class TaskQueueController(TaskQueueService queue, TaskQueueExportService 
 /// <summary>Records an export that was made in the browser from rows the person already sees (My Matters sections, Breakdown): surface, count, filters; never the data.</summary>
 [ApiController]
 [Route("api/v1/exports")]
-[MatterFlow.SharedKernel.Visibility.PreparesViewer]
+[LptHub.SharedKernel.Visibility.PreparesViewer]
 public class ExportsController(TaskQueueExportService export) : ControllerBase
 {
     /// <summary>The body of <see cref="Log"/>.</summary>
@@ -79,7 +79,7 @@ public class ExportsController(TaskQueueExportService export) : ControllerBase
 /// </summary>
 [ApiController]
 [Route("api/v1/my-work")]
-[MatterFlow.SharedKernel.Visibility.PreparesViewer]
+[LptHub.SharedKernel.Visibility.PreparesViewer]
 public class MyWorkController(TaskQueueService queue) : ControllerBase
 {
     /// <summary>Gets one tab of My Work with the counts of every tab.</summary>
@@ -100,7 +100,7 @@ public class MyWorkController(TaskQueueService queue) : ControllerBase
 /// </summary>
 [ApiController]
 [Route("api/v1/pod-work")]
-[MatterFlow.SharedKernel.Visibility.PreparesViewer]
+[LptHub.SharedKernel.Visibility.PreparesViewer]
 public class PodWorkController(TaskQueueService queue) : ControllerBase
 {
     /// <summary>Gets one tab of Pod Work with the Pod summary, the selectable Pods and the workload per person.</summary>

@@ -44,7 +44,7 @@ export interface RawResponse {
 }
 
 /**
- * Thin JSON client for the MatterFlow API, acting as one Dev-auth user (`X-Dev-User`). Used for test setup and for the few
+ * Thin JSON client for the LPT Hub API, acting as one Dev-auth user (`X-Dev-User`). Used for test setup and for the few
  * API-level assertions the scenarios call for (cross-matter rejection, permission denial). Every call that is not expected to
  * fail throws with the response body, so a broken fixture points at the cause rather than at a later assertion.
  */
@@ -60,7 +60,7 @@ export class Api {
       baseURL: BASE_URL,
       extraHTTPHeaders: {
         'X-Dev-User': user,
-        'X-MatterFlow-Client': 'web',
+        'X-LptHub-Client': 'web',
         ...(options.timeZone ? { 'X-Time-Zone': options.timeZone } : {}),
       },
     });

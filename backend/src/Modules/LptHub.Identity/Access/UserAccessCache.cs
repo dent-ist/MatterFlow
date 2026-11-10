@@ -1,9 +1,9 @@
 using System.Collections.Concurrent;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.SharedKernel.Time;
+using LptHub.Identity.Contracts;
+using LptHub.SharedKernel.Time;
 using Microsoft.Extensions.Options;
 
-namespace MatterFlow.Identity.Access;
+namespace LptHub.Identity.Access;
 
 /// <summary>Settings of the effective-permission cache (<c>Authorization:*</c>).</summary>
 public sealed class AccessCacheOptions

@@ -1,4 +1,4 @@
-namespace MatterFlow.Audit.Contracts;
+namespace LptHub.Audit.Contracts;
 
 /// <summary>One stored audit event as other modules read it (old/new values are truncated to 4000 characters).</summary>
 public sealed record AuditRecord(

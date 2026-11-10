@@ -1,11 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Assets;
+namespace LptHub.IntegrationTests.Assets;
 
 /// <summary>The Data tab (epic #851, issue #869): counts by disposition, sizes per unit, warnings, scope and parity with the Assets list.</summary>
 [Collection(SqlServerCollection.Name)]

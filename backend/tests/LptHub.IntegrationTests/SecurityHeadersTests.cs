@@ -1,13 +1,13 @@
 using System.Net;
-using MatterFlow.Api.Http;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.Api.Http;
+using LptHub.IntegrationTests.Fixtures;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests;
+namespace LptHub.IntegrationTests;
 
 /// <summary>Security review SEC-08 (response headers, HSTS) and SEC-19 (request body cap), through the real pipeline without a database.</summary>
 public class SecurityHeadersTests
@@ -21,7 +21,7 @@ public class SecurityHeadersTests
         });
 
     private static HttpClient Https(WebApplicationFactory<Program> factory) =>
-        factory.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://matterflow.firm.test") });
+        factory.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://lpt-hub.firm.test") });
 
     private static string Header(HttpResponseMessage response, string name) =>
         response.Headers.TryGetValues(name, out var values) ? string.Join(",", values) : string.Empty;

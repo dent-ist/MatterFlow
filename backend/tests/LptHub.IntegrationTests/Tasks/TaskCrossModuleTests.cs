@@ -1,16 +1,16 @@
 using System.Net;
 using System.Net.Http.Json;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.Organization.Contracts;
-using MatterFlow.SharedKernel.Tasks;
-using MatterFlow.WorkManagement.Contracts;
+using LptHub.Identity.Contracts;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.Organization.Contracts;
+using LptHub.SharedKernel.Tasks;
+using LptHub.WorkManagement.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Tasks;
+namespace LptHub.IntegrationTests.Tasks;
 
 /// <summary>How the Task module plugs into the others: Contracts replaced by real implementations, locks shared with the Organization module.</summary>
 [Collection(SqlServerCollection.Name)]

@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace MatterFlow.Configuration.Domain.Forms.Rules;
+namespace LptHub.Configuration.Domain.Forms.Rules;
 
 /// <summary>Reads the JSON form-fragment shape used by contracts/form-rules.vectors.json (<c>{"fields":[...]}</c>).</summary>
 public static class FormSchemaJson

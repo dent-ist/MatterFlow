@@ -1,6 +1,6 @@
 using System.Collections.Frozen;
 
-namespace MatterFlow.IntegrationTests.Security;
+namespace LptHub.IntegrationTests.Security;
 
 /// <summary>How an endpoint relates to the sensitive-matter rule (README 12.2).</summary>
 public enum AccessKind

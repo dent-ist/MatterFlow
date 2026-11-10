@@ -2,12 +2,12 @@ using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.IntegrationTests.Tasks;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Tasks;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Organization;
+namespace LptHub.IntegrationTests.Organization;
 
 /// <summary>
 /// Task counts on the Client, Matter and Project lists, their sort keys and the three summary endpoints (#258, #259). Every number is checked three

@@ -1,10 +1,10 @@
-using MatterFlow.Configuration.Application.Lookups;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Configuration.Application.Lookups;
+using LptHub.SharedKernel.Results;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MatterFlow.Configuration.Api;
+namespace LptHub.Configuration.Api;
 
 /// <summary>
 /// Display labels of the five fixed lifecycle statuses (UX S18). The code set is fixed: there is no create or delete, and a code

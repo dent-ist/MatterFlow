@@ -1,4 +1,4 @@
-namespace MatterFlow.SharedKernel.Results;
+namespace LptHub.SharedKernel.Results;
 
 /// <summary>
 /// Carries a failed <see cref="Result"/> out of a module controller (modules cannot reference the Api host's ProblemDetails helpers).

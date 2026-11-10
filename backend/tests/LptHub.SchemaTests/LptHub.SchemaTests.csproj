@@ -12,6 +12,6 @@
     <PackageReference Include="coverlet.collector" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\MatterFlow.Data\MatterFlow.Data.csproj" />
+    <ProjectReference Include="..\..\src\LptHub.Data\LptHub.Data.csproj" />
   </ItemGroup>
 </Project>

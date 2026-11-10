@@ -228,7 +228,7 @@ describe('ReportsHealthTab (#712)', () => {
     state: 'Ready',
     message: 'Reports are ready.',
     login: {
-      loginName: 'mf_reports',
+      loginName: 'lpt_reports',
       writesDenied: true,
       auditTablesDenied: true,
       serverProceduresDenied: true,
@@ -255,7 +255,7 @@ describe('ReportsHealthTab (#712)', () => {
     await settle(fixture);
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelector('[data-chip]')!.textContent).toBe('Ready');
-    expect(el.querySelector('[data-login]')!.textContent).toContain('mf_reports');
+    expect(el.querySelector('[data-login]')!.textContent).toContain('lpt_reports');
     expect(el.querySelector('[data-login]')!.textContent).toContain('Denied');
     expect(el.querySelector('[data-login]')!.textContent).toContain('33');
     expect(el.querySelector('[data-server-procedures]')!.textContent).toBe('Denied');
@@ -276,9 +276,9 @@ describe('ReportsHealthTab server procedures warning (#1292)', () => {
           enabled: true,
           state: 'Ready',
           message:
-            "Report login 'mf_reports': writes denied. Warning: the login can still run 7 extended procedure(s) in master.",
+            "Report login 'lpt_reports': writes denied. Warning: the login can still run 7 extended procedure(s) in master.",
           login: {
-            loginName: 'mf_reports',
+            loginName: 'lpt_reports',
             writesDenied: true,
             auditTablesDenied: true,
             serverProceduresDenied: false,

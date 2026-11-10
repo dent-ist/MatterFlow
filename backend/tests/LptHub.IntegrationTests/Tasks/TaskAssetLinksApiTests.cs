@@ -1,15 +1,15 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.WorkManagement.Domain;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.WorkManagement.Domain;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.PanelAssert;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.PanelAssert;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Tasks;
+namespace LptHub.IntegrationTests.Tasks;
 
 /// <summary>Task-Asset links with relationship roles (ticket 45, SCN-016): same-Matter rule, duplicates, inactive assets, closed Tasks, audit, permissions.</summary>
 [Collection(SqlServerCollection.Name)]

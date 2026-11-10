@@ -1,12 +1,12 @@
-using MatterFlow.Audit.Contracts;
-using MatterFlow.Configuration.Contracts.Forms;
-using MatterFlow.Configuration.Domain.Forms;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Audit.Contracts;
+using LptHub.Configuration.Contracts.Forms;
+using LptHub.Configuration.Domain.Forms;
+using LptHub.Identity.Contracts;
+using LptHub.SharedKernel.Results;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Configuration.Application.Forms;
+namespace LptHub.Configuration.Application.Forms;
 
 /// <summary>The permission that manages the forms of each owner kind (catalog codes, <c>contracts/permissions.json</c>).</summary>
 public static class FormPermissions

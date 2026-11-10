@@ -1,8 +1,8 @@
-using MatterFlow.Intake.Api;
-using MatterFlow.Intake.Application;
+using LptHub.Intake.Api;
+using LptHub.Intake.Application;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace MatterFlow.Intake;
+namespace LptHub.Intake;
 
 /// <summary>Composition entry point of the Intake module.</summary>
 public static class IntakeModule

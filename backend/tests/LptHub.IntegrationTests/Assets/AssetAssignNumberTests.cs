@@ -1,12 +1,12 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Assets.AssetTestKit;
+using static LptHub.IntegrationTests.Assets.AssetTestKit;
 
-namespace MatterFlow.IntegrationTests.Assets;
+namespace LptHub.IntegrationTests.Assets;
 
 /// <summary>
 /// The explicit "assign number" action (issue #1297): the only way an old or unnumbered asset gets a number. Atomic with the shared counter, refused when numbered or when the type numbers nothing,
@@ -148,7 +148,7 @@ public sealed class AssetAssignNumberTests(SqlServerFixture sql) : IAsyncLifetim
         await _kit.CreateAssetAsync(matter, type, "Fresh");
         await OkAsync(await AssignAsync(_kit.As(), old.GetProperty("assetId").GetInt32(), old.GetProperty("rowVersion").GetString()!));
 
-        var events = await _factory.WithDbAsync(db => db.Set<MatterFlow.Audit.Domain.AuditEvent>().AsNoTracking().Where(e => e.EventType == "ASSET_NUMBER_ASSIGNED").OrderBy(e => e.Id).ToListAsync());
+        var events = await _factory.WithDbAsync(db => db.Set<LptHub.Audit.Domain.AuditEvent>().AsNoTracking().Where(e => e.EventType == "ASSET_NUMBER_ASSIGNED").OrderBy(e => e.Id).ToListAsync());
         events.Count.ShouldBe(2);
         events.ShouldAllBe(e => e.ObjectType == "Asset" && e.MatterId == matter && e.FieldKey == "assetNumber" && e.ActorUserId != null);
         events[0].NewValue.ShouldBe("90003-80008_001");

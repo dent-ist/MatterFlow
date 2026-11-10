@@ -1,8 +1,8 @@
-using MatterFlow.SharedKernel.Tasks;
-using MatterFlow.WorkViews.Application.Queries;
+using LptHub.SharedKernel.Tasks;
+using LptHub.WorkViews.Application.Queries;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.WorkViews;
+namespace LptHub.UnitTests.WorkViews;
 
 /// <summary>Decision AV (issue #1103): the capacity battery counts by absence, not by the clock.</summary>
 public class CapacitySummaryTests

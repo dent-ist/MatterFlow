@@ -1,4 +1,4 @@
-namespace MatterFlow.SharedKernel.Audit;
+namespace LptHub.SharedKernel.Audit;
 
 /// <summary>
 /// Marks an entity whose property changes are recorded as field-level <c>FIELD_CHANGED</c> AuditEvents by the Data layer's

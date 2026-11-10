@@ -1,7 +1,7 @@
-using MatterFlow.SharedKernel.Availability;
+using LptHub.SharedKernel.Availability;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.SharedKernel;
+namespace LptHub.UnitTests.SharedKernel;
 
 /// <summary>The coverage maths of the Dashboard Calendar (plan section 3): percent, pod minimum, levels, forecast.</summary>
 public class CalendarCoverageTests

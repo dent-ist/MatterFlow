@@ -1,11 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.IntegrationTests.Tasks;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Tasks;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.WorkViews;
+namespace LptHub.IntegrationTests.WorkViews;
 
 /// <summary>
 /// The matters, managers and tasks the My Matters API tests read (epic #667, WP-PM2). Two project managers A and B, a technician, a director who may

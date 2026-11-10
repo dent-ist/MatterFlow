@@ -1,9 +1,9 @@
 using System.Net;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.IntegrationTests.Tasks;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Tasks;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.WorkViews;
+namespace LptHub.IntegrationTests.WorkViews;
 
 /// <summary>
 /// The Dashboard permission model on every endpoint: Dashboard.View is needed for everything, each tab adds its own permission, a tab permission

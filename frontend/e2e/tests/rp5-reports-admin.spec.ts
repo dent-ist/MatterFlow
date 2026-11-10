@@ -395,7 +395,7 @@ test.describe('the editor (#713 to #715)', () => {
   test('Settings shows the state of the report login', async ({ page }) => {
     await page.goto('/admin/reports?tab=health');
     await expect(page.locator('[data-chip]')).toHaveText('Ready');
-    await expect(page.locator('[data-login]')).toContainText('mf_reports');
+    await expect(page.locator('[data-login]')).toContainText('lpt_reports');
     await expect(page.locator('[data-login]')).toContainText('Denied');
   });
 });

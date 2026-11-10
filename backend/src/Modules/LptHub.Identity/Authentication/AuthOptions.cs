@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 
-namespace MatterFlow.Identity.Authentication;
+namespace LptHub.Identity.Authentication;
 
 /// <summary>Which authentication provider the host uses (<c>Auth:Provider</c>).</summary>
 public enum AuthProvider

@@ -1,4 +1,4 @@
-namespace MatterFlow.Reports.Application;
+namespace LptHub.Reports.Application;
 
 /// <summary>A column the report login can read.</summary>
 /// <param name="Type">SQL type as an author writes it, for example <c>nvarchar(200)</c>, <c>decimal(18,2)</c>, <c>int</c>.</param>

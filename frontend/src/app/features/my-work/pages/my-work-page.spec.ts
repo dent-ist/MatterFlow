@@ -297,7 +297,7 @@ describe('MyWorkPage', () => {
   it('opens the Closed tab for the old view=completed link and names the tabs everywhere', async () => {
     const el = await open('/my-work?view=completed');
     expect(tab(el, 'Closed').getAttribute('aria-selected')).toBe('true');
-    expect(document.title).toBe('My Work: Closed - MatterFlow');
+    expect(document.title).toBe('My Work: Closed - LPT Hub');
     expect(el.querySelector('caption')!.textContent!.trim()).toBe('My Work: Closed');
     expect(el.querySelector('.wl-sr')!.textContent).toContain('Closed: ');
   });

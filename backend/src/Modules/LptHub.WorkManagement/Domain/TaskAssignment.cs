@@ -1,5 +1,5 @@
-using MatterFlow.SharedKernel.Tasks;
-namespace MatterFlow.WorkManagement.Domain;
+using LptHub.SharedKernel.Tasks;
+namespace LptHub.WorkManagement.Domain;
 
 /// <summary>Result of applying an assignment change to a Task.</summary>
 public sealed record AssignmentOutcome(TaskStatusCode Status, bool AutoStarted, bool UserNotInPodWarning);

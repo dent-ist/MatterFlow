@@ -1,13 +1,13 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Identity.Domain;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.Identity.Contracts;
+using LptHub.Identity.Domain;
+using LptHub.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Organization;
+namespace LptHub.IntegrationTests.Organization;
 
 /// <summary>
 /// Primary and Secondary project manager of a matter (epic #667, issues #672, #674, #675): the DTO fields, <c>PUT /matters/{id}/managers</c>, the
@@ -48,7 +48,7 @@ public sealed class MatterManagersApiTests(SqlServerFixture sql) : IAsyncLifetim
     private HttpClient As(string user)
     {
         var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        client.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         client.DefaultRequestHeaders.Add("X-Dev-User", user);
         return client;
     }

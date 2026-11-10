@@ -1,4 +1,4 @@
-# MatterFlow Seed Configuration (first deployment)
+# LPT Hub Seed Configuration (first deployment)
 
 **Author:** eDiscovery operations SME. **Status:** proposal for admin review. Companion machine-readable file: `docs/sme/seed-configuration.json` (same content, plain field names; a developer adapts it to the form schema).
 
@@ -136,7 +136,7 @@ The first five roles match the architecture starter matrix (section 6.3); the la
 | `esi_protocol_status` | ESI protocol / order status | SELECT |  | None; Negotiating; Agreed / entered; Not applicable |  |  |
 | `esi_protocol_ref` | ESI protocol reference (URL or document location) | URL |  |  | esi_protocol_status in negotiating, agreed_entered |  |
 | `clawback_order` | Clawback / FRE 502(d) order | SELECT |  | Entered; Stipulated, not yet entered; None; Unknown |  |  |
-| `legal_hold_status` | Legal hold status (informational) | SELECT |  | Hold in place; No hold; Released; Unknown . Informational only. The hold itself is managed outside MatterFlow. |  |  |
+| `legal_hold_status` | Legal hold status (informational) | SELECT |  | Hold in place; No hold; Released; Unknown . Informational only. The hold itself is managed outside LPT Hub. |  |  |
 | `sensitivity_flag` | Sensitivity | SELECT |  | Standard; Highly sensitive (use code name in titles) . Phase 1 has no ethical walls. If Highly sensitive, use the code name in Task titles and keep detail out of descriptions. |  |  |
 | `code_name` | Matter code name | TEXT |  |  | sensitivity_flag = highly_sensitive_use_code_name_in_titles | sensitivity_flag = highly_sensitive_use_code_name_in_titles |
 | `trial_date` | Trial / key hearing date | DATE |  |  |  |  |
@@ -386,7 +386,7 @@ Instructions:
 > 1. Export the error report.  
 > 2. Request passwords through the requestor; do not guess or crack without attorney instruction.  
 > 3. Re-process what can be fixed.  
-> 4. Anything excluded must be excluded with requestor/attorney instruction; record who instructed you (the approval itself happens outside MatterFlow).  
+> 4. Anything excluded must be excluded with requestor/attorney instruction; record who instructed you (the approval itself happens outside LPT Hub).  
 
 Inputs:
 
@@ -453,7 +453,7 @@ Documentation URL (placeholder): https://sharepoint.example.firm/ediscovery/sop/
 
 Instructions:
 
-> 1. Confirm in the Task or a comment that the production set was cleared (attorney sign-off happens outside MatterFlow).  
+> 1. Confirm in the Task or a comment that the production set was cleared (attorney sign-off happens outside LPT Hub).  
 > 2. Verify NO document tagged privileged / withhold is in the set (run the saved search).  
 > 3. Generate with the agreed prefix and numbering; check for Bates gaps and duplicates against previous volumes.  
 > 4. Verify redactions are burned in and natives have slip sheets where specified.  
@@ -539,7 +539,7 @@ Instructions:
 
 > 1. Update every Asset touched (status, location, counts).  
 > 2. Notify the requestor with a short summary: what was done, counts, where it is.  
-> 3. Note any follow-up work as a NEW Task (MatterFlow does not clone or chain Tasks).  
+> 3. Note any follow-up work as a NEW Task (LPT Hub does not clone or chain Tasks).  
 > 4. Keep notes factual and free of privileged analysis.  
 
 Inputs:
@@ -848,7 +848,7 @@ Example title: *PROD004 to opposing counsel*
 | `format` | Format | SELECT | Y | TIFF + load file; Native + load file; Searchable PDF; Mixed (natives for spreadsheets / media) |  |  |
 | `bates_prefix` | Bates prefix | TEXT | Y |  |  |  |
 | `bates_start` | Starting Bates number | TEXT | Y | Check previous volumes so numbering continues without overlap. |  |  |
-| `privilege_screen` | Privilege screen status | SELECT | Y | Complete - cleared by attorney; Pending attorney clearance . Do not start generation until Complete. Clearance is obtained outside MatterFlow. |  |  |
+| `privilege_screen` | Privilege screen status | SELECT | Y | Complete - cleared by attorney; Pending attorney clearance . Do not start generation until Complete. Clearance is obtained outside LPT Hub. |  |  |
 | `privilege_log_needed` | Privilege log required with this volume | CHECKBOX |  |  |  |  |
 | `redactions_included` | Redactions included | CHECKBOX |  |  |  |  |
 | `redaction_notes` | Redaction types | TEXT |  |  | redactions_included isTrue | redactions_included isTrue |
@@ -959,7 +959,7 @@ Example title: *Export workspace to client*
 | `source_asset` | Source workspace / data set | ASSET_REF | Y |  |  |  |
 | `recipient` | Recipient (name / organization) | TEXT | Y |  |  |  |
 | `recipient_type` | Recipient type | SELECT | Y | Client; Co-counsel; Vendor; Expert / consultant; Court / agency; Other |  |  |
-| `authorized_by` | Authorized by (attorney) | TEXT | Y | Name of the attorney who authorized this transfer. Authorization happens outside MatterFlow. |  |  |
+| `authorized_by` | Authorized by (attorney) | TEXT | Y | Name of the attorney who authorized this transfer. Authorization happens outside LPT Hub. |  |  |
 | `content` | Content to export | SELECT | Y | Native files; Images + load file; Reports only; Full workspace export; Other (describe) |  |  |
 | `content_notes` | Describe content | TEXTAREA |  |  | content = other_describe | content = other_describe |
 | `includes_privileged` | Includes privileged / work-product material | CHECKBOX |  |  |  |  |

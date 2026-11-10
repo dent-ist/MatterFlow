@@ -1,11 +1,11 @@
 using System.Collections.Concurrent;
-using MatterFlow.SharedKernel.Time;
+using LptHub.SharedKernel.Time;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
-namespace MatterFlow.Notifications.Infrastructure.Scheduling;
+namespace LptHub.Notifications.Infrastructure.Scheduling;
 
 /// <summary>What the scheduler remembers between runs, for the health check and the daily retention step. One instance per process.</summary>
 public sealed class NotificationSchedulerState

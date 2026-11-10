@@ -1,5 +1,5 @@
 {
-  "_comment": "MatterFlow seed configuration v1 (SME draft). Plain field names; adapt to the form schema. Option keys are slugged labels. Rules use the form-rule grammar (and/or/not/eq/in/contains/isTrue/isNotEmpty).",
+  "_comment": "LPT Hub seed configuration v1 (SME draft). Plain field names; adapt to the form schema. Option keys are slugged labels. Rules use the form-rule grammar (and/or/not/eq/in/contains/isTrue/isNotEmpty).",
   "priorities": [
     {
       "label": "Critical",
@@ -589,7 +589,7 @@
           "label": "Unknown"
         }
       ],
-      "help": "Informational only. The hold itself is managed outside MatterFlow."
+      "help": "Informational only. The hold itself is managed outside LptHub."
     },
     {
       "key": "sensitivity_flag",
@@ -1961,7 +1961,7 @@
       "code": "S04",
       "title": "Exception Handling",
       "description": "Resolve or escalate files that failed processing (password-protected, corrupt, unsupported).",
-      "instructions": "1. Export the error report.\n2. Request passwords through the requestor; do not guess or crack without attorney instruction.\n3. Re-process what can be fixed.\n4. Anything excluded must be excluded with requestor/attorney instruction; record who instructed you (the approval itself happens outside MatterFlow).",
+      "instructions": "1. Export the error report.\n2. Request passwords through the requestor; do not guess or crack without attorney instruction.\n3. Re-process what can be fixed.\n4. Anything excluded must be excluded with requestor/attorney instruction; record who instructed you (the approval itself happens outside LPT Hub).",
       "docUrl": "https://sharepoint.example.firm/ediscovery/sop/exceptions",
       "tags": ["Processing"],
       "fields": [
@@ -2211,7 +2211,7 @@
       "code": "S07",
       "title": "Production Generation and Validation",
       "description": "Build the production set and verify Bates, load files, redactions and privilege exclusions.",
-      "instructions": "1. Confirm in the Task or a comment that the production set was cleared (attorney sign-off happens outside MatterFlow).\n2. Verify NO document tagged privileged / withhold is in the set (run the saved search).\n3. Generate with the agreed prefix and numbering; check for Bates gaps and duplicates against previous volumes.\n4. Verify redactions are burned in and natives have slip sheets where specified.\n5. Validate the load file opens and counts match.\n6. Register or update the Production asset.",
+      "instructions": "1. Confirm in the Task or a comment that the production set was cleared (attorney sign-off happens outside LPT Hub).\n2. Verify NO document tagged privileged / withhold is in the set (run the saved search).\n3. Generate with the agreed prefix and numbering; check for Bates gaps and duplicates against previous volumes.\n4. Verify redactions are burned in and natives have slip sheets where specified.\n5. Validate the load file opens and counts match.\n6. Register or update the Production asset.",
       "docUrl": "https://sharepoint.example.firm/ediscovery/sop/production",
       "tags": ["Production", "Relativity", "QC"],
       "fields": [
@@ -2495,7 +2495,7 @@
       "code": "S10",
       "title": "Close-out and Documentation",
       "description": "Hand off results, update the Asset registry and leave a clear record.",
-      "instructions": "1. Update every Asset touched (status, location, counts).\n2. Notify the requestor with a short summary: what was done, counts, where it is.\n3. Note any follow-up work as a NEW Task (MatterFlow does not clone or chain Tasks).\n4. Keep notes factual and free of privileged analysis.",
+      "instructions": "1. Update every Asset touched (status, location, counts).\n2. Notify the requestor with a short summary: what was done, counts, where it is.\n3. Note any follow-up work as a NEW Task (LPT Hub does not clone or chain Tasks).\n4. Keep notes factual and free of privileged analysis.",
       "docUrl": "https://sharepoint.example.firm/ediscovery/sop/closeout",
       "tags": ["Close-out"],
       "fields": [
@@ -5037,7 +5037,7 @@
               "label": "Pending attorney clearance"
             }
           ],
-          "help": "Do not start generation until Complete. Clearance is obtained outside MatterFlow."
+          "help": "Do not start generation until Complete. Clearance is obtained outside LptHub."
         },
         {
           "key": "privilege_log_needed",
@@ -6389,7 +6389,7 @@
           "label": "Authorized by (attorney)",
           "type": "TEXT",
           "required": true,
-          "help": "Name of the attorney who authorized this transfer. Authorization happens outside MatterFlow."
+          "help": "Name of the attorney who authorized this transfer. Authorization happens outside LptHub."
         },
         {
           "key": "content",

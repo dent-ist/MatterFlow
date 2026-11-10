@@ -2,7 +2,7 @@ using System.Net;
 using System.Text.Json;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Tasks;
+namespace LptHub.IntegrationTests.Tasks;
 
 /// <summary>Assertions shared by the comment, asset-link and activity tests.</summary>
 internal static class PanelAssert

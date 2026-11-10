@@ -1,12 +1,12 @@
-using MatterFlow.Assets.Contracts;
-using MatterFlow.Configuration.Contracts;
-using MatterFlow.Organization.Contracts;
-using MatterFlow.WorkManagement.Application;
-using MatterFlow.WorkManagement.Contracts;
+using LptHub.Assets.Contracts;
+using LptHub.Configuration.Contracts;
+using LptHub.Organization.Contracts;
+using LptHub.WorkManagement.Application;
+using LptHub.WorkManagement.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-namespace MatterFlow.WorkManagement;
+namespace LptHub.WorkManagement;
 
 /// <summary>Composition entry point of the WorkManagement module.</summary>
 public static class WorkManagementModule
@@ -21,7 +21,7 @@ public static class WorkManagementModule
 
         services.AddScoped<TaskAccess>();
         services.AddScoped<TaskTransactions>();
-        services.AddScoped<MatterFlow.SharedKernel.Visibility.ITaskAccessSource, TaskAccessSource>();
+        services.AddScoped<LptHub.SharedKernel.Visibility.ITaskAccessSource, TaskAccessSource>();
         services.AddScoped<TaskPresenter>();
         services.AddScoped<TaskNotifier>();
         services.AddScoped<TaskService>();
@@ -32,7 +32,7 @@ public static class WorkManagementModule
         services.AddScoped<TaskAssetService>();
         services.AddScoped<TaskActivityService>();
         services.AddScoped<ITaskDirectory, TaskDirectory>();
-        services.AddScoped<MatterFlow.Identity.Contracts.IUserWorkSource>(sp => (TaskDirectory)sp.GetRequiredService<ITaskDirectory>());
+        services.AddScoped<LptHub.Identity.Contracts.IUserWorkSource>(sp => (TaskDirectory)sp.GetRequiredService<ITaskDirectory>());
         services.AddScoped<IAssetTaskLinkReader, TaskAssetLinkReader>();
         services.AddScoped<IAssetLinkRoleUsage, TaskAssetLinkRoleUsage>();
 
@@ -40,7 +40,7 @@ public static class WorkManagementModule
         services.RemoveAll<IMatterTaskGuard>();
         services.AddScoped<IMatterTaskGuard, MatterTaskGuard>();
         services.AddScoped<IPriorityUsage, TaskPriorityUsage>();
-        services.AddScoped<MatterFlow.Notifications.Contracts.IObjectVisibility, TaskObjectVisibility>();
+        services.AddScoped<LptHub.Notifications.Contracts.IObjectVisibility, TaskObjectVisibility>();
         return services;
     }
 }

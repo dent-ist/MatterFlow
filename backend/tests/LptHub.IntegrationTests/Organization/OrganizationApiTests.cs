@@ -1,9 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.Organization.Contracts;
+using LptHub.Identity.Contracts;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.Organization.Contracts;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -11,7 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Organization;
+namespace LptHub.IntegrationTests.Organization;
 
 /// <summary>
 /// Clients, Matters and Projects (tickets 26 to 28; SCN-001, SCN-002, SCN-003, SCN-005 data side) against a real SQL Server
@@ -36,7 +36,7 @@ public sealed class OrganizationApiTests(SqlServerFixture sql) : IAsyncLifetime
     private HttpClient As(string user, WebApplicationFactory<Program>? factory = null)
     {
         var client = (factory ?? _factory).CreateClient();
-        client.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        client.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         client.DefaultRequestHeaders.Add("X-Dev-User", user);
         return client;
     }

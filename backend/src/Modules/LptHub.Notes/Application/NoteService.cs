@@ -1,16 +1,16 @@
 using System.Globalization;
-using MatterFlow.Assets.Contracts;
-using MatterFlow.Audit.Contracts;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Notes.Domain;
-using MatterFlow.Organization.Contracts;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Paging;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Time;
+using LptHub.Assets.Contracts;
+using LptHub.Audit.Contracts;
+using LptHub.Identity.Contracts;
+using LptHub.Notes.Domain;
+using LptHub.Organization.Contracts;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Paging;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Time;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Notes.Application;
+namespace LptHub.Notes.Application;
 
 /// <summary>
 /// Notes of a matter: list, read, create, save, delete, pin, lock and unlock, history and the resolving of the references in a body. The body is sanitised and the title, snippet,

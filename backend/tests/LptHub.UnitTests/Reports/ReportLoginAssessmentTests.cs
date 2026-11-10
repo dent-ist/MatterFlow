@@ -1,14 +1,14 @@
-using MatterFlow.Reports.Application;
+using LptHub.Reports.Application;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Reports;
+namespace LptHub.UnitTests.Reports;
 
 /// <summary>Every reason the startup probe has to keep reports off, and the one way to get a green state.</summary>
 public class ReportLoginAssessmentTests
 {
     private static readonly DateTime Now = new(2026, 10, 22, 12, 0, 0, DateTimeKind.Utc);
 
-    private static ReportLoginFacts Good() => new("mf_reports", false, false, 0, true, 0, 0, 0, false, false, 34, 160);
+    private static ReportLoginFacts Good() => new("lpt_reports", false, false, 0, true, 0, 0, 0, false, false, 34, 160);
 
     [Fact]
     public void A_clean_reader_is_ready_and_the_message_names_what_was_verified()
@@ -45,7 +45,7 @@ public class ReportLoginAssessmentTests
 
         s.Enabled.ShouldBeFalse();
         s.State.ShouldBe(ReportsStates.TooPrivileged);
-        s.Message.ShouldContain("mf_reports");
+        s.Message.ShouldContain("lpt_reports");
     }
 
     [Fact]

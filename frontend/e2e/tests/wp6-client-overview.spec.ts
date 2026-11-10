@@ -193,7 +193,7 @@ test.describe('WP6: Client Overview (#261) and tab counts (#262)', () => {
     );
 
     await expect(page.getByRole('tab')).toHaveText(['Overview', 'Matters (3)']);
-    await expect(page).toHaveTitle(/Overview - MatterFlow$/);
+    await expect(page).toHaveTitle(/Overview - LPT Hub$/);
     await shot(page, 'client-overview');
   });
 

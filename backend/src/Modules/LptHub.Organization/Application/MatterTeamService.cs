@@ -1,13 +1,13 @@
 using System.Globalization;
-using MatterFlow.Audit.Contracts;
-using MatterFlow.Configuration.Contracts;
-using MatterFlow.Organization.Domain;
-using MatterFlow.SharedKernel.Paging;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Visibility;
+using LptHub.Audit.Contracts;
+using LptHub.Configuration.Contracts;
+using LptHub.Organization.Domain;
+using LptHub.SharedKernel.Paging;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Visibility;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Organization.Application;
+namespace LptHub.Organization.Application;
 
 /// <summary>Names of the items of the matter pick lists, for the answers and the audit texts.</summary>
 internal static class MatterListNames

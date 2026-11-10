@@ -2,12 +2,12 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Assets;
+namespace LptHub.IntegrationTests.Assets;
 
 /// <summary>
 /// The asset type list and record carry the numbers the Asset Types page shows (#627): <c>fieldCount</c> and <c>publishedAtUtc</c> of the published
@@ -26,7 +26,7 @@ public sealed class AssetTypeSummaryApiTests(SqlServerFixture sql) : IAsyncLifet
     private HttpClient As(string user = DatabaseApiFactory.AdminAccount)
     {
         var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        client.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         client.DefaultRequestHeaders.Add("X-Dev-User", user);
         return client;
     }
@@ -151,7 +151,7 @@ public sealed class AssetTypeSummaryApiTests(SqlServerFixture sql) : IAsyncLifet
             logging.AddProvider(commands);
         })));
         var http = logged.CreateClient();
-        http.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        http.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         http.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
 
         async Task<(int Statements, int Rows)> MeasureAsync()

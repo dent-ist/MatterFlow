@@ -1,7 +1,7 @@
 using System.Linq.Expressions;
-using MatterFlow.SharedKernel.Results;
+using LptHub.SharedKernel.Results;
 
-namespace MatterFlow.SharedKernel.Visibility;
+namespace LptHub.SharedKernel.Visibility;
 
 /// <summary>Which place of a matter a manager holds: either of the two (identical rights, epic #667), only the Primary or only the Secondary.</summary>
 public enum ManagerPlace

@@ -1,11 +1,11 @@
 using System.Net;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.IntegrationTests.Tasks;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Tasks;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.WorkViews;
+namespace LptHub.IntegrationTests.WorkViews;
 
 /// <summary>GET /api/v1/dashboard/coverage (epic #68, issue #73, addendum Q): completed Tasks per person per task type in a period.</summary>
 [Collection(SqlServerCollection.Name)]

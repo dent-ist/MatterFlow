@@ -1,4 +1,4 @@
-namespace MatterFlow.Productions.Contracts;
+namespace LptHub.Productions.Contracts;
 
 /// <summary>A production or production spec as the audit display names it.</summary>
 public sealed record ProductionLabel(int Id, int MatterId, string Name);

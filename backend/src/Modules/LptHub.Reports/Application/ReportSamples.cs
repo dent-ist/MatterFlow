@@ -1,7 +1,7 @@
 using System.Text.Json;
-using MatterFlow.Reports.Domain.Parameters;
+using LptHub.Reports.Domain.Parameters;
 
-namespace MatterFlow.Reports.Application;
+namespace LptHub.Reports.Application;
 
 /// <summary>Sample values for a preview (spec 6.6): what an administrator did not type and the definition has no default for, by type.</summary>
 public static class ReportSamples

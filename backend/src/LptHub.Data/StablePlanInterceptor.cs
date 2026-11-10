@@ -1,8 +1,8 @@
 using System.Data.Common;
-using MatterFlow.SharedKernel.Data;
+using LptHub.SharedKernel.Data;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
-namespace MatterFlow.Data;
+namespace LptHub.Data;
 
 /// <summary>
 /// Adds <c>OPTION (USE HINT ('DISABLE_PARAMETER_SNIFFING'))</c> to a SELECT that carries <see cref="QueryPlanTags.StablePlan"/> (issue #938), so its plan is made for the average

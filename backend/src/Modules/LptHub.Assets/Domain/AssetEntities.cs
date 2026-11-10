@@ -1,7 +1,7 @@
-using MatterFlow.SharedKernel.Audit;
-using MatterFlow.SharedKernel.Entities;
+using LptHub.SharedKernel.Audit;
+using LptHub.SharedKernel.Entities;
 
-namespace MatterFlow.Assets.Domain;
+namespace LptHub.Assets.Domain;
 
 /// <summary>
 /// A kind of Asset (Document Set, Data Room, Source System, ...). Its own fields are the form definition of kind AssetType that is
@@ -72,7 +72,7 @@ public class Asset : AuditedEntity<int>, IAuditScoped
 
     public string DisplayName { get; set; } = string.Empty;
 
-    /// <summary>URL, workspace id or media label identifying the asset outside MatterFlow.</summary>
+    /// <summary>URL, workspace id or media label identifying the asset outside LPT Hub.</summary>
     public string? ExternalReference { get; set; }
 
     public string? Description { get; set; }

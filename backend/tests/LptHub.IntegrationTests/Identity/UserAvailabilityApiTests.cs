@@ -1,12 +1,12 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.Audit.Domain;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.Audit.Domain;
+using LptHub.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Identity;
+namespace LptHub.IntegrationTests.Identity;
 
 /// <summary>User availability and work hours (epic #68, issue #69): own and on-behalf editing, validation codes, concurrency, audit, lookups.</summary>
 [Collection(SqlServerCollection.Name)]
@@ -21,7 +21,7 @@ public sealed class UserAvailabilityApiTests(SqlServerFixture sql) : IAsyncLifet
     private HttpClient As(string user)
     {
         var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        client.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         client.DefaultRequestHeaders.Add("X-Dev-User", user);
         return client;
     }

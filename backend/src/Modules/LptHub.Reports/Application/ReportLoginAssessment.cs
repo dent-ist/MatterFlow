@@ -1,4 +1,4 @@
-namespace MatterFlow.Reports.Application;
+namespace LptHub.Reports.Application;
 
 /// <summary>What the startup probe measured for the report login (only SELECT and permission queries; see <c>ReportLoginProbe</c>).</summary>
 public sealed record ReportLoginFacts(
@@ -45,7 +45,7 @@ public static class ReportLoginAssessment
         if (f.IsDbOwner)
             problems.Add("it is db_owner of the database");
         if (f.BroadRoleCount > 0)
-            problems.Add("it is a member of a broad role (db_datareader, db_datawriter, db_ddladmin, mf_app or similar)");
+            problems.Add("it is a member of a broad role (db_datareader, db_datawriter, db_ddladmin, lpt_app or similar)");
         if (f.WritableTables > 0)
             problems.Add($"it can write to {f.WritableTables} table(s)");
         if (f.CanExecute)
@@ -60,7 +60,7 @@ public static class ReportLoginAssessment
             return new(false, ReportsStates.TooPrivileged, $"The report login '{f.LoginName}' has too many rights: {string.Join("; ", problems)}. Reports stay off (docs/runbook.md section 11).", details);
 
         if (!f.InReaderRole)
-            return new(false, ReportsStates.RoleMissing, $"The report login '{f.LoginName}' is not a member of the database role mf_report_reader. Demo: run npm run db:report-login (npm start does it); production: see docs/runbook.md section 11.", details);
+            return new(false, ReportsStates.RoleMissing, $"The report login '{f.LoginName}' is not a member of the database role lpt_report_reader. Demo: run npm run db:report-login (npm start does it); production: see docs/runbook.md section 11.", details);
 
         if (f.CompatibilityLevel < MinimumCompatibilityLevel)
             return new(false, ReportsStates.CompatibilityTooLow, $"The database compatibility level is {f.CompatibilityLevel}; reports need {MinimumCompatibilityLevel} or higher (OPENJSON).", details);

@@ -1,9 +1,9 @@
-using MatterFlow.Data.SchemaMigrations;
+using LptHub.Data.SchemaMigrations;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 
-namespace MatterFlow.SchemaTests;
+namespace LptHub.SchemaTests;
 
 /// <summary>Script 67 (epic #1330, issue #1332): dbo.Role.LandingPage is a nullable varchar(40) key with a shape check; the starter defaults are set only on untouched starter roles.</summary>
 [Collection(SqlServerCollection.Name)]

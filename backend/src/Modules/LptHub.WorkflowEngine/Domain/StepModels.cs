@@ -1,4 +1,4 @@
-namespace MatterFlow.WorkflowEngine.Domain;
+namespace LptHub.WorkflowEngine.Domain;
 
 /// <summary>Step instance states (architecture 8.2). "Resolved" means <see cref="Completed"/> or <see cref="Skipped"/>.</summary>
 public enum StepStatus

@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace MatterFlow.UnitTests.Reports;
+namespace LptHub.UnitTests.Reports;
 
 /// <summary>Reads the security corpora of the Reports suite (issue #725): JSON data files under <c>Reports/Corpus</c>, copied next to the test assembly.</summary>
 internal static class ReportCorpusFiles

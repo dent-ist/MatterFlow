@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 
-namespace MatterFlow.Reports.Application;
+namespace LptHub.Reports.Application;
 
 /// <summary>Stable event codes written to <c>dbo.AuditEvent</c> for Reports (object type <c>Report</c>; spec 13). The Audit Logs object-type filter lists them.</summary>
 public static class ReportAuditEvents

@@ -1,13 +1,13 @@
 using System.Diagnostics;
 using System.Text.Json;
-using MatterFlow.Reports.Application;
-using MatterFlow.Reports.Application.Results;
-using MatterFlow.SharedKernel.Identity;
+using LptHub.Reports.Application;
+using LptHub.Reports.Application.Results;
+using LptHub.SharedKernel.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MatterFlow.Reports.Api;
+namespace LptHub.Reports.Api;
 
 /// <summary>The parameter values of a run, by parameter name.</summary>
 /// <param name="Parameters">Values as JSON: numbers, <c>yyyy-MM-dd</c> dates, text, booleans, arrays for lists, <c>{from,to}</c> for a date range. Built-in names are refused.</param>
@@ -347,7 +347,7 @@ internal static class ReportProblems
     {
         var problem = new ProblemDetails
         {
-            Type = "urn:matterflow:error:" + p.Code.ToLowerInvariant().Replace('_', '-'),
+            Type = "urn:lpt-hub:error:" + p.Code.ToLowerInvariant().Replace('_', '-'),
             Title = Humanize(p.Code),
             Status = p.Status,
             Detail = p.Message,

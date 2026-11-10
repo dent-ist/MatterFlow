@@ -1,11 +1,11 @@
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Reports.Application;
-using MatterFlow.SharedKernel.Identity;
+using LptHub.Identity.Contracts;
+using LptHub.Reports.Application;
+using LptHub.SharedKernel.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Reports;
+namespace LptHub.UnitTests.Reports;
 
 /// <summary>What a person who may run reports sees: the list (grouping, order, parameter counts from what the SQL uses) and one definition, with no SQL anywhere (issues #718, #719).</summary>
 public class ReportBrowseServiceTests
@@ -43,7 +43,7 @@ public class ReportBrowseServiceTests
     {
         public bool Has(string permissionCode) => false;
 
-        public MatterFlow.SharedKernel.Results.Result Require(string permissionCode) => MatterFlow.SharedKernel.Results.Result.Success();
+        public LptHub.SharedKernel.Results.Result Require(string permissionCode) => LptHub.SharedKernel.Results.Result.Success();
     }
 
     private sealed class FixedTime(DateTimeOffset now) : TimeProvider

@@ -48,7 +48,7 @@ Dependencies (IT): anonymous `/apps` location; `\apps` folder + backup. Test str
 |---|---|
 | App Host service | Install, control API, supervisor, job objects, health, logs, port leasing, config/secret pipe handshake, `Register-MfApp.ps1`, desired-state push, two-phase activation |
 | Gateway | YARP proxy, identity assertion, on-demand start, 503 handling, WebSockets, per-app limits |
-| SDK + template | `MatterFlow.App.Sdk` (identity, config), .NET back-end template, `FakeMatterFlow` |
+| SDK + template | `LptHub.App.Sdk` (identity, config), .NET back-end template, `FakeLptHub` |
 | Admin UI | Health, start/stop/restart, logs, resource asks, "Shared account" warning |
 | Rough split | Host 2.0, gateway/proxy 1.0, SDK/template 0.5, admin UI 0.5 |
 
@@ -88,7 +88,7 @@ Unit and architecture tests run in CI as today (`docs/architecture.md` 15-16). N
 | 4 | Confused deputy on network folders | M/H | Narrow roots, read-only default, probe, audit, quotas; revisit with model 1 |
 | 5 | Per-app account provisioning is slow/manual | H/M | Script generated and reviewable; L1 shared-account fallback; open question on delegation |
 | 6 | Harvey API differs from the assumed one or lacks per-user permissions | M/M | Confirm before Phase 3; vault allow-list; sandbox tenant tests |
-| 7 | In-process YARP/gateway load or a gateway bug affects MatterFlow availability | L/H | Rate limits, timeouts, apps health is `Degraded` only; ability to move gateway to its own site |
+| 7 | In-process YARP/gateway load or a gateway bug affects LPT Hub availability | L/H | Rate limits, timeouts, apps health is `Degraded` only; ability to move gateway to its own site |
 | 8 | Key ring / secrets loss (Data Protection keys not backed up) | L/H | Back up key ring with the database; restore drill; documented in runbook |
 | 9 | Vulnerable dependencies in apps (npm/NuGet) | H/M | CI audits, dependency report in wizard, Dependabot, per-app isolation |
 | 10 | Scope creep into a general platform / marketplace | M/M | Explicit non-goals, trusted-internal assumption (`README` section 2), cut lists per phase |

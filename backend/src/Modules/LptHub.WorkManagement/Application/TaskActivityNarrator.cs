@@ -1,10 +1,10 @@
 using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using MatterFlow.Audit.Contracts;
-using MatterFlow.SharedKernel.Tasks;
+using LptHub.Audit.Contracts;
+using LptHub.SharedKernel.Tasks;
 
-namespace MatterFlow.WorkManagement.Application;
+namespace LptHub.WorkManagement.Application;
 
 /// <summary>Display names the narrator needs, loaded by the caller for one page of events.</summary>
 internal sealed record ActivityNames(

@@ -156,12 +156,12 @@ test.describe('My Matters QA: calendar item permissions', () => {
     await page.goto(`/my-matters?tab=calendar&month=${inDays(2).slice(0, 7)}`);
     await expect(page.locator('[data-add-event]')).not.toHaveAttribute('aria-disabled', 'true');
     const api = await page.request.post(`/api/v1/matters/${notMine.matterId}/events`, {
-      headers: { 'X-MatterFlow-Client': 'web' },
+      headers: { 'X-LptHub-Client': 'web' },
       data: { typeCode: 'OTHER', title: 'Not allowed', date: inDays(2), time: null, note: null },
     });
     expect([403, 404]).toContain(api.status());
     const okApi = await page.request.post(`/api/v1/matters/${mine.matterId}/events`, {
-      headers: { 'X-MatterFlow-Client': 'web' },
+      headers: { 'X-LptHub-Client': 'web' },
       data: { typeCode: 'OTHER', title: 'Allowed', date: inDays(2), time: null, note: null },
     });
     expect(okApi.status()).toBe(201);

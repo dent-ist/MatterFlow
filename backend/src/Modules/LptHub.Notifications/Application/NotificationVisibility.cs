@@ -1,8 +1,8 @@
 using System.Linq.Expressions;
-using MatterFlow.Notifications.Contracts;
-using MatterFlow.Notifications.Domain;
+using LptHub.Notifications.Contracts;
+using LptHub.Notifications.Domain;
 
-namespace MatterFlow.Notifications.Application;
+namespace LptHub.Notifications.Application;
 
 /// <summary>
 /// Permission re-check on read: keeps only the notifications whose object the caller may view now, with one sub-select per object kind

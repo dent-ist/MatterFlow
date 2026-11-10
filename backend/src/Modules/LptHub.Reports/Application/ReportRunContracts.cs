@@ -1,6 +1,6 @@
-using MatterFlow.Reports.Domain.Parameters;
+using LptHub.Reports.Domain.Parameters;
 
-namespace MatterFlow.Reports.Application;
+namespace LptHub.Reports.Application;
 
 public enum ReportRunKind
 {

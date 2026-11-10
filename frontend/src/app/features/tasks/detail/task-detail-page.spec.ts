@@ -927,7 +927,7 @@ describe('TaskDetailPage layout and states', () => {
       'notFound',
     );
     expect(q(missing.el, 'h1')!.textContent).toContain("We couldn't find that task.");
-    expect(document.title).toBe('Task not found - MatterFlow');
+    expect(document.title).toBe('Task not found - LPT Hub');
     TestBed.resetTestingModule();
     const forbidden = await mountTaskPage(aTask(), PERMS, {
       tasks: { getTask: vi.fn().mockReturnValue(apiError(403, { code: 'PERMISSION_DENIED' })) },
@@ -936,7 +936,7 @@ describe('TaskDetailPage layout and states', () => {
       'forbidden',
     );
     expect(q(forbidden.el, 'h1')!.textContent).toContain("You don't have access to this task.");
-    expect(document.title).toBe('No access to this task - MatterFlow');
+    expect(document.title).toBe('No access to this task - LPT Hub');
   });
 
   it('treats an address that is not a task number as a task that does not exist, without asking the API', async () => {
@@ -946,19 +946,19 @@ describe('TaskDetailPage layout and states', () => {
     await settle(fixture);
     expect(q(el, '[data-record-state]')!.getAttribute('data-record-state')).toBe('notFound');
     expect(getTask).toHaveBeenCalledTimes(1); // only the first, valid mount
-    expect(document.title).toBe('Task not found - MatterFlow');
+    expect(document.title).toBe('Task not found - LPT Hub');
   });
 
   it('puts the task in the tab title, cut at 60 characters, and names the Activity drawer while it is open (#295)', async () => {
     const long = 'A'.repeat(200);
     const { fixture, el } = await mountTaskPage(aTask({ title: long }), PERMS);
     const base = `TSK-1042 ${'A'.repeat(60)}…`;
-    expect(document.title).toBe(`${base} - MatterFlow`);
+    expect(document.title).toBe(`${base} - LPT Hub`);
     await click(fixture, q(el, '[data-action="activity"]'));
-    expect(document.title).toBe(`${base}: Activity - MatterFlow`);
+    expect(document.title).toBe(`${base}: Activity - LPT Hub`);
     fixture.debugElement.injector.get(TaskDetailStore).activityOpen.set(false);
     await settle(fixture);
-    expect(document.title).toBe(`${base} - MatterFlow`);
+    expect(document.title).toBe(`${base} - LPT Hub`);
   });
 
   it('shows the page skeleton while the task loads, then the page', async () => {
@@ -986,7 +986,7 @@ describe('TaskDetailPage layout and states', () => {
       .mockReturnValue(ok(aTask()));
     const { fixture, el } = await mountTaskPage(aTask(), PERMS, { tasks: { getTask } });
     expect(q(el, '[data-record-error]')).not.toBeNull();
-    expect(document.title).toBe('Task could not be loaded - MatterFlow');
+    expect(document.title).toBe('Task could not be loaded - LPT Hub');
     await click(fixture, q(el, '[data-retry] button, button[data-retry]'));
     expect(q(el, '[data-task-header] [data-ref]')!.textContent).toBe('TSK-1042');
   });

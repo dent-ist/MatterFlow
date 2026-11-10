@@ -1,11 +1,11 @@
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Identity.Domain;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.Identity.Contracts;
+using LptHub.Identity.Domain;
+using LptHub.IntegrationTests.Fixtures;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Identity;
+namespace LptHub.IntegrationTests.Identity;
 
 /// <summary>Security review SEC-18: startup seeds are serialized, independent of Migrations:Enabled, and the starter roles are seeded once.</summary>
 [Collection(SqlServerCollection.Name)]

@@ -1,11 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.WorkViews;
+namespace LptHub.IntegrationTests.WorkViews;
 
 /// <summary>
 /// GET /matters/{id}/overview (epic #758, PX-11, #769): one call with the header, tasks by status, the next five deadlines, the people, the assets, the last events and the health

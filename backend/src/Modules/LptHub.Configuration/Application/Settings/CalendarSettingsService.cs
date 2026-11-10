@@ -1,14 +1,14 @@
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Text.Json;
-using MatterFlow.Configuration.Application.Lookups;
-using MatterFlow.Configuration.Contracts;
-using MatterFlow.Configuration.Domain.Settings;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.SharedKernel.Availability;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Configuration.Application.Lookups;
+using LptHub.Configuration.Contracts;
+using LptHub.Configuration.Domain.Settings;
+using LptHub.Identity.Contracts;
+using LptHub.SharedKernel.Availability;
+using LptHub.SharedKernel.Results;
 
-namespace MatterFlow.Configuration.Application.Settings;
+namespace LptHub.Configuration.Application.Settings;
 
 /// <summary>The thresholds as the form edits them.</summary>
 public sealed record CalendarThresholdValues(

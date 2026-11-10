@@ -2,7 +2,7 @@
 
 [[_TOC_]]
 
-**What this page is for.** How a person is identified (Windows in production, Dev in development), how roles become permissions, how a `Perm:` policy protects an endpoint, and how the permission list reaches the Angular app. Design: `docs/architecture.md` section 6. Code: `backend/src/Modules/MatterFlow.Identity`.
+**What this page is for.** How a person is identified (Windows in production, Dev in development), how roles become permissions, how a `Perm:` policy protects an endpoint, and how the permission list reaches the Angular app. Design: `docs/architecture.md` section 6. Code: `backend/src/Modules/LptHub.Identity`.
 
 ## Authentication providers
 

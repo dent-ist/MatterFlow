@@ -78,7 +78,7 @@ export async function putIcon(
 ): Promise<{ status: number; body: Json }> {
   const ctx = await request.newContext({
     baseURL: BASE_URL,
-    extraHTTPHeaders: { 'X-Dev-User': ADMIN_USER, 'X-MatterFlow-Client': 'web' },
+    extraHTTPHeaders: { 'X-Dev-User': ADMIN_USER, 'X-LptHub-Client': 'web' },
   });
   try {
     const response = await ctx.put('/api/v1/admin/settings/branding/icon', {

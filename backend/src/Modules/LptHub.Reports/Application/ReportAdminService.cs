@@ -1,11 +1,11 @@
 using System.Text.Json;
-using MatterFlow.Reports.Domain;
-using MatterFlow.Reports.Domain.Parameters;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Reports.Domain;
+using LptHub.Reports.Domain.Parameters;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Results;
 using Microsoft.Extensions.Options;
 
-namespace MatterFlow.Reports.Application;
+namespace LptHub.Reports.Application;
 
 /// <summary>A value or the problem (HTTP status, stable code, message and optional per-field errors) that the endpoint answers.</summary>
 public sealed record AdminResult<T>(T? Value, ReportStateProblem? Problem)

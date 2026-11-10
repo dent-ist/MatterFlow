@@ -1,8 +1,8 @@
-using MatterFlow.Configuration.Domain.Settings;
+using LptHub.Configuration.Domain.Settings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace MatterFlow.Configuration.Infrastructure;
+namespace LptHub.Configuration.Infrastructure;
 
 /// <summary>Mapping of <c>dbo.AppSetting</c> (script 48); the key is text, so the shared <c>Entity</c> conventions do not apply.</summary>
 internal sealed class AppSettingConfiguration : IEntityTypeConfiguration<AppSetting>

@@ -1,11 +1,11 @@
 using System.Net;
 using System.Text;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.Reports.Domain;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.Reports.Domain;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Reports.ReportSecurityKit;
+using static LptHub.IntegrationTests.Reports.ReportSecurityKit;
 
-namespace MatterFlow.IntegrationTests.Reports;
+namespace LptHub.IntegrationTests.Reports;
 
 /// <summary>
 /// No SQL text for people who only run reports (issue #725, spec 6.8 and 16.3 i, threat 7.8): a report whose definition, choice query and error messages are full
@@ -173,6 +173,6 @@ public sealed class ReportNoSqlLeakTests(SqlServerFixture sql)
         };
 
         seen[0].Status.ShouldBe((int)HttpStatusCode.ServiceUnavailable);
-        ShouldBeClean(seen, [MarkerSql, "ReportsReadOnly", "ConnectionStrings", "mf_report_reader", "mf_reports", "Password", "Server=", "Data Source", h.Login.Name]);
+        ShouldBeClean(seen, [MarkerSql, "ReportsReadOnly", "ConnectionStrings", "lpt_report_reader", "lpt_reports", "Password", "Server=", "Data Source", h.Login.Name]);
     }
 }

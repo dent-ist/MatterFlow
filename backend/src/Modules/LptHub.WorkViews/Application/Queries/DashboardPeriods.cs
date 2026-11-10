@@ -1,6 +1,6 @@
-using MatterFlow.SharedKernel.Results;
+using LptHub.SharedKernel.Results;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>A resolved Dashboard period: the keyword it came from and the first and last local day (both inclusive, the viewer's zone).</summary>
 public readonly record struct ResolvedPeriod(string Key, DateOnly From, DateOnly To)

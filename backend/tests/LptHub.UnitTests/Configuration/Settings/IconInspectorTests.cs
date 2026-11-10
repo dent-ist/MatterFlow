@@ -1,10 +1,10 @@
 using System.Buffers.Binary;
 using System.Text;
-using MatterFlow.Configuration.Domain.Settings;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Configuration.Domain.Settings;
+using LptHub.SharedKernel.Results;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Configuration.Settings;
+namespace LptHub.UnitTests.Configuration.Settings;
 
 public class IconInspectorTests
 {

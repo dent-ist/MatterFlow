@@ -1,10 +1,10 @@
 using AngleSharp;
 using AngleSharp.Dom;
 using AngleSharp.Html.Parser;
-using MatterFlow.SharedKernel.Text;
+using LptHub.SharedKernel.Text;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.SharedKernel;
+namespace LptHub.UnitTests.SharedKernel;
 
 /// <summary>
 /// Security tests of the shared rich-text sanitizer (decision R, security review addendum 3). Three independent lines:

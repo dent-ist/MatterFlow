@@ -1,10 +1,10 @@
-using MatterFlow.Data.SchemaMigrations;
+using LptHub.Data.SchemaMigrations;
 using Microsoft.Extensions.Hosting;
 
-namespace MatterFlow.Api.Hosting;
+namespace LptHub.Api.Hosting;
 
 /// <summary>
-/// <c>MatterFlow.Api.exe --migrate-only</c> (or <c>MATTERFLOW_MIGRATE_ONLY=true</c>): applies the pending schema scripts with the
+/// <c>LptHub.Api.exe --migrate-only</c> (or <c>LPTHUB_MIGRATE_ONLY=true</c>): applies the pending schema scripts with the
 /// <c>ConnectionStrings:Migrations</c> login and exits with 0 (up to date) or 1 (failed), without starting the web host, seeds or the
 /// audit-store guard. The DBA runs it before swapping binaries (architecture 4.3 item 9, docs/runbook.md section 7). The normal startup
 /// migration is unchanged.
@@ -12,7 +12,7 @@ namespace MatterFlow.Api.Hosting;
 public static class MigrateOnlyCommand
 {
     public const string Switch = "--migrate-only";
-    public const string EnvironmentVariable = "MATTERFLOW_MIGRATE_ONLY";
+    public const string EnvironmentVariable = "LPTHUB_MIGRATE_ONLY";
 
     public static bool IsRequested(string[] args, Func<string, string?>? getEnvironmentVariable = null)
     {
@@ -37,7 +37,7 @@ public static class MigrateOnlyCommand
         });
         builder.Services.AddSchemaMigrations(builder.Configuration);
         using var host = builder.Build();
-        var logger = host.Services.GetRequiredService<ILoggerFactory>().CreateLogger("MatterFlow.MigrateOnly");
+        var logger = host.Services.GetRequiredService<ILoggerFactory>().CreateLogger("LptHub.MigrateOnly");
 
         try
         {

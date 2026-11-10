@@ -77,7 +77,7 @@ test.describe('Audit Logs chrome (#646)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/admin/audit');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Audit Logs');
-    await expect(page).toHaveTitle('Audit Logs - MatterFlow');
+    await expect(page).toHaveTitle('Audit Logs - LPT Hub');
     await expect(crumbs(page)).toHaveText([/Administration/, /Audit Logs/]);
     const description = page.locator('[data-page-description]');
     await expect(description).toHaveText('Every recorded change, newest first. Read only.');

@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <ProjectReference Include="..\..\MatterFlow.SharedKernel\MatterFlow.SharedKernel.csproj" />
-    <ProjectReference Include="..\MatterFlow.Configuration.Contracts\MatterFlow.Configuration.Contracts.csproj" />
-    <ProjectReference Include="..\MatterFlow.Identity.Contracts\MatterFlow.Identity.Contracts.csproj" />
-    <ProjectReference Include="..\MatterFlow.Audit.Contracts\MatterFlow.Audit.Contracts.csproj" />
+    <ProjectReference Include="..\..\LptHub.SharedKernel\LptHub.SharedKernel.csproj" />
+    <ProjectReference Include="..\LptHub.Configuration.Contracts\LptHub.Configuration.Contracts.csproj" />
+    <ProjectReference Include="..\LptHub.Identity.Contracts\LptHub.Identity.Contracts.csproj" />
+    <ProjectReference Include="..\LptHub.Audit.Contracts\LptHub.Audit.Contracts.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />

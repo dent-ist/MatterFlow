@@ -1,11 +1,11 @@
-using MatterFlow.Identity.Domain;
-using MatterFlow.Organization.Domain;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Tasks;
-using MatterFlow.WorkManagement.Domain;
+using LptHub.Identity.Domain;
+using LptHub.Organization.Domain;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Tasks;
+using LptHub.WorkManagement.Domain;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>
 /// "Needs my attention" and "Upcoming deadlines" (issue #681). Attention (issue #905): one ranked list of five rows and one count of the <see cref="AttentionRules"/> set;

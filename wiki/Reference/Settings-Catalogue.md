@@ -2,7 +2,7 @@
 
 [[_TOC_]]
 
-**What this page is for.** The application settings that administrators change in the app (Administration > Settings), stored as rows of `dbo.AppSetting`, and the closely related configuration keys. The registry in code is `backend/src/Modules/MatterFlow.Configuration/Domain/Settings/SettingDefinitions.cs`; a key not in that registry is ignored. **Defaults live in code; the table has no seed rows**, so "no row" means "the default". Changes are audited (each setting has a changed and a reset event).
+**What this page is for.** The application settings that administrators change in the app (Administration > Settings), stored as rows of `dbo.AppSetting`, and the closely related configuration keys. The registry in code is `backend/src/Modules/LptHub.Configuration/Domain/Settings/SettingDefinitions.cs`; a key not in that registry is ignored. **Defaults live in code; the table has no seed rows**, so "no row" means "the default". Changes are audited (each setting has a changed and a reset event).
 
 All settings need `Settings.Manage` to change; only the branding read is public. See [Notifications Audit and Settings](../Architecture/Notifications-Audit-and-Settings.md) and [How to Add a Setting](../Backend/How-to-Add-a-Setting.md).
 
@@ -10,7 +10,7 @@ All settings need `Settings.Manage` to change; only the branding read is public.
 
 | Key | Type | Default | Meaning | Edited at | API | Audit events |
 |---|---|---|---|---|---|---|
-| `Branding.AppName` | Text | `MatterFlow` | Application name shown in the header and the browser title (`Settings: Branding - <name>`) | Settings > Branding | `/admin/settings/branding` (read for everyone: `GET /branding`) | `SETTINGS_BRANDING_NAME_CHANGED`, `SETTINGS_BRANDING_RESET` |
+| `Branding.AppName` | Text | `LPT Hub` | Application name shown in the header and the browser title (`Settings: Branding - <name>`) | Settings > Branding | `/admin/settings/branding` (read for everyone: `GET /branding`) | `SETTINGS_BRANDING_NAME_CHANGED`, `SETTINGS_BRANDING_RESET` |
 | `Branding.Icon` | Binary (png, svg or ico, 256 KB limit in the table; minimum pixel size for png and ico) | none: the built-in mark (`favicon.svg`) stays | Custom application icon; the version (a short hash) is the cache buster and ETag | Settings > Branding | `/admin/settings/branding`, `GET /branding/icon` | `SETTINGS_BRANDING_ICON_CHANGED`, `SETTINGS_BRANDING_RESET` |
 | `Dashboard.Gauge` | Text (JSON) | Working day 8 AM to 6 PM, Monday to Friday; age basis Working; level hours 1, 2, 3, 4, 5; one extra level per 5 unassigned tasks, at most +2 | The unassigned gauge: working day, age basis (`WORKING` or `CLOCK`), hours per level, count bonus. Time zone is `Firm:TimeZoneId` | Settings > Dashboard | `/admin/settings/dashboard` | `SETTINGS_DASHBOARD_GAUGE_CHANGED`, `SETTINGS_DASHBOARD_GAUGE_RESET` |
 | `Dashboard.Capacity` | Text (JSON `{"countOffHours": true}`) | `countOffHours` true | Whether people outside work hours still count as capacity in the battery | Settings > Dashboard | `/admin/settings/dashboard/capacity` | `SETTINGS_DASHBOARD_CAPACITY_CHANGED`, `SETTINGS_DASHBOARD_CAPACITY_RESET` |

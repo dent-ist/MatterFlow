@@ -1,4 +1,4 @@
-namespace MatterFlow.Identity.Contracts;
+namespace LptHub.Identity.Contracts;
 
 /// <summary>
 /// Permission codes. The catalog lives in <c>contracts/permissions.json</c> (source of truth, architecture 6.3);

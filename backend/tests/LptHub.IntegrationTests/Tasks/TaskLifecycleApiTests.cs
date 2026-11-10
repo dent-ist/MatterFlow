@@ -1,11 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Tasks;
+namespace LptHub.IntegrationTests.Tasks;
 
 /// <summary>Task status changes (ticket 42) over HTTP: the lifecycle matrix per permission, mandatory comments, reopen, bulk completion (addendum K).</summary>
 [Collection(SqlServerCollection.Name)]

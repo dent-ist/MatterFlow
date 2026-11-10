@@ -1,7 +1,7 @@
-using MatterFlow.Notifications.Contracts;
+using LptHub.Notifications.Contracts;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Notifications;
+namespace LptHub.UnitTests.Notifications;
 
 /// <summary>The wording of README section 3.1 (docs/ux/notifications-review): exact text, trimming and excerpts.</summary>
 public class NotificationMessagesTests

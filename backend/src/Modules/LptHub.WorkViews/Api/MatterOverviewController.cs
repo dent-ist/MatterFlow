@@ -1,17 +1,17 @@
-using MatterFlow.Identity.Contracts;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.WorkViews.Application.Queries;
+using LptHub.Identity.Contracts;
+using LptHub.SharedKernel.Results;
+using LptHub.WorkViews.Application.Queries;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MatterFlow.WorkViews.Api;
+namespace LptHub.WorkViews.Api;
 
 /// <summary>The matter record Overview (epic #758, PX-11).</summary>
 [ApiController]
 [Route("api/v1/matters/{matterId:int}/overview")]
 [Authorize(Policy = "Perm:" + Permissions.Matter.View)]
-[MatterFlow.SharedKernel.Visibility.PreparesViewer]
+[LptHub.SharedKernel.Visibility.PreparesViewer]
 public sealed class MatterOverviewController : ControllerBase
 {
     /// <summary>

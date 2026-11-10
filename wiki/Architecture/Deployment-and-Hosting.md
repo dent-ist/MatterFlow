@@ -2,7 +2,7 @@
 
 [[_TOC_]]
 
-**What this page is for.** How MatterFlow is packaged and hosted on a domain-joined Windows Server with IIS, which scripts do what, and which settings matter. The full procedure (install, upgrade, rollback, backup) is in `docs/runbook.md` sections 5 to 8; this page is the map. MatterFlow has not been deployed yet (`CLAUDE.md`), and the rehearsal on a real IIS server is still to do (runbook section 9).
+**What this page is for.** How LPT Hub is packaged and hosted on a domain-joined Windows Server with IIS, which scripts do what, and which settings matter. The full procedure (install, upgrade, rollback, backup) is in `docs/runbook.md` sections 5 to 8; this page is the map. LPT Hub has not been deployed yet (`CLAUDE.md`), and the rehearsal on a real IIS server is still to do (runbook section 9).
 
 ## Topology
 
@@ -25,13 +25,13 @@ The server needs the .NET 10 Hosting Bundle (framework-dependent publish).
 ::: mermaid
 flowchart TD
   A["Build package: deploy/publish.sh or publish.ps1"] --> B["Copy to the server, keep the previous folder for rollback"]
-  B --> C["DBA or deploy step runs: dotnet MatterFlow.Api.dll --migrate-only (ConnectionStrings:Migrations)"]
+  B --> C["DBA or deploy step runs: dotnet LptHub.Api.dll --migrate-only (ConnectionStrings:Migrations)"]
   C --> D["Swap binaries, recycle the app pool"]
   D --> E["Startup: seeds (permission catalog), audit store guard"]
   E --> F["Check /health/ready and sign in"]
 :::
 
-- Production sets `Migrations:Enabled=false`: schema scripts are applied by the `--migrate-only` step with a DDL-capable login (`mf_migrator` or a DBA), so the running site's identity (`mf_app`) never needs DDL.
+- Production sets `Migrations:Enabled=false`: schema scripts are applied by the `--migrate-only` step with a DDL-capable login (`lpt_migrator` or a DBA), so the running site's identity (`lpt_app`) never needs DDL.
 - At startup the API refuses to run in Production when its own database identity can UPDATE, DELETE or ALTER `dbo.AuditEvent` (`Security:AllowPrivilegedDatabaseIdentity` is the documented exception switch).
 - Health: `/health/live` (process), `/health/ready` (database reachable, migrations applied; states `database_not_configured`, `database_unreachable`, `migrations_pending`, `migration_failed`).
 - Rollback: restore the previous folder; scripts are forward-only, so a database rollback is a restore (runbook sections 7 and 8).
@@ -42,7 +42,7 @@ flowchart TD
 |---|---|
 | `AllowedHosts` | The site's real host name(s); the default allows only localhost and an unset value makes every request fail with 400 |
 | `Auth:Provider` | `Windows` (`Dev` is refused outside Development and Test) |
-| `ConnectionStrings:MatterFlow` and `:Migrations` | Two different identities |
+| `ConnectionStrings:LptHub` and `:Migrations` | Two different identities |
 | `ConnectionStrings:ReportsReadOnly` | A third, read-only login (reports) |
 | `Bootstrap:SystemAdmins` | `["ke\\kekim"]` |
 | `Features:SensitiveMatterAccess` | `false` until go-live of the rule (runbook section 12) |

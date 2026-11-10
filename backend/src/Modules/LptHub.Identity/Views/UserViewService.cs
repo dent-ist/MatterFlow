@@ -1,13 +1,13 @@
 using System.Text;
 using System.Text.Json;
-using MatterFlow.Identity.Domain;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Time;
+using LptHub.Identity.Domain;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Time;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Identity.Views;
+namespace LptHub.Identity.Views;
 
 /// <summary>
 /// The signed-in person's remembered screen state and named views (PM v2, #856). A person only ever reads and writes their own rows: every

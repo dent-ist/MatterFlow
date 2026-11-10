@@ -1,11 +1,11 @@
 using System.Diagnostics;
 using System.Text.Json;
-using MatterFlow.Reports.Application;
-using MatterFlow.Reports.Application.Results;
+using LptHub.Reports.Application;
+using LptHub.Reports.Application.Results;
 using Microsoft.Extensions.Options;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Reports;
+namespace LptHub.UnitTests.Reports;
 
 /// <summary>The typed result table and the per-person cache with its lifetime, ownership and memory rules (spec 6.4; issue #705).</summary>
 public class ResultStoreTests

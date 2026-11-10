@@ -1,15 +1,15 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.Audit.Domain;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Identity.Domain;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.Audit.Domain;
+using LptHub.Identity.Contracts;
+using LptHub.Identity.Domain;
+using LptHub.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Identity;
+namespace LptHub.IntegrationTests.Identity;
 
 /// <summary>Pods and membership (ticket #25, SCN-007 data support) through the full HTTP pipeline against a real SQL Server.</summary>
 [Collection(SqlServerCollection.Name)]
@@ -25,7 +25,7 @@ public sealed class PodsApiTests(SqlServerFixture sql) : IAsyncLifetime
     private HttpClient As(string user)
     {
         var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        client.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         client.DefaultRequestHeaders.Add("X-Dev-User", user);
         return client;
     }

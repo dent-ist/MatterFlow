@@ -1,9 +1,9 @@
-using MatterFlow.Reports.Application;
-using MatterFlow.SharedKernel.Identity;
+using LptHub.Reports.Application;
+using LptHub.SharedKernel.Identity;
 using Microsoft.Extensions.Options;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Reports;
+namespace LptHub.UnitTests.Reports;
 
 /// <summary>Favourites and the Recent line (issue #723): the report rule, idempotence, the limit and the clamp of the line.</summary>
 public class ReportPersonalServiceTests

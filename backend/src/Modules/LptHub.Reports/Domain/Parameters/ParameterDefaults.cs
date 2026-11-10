@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 
-namespace MatterFlow.Reports.Domain.Parameters;
+namespace LptHub.Reports.Domain.Parameters;
 
 /// <summary>
 /// Turns an admin's default (a literal or a keyword) into the JSON value the form shows and the binder uses when a run does not supply one.

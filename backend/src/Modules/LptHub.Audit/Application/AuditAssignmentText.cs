@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace MatterFlow.Audit.Application;
+namespace LptHub.Audit.Application;
 
 /// <summary>
 /// Words a task assignment event the way the Task activity timeline does ("Assigned to Dana P. (Pod A)", "Reassigned from Pod A to

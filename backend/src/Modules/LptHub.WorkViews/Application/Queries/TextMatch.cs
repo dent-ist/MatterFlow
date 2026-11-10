@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>
 /// Case-insensitive "contains" for the free-text filters of the queues. The column is compared as <c>LOWER(column) COLLATE Latin1_General_100_BIN2</c>
@@ -34,8 +34,8 @@ internal static class TextMatch
     {
         var parts = text.Split('-', StringSplitOptions.TrimEntries);
         return parts is { Length: 2 }
-            && MatterFlow.SharedKernel.ValueObjects.BusinessNumber.TryParse(parts[0], out var client)
-            && MatterFlow.SharedKernel.ValueObjects.BusinessNumber.TryParse(parts[1], out var matter)
+            && LptHub.SharedKernel.ValueObjects.BusinessNumber.TryParse(parts[0], out var client)
+            && LptHub.SharedKernel.ValueObjects.BusinessNumber.TryParse(parts[1], out var matter)
             ? $"{client.Value}-{matter.Value}"
             : null;
     }

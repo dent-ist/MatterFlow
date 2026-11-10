@@ -1,4 +1,4 @@
-namespace MatterFlow.Reports.Application.Results;
+namespace LptHub.Reports.Application.Results;
 
 /// <summary>A finished result in typed column storage. Read-only, so it can be sorted and paged by many requests at once.</summary>
 public sealed class ResultTable

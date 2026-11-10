@@ -1,17 +1,17 @@
 using System.Diagnostics;
 using System.Net.Http.Json;
 using System.Xml.Linq;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.IntegrationTests.Tasks;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Tasks;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Shouldly;
 using Xunit.Abstractions;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.WorkViews;
+namespace LptHub.IntegrationTests.WorkViews;
 
 /// <summary>
 /// The My Matters endpoints against the size the plan names (epic #667, issue #686): 200 matters, 24,000 tasks of which 20,000 are open, three steps per
@@ -87,7 +87,7 @@ public sealed partial class MyMattersPerformanceTests(SqlServerFixture sql, ITes
     private HttpClient Client(string user)
     {
         var http = _logged.CreateClient();
-        http.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        http.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         http.DefaultRequestHeaders.Add("X-Dev-User", user);
         return http;
     }

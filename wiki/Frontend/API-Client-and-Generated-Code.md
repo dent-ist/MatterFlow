@@ -23,7 +23,7 @@
 | Interceptor | What it does |
 |---|---|
 | `timeZoneInterceptor` | Adds `X-Time-Zone` (the viewer's zone) so the server computes overdue and "due in N days" for the viewer |
-| `csrfInterceptor` | Adds `X-MatterFlow-Client: web` to state-changing requests (the server refuses them without it) |
+| `csrfInterceptor` | Adds `X-LptHub-Client: web` to state-changing requests (the server refuses them without it) |
 | `problemDetailsInterceptor` | Converts `application/problem+json` into a typed `ApiError` (`core/http/api-error.ts`) and shows the global toast unless the request sets `SKIP_ERROR_TOAST` or is registered quiet (`QuietRequests`) |
 | `connectivityInterceptor` | Feeds the connection banner when the network or API is unreachable |
 

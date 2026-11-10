@@ -1,15 +1,15 @@
 using System.Diagnostics;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.IntegrationTests.Organization;
-using MatterFlow.IntegrationTests.Tasks;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Organization;
+using LptHub.IntegrationTests.Tasks;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Shouldly;
 using Xunit.Abstractions;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Configuration;
+namespace LptHub.IntegrationTests.Configuration;
 
 /// <summary>
 /// <c>openTaskCount</c> on the Task Type list and detail (#372) against seeded data: the whole list (the endpoint is not paged) with the counts, in
@@ -74,7 +74,7 @@ public abstract class TaskTypeCountsPerformanceTestsBase(SqlServerFixture sql, I
     public async Task The_list_its_count_sorts_and_the_detail_stay_within_budget_in_a_fixed_number_of_statements()
     {
         var http = _logged.CreateClient();
-        http.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        http.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         http.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
 
         foreach (var url in new[] { "/api/v1/task-types", "/api/v1/task-types?sort=-openTaskCount", "/api/v1/task-types?sort=openTaskCount" })

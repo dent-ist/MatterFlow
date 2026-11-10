@@ -1,10 +1,10 @@
 using System.Data;
-using MatterFlow.Assets.Domain;
+using LptHub.Assets.Domain;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
-namespace MatterFlow.Assets.Application;
+namespace LptHub.Assets.Application;
 
 /// <summary>The number taken for a new asset: the text to store and the counter value it was built from.</summary>
 /// <param name="Number">The text, for example <c>90003-80008_001</c>.</param>

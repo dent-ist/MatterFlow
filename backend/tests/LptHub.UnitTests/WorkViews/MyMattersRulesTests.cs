@@ -1,9 +1,9 @@
-using MatterFlow.SharedKernel.Tasks;
-using MatterFlow.WorkManagement.Domain;
-using MatterFlow.WorkViews.Application.Queries;
+using LptHub.SharedKernel.Tasks;
+using LptHub.WorkManagement.Domain;
+using LptHub.WorkViews.Application.Queries;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.WorkViews;
+namespace LptHub.UnitTests.WorkViews;
 
 /// <summary>The My Matters rules (epic #667): the flag table (one case per branch), the workflow percentage, the hold threshold and the cache key independence of managers.</summary>
 public class MyMattersRulesTests

@@ -1,17 +1,17 @@
-using MatterFlow.Configuration.Api;
-using MatterFlow.Configuration.Application;
-using MatterFlow.Configuration.Application.Forms;
-using MatterFlow.Configuration.Application.Lookups;
-using MatterFlow.Configuration.Application.Settings;
-using MatterFlow.Configuration.Application.TaskTypes;
-using MatterFlow.Configuration.Contracts;
-using MatterFlow.Configuration.Contracts.Forms;
-using MatterFlow.SharedKernel.Tasks;
+using LptHub.Configuration.Api;
+using LptHub.Configuration.Application;
+using LptHub.Configuration.Application.Forms;
+using LptHub.Configuration.Application.Lookups;
+using LptHub.Configuration.Application.Settings;
+using LptHub.Configuration.Application.TaskTypes;
+using LptHub.Configuration.Contracts;
+using LptHub.Configuration.Contracts.Forms;
+using LptHub.SharedKernel.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-namespace MatterFlow.Configuration;
+namespace LptHub.Configuration;
 
 /// <summary>Composition entry point of the Configuration module.</summary>
 public static class ConfigurationModule
@@ -46,7 +46,7 @@ public static class ConfigurationModule
         services.AddScoped<BrandingService>();
         services.AddScoped<CalendarSettingsService>();
         services.AddScoped<ICalendarSettings>(sp => sp.GetRequiredService<CalendarSettingsService>());
-        services.AddScoped<MatterFlow.Identity.Contracts.IFirmHolidayCalendar>(sp => sp.GetRequiredService<CalendarSettingsService>());
+        services.AddScoped<LptHub.Identity.Contracts.IFirmHolidayCalendar>(sp => sp.GetRequiredService<CalendarSettingsService>());
         services.AddScoped<DashboardSettingsService>();
         services.AddScoped<IDashboardSettings>(sp => sp.GetRequiredService<DashboardSettingsService>());
         services.AddBrandingOpenApi();

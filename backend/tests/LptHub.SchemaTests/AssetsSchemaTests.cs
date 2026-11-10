@@ -1,9 +1,9 @@
-using MatterFlow.Data.SchemaMigrations;
+using LptHub.Data.SchemaMigrations;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 
-namespace MatterFlow.SchemaTests;
+namespace LptHub.SchemaTests;
 
 /// <summary>Constraints, indexes and the guard trigger of the baseline (archived 10-assets.sql) (docs/erd.md section 3).</summary>
 [Collection(SqlServerCollection.Name)]

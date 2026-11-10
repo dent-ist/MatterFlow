@@ -1,13 +1,13 @@
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Identity.Domain;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.WorkManagement.Domain;
+using LptHub.Identity.Contracts;
+using LptHub.Identity.Domain;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Results;
+using LptHub.WorkManagement.Domain;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>
 /// The page-wide Dashboard scope (UX review 2, P1, #89): which Tasks a Dashboard number is about. <c>all</c> is every Task (including those with no Pod); a

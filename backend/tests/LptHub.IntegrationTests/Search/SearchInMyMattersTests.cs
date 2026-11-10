@@ -1,9 +1,9 @@
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Search;
+namespace LptHub.IntegrationTests.Search;
 
 /// <summary>
 /// The <c>inMyMatters</c> label of search results (epic #758, PX-05, #763) on the data of <see cref="PmScopeFixture"/>: true when the result's matter (for a client: one of its matters) is

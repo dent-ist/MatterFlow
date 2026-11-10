@@ -1,8 +1,8 @@
 using System.Diagnostics;
-using MatterFlow.Reports.Domain;
+using LptHub.Reports.Domain;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Reports;
+namespace LptHub.UnitTests.Reports;
 
 /// <summary>The T-SQL-aware scanner and the position-based rewrite (spec 5.2; issue #687).</summary>
 public class SqlScannerTests

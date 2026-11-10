@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using Microsoft.Extensions.Options;
 
-namespace MatterFlow.Reports.Application.Results;
+namespace LptHub.Reports.Application.Results;
 
 /// <summary>Which report version produced a stored result (for the export's run-log row and audit event, so they name the version that ran, not the current one).</summary>
 public sealed record ResultOrigin(int VersionId, int VersionNo, string ReportName);

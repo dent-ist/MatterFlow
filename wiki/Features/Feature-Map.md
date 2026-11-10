@@ -2,7 +2,7 @@
 
 [[_TOC_]]
 
-**What this page is for.** The master lookup from a feature to everything that implements it: backend module, tables, endpoints, frontend route and folder, and the main tests. Start here when you are asked to change a feature and do not know where it lives. Names of tables link to [Table Reference](../Database/Table-Reference.md); permissions are explained in [Permission Catalogue](../Reference/Permission-Catalogue.md). Endpoint paths are relative to `/api/v1`. Frontend paths are under `frontend/src/app/features/`. E2E specs are under `frontend/e2e/tests/` (name prefixes; list the folder for the full set). Integration tests are under `backend/tests/MatterFlow.IntegrationTests/`.
+**What this page is for.** The master lookup from a feature to everything that implements it: backend module, tables, endpoints, frontend route and folder, and the main tests. Start here when you are asked to change a feature and do not know where it lives. Names of tables link to [Table Reference](../Database/Table-Reference.md); permissions are explained in [Permission Catalogue](../Reference/Permission-Catalogue.md). Endpoint paths are relative to `/api/v1`. Frontend paths are under `frontend/src/app/features/`. E2E specs are under `frontend/e2e/tests/` (name prefixes; list the folder for the full set). Integration tests are under `backend/tests/LptHub.IntegrationTests/`.
 
 ## Work items
 
@@ -84,7 +84,7 @@
 
 ## Controller index (all 70 controllers, grouped by module)
 
-Every controller class in `backend/src/Modules/*/Api` and `backend/src/MatterFlow.Api/Controllers`. Where a route base is shared (for example `/report-admin`, `/dashboard`, `/audit`), the actions are split across controllers by topic.
+Every controller class in `backend/src/Modules/*/Api` and `backend/src/LptHub.Api/Controllers`. Where a route base is shared (for example `/report-admin`, `/dashboard`, `/audit`), the actions are split across controllers by topic.
 
 | Module | Controller | Route base |
 |---|---|---|

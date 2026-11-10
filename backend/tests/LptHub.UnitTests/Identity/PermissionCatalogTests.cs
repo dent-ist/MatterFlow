@@ -1,11 +1,11 @@
 using System.Reflection;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Identity.Seeding;
+using LptHub.Identity.Contracts;
+using LptHub.Identity.Seeding;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Identity;
+namespace LptHub.UnitTests.Identity;
 
 public class PermissionCatalogTests
 {

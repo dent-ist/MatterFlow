@@ -1,9 +1,9 @@
 using System.Text;
-using MatterFlow.Audit.Domain;
-using MatterFlow.SharedKernel.Visibility;
+using LptHub.Audit.Domain;
+using LptHub.SharedKernel.Visibility;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Audit.Application;
+namespace LptHub.Audit.Application;
 
 /// <summary>
 /// The sensitive-matter rule for audit events (epic #788, README section 8, inventory R53 to R56). An event is shown to the caller when

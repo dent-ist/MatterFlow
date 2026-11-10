@@ -1,9 +1,9 @@
-using MatterFlow.Notifications.Contracts;
-using MatterFlow.Notifications.Domain;
-using MatterFlow.SharedKernel.Time;
+using LptHub.Notifications.Contracts;
+using LptHub.Notifications.Domain;
+using LptHub.SharedKernel.Time;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Notifications.Application;
+namespace LptHub.Notifications.Application;
 
 /// <summary>
 /// Adds notification rows to the shared unit of work (the DbContext of the running command), so the action and its notifications commit or roll

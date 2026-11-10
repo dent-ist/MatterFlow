@@ -1,16 +1,16 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.IntegrationTests.Organization;
-using MatterFlow.IntegrationTests.Tasks;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Organization;
+using LptHub.IntegrationTests.Tasks;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Identity;
+namespace LptHub.IntegrationTests.Identity;
 
 /// <summary>
 /// The assignee lookup with load, Pod and suggestions (#757): open counts (New, In Progress, On Hold), the ranking order, out of office people left
@@ -174,7 +174,7 @@ public sealed class UsersLookupSuggestApiTests(SqlServerFixture sql) : IAsyncLif
             l.AddProvider(log);
         })));
         var http = logged.CreateClient();
-        http.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        http.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         http.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
 
         async Task<int> CountAsync(string url)

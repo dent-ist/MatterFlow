@@ -1,11 +1,11 @@
-using MatterFlow.Notifications.Contracts;
-using MatterFlow.Notifications.Infrastructure.Scheduling;
-using MatterFlow.SharedKernel.Time;
+using LptHub.Notifications.Contracts;
+using LptHub.Notifications.Infrastructure.Scheduling;
+using LptHub.SharedKernel.Time;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Notifications;
+namespace LptHub.UnitTests.Notifications;
 
 /// <summary>The pure parts of the scheduler (WP-NT3): which task gets which event, the thresholds in one class, the health states.</summary>
 public class NotificationSchedulerPlanTests
@@ -95,7 +95,7 @@ public class NotificationSchedulerPlanTests
         TaskDueJob.Plan([earlier], Context).Single().First().DedupeKey.ShouldBe("overdue:2026-10-22");
 
         // The manager who is also the assignee: the central rules keep one notification, the assignee event (priority 2 beats 4).
-        var planned = MatterFlow.Notifications.Domain.RecipientRules.Plan(TaskDueJob.Plan([Due("2026-10-20", assignee: 7, primary: 7, secondary: 8)], Context).Single(), (_, _) => false);
+        var planned = LptHub.Notifications.Domain.RecipientRules.Plan(TaskDueJob.Plan([Due("2026-10-20", assignee: 7, primary: 7, secondary: 8)], Context).Single(), (_, _) => false);
         planned.Select(p => (p.RecipientUserId, p.Request.EventType)).ShouldBe([(7, NotificationEventType.TaskDue), (8, NotificationEventType.MatterTaskOverdue)]);
     }
 

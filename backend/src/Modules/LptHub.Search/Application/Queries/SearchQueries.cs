@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
-using MatterFlow.SharedKernel.Paging;
+using LptHub.SharedKernel.Paging;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MatterFlow.Search.Application.Queries;
+namespace LptHub.Search.Application.Queries;
 
 /// <summary>Query string of <c>GET /api/v1/search</c> (camelCase). Unknown parameters are a 400.</summary>
 public class GlobalSearchQuery

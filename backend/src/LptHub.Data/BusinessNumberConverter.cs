@@ -1,7 +1,7 @@
-using MatterFlow.SharedKernel.ValueObjects;
+using LptHub.SharedKernel.ValueObjects;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
-namespace MatterFlow.Data;
+namespace LptHub.Data;
 
 /// <summary>Stores a <see cref="BusinessNumber"/> as its normalized 5-character string (<c>char(5)</c>).</summary>
 public sealed class BusinessNumberConverter()

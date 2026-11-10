@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace MatterFlow.Intake.Application;
+namespace LptHub.Intake.Application;
 
 /// <summary>Cleaning and limiting of the strings returned to the client.</summary>
 internal static class EmailText

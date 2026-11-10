@@ -1,8 +1,8 @@
 using System.Text.Json;
-using MatterFlow.Configuration.Domain.Forms.Rules;
+using LptHub.Configuration.Domain.Forms.Rules;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Configuration.Forms;
+namespace LptHub.UnitTests.Configuration.Forms;
 
 /// <summary>Data-driven conformance test over the shared contracts/form-rules.vectors.json (linked, not copied).</summary>
 public class FormRulesVectorTests

@@ -1,7 +1,7 @@
-using MatterFlow.Audit.Application;
+using LptHub.Audit.Application;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Audit;
+namespace LptHub.UnitTests.Audit;
 
 /// <summary>#1311: audit field labels keep acronyms in capitals, the rest stays sentence case.</summary>
 public class AuditFieldLabelTests

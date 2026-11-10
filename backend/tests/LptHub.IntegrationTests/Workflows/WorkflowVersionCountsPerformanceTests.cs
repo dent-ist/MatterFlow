@@ -1,15 +1,15 @@
 using System.Diagnostics;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.IntegrationTests.Organization;
-using MatterFlow.IntegrationTests.Tasks;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Organization;
+using LptHub.IntegrationTests.Tasks;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Shouldly;
 using Xunit.Abstractions;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Workflows;
+namespace LptHub.IntegrationTests.Workflows;
 
 /// <summary>
 /// <c>openTaskCount</c> on the workflow versions (#391) against seeded data: all the Tasks run on the published version of one workflow (the worst
@@ -82,7 +82,7 @@ public abstract class WorkflowVersionCountsPerformanceTestsBase(SqlServerFixture
     public async Task The_workflow_the_version_and_the_published_view_stay_within_budget_in_a_fixed_number_of_statements()
     {
         var http = _logged.CreateClient();
-        http.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        http.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         http.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
 
         var (median, statements, workflow) = await MeasureAsync(http, $"/api/v1/workflows/{_workflowId}");

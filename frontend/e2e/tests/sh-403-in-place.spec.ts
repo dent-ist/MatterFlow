@@ -5,7 +5,7 @@ import { atEverySize } from '../support/screens';
 /**
  * S9 (#598): a guard denial renders the 403 page at the address that was asked for. "Asked for /path" in muted monospace with a copy button beside
  * "Go to <a page you can open>"; Reload retries the address (after a role grant it opens), Back goes where the person came from; `/403`
- * still works as a direct address; the document title stays "No access - MatterFlow".
+ * still works as a direct address; the document title stays "No access - LPT Hub".
  */
 const FORBIDDEN = "You don't have access.";
 
@@ -29,7 +29,7 @@ test.describe('The 403 page keeps the address (#598)', () => {
     await expect(page.locator('[data-asked]')).toContainText(
       /Asked for\s*\/admin\/users\?status=all/,
     );
-    await expect(page).toHaveTitle('No Access - MatterFlow');
+    await expect(page).toHaveTitle('No Access - LPT Hub');
     // A technician with no pod and no assigned task holds Dashboard.ViewUnassigned: the landing rule (#628) leads to the Dashboard.
     await expect(page.locator('[data-back-link]')).toHaveAttribute('href', '/dashboard');
 
@@ -110,7 +110,7 @@ test.describe('The 403 page keeps the address (#598)', () => {
     await expect(page.getByRole('heading', { name: FORBIDDEN, level: 1 })).toBeVisible();
     await expect(page).toHaveURL(/\/403$/);
     await expect(page.locator('[data-asked]')).toHaveCount(0);
-    await expect(page).toHaveTitle('No Access - MatterFlow');
+    await expect(page).toHaveTitle('No Access - LPT Hub');
   });
 
   test('permission variants: the address is kept for every kind of person, and the link follows the landing rule', async ({

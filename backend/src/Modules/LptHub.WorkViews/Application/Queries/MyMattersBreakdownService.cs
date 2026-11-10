@@ -1,12 +1,12 @@
 using System.Globalization;
-using MatterFlow.Configuration.Domain;
-using MatterFlow.Organization.Domain;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Tasks;
-using MatterFlow.WorkManagement.Domain;
+using LptHub.Configuration.Domain;
+using LptHub.Organization.Domain;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Tasks;
+using LptHub.WorkManagement.Domain;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>
 /// The Breakdown (PM v2, #861): open work per matter and task type for the matters of the scope. Every count is a grouped statement over the scope's open tasks (the scope is a SQL subquery of managed, visible matters,

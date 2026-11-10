@@ -1,9 +1,9 @@
-using MatterFlow.Assets.Contracts;
-using MatterFlow.Assets.Domain;
-using MatterFlow.Organization.Contracts;
+using LptHub.Assets.Contracts;
+using LptHub.Assets.Domain;
+using LptHub.Organization.Contracts;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Assets.Application;
+namespace LptHub.Assets.Application;
 
 /// <summary>Implements the read-only lookups other modules use (<see cref="IAssetDirectory"/>).</summary>
 internal sealed class AssetDirectory(DbContext db) : IAssetDirectory

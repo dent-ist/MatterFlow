@@ -3,7 +3,7 @@ using System.Diagnostics;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 
-namespace MatterFlow.Data.SchemaMigrations;
+namespace LptHub.Data.SchemaMigrations;
 
 /// <summary>
 /// Applies pending numbered SQL scripts under an <c>sp_getapplock</c> so concurrent instances serialize
@@ -15,7 +15,7 @@ public sealed class SchemaMigrationRunner(
     MigrationsOptions options,
     ILogger<SchemaMigrationRunner> logger)
 {
-    public const string LockResource = "MatterFlow.SchemaMigration";
+    public const string LockResource = "LptHub.SchemaMigration";
 
     /// <summary>The baseline script (issue #1307): the whole schema as of the squash. It has prefix 0, so it always runs first.</summary>
     public const string BaselineScriptName = "00-baseline.sql";
@@ -132,7 +132,7 @@ public sealed class SchemaMigrationRunner(
     }
 
     /// <summary>
-    /// A database built by the old script chain (01-init.sql ... 66-director-be-manager.sql) is not migrated to the baseline (issue #1307: MatterFlow
+    /// A database built by the old script chain (01-init.sql ... 66-director-be-manager.sql) is not migrated to the baseline (issue #1307: LPT Hub
     /// was never deployed, all data is demo data). It is recognised by a journal that has applied scripts but not the baseline.
     /// </summary>
     private static void RejectPreBaselineDatabase(Dictionary<string, MigrationScript> scripts, List<AppliedRow> applied)

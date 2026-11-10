@@ -1,6 +1,6 @@
-using MatterFlow.SharedKernel.Results;
+using LptHub.SharedKernel.Results;
 
-namespace MatterFlow.Identity.Application;
+namespace LptHub.Identity.Application;
 
 /// <summary>Pure business rules of user administration, kept free of persistence so they can be unit tested (architecture 6.6).</summary>
 public static class AdminGuards

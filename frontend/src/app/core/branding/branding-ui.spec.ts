@@ -55,8 +55,8 @@ describe('the application name in the screens', () => {
   it('the header shows the default name and mark until an administrator changes them', async () => {
     const el = (await shell()).nativeElement as HTMLElement;
     const logo = el.querySelector('.mf-logo')!;
-    expect(logo.querySelector('[data-app-name]')!.textContent).toBe('MatterFlow');
-    expect(logo.getAttribute('aria-label')).toBe('MatterFlow home');
+    expect(logo.querySelector('[data-app-name]')!.textContent).toBe('LPT Hub');
+    expect(logo.getAttribute('aria-label')).toBe('LPT Hub home');
     expect(logo.querySelector('img')!.getAttribute('src')).toBe('favicon.svg');
     expect(logo.querySelector('img')!.getAttribute('alt')).toBe('');
   });
@@ -150,8 +150,8 @@ describe('the application name in the screens', () => {
     expect((await render(NotFoundPage)).querySelector('[data-not-found-search]')).toBeNull();
   });
 
-  it('the pages still say MatterFlow when nothing was changed', async () => {
+  it('the pages still say LPT Hub when nothing was changed', async () => {
     const el = await render(NotFoundPage);
-    expect(el.querySelector('[data-state-brand]')!.textContent).toBe('MatterFlow');
+    expect(el.querySelector('[data-state-brand]')!.textContent).toBe('LPT Hub');
   });
 });

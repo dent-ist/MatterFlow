@@ -1,8 +1,8 @@
-using MatterFlow.WorkViews.Application.Queries;
+using LptHub.WorkViews.Application.Queries;
 using Microsoft.Extensions.Options;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.WorkViews;
+namespace LptHub.UnitTests.WorkViews;
 
 /// <summary>The short dashboard output cache (SEC2-03): entries live for the configured seconds, are keyed per caller, and 0 switches the cache off.</summary>
 public class DashboardCacheTests

@@ -1,4 +1,4 @@
-namespace MatterFlow.Configuration.Contracts;
+namespace LptHub.Configuration.Contracts;
 
 /// <summary>A Task Type as the Tasks module needs it to create a Task.</summary>
 /// <param name="Id">Task Type id (Task.TaskTypeId references it; immutable on a Task).</param>

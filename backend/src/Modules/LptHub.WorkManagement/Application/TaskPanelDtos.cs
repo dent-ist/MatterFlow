@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
-using MatterFlow.WorkManagement.Domain;
+using LptHub.WorkManagement.Domain;
 
-namespace MatterFlow.WorkManagement.Application;
+namespace LptHub.WorkManagement.Application;
 
 // ---- comments
 

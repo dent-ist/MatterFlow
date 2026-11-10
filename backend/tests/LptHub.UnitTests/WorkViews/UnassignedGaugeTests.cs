@@ -1,9 +1,9 @@
-using MatterFlow.Configuration.Contracts;
-using MatterFlow.SharedKernel.Time;
-using MatterFlow.WorkViews.Application.Queries;
+using LptHub.Configuration.Contracts;
+using LptHub.SharedKernel.Time;
+using LptHub.WorkViews.Application.Queries;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.WorkViews;
+namespace LptHub.UnitTests.WorkViews;
 
 /// <summary>Dashboard v4 (issue #1064): working-time age in the firm zone, and the one gauge level function.</summary>
 public class UnassignedGaugeTests

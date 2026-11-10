@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text;
 
-namespace MatterFlow.Reports.Application.Results;
+namespace LptHub.Reports.Application.Results;
 
 /// <summary>
 /// Writes rows of a <see cref="ResultTable"/> as CSV (issue #721, spec 5.2): UTF-8 with a byte order mark, comma, CRLF, RFC 4180 quoting, a header row,

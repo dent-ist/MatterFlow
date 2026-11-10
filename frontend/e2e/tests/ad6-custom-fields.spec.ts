@@ -60,7 +60,7 @@ test.describe('Custom Fields list (#644)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/admin/custom-fields');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Custom Fields');
-    await expect(page).toHaveTitle('Custom Fields - MatterFlow');
+    await expect(page).toHaveTitle('Custom Fields - LPT Hub');
     await expect(crumbs(page)).toHaveText([/Administration/, /Custom Fields/]);
     await expect(page.locator('mf-page-header')).toContainText(
       'Extra fields on Clients, Matters and Projects.',
@@ -195,7 +195,7 @@ test.describe('Custom Fields designer entry (#645)', () => {
       await page.goto('/admin/custom-fields');
       await row(page, o.label).getByRole('link').click();
       await expect(page).toHaveURL(new RegExp(`/admin/custom-fields/${o.key}/form$`));
-      await expect(page).toHaveTitle(`${o.label} Custom Fields - MatterFlow`);
+      await expect(page).toHaveTitle(`${o.label} Custom Fields - LPT Hub`);
       await expect(page.getByRole('heading', { level: 1 })).toContainText(
         `${o.label} Custom Fields`,
       );

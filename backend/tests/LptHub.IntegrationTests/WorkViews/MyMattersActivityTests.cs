@@ -1,11 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.WorkViews;
+namespace LptHub.IntegrationTests.WorkViews;
 
 /// <summary>GET /my-matters/activity and POST /my-matters/activity/seen (epic #667, issue #683): event kinds, matter scoping, the 30-day window (7 days before epic #758), the unread marker and privilege.</summary>
 [Collection(SqlServerCollection.Name)]

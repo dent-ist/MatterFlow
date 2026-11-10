@@ -1,4 +1,4 @@
-namespace MatterFlow.SharedKernel.Time;
+namespace LptHub.SharedKernel.Time;
 
 /// <summary>
 /// The viewer's time zone for the current request (addendum M). Resolved from the <c>X-Time-Zone</c> header

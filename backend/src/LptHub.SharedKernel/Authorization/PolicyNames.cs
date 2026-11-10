@@ -1,4 +1,4 @@
-namespace MatterFlow.SharedKernel.Authorization;
+namespace LptHub.SharedKernel.Authorization;
 
 /// <summary>Names of authorization policies referenced by controllers. The policy handlers live in the Identity module.</summary>
 public static class PolicyNames

@@ -1,8 +1,8 @@
 using System.Globalization;
-using MatterFlow.Audit.Contracts;
-using MatterFlow.SharedKernel.Tasks;
+using LptHub.Audit.Contracts;
+using LptHub.SharedKernel.Tasks;
 
-namespace MatterFlow.Audit.Application;
+namespace LptHub.Audit.Application;
 
 /// <summary>
 /// One readable sentence per audit event for the browser, in the wording of the Task activity timeline ("Status changed from In Progress to

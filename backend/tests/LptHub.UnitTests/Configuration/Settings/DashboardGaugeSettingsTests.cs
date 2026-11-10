@@ -1,8 +1,8 @@
-using MatterFlow.Configuration.Application.Settings;
-using MatterFlow.Configuration.Contracts;
+using LptHub.Configuration.Application.Settings;
+using LptHub.Configuration.Contracts;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Configuration.Settings;
+namespace LptHub.UnitTests.Configuration.Settings;
 
 /// <summary>Dashboard v4 (issue #1064): code defaults, validation and the stored JSON of the gauge settings.</summary>
 public class DashboardGaugeSettingsTests

@@ -1,10 +1,10 @@
-using MatterFlow.Audit.Application;
-using MatterFlow.Audit.Contracts;
-using MatterFlow.Audit.Infrastructure;
+using LptHub.Audit.Application;
+using LptHub.Audit.Contracts;
+using LptHub.Audit.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-namespace MatterFlow.Audit;
+namespace LptHub.Audit;
 
 /// <summary>Composition entry point of the Audit module.</summary>
 public static class AuditModule

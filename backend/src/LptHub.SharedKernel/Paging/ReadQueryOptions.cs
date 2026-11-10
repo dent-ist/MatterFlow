@@ -1,4 +1,4 @@
-namespace MatterFlow.SharedKernel.Paging;
+namespace LptHub.SharedKernel.Paging;
 
 /// <summary>
 /// Limits on the read endpoints that scan large tables (task queues, My Work, Pod Work, search, audit browser, dashboard), section <c>Queries</c>.

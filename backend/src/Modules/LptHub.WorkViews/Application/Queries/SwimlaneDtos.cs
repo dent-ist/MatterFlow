@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
-using MatterFlow.Identity.Contracts;
+using LptHub.Identity.Contracts;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>Query of the Dashboard Swimlane board (camelCase query string). Unknown parameters are a 400.</summary>
 public class SwimlaneQuery

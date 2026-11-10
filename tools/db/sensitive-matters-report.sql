@@ -1,9 +1,9 @@
 -- Sensitive matters: the report to read BEFORE the access rule is switched on (epic #788, SM-18, docs/runbook.md section 12).
 --
--- READ-ONLY: SELECT statements only, nothing is written, no temporary objects outside tempdb. Run it as a person with read access to the MatterFlow database
+-- READ-ONLY: SELECT statements only, nothing is written, no temporary objects outside tempdb. Run it as a person with read access to the LPT Hub database
 -- (the DBA, or the application login), never as the report login (that login is denied on the tables it needs):
 --
---   sqlcmd -S SQLHOST -d MatterFlow -E -C -W -w 300 -s "|" -i tools\db\sensitive-matters-report.sql
+--   sqlcmd -S SQLHOST -d LptHub -E -C -W -w 300 -s "|" -i tools\db\sensitive-matters-report.sql
 --
 -- Why: when Features:SensitiveMatterAccess is switched on, every matter that is already flagged Sensitive becomes invisible to everybody except
 --   (a) its Primary and Secondary project manager, (b) holders of the permission Matter.ViewSensitive (by default the System Administrator and the Director roles)

@@ -1,12 +1,12 @@
-using MatterFlow.Assets.Domain;
-using MatterFlow.Organization.Domain;
-using MatterFlow.SharedKernel.Data;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Visibility;
+using LptHub.Assets.Domain;
+using LptHub.Organization.Domain;
+using LptHub.SharedKernel.Data;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Visibility;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>
 /// The matters one asset call is about and the assets in them (epic #851): the matters the caller manages (<c>mine</c>, either place or the one named by <c>role</c>) or, with

@@ -1,16 +1,16 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.Audit.Contracts;
-using MatterFlow.Data;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.SharedKernel.Authorization;
+using LptHub.Audit.Contracts;
+using LptHub.Data;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.SharedKernel.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Audit;
+namespace LptHub.IntegrationTests.Audit;
 
 /// <summary>
 /// GET /api/v1/audit/events against a real database. The real Audit.View handler belongs to the authorization module; these tests
@@ -24,7 +24,7 @@ public class AuditEventsApiTests(SqlServerFixture sql)
         var cs = await sql.CreateDatabaseAsync();
         return new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
-            builder.UseSetting("ConnectionStrings:MatterFlow", cs);
+            builder.UseSetting("ConnectionStrings:LptHub", cs);
             builder.UseSetting("ConnectionStrings:Default", cs); // schema runner: applies the real scripts at startup
             // Real login path: the Dev provider signs in as the bootstrap System Admin, who holds Audit.View.
             builder.UseSetting("Auth:Provider", "Dev");
@@ -51,7 +51,7 @@ public class AuditEventsApiTests(SqlServerFixture sql)
         }
 
         writer.Write(new AuditEntry { EventType = "OTHER", ObjectType = "Task", ObjectId = "99" });
-        await scope.ServiceProvider.GetRequiredService<MatterFlowDbContext>().SaveChangesAsync();
+        await scope.ServiceProvider.GetRequiredService<LptHubDbContext>().SaveChangesAsync();
     }
 
     [Fact]
@@ -60,7 +60,7 @@ public class AuditEventsApiTests(SqlServerFixture sql)
         await using var factory = await CreateFactoryAsync();
         await SeedAsync(factory, 3);
         var client = factory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-MatterFlow-Client", "tests");
+        client.DefaultRequestHeaders.Add("X-LptHub-Client", "tests");
 
         var page1 = await client.GetFromJsonAsync<JsonElement>("/api/v1/audit/events?objectType=Task&objectId=12&pageSize=2");
 

@@ -1,8 +1,8 @@
-using MatterFlow.SharedKernel.Visibility;
+using LptHub.SharedKernel.Visibility;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace MatterFlow.Identity.Access;
+namespace LptHub.Identity.Access;
 
 /// <summary>
 /// Runs after authorization and before an action marked <see cref="PreparesViewerAttribute"/>: loads what <see cref="MatterVisibility"/> needs to write the sensitive-matter rule as short id lists (the sensitive

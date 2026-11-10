@@ -1,10 +1,10 @@
 using System.ComponentModel.DataAnnotations;
-using MatterFlow.Api.Http;
-using MatterFlow.SharedKernel.Time;
+using LptHub.Api.Http;
+using LptHub.SharedKernel.Time;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MatterFlow.Api.Controllers;
+namespace LptHub.Api.Controllers;
 
 /// <summary>Pipeline-proof endpoint: exercises routing, model validation, ProblemDetails, time-zone resolution and OpenAPI/NSwag generation.</summary>
 [ApiController]

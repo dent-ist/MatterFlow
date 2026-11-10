@@ -28,7 +28,7 @@ Each question has a recommendation and the consequence of choosing differently. 
 | Q-SIGN | Package signing | SHA-256 shown in wizard and audit (default); optional internal Ed25519 signature later. No PKI. | A PKI adds IT work without benefit for an internal team. |
 | Q-PUB | Who may hold `App.Manage`? | System Admin only. If another internal team publishes: grant `App.Manage` (or a later `App.Publish` split) + second approver. | Delegation = server-code-execution right; see `05` section 1 rule 2. |
 | Q-REV | Who reviews packages? | The owner's team lead acts as reviewer; the System Admin who activates is the second pair of eyes when the setting is on. | None. |
-| Q-DATA | May apps store data? | Yes in their own `\apps-data\<guid>\data` (files/SQLite). **No MatterFlow database access** and no client data beyond job metadata. | Own SQL databases need DBA provisioning per app; defer. |
+| Q-DATA | May apps store data? | Yes in their own `\apps-data\<guid>\data` (files/SQLite). **No LPT Hub database access** and no client data beyond job metadata. | Own SQL databases need DBA provisioning per app; defer. |
 | Q-SECRET | Per-app configuration ownership | The app's developer lists keys in the manifest; a System Admin enters values (write-only). | Developers holding secrets themselves is a leak risk. |
 
 ## C. Product and UX
@@ -54,6 +54,6 @@ Each question has a recommendation and the consequence of choosing differently. 
 | Q-SUP | Support model | The owner's team; contact in the manifest; IT only for infrastructure. | n/a |
 | Q-ROLL | Data compatibility on rollback | Developer responsibility (forward/backward-compatible files); rollback never touches `\apps-data`. | Automatic data snapshots are Phase 5. |
 | Q-HARVEY **BLOCKER (Phase 3)** | Harvey API: auth method, per-user permissions, upload limits, sandbox tenant | Obtain Harvey API documentation and a test tenant; vault allow-list in connector config for release 1. | The sample and connector design change with the real API. |
-| Q-MULTI | Multiple IIS nodes later? | Not now. The design stores sessions/keys in SQL, but the App Host/File Broker and `\apps` are per server; scale-out needs shared storage and a host per node. | Revisit if MatterFlow ever scales out. |
+| Q-MULTI | Multiple IIS nodes later? | Not now. The design stores sessions/keys in SQL, but the App Host/File Broker and `\apps` are per server; scale-out needs shared storage and a host per node. | Revisit if LPT Hub ever scales out. |
 | Q-DEV | Who may run `mf-app push` | Only System Admins (it uses their Windows credentials). | Developers hand zips to a System Admin. |
 | Q-ENT | Entra ID migration (architecture 6.2) | Identity claims use `AppUser.UserId` (`sub=mf-user:<id>`), so apps survive a provider switch; `preferred_username` changes format. | Apps must not key data on the account name. |

@@ -1,6 +1,6 @@
-using MatterFlow.SharedKernel.Availability;
+using LptHub.SharedKernel.Availability;
 
-namespace MatterFlow.Configuration.Contracts;
+namespace LptHub.Configuration.Contracts;
 
 /// <summary>The people minimum of one pod (an override of the percent rule).</summary>
 public sealed record PodMinimum(int PodId, int People);

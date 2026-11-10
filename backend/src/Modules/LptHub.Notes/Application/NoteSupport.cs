@@ -1,12 +1,12 @@
 using System.Globalization;
-using MatterFlow.Audit.Contracts;
-using MatterFlow.Configuration.Contracts;
-using MatterFlow.SharedKernel.Paging;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Audit.Contracts;
+using LptHub.Configuration.Contracts;
+using LptHub.SharedKernel.Paging;
+using LptHub.SharedKernel.Results;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Notes.Application;
+namespace LptHub.Notes.Application;
 
 internal static class NoteSupport
 {

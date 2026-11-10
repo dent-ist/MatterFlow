@@ -2,11 +2,11 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Assets;
+namespace LptHub.IntegrationTests.Assets;
 
 /// <summary>
 /// Assets (mode A) and global/advanced search under the sensitive-matter rule (epic #788, SM-07, inventory R24 to R29): the personas of README 12.2 list, open and

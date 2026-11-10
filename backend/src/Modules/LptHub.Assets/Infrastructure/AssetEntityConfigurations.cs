@@ -1,8 +1,8 @@
-using MatterFlow.Assets.Domain;
+using LptHub.Assets.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace MatterFlow.Assets.Infrastructure;
+namespace LptHub.Assets.Infrastructure;
 
 internal sealed class AssetTypeConfiguration : IEntityTypeConfiguration<AssetType>
 {

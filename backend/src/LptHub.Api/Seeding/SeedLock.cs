@@ -1,7 +1,7 @@
-using MatterFlow.Data;
+using LptHub.Data;
 using Microsoft.Data.SqlClient;
 
-namespace MatterFlow.Api.Seeding;
+namespace LptHub.Api.Seeding;
 
 /// <summary>
 /// Serializes the startup seeds across API instances that start at the same time (security review SEC-18). The schema runner already
@@ -10,7 +10,7 @@ namespace MatterFlow.Api.Seeding;
 /// </summary>
 public sealed class SeedLock : IAsyncDisposable
 {
-    public const string Resource = "MatterFlow.Seed";
+    public const string Resource = "LptHub.Seed";
 
     private readonly SqlConnection? _connection;
 
@@ -30,7 +30,7 @@ public sealed class SeedLock : IAsyncDisposable
             command.CommandText =
                 """
                 DECLARE @result int;
-                EXEC @result = sp_getapplock @Resource = N'MatterFlow.Seed', @LockMode = N'Exclusive', @LockOwner = N'Session', @LockTimeout = 120000;
+                EXEC @result = sp_getapplock @Resource = N'LptHub.Seed', @LockMode = N'Exclusive', @LockOwner = N'Session', @LockTimeout = 120000;
                 IF @result < 0 THROW 51000, 'Could not acquire the startup seed lock.', 1;
                 """;
             await command.ExecuteNonQueryAsync(cancellationToken);
@@ -51,7 +51,7 @@ public sealed class SeedLock : IAsyncDisposable
         try
         {
             await using var command = _connection.CreateCommand();
-            command.CommandText = "EXEC sp_releaseapplock @Resource = N'MatterFlow.Seed', @LockOwner = N'Session'";
+            command.CommandText = "EXEC sp_releaseapplock @Resource = N'LptHub.Seed', @LockOwner = N'Session'";
             await command.ExecuteNonQueryAsync();
         }
         catch (SqlException)

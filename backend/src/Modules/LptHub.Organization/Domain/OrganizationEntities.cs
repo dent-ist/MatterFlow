@@ -1,9 +1,9 @@
-using MatterFlow.Organization.Contracts;
-using MatterFlow.SharedKernel.Audit;
-using MatterFlow.SharedKernel.Entities;
-using MatterFlow.SharedKernel.ValueObjects;
+using LptHub.Organization.Contracts;
+using LptHub.SharedKernel.Audit;
+using LptHub.SharedKernel.Entities;
+using LptHub.SharedKernel.ValueObjects;
 
-namespace MatterFlow.Organization.Domain;
+namespace LptHub.Organization.Domain;
 
 /// <summary>
 /// A firm client. <see cref="ClientNumber"/> is the zero-padded number the firm's main system issued (<c>343</c> is stored as <c>00343</c>);

@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
-using MatterFlow.Configuration.Contracts.Forms;
+using LptHub.Configuration.Contracts.Forms;
 
-namespace MatterFlow.Configuration.Application.Forms;
+namespace LptHub.Configuration.Application.Forms;
 
 /// <summary>An option of a SELECT, RADIO or MULTISELECT field.</summary>
 public sealed record FormOptionModel

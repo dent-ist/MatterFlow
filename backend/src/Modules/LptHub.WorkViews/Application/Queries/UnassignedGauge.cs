@@ -1,9 +1,9 @@
 using System.ComponentModel.DataAnnotations;
-using MatterFlow.Configuration.Contracts;
-using MatterFlow.SharedKernel.Time;
+using LptHub.Configuration.Contracts;
+using LptHub.SharedKernel.Time;
 using Microsoft.Extensions.Configuration;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>
 /// The unassigned gauge of the Dashboard Summary (Dashboard v4, decision AS item 7): how long the oldest unassigned Task has waited and the one level (0 to 5) the gauge shows for every viewer.

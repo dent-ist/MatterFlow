@@ -1,7 +1,7 @@
 using System.Reflection;
 using System.Text.Json;
 
-namespace MatterFlow.Reports.Application.Starters;
+namespace LptHub.Reports.Application.Starters;
 
 /// <summary>One starter report as the manifest describes it, with its SQL text.</summary>
 /// <param name="Key">Stable identifier and the name of the embedded <c>.sql</c> file (<c>&lt;key&gt;.sql</c>). The seed marker is <c>reports.starter.&lt;key&gt;</c>.</param>
@@ -34,7 +34,7 @@ public sealed record StarterCategory(string Name, int SortOrder);
 public sealed class StarterReportManifest
 {
     public const string MarkerPrefix = "reports.starter.";
-    private const string ResourcePrefix = "MatterFlow.Reports.Starters.";
+    private const string ResourcePrefix = "LptHub.Reports.Starters.";
     private const string ManifestResource = ResourcePrefix + "manifest.json";
 
     private StarterReportManifest(IReadOnlyList<StarterCategory> categories, IReadOnlyList<StarterReport> reports)

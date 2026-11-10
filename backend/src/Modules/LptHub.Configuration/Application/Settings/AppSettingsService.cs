@@ -1,14 +1,14 @@
 using System.Security.Cryptography;
-using MatterFlow.Audit.Contracts;
-using MatterFlow.Configuration.Application.Lookups;
-using MatterFlow.Configuration.Domain.Settings;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Time;
+using LptHub.Audit.Contracts;
+using LptHub.Configuration.Application.Lookups;
+using LptHub.Configuration.Domain.Settings;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Time;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Configuration.Application.Settings;
+namespace LptHub.Configuration.Application.Settings;
 
 /// <summary>
 /// Reads and writes the typed settings in <c>dbo.AppSetting</c> (decision AM, design section 4). Reads come from a 30 second in-memory copy

@@ -3,30 +3,30 @@ import { expect, test } from '../support/fixtures';
 import { PERMISSION_VARIANTS } from '../support/personas';
 
 /**
- * S21 (#606): one document-title rule, `<Page or record>: <Tab or view> - MatterFlow`. A hyphen only stands before the app name; a tab,
+ * S21 (#606): one document-title rule, `<Page or record>: <Tab or view> - LPT Hub`. A hyphen only stands before the app name; a tab,
  * view or create page follows its page after a colon (`Users: Roles`, `Task Types: New workflow`); not-found titles say so. The table of
  * every route is the unit test `core/title/route-titles.spec.ts`; this spec samples routes in a real browser, with the tab buttons.
  */
 const titleOf = (page: Page) => page.evaluate(() => document.title);
 
 /** At most one " - ", the one before the app name. */
-const RULE = /^(?!.* - .* - MatterFlow$).+ - MatterFlow$|^MatterFlow$/;
+const RULE = /^(?!.* - .* - LPT Hub$).+ - LPT Hub$|^LPT Hub$/;
 
 const SAMPLE: [string, string][] = [
-  ['/dashboard', 'Dashboard - MatterFlow'],
-  ['/clients', 'Clients - MatterFlow'],
-  ['/matters', 'Matters - MatterFlow'],
-  ['/projects', 'Projects - MatterFlow'],
-  ['/admin/users', 'Users - MatterFlow'],
-  ['/admin/roles', 'Users: Roles - MatterFlow'],
-  ['/admin/pods', 'Users: Pods - MatterFlow'],
-  ['/admin/workflows', 'Task Types: Workflows - MatterFlow'],
-  ['/admin/steps', 'Task Types: Workflow Steps - MatterFlow'],
-  ['/admin/priorities', 'Lists: Priorities - MatterFlow'],
-  ['/admin/status-labels', 'Lists: Status Labels - MatterFlow'],
-  ['/admin/lists/link-roles', 'Lists: Link Roles - MatterFlow'],
-  ['/admin/workflows/new', 'Task Types: New Workflow - MatterFlow'],
-  ['/no-such-page', 'Page Not Found - MatterFlow'],
+  ['/dashboard', 'Dashboard - LPT Hub'],
+  ['/clients', 'Clients - LPT Hub'],
+  ['/matters', 'Matters - LPT Hub'],
+  ['/projects', 'Projects - LPT Hub'],
+  ['/admin/users', 'Users - LPT Hub'],
+  ['/admin/roles', 'Users: Roles - LPT Hub'],
+  ['/admin/pods', 'Users: Pods - LPT Hub'],
+  ['/admin/workflows', 'Task Types: Workflows - LPT Hub'],
+  ['/admin/steps', 'Task Types: Workflow Steps - LPT Hub'],
+  ['/admin/priorities', 'Lists: Priorities - LPT Hub'],
+  ['/admin/status-labels', 'Lists: Status Labels - LPT Hub'],
+  ['/admin/lists/link-roles', 'Lists: Link Roles - LPT Hub'],
+  ['/admin/workflows/new', 'Task Types: New Workflow - LPT Hub'],
+  ['/no-such-page', 'Page Not Found - LPT Hub'],
 ];
 
 test.describe('Document titles: the colon rule (#606)', () => {
@@ -42,14 +42,14 @@ test.describe('Document titles: the colon rule (#606)', () => {
 
   test('switching a tab changes the title with a colon, without a reload', async ({ page }) => {
     await page.goto('/admin/users');
-    await expect(page).toHaveTitle('Users - MatterFlow');
+    await expect(page).toHaveTitle('Users - LPT Hub');
     await page.getByRole('tab', { name: /^Roles/ }).click();
-    await expect(page).toHaveTitle('Users: Roles - MatterFlow');
+    await expect(page).toHaveTitle('Users: Roles - LPT Hub');
     await page.getByRole('tab', { name: /^Pods/ }).click();
-    await expect(page).toHaveTitle('Users: Pods - MatterFlow');
+    await expect(page).toHaveTitle('Users: Pods - LPT Hub');
     await page.goto('/admin/lists/priorities');
     await page.getByRole('option', { name: /^Status Labels/ }).click();
-    await expect(page).toHaveTitle('Lists: Status Labels - MatterFlow');
+    await expect(page).toHaveTitle('Lists: Status Labels - LPT Hub');
   });
 
   test('a record and its tab, and the task Activity drawer, follow the same rule', async ({
@@ -60,11 +60,11 @@ test.describe('Document titles: the colon rule (#606)', () => {
     await page.goto(`/clients/${client.clientId}`);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     const title = await titleOf(page);
-    expect(title).toMatch(/: .+ - MatterFlow$/);
+    expect(title).toMatch(/: .+ - LPT Hub$/);
     expect(title).toMatch(RULE);
     const task = await seed.task(await seed.world());
     await page.goto(`/tasks/${task.taskId}?tab=activity`);
-    await expect(page).toHaveTitle(/: Activity - MatterFlow$/);
+    await expect(page).toHaveTitle(/: Activity - LPT Hub$/);
     expect(await titleOf(page)).toMatch(RULE);
   });
 
@@ -85,6 +85,6 @@ test.describe('Document titles: the colon rule (#606)', () => {
     const oneView = await personas.create({ permissions: ['Client.View'], label: 'title-one' });
     const page = await asUser(oneView.username);
     await page.goto('/clients');
-    await expect(page).toHaveTitle('Clients - MatterFlow');
+    await expect(page).toHaveTitle('Clients - LPT Hub');
   });
 });

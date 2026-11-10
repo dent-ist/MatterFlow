@@ -1,6 +1,6 @@
-using MatterFlow.SharedKernel.Entities;
+using LptHub.SharedKernel.Entities;
 
-namespace MatterFlow.Productions.Domain;
+namespace LptHub.Productions.Domain;
 
 /// <summary>Lifecycle of a <see cref="ProductionSpec"/>: Active specs can be chosen for productions, Retired ones stay on the productions that already use them.</summary>
 public static class SpecStatus

@@ -1,13 +1,13 @@
-using MatterFlow.Audit.Contracts;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Text;
-using MatterFlow.SharedKernel.Time;
-using MatterFlow.WorkManagement.Domain;
+using LptHub.Audit.Contracts;
+using LptHub.Identity.Contracts;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Text;
+using LptHub.SharedKernel.Time;
+using LptHub.WorkManagement.Domain;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.WorkManagement.Application;
+namespace LptHub.WorkManagement.Application;
 
 /// <summary>
 /// Task comments (ticket 43): basic rich text sanitized on the server, allowed in every Task status (also closed Tasks and inactive Matters),

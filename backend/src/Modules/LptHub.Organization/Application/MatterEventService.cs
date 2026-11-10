@@ -1,12 +1,12 @@
 using System.Globalization;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Organization.Domain;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Visibility;
+using LptHub.Identity.Contracts;
+using LptHub.Organization.Domain;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Visibility;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Organization.Application;
+namespace LptHub.Organization.Application;
 
 /// <summary>
 /// Calendar items of matters (UI-05, #958). Read: everything the caller may see of the matter (the sensitive-matter rule; a hidden matter's events do not exist for the caller).

@@ -2,7 +2,7 @@
 
 [[_TOC_]]
 
-**What this page is for.** Every permission code of the application, what it allows, which starter roles hold it by default and where it is enforced. The source of truth is `contracts/permissions.json` (70 permissions in 13 groups); this page is built from it, from `backend/src/Modules/MatterFlow.Identity/Seeding/StarterRoles.cs` and from a search of the backend and frontend source for each code.
+**What this page is for.** Every permission code of the application, what it allows, which starter roles hold it by default and where it is enforced. The source of truth is `contracts/permissions.json` (70 permissions in 13 groups); this page is built from it, from `backend/src/Modules/LptHub.Identity/Seeding/StarterRoles.cs` and from a search of the backend and frontend source for each code.
 
 How to read it:
 

@@ -1,11 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Tasks;
+namespace LptHub.IntegrationTests.Tasks;
 
 /// <summary>Workflow step actions through the Task endpoints (part of ticket 39): SCN-010 to 013, Task status guards and the auto-move on step reopen.</summary>
 [Collection(SqlServerCollection.Name)]
@@ -251,7 +251,7 @@ public sealed class TaskWorkflowApiTests(SqlServerFixture sql) : IAsyncLifetime
     {
         var task = await _h.CreateTaskAsync(_w, ordered: true);
         var newStep = await _h.Workflows.CreateStepAsync("Brand new step");
-        await _h.Workflows.PublishNextVersionAsync(_w.OrderedWorkflowId, true, new MatterFlow.IntegrationTests.Workflows.WorkflowInstanceHarness.Place(newStep));
+        await _h.Workflows.PublishNextVersionAsync(_w.OrderedWorkflowId, true, new LptHub.IntegrationTests.Workflows.WorkflowInstanceHarness.Place(newStep));
 
         var again = await _h.GetTaskAsync(TaskId(task));
         again.GetProperty("workflow").GetProperty("versionNo").GetInt32().ShouldBe(1);

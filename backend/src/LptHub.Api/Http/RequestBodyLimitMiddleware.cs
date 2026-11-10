@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Http.Features;
 
-namespace MatterFlow.Api.Http;
+namespace LptHub.Api.Http;
 
 /// <summary>
 /// Caps request bodies at 2 MB for the JSON API (security review SEC-19): without it the server reads up to 30 MB of JSON before any

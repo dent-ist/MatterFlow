@@ -1,4 +1,4 @@
-namespace MatterFlow.Identity.Contracts;
+namespace LptHub.Identity.Contracts;
 
 /// <summary>
 /// Who may see and change what in the Dashboard Calendar (decision AT, items 1 to 3). A Director (anyone who holds <c>User.View</c>, which the System Admin holds implicitly) works with every

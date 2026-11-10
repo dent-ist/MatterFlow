@@ -323,17 +323,17 @@ test.describe('Round 4: task type icons', () => {
 
 test.describe('Round 4: administration naming', () => {
   const titles: [string, string, string | RegExp][] = [
-    ['/admin/task-types', 'Task Types', 'Task Types - MatterFlow'],
-    ['/admin/workflows', 'Task Types', 'Task Types: Workflows - MatterFlow'],
-    ['/admin/steps', 'Task Types', 'Task Types: Workflow Steps - MatterFlow'],
-    ['/admin/priorities', 'Lists', 'Lists: Priorities - MatterFlow'],
-    ['/admin/status-labels', 'Lists', 'Lists: Status Labels - MatterFlow'],
-    ['/admin/custom-fields', 'Custom Fields', 'Custom Fields - MatterFlow'],
-    ['/admin/audit', 'Audit Logs', 'Audit Logs - MatterFlow'],
-    ['/admin/users', 'Users', 'Users - MatterFlow'],
-    ['/admin/roles', 'Users', 'Users: Roles - MatterFlow'],
-    ['/admin/asset-types', 'Asset Types', 'Asset Types - MatterFlow'],
-    ['/admin/lists/link-roles', 'Lists', 'Lists: Link Roles - MatterFlow'],
+    ['/admin/task-types', 'Task Types', 'Task Types - LPT Hub'],
+    ['/admin/workflows', 'Task Types', 'Task Types: Workflows - LPT Hub'],
+    ['/admin/steps', 'Task Types', 'Task Types: Workflow Steps - LPT Hub'],
+    ['/admin/priorities', 'Lists', 'Lists: Priorities - LPT Hub'],
+    ['/admin/status-labels', 'Lists', 'Lists: Status Labels - LPT Hub'],
+    ['/admin/custom-fields', 'Custom Fields', 'Custom Fields - LPT Hub'],
+    ['/admin/audit', 'Audit Logs', 'Audit Logs - LPT Hub'],
+    ['/admin/users', 'Users', 'Users - LPT Hub'],
+    ['/admin/roles', 'Users', 'Users: Roles - LPT Hub'],
+    ['/admin/asset-types', 'Asset Types', 'Asset Types - LPT Hub'],
+    ['/admin/lists/link-roles', 'Lists', 'Lists: Link Roles - LPT Hub'],
   ];
 
   for (const [path, heading, title] of titles) {
@@ -350,9 +350,9 @@ test.describe('Round 4: administration naming', () => {
     page,
   }) => {
     await page.goto('/admin/users');
-    await expect(page).toHaveTitle('Users - MatterFlow');
+    await expect(page).toHaveTitle('Users - LPT Hub');
     await page.getByRole('tab', { name: 'Roles' }).click();
-    await expect(page).toHaveTitle('Users: Roles - MatterFlow');
+    await expect(page).toHaveTitle('Users: Roles - LPT Hub');
     await page.goto('/admin/asset-types');
     await expect(
       page.getByRole('navigation', { name: 'Breadcrumb' }).getByText('Administration'),
@@ -588,14 +588,14 @@ test.describe('Round 4: queues, wording and accessibility', () => {
 
   test('UXR4-22: the global search landmark has its own name', async ({ page }) => {
     await page.goto('/dashboard');
-    await expect(page.getByRole('search', { name: 'Search MatterFlow' })).toHaveCount(1);
+    await expect(page.getByRole('search', { name: 'Search LPT Hub' })).toHaveCount(1);
     await page.goto('/admin/users');
     await expect(page.getByRole('button', { name: /^Filters/ })).toBeVisible();
     const searches = page.getByRole('search');
     const names = await searches.evaluateAll((els) =>
       els.map((e) => e.getAttribute('aria-label') ?? ''),
     );
-    expect(names.filter((n) => n === 'Search MatterFlow')).toHaveLength(1);
+    expect(names.filter((n) => n === 'Search LPT Hub')).toHaveLength(1);
     expect(new Set(names).size).toBe(names.length === 1 ? 1 : new Set(names).size);
   });
 });

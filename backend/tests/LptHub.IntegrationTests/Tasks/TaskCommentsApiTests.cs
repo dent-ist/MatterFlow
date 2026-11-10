@@ -1,15 +1,15 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.Audit.Domain;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.WorkManagement.Domain;
+using LptHub.Audit.Domain;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.WorkManagement.Domain;
 using Microsoft.EntityFrameworkCore;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.PanelAssert;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.PanelAssert;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Tasks;
+namespace LptHub.IntegrationTests.Tasks;
 
 /// <summary>Task comments (ticket 43, SCN-018): rich text sanitized on the server, soft delete, edit history, closed-Task rules, permissions.</summary>
 [Collection(SqlServerCollection.Name)]
@@ -264,7 +264,7 @@ public sealed class TaskCommentsApiTests(SqlServerFixture sql) : IAsyncLifetime
         var comment = await PostAsync(taskId, "<p>v0</p>");
         var commentId = comment.GetProperty("commentId").GetInt64();
         var version = comment.GetProperty("rowVersion").GetString();
-        for (var i = 1; i <= MatterFlow.WorkManagement.Application.TaskCommentService.MaxEditsPerComment; i++)
+        for (var i = 1; i <= LptHub.WorkManagement.Application.TaskCommentService.MaxEditsPerComment; i++)
         {
             var edited = await OkAsync(await _h.Admin.PutAsJsonAsync(Url(taskId, commentId), new { bodyHtml = $"<p>v{i}</p>", rowVersion = version }));
             version = edited.GetProperty("rowVersion").GetString();
@@ -274,7 +274,7 @@ public sealed class TaskCommentsApiTests(SqlServerFixture sql) : IAsyncLifetime
             await _h.Admin.PutAsJsonAsync(Url(taskId, commentId), new { bodyHtml = "<p>one too many</p>", rowVersion = version }),
             HttpStatusCode.Conflict,
             "COMMENT_LIMIT");
-        (await OkAsync(await _h.Admin.GetAsync(Url(taskId, commentId) + "/revisions"))).GetProperty("items").GetArrayLength().ShouldBe(MatterFlow.WorkManagement.Application.TaskCommentService.MaxEditsPerComment);
+        (await OkAsync(await _h.Admin.GetAsync(Url(taskId, commentId) + "/revisions"))).GetProperty("items").GetArrayLength().ShouldBe(LptHub.WorkManagement.Application.TaskCommentService.MaxEditsPerComment);
     }
 
     [Fact]

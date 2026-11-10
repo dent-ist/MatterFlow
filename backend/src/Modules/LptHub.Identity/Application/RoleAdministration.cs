@@ -1,14 +1,14 @@
-using MatterFlow.Audit.Contracts;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Identity.Domain;
-using MatterFlow.Identity.Seeding;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Time;
+using LptHub.Audit.Contracts;
+using LptHub.Identity.Contracts;
+using LptHub.Identity.Domain;
+using LptHub.Identity.Seeding;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Time;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Identity.Application;
+namespace LptHub.Identity.Application;
 
 /// <summary>
 /// Roles and role-permission assignment from the catalog. The built-in System Admin role is read-only and undeletable;

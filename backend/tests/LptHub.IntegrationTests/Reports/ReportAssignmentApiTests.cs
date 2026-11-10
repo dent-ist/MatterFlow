@@ -2,10 +2,10 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Reports;
+namespace LptHub.IntegrationTests.Reports;
 
 /// <summary>Assigning reports to roles from both sides, the diff, the audit and the rule that assignment never reveals SQL (epic #671, issue #716).</summary>
 [Collection(SqlServerCollection.Name)]

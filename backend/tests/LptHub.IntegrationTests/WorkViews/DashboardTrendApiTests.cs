@@ -1,12 +1,12 @@
 using System.Globalization;
 using System.Net;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.IntegrationTests.Tasks;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Tasks;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.WorkViews;
+namespace LptHub.IntegrationTests.WorkViews;
 
 /// <summary>
 /// GET /api/v1/dashboard/trend (Dashboard > Trends, task types): the per-type series add up to the all series, the all series equals the summary
@@ -29,7 +29,7 @@ public sealed class DashboardTrendApiTests(SqlServerFixture sql) : IAsyncLifetim
         Environment.GetEnvironmentVariable("MF_TEST_NOW") ?? "2026-10-14T03:30:00Z", CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal);
     private MovableClock _clock = null!;
     /// <summary>The host's clock: fixed at <c>_now</c> unless a test moves it (and puts it back).</summary>
-    private sealed class MovableClock(DateTime now) : MatterFlow.SharedKernel.Time.IClock
+    private sealed class MovableClock(DateTime now) : LptHub.SharedKernel.Time.IClock
     {
         public DateTime UtcNow { get; set; } = now;
     }

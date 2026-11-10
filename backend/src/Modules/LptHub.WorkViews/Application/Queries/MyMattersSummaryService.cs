@@ -1,8 +1,8 @@
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Tasks;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Tasks;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>
 /// The count strip of My Matters (issue #678): two statements whatever the number of matters (the active matters, and one grouped pass over the open

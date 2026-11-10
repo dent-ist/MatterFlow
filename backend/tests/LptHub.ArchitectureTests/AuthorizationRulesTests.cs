@@ -1,13 +1,13 @@
 using System.Reflection;
-using MatterFlow.Identity;
-using MatterFlow.Identity.Authorization;
-using MatterFlow.Identity.Contracts;
+using LptHub.Identity;
+using LptHub.Identity.Authorization;
+using LptHub.Identity.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Shouldly;
 
-namespace MatterFlow.ArchitectureTests;
+namespace LptHub.ArchitectureTests;
 
 /// <summary>
 /// Fail-closed authorization rules (architecture 6.5): every controller action in the product assemblies declares an authorization
@@ -26,7 +26,7 @@ public class AuthorizationRulesTests
         yield return typeof(Program).Assembly;
         yield return typeof(IdentityModule).Assembly;
         foreach (var name in new[] { "Audit", "Configuration", "Organization", "Assets", "WorkflowEngine", "WorkManagement", "WorkViews", "Search", "Intake", "Notifications", "Reports", "Productions", "Notes" })
-            yield return Assembly.Load($"MatterFlow.{name}");
+            yield return Assembly.Load($"LptHub.{name}");
     }
 
     private static IEnumerable<(Type Controller, MethodInfo Action)> Actions() =>

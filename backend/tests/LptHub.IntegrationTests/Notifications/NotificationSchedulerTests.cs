@@ -2,19 +2,19 @@ using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.IntegrationTests.Tasks;
-using MatterFlow.Notifications.Domain;
-using MatterFlow.Notifications.Infrastructure.Scheduling;
-using MatterFlow.SharedKernel.Time;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Tasks;
+using LptHub.Notifications.Domain;
+using LptHub.Notifications.Infrastructure.Scheduling;
+using LptHub.SharedKernel.Time;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Notifications;
+namespace LptHub.IntegrationTests.Notifications;
 
 /// <summary>
 /// WP-NT3 (#741 to #744) against a real SQL Server: the scheduler host (application lock, isolated jobs, deterministic <c>RunOnceAsync</c>),

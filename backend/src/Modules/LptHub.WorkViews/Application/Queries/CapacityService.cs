@@ -1,19 +1,19 @@
 using System.ComponentModel.DataAnnotations;
-using MatterFlow.Configuration.Contracts;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Identity.Domain;
-using MatterFlow.SharedKernel.Availability;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Tasks;
-using MatterFlow.SharedKernel.Time;
-using MatterFlow.SharedKernel.Visibility;
-using MatterFlow.WorkManagement.Domain;
+using LptHub.Configuration.Contracts;
+using LptHub.Identity.Contracts;
+using LptHub.Identity.Domain;
+using LptHub.SharedKernel.Availability;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Tasks;
+using LptHub.SharedKernel.Time;
+using LptHub.SharedKernel.Visibility;
+using LptHub.WorkManagement.Domain;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>Request of the capacity battery: the page-wide scope.</summary>
 public class CapacityQuery

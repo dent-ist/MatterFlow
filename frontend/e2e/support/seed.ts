@@ -481,7 +481,7 @@ export class Seeder {
         '-P',
         password,
         '-d',
-        'MatterFlow',
+        'LptHub',
         '-b',
         '-Q',
         statement,

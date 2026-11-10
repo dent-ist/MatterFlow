@@ -2,7 +2,7 @@
 
 Audience: the owner's small development team. The template and two sample apps are the main adoption tool; this guide is deliberately short. Related: `02-package-format.md`, `04-launch-identity-and-tokens.md`, `07-platform-services-and-api.md`.
 
-## 1. Template repository layout (`matterflow-app-template`, separate repo)
+## 1. Template repository layout (`lpt-hub-app-template`, separate repo)
 
 ```text
 my-app/
@@ -12,7 +12,7 @@ my-app/
 │   ├── index.html  vite.config.ts   (base: './', no inline scripts, no eval, hashed assets)
 │   └── package.json  package-lock.json
 ├── backend/                    optional .NET 10 minimal API
-│   ├── MyApp.Api/ Program.cs  (AddMatterFlowAppIdentity(), /health)
+│   ├── MyApp.Api/ Program.cs  (AddLptHubAppIdentity(), /health)
 │   ├── MyApp.Tests/
 │   └── Directory.Build.props   (net10.0, nullable, warnings as errors, central package versions)
 ├── mf-app.json                 CLI settings (paths to frontend/dist and backend publish)
@@ -25,8 +25,8 @@ Rules baked into the template: lockfile committed (`npm ci`), Dependabot enabled
 ## 2. Local development
 
 1. `mf-app dev` serves `frontend/` on `http://localhost:5199/apps/my-app/` with the **same sandbox headers** (so storage/cookie assumptions fail early), injects a stub launch token (claims editable in `mf-app.json`), and runs a mock gateway: `/apps/_mf/session`, `jwks.json` (dev key), `/apps/my-app/api/*` proxied to your back end on `http://127.0.0.1:5200` with a dev `X-MF-Identity`.
-2. **Against a MatterFlow dev instance** (Dev auth, `docs/dev-environment.md`): set `Apps:Enabled=true`, `Apps:StoragePath=./.apps`, run the API, then `mf-app push --server http://localhost:5080` (Dev auth user is System Admin) to upload, approve and enable the app; open it from the Apps page. Back ends run without the App Host in dev (`Apps:AppHost:Mode=InProcessDev` starts them as plain child processes on a leased port; not available in Production).
-3. Unit-test token validation with the SDK's `FakeMatterFlow` (issues tokens signed by a throw-away key).
+2. **Against an LPT Hub dev instance** (Dev auth, `docs/dev-environment.md`): set `Apps:Enabled=true`, `Apps:StoragePath=./.apps`, run the API, then `mf-app push --server http://localhost:5080` (Dev auth user is System Admin) to upload, approve and enable the app; open it from the Apps page. Back ends run without the App Host in dev (`Apps:AppHost:Mode=InProcessDev` starts them as plain child processes on a leased port; not available in Production).
+3. Unit-test token validation with the SDK's `FakeLptHub` (issues tokens signed by a throw-away key).
 
 ## 3. Front end: launch and session (TypeScript)
 
@@ -39,7 +39,7 @@ let session: Session | null = null;
 
 export async function start(): Promise<Session> {
   const m = /[#&]mf_launch=([^&]+)/.exec(location.hash);
-  if (!m) throw new Error('Open this app from MatterFlow.');
+  if (!m) throw new Error('Open this app from LptHub.');
   history.replaceState(null, '', location.pathname + location.search);      // remove the token from the URL at once
   const res = await fetch('/apps/_mf/session', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -63,16 +63,16 @@ export function apiFetch(path: string, init: RequestInit = {}) {            // p
 
 ## 4. Back end: validate the identity assertion
 
-C# (.NET 10) with the SDK (`MatterFlow.App.Sdk`):
+C# (.NET 10) with the SDK (`LptHub.App.Sdk`):
 
 ```csharp
 var builder = WebApplication.CreateBuilder(args);
-builder.Configuration.AddMatterFlowAppConfiguration();          // reads config + secrets from the App Host pipe
+builder.Configuration.AddLptHubAppConfiguration();          // reads config + secrets from the App Host pipe
 builder.Services
-    .AddAuthentication("MatterFlow")
-    .AddMatterFlowIdentity(o =>
+    .AddAuthentication("LptHub")
+    .AddLptHubIdentity(o =>
     {
-        o.Issuer   = builder.Configuration["MF_ISSUER"]!;        // https://matterflow.firm.local
+        o.Issuer   = builder.Configuration["MF_ISSUER"]!;        // https://lpt-hub.firm.local
         o.Audience = $"app:{builder.Configuration["MF_APP_CODE"]}";
         o.JwksUrl  = builder.Configuration["MF_JWKS_URL"]!;      // cached 5 min, refetch on unknown kid
         o.ClockSkew = TimeSpan.FromSeconds(30);
@@ -90,7 +90,7 @@ app.MapPost("/transfers", (HttpContext ctx, TransferRequest req) =>
 app.Run();
 ```
 
-What `AddMatterFlowIdentity` does (so you can use any library): read `X-MF-Identity`, validate with `TokenValidationParameters { ValidAlgorithms = ["ES256"], ValidIssuer, ValidAudience, RequireExpirationTime = true, ValidateLifetime = true }`, check header `typ == "mf-identity+jwt"`, keys from JWKS.
+What `AddLptHubIdentity` does (so you can use any library): read `X-MF-Identity`, validate with `TokenValidationParameters { ValidAlgorithms = ["ES256"], ValidIssuer, ValidAudience, RequireExpirationTime = true, ValidateLifetime = true }`, check header `typ == "mf-identity+jwt"`, keys from JWKS.
 
 TypeScript (Node back end or an Azure-style function, using `jose`):
 
@@ -110,7 +110,7 @@ export async function verifyIdentity(token: string) {
 ## 5. Packaging, testing, versioning
 
 - `mf-app pack` -> `dist/my-app-1.2.0.mfapp.zip` + prints SHA-256. Send the zip to a System Admin **and** the hash through a second channel (chat/e-mail); the wizard shows the server-computed hash to compare.
-- Tests: unit tests for logic; `FakeMatterFlow` for token handling; one Playwright smoke test against `mf-app dev` (page loads under sandbox headers; no console CSP errors); `mf-app validate` in CI.
+- Tests: unit tests for logic; `FakeLptHub` for token handling; one Playwright smoke test against `mf-app dev` (page loads under sandbox headers; no console CSP errors); `mf-app validate` in CI.
 - Versioning: semver. Patch = fix; minor = backwards-compatible; major = breaking changes to your own data format. Your data in `MF_DATA_DIR` outlives versions: write forward-compatible files and keep a `schemaVersion`. Rollback by an admin must never corrupt data (read older and newer).
 - Release checklist: dependencies audited, no secrets, `app.json` permissions minimal (ask for `email` only if needed), changelog in the wizard notes.
 
@@ -137,19 +137,19 @@ export async function verifyIdentity(token: string) {
 | Limitation | Workaround |
 |---|---|
 | No cookies, `localStorage`, `sessionStorage`, IndexedDB, Cache API, service workers | Keep state in JS memory; persist server-side via your back end (`MF_DATA_DIR`) keyed by user id; wrap storage access in try/catch if a library touches it (`lock-storage` shim in the template) |
-| Cross-window `postMessage` only works with windows you opened (popups allowed) | Use it between your own windows; MatterFlow does not message apps in window mode |
+| Cross-window `postMessage` only works with windows you opened (popups allowed) | Use it between your own windows; LPT Hub does not message apps in window mode |
 | Downloads | `Blob` + `a[download]`, or `GET` on your API with `Content-Disposition: attachment` through `fetch` then blob |
 | PDF/object preview | Use a JS renderer (pdf.js bundled) into a canvas; `<object>/<embed>` are blocked |
 | Clipboard | Write via `navigator.clipboard.writeText` on user gesture works; read is blocked |
 | External scripts/fonts/CDNs | Not allowed (`script-src 'self'`); bundle everything |
 | Calling other intranet hosts | Not allowed unless `network.allowedOrigins` is approved; prefer going through your back end |
-| Reload loses the session | Reopen from MatterFlow (one click) |
+| Reload loses the session | Reopen from LPT Hub (one click) |
 | `window.open`, `target=_blank` to other sites | Popups work but stay sandboxed; do not rely on them |
 
 ## 9. Do and don't
 
 Do: ask for the minimum context, scopes, roots and connectors; keep secrets in app configuration (`secret: true`); validate every input in the back end; treat the identity assertion as the only truth about the user; log identifiers, not content; add `schemaVersion` to your data files; handle `503 APP_BACKEND_UNAVAILABLE` with retry; keep bundles small; test under `mf-app dev`.
-Don't: store client data or file contents on disk beyond what a job needs and delete it after; trust the `X-MF-*` headers of a request without validating the JWT; log tokens or secrets; call `/api` of MatterFlow; put credentials in `app.json`, the front end or the repository; use `eval`, inline scripts or CDN links; write outside `MF_DATA_DIR`; assume your port or process lives forever.
+Don't: store client data or file contents on disk beyond what a job needs and delete it after; trust the `X-MF-*` headers of a request without validating the JWT; log tokens or secrets; call `/api` of LPT Hub; put credentials in `app.json`, the front end or the repository; use `eval`, inline scripts or CDN links; write outside `MF_DATA_DIR`; assume your port or process lives forever.
 
 ## 10. Support model
 

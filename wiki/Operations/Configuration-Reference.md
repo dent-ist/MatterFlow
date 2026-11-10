@@ -4,20 +4,20 @@
 
 **What this page is for.** Every configuration key the application reads (`appsettings*.json`, environment variables, command line), with defaults and the code that reads it. Environment variables use a double underscore for a colon (`Auth__Dev__DefaultUser`). Production values live in `appsettings.Production.json` (template: `deploy/appsettings.Production.template.json`; runbook section 2). **Application settings stored in the database** (changed in Administration > Settings) are different: see [Settings Catalogue](../Reference/Settings-Catalogue.md).
 
-Shipped defaults: `backend/src/MatterFlow.Api/appsettings.json` has only logging, `AllowedHosts`, `Features:SensitiveMatterAccess=false` and `Firm:TimeZoneId`. `appsettings.Development.json` adds the report connection string and the `Dev:Users` list (`KE\user1` to `KE\user10`).
+Shipped defaults: `backend/src/LptHub.Api/appsettings.json` has only logging, `AllowedHosts`, `Features:SensitiveMatterAccess=false` and `Firm:TimeZoneId`. `appsettings.Development.json` adds the report connection string and the `Dev:Users` list (`KE\user1` to `KE\user10`).
 
 ## Connection and hosting
 
 | Key | Default | Meaning |
 |---|---|---|
-| `ConnectionStrings:MatterFlow` | none | The application connection (role `mf_app`). Seeds run only when it is present (or migrations are enabled) |
+| `ConnectionStrings:LptHub` | none | The application connection (role `lpt_app`). Seeds run only when it is present (or migrations are enabled) |
 | `ConnectionStrings:Default` | none | Fallback for the migration runner |
 | `ConnectionStrings:Migrations` | falls back to `Default` | Used only by the schema runner (needs DDL); must differ from the application login |
 | `ConnectionStrings:ReportsReadOnly` | none | The read-only report login; must be a different login than the application. Reports stay off without it |
 | `AllowedHosts` | `localhost;127.0.0.1;[::1]` | The site's real host names (semicolon separated). An unset production value makes every request fail with 400 |
 | `Hosting:ServeSpa` | unset: serve when `wwwroot/index.html` exists and not Development | `true` forces, `false` runs the API alone (`Hosting/SpaHosting.cs`) |
 | `ASPNETCORE_ENVIRONMENT` | `Production` in `web.config` | `Development` and `Test` allow the Dev auth provider |
-| `MATTERFLOW_MIGRATE_ONLY` or `--migrate-only` | off | Apply the schema and exit |
+| `LPTHUB_MIGRATE_ONLY` or `--migrate-only` | off | Apply the schema and exit |
 
 ## Authentication and bootstrap
 
@@ -83,11 +83,11 @@ Fixed values (constants, not configuration): notification rules in `Notification
 | `MaxQueryStringLength` | 4096 characters |
 | `MaxQueryValues` | 100 |
 
-Source: `backend/src/MatterFlow.Api/Http/ApiRateLimiting.cs`.
+Source: `backend/src/LptHub.Api/Http/ApiRateLimiting.cs`.
 
 ## Reports (`Reports:*`)
 
-Defaults from `ReportsOptions`: `DefaultTimeoutSeconds` 60, `MaxTimeoutSeconds` 300, `DefaultMaxRows` 50,000, `MaxRowsCeiling` 200,000, `GlobalConcurrency` 4, `RunsPerUserPerHour` 30, `PreviewRows` 20, `PreviewTimeoutSeconds` 15, `ChoiceQueryTimeoutSeconds` 10, `ChoiceQueryMaxRows` 1,000, `LockTimeoutMilliseconds` 5,000, `ResultIdleMinutes` 15, `ResultMaxMinutes` 60, `ResultMemoryBudgetMegabytes` 512 (file `backend/src/Modules/MatterFlow.Reports/Application/ReportsOptions.cs`).
+Defaults from `ReportsOptions`: `DefaultTimeoutSeconds` 60, `MaxTimeoutSeconds` 300, `DefaultMaxRows` 50,000, `MaxRowsCeiling` 200,000, `GlobalConcurrency` 4, `RunsPerUserPerHour` 30, `PreviewRows` 20, `PreviewTimeoutSeconds` 15, `ChoiceQueryTimeoutSeconds` 10, `ChoiceQueryMaxRows` 1,000, `LockTimeoutMilliseconds` 5,000, `ResultIdleMinutes` 15, `ResultMaxMinutes` 60, `ResultMemoryBudgetMegabytes` 512 (file `backend/src/Modules/LptHub.Reports/Application/ReportsOptions.cs`).
 
 ## Frontend configuration
 

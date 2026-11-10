@@ -1,4 +1,4 @@
-namespace MatterFlow.Configuration.Domain.Forms.Rules;
+namespace LptHub.Configuration.Domain.Forms.Rules;
 
 /// <summary>Form control types (contracts/form-rules.md section 1).</summary>
 public enum FormControl

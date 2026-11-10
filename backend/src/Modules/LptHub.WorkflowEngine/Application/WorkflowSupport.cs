@@ -1,9 +1,9 @@
-using MatterFlow.SharedKernel.Entities;
-using MatterFlow.SharedKernel.Results;
+using LptHub.SharedKernel.Entities;
+using LptHub.SharedKernel.Results;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.WorkflowEngine.Application;
+namespace LptHub.WorkflowEngine.Application;
 
 /// <summary>Shared helpers of the workflow configuration services (row versions, text validation, SQL error mapping).</summary>
 internal static class WorkflowSupport

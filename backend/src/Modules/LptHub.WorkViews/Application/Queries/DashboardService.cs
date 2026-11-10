@@ -1,18 +1,18 @@
 using System.Linq.Expressions;
-using MatterFlow.Configuration.Domain;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Identity.Domain;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Tasks;
-using MatterFlow.SharedKernel.Time;
-using MatterFlow.SharedKernel.Visibility;
-using MatterFlow.WorkManagement.Domain;
+using LptHub.Configuration.Domain;
+using LptHub.Identity.Contracts;
+using LptHub.Identity.Domain;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Tasks;
+using LptHub.SharedKernel.Time;
+using LptHub.SharedKernel.Visibility;
+using LptHub.WorkManagement.Domain;
 using Microsoft.EntityFrameworkCore;
 
 
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>
 /// Read side of the Dashboard: a handful of aggregate reads (one for the headline counts, one per breakdown, and one for aging; the Trends tab has its own endpoint, <see cref="DashboardTrendService"/>), never a read per row. It reuses <see cref="TaskQueueRules"/> so every number agrees with the Task Queue the user lands

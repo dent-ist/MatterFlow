@@ -1,4 +1,4 @@
-namespace MatterFlow.Identity.Holidays;
+namespace LptHub.Identity.Holidays;
 
 /// <summary>
 /// The colour keys a holiday calendar may use: the tag palette of <c>contracts/task-type-colours.json</c> (Identity may not read the Configuration module, so the ten names are repeated here;

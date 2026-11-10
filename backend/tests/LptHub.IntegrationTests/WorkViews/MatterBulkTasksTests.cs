@@ -1,11 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.WorkViews;
+namespace LptHub.IntegrationTests.WorkViews;
 
 /// <summary>POST /matters/{id}/tasks/bulk (epic #667, issue #685): per-task results, the single-task rules, permissions per field, the pod warning and one correlation id.</summary>
 [Collection(SqlServerCollection.Name)]
@@ -162,7 +162,7 @@ public sealed class MatterBulkTasksTests(SqlServerFixture sql) : MyMattersTestBa
         await ProblemAsync(await Observer.PostAsJsonAsync(Url(M1), new { taskIds = one, priorityId = _otherPriority }), HttpStatusCode.Forbidden, "PERMISSION_DENIED");
         await ProblemAsync(await A.PostAsJsonAsync(Url(M1), new { taskIds = one, priorityId = _otherPriority }), HttpStatusCode.Forbidden, "PERMISSION_DENIED");
         using var anonymous = H.Factory.CreateClient();
-        anonymous.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        anonymous.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         (await anonymous.PostAsJsonAsync(Url(M1), new { taskIds = one, priorityId = _otherPriority })).StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
 }

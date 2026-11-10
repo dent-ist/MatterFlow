@@ -1,8 +1,8 @@
-using MatterFlow.Organization.Domain;
-using MatterFlow.SharedKernel.Visibility;
+using LptHub.Organization.Domain;
+using LptHub.SharedKernel.Visibility;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Organization.Application;
+namespace LptHub.Organization.Application;
 
 /// <summary>
 /// Every matter, unfiltered, in the shape the visibility rule needs. Only the visibility port reads it (epic #788).

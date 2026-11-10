@@ -1,9 +1,9 @@
-using MatterFlow.Data.SchemaMigrations;
+using LptHub.Data.SchemaMigrations;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging.Abstractions;
 using Testcontainers.MsSql;
 
-namespace MatterFlow.IntegrationTests.Fixtures;
+namespace LptHub.IntegrationTests.Fixtures;
 
 /// <summary>One real SQL Server container (random host port) shared by the tests; each test gets its own migrated database.</summary>
 public sealed class SqlServerFixture : IAsyncLifetime

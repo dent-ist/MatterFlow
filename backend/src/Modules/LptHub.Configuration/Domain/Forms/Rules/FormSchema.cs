@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace MatterFlow.Configuration.Domain.Forms.Rules;
+namespace LptHub.Configuration.Domain.Forms.Rules;
 
 /// <summary>Outcome of <see cref="FormSchema.Compile"/>: a usable schema, or the definition errors.</summary>
 public sealed class FormSchemaCompileResult

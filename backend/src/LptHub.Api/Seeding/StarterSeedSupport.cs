@@ -1,13 +1,13 @@
 using System.Text;
 using System.Text.Json;
-using MatterFlow.Configuration.Application.Forms;
-using MatterFlow.Configuration.Domain.Forms;
-using MatterFlow.Identity.Access;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Configuration.Application.Forms;
+using LptHub.Configuration.Domain.Forms;
+using LptHub.Identity.Access;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Results;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-namespace MatterFlow.Api.Seeding;
+namespace LptHub.Api.Seeding;
 
 /// <summary>Settings of the optional starter-configuration seed (<c>Seed:StarterConfiguration</c>).</summary>
 /// <param name="Enabled">Whether the seed runs at startup. Default: on in Development, off everywhere else.</param>
@@ -213,7 +213,7 @@ public static class StarterFormBuilder
 
     /// <summary>Runs the real publish validation (rule contract section 4 plus the architecture 7.5 checks) on a seeded form.</summary>
     public static FormPublishValidator.Outcome Validate(IEnumerable<FormFieldModel> fields) =>
-        FormPublishValidator.Validate(ToSpecs(fields), new Dictionary<string, MatterFlow.Configuration.Domain.Forms.Rules.FormControl>());
+        FormPublishValidator.Validate(ToSpecs(fields), new Dictionary<string, LptHub.Configuration.Domain.Forms.Rules.FormControl>());
 
     private static JsonElement? Rule(JsonElement? rule) =>
         rule is { ValueKind: JsonValueKind.Object } r ? r : null;

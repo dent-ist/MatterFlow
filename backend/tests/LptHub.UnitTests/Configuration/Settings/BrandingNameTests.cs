@@ -1,13 +1,13 @@
-using MatterFlow.Configuration.Domain.Settings;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Configuration.Domain.Settings;
+using LptHub.SharedKernel.Results;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Configuration.Settings;
+namespace LptHub.UnitTests.Configuration.Settings;
 
 public class BrandingNameTests
 {
     [Theory]
-    [InlineData("MatterFlow", "MatterFlow")]
+    [InlineData("LPT Hub", "LPT Hub")]
     [InlineData("  Smith & Co  ", "Smith & Co")]
     [InlineData("Smith     Co", "Smith Co")]
     [InlineData("Kanzlei Müller é", "Kanzlei Müller é")]

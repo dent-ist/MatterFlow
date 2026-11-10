@@ -1,7 +1,7 @@
-using MatterFlow.SharedKernel.Tasks;
-using MatterFlow.SharedKernel.Time;
+using LptHub.SharedKernel.Tasks;
+using LptHub.SharedKernel.Time;
 
-namespace MatterFlow.WorkManagement.Domain;
+namespace LptHub.WorkManagement.Domain;
 
 /// <summary>
 /// A Task's due value (addendum M): none (ASAP), a floating date, or a date with an absolute instant. Delegates the overdue and sort

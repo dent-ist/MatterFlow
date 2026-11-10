@@ -1,10 +1,10 @@
 using System.Data;
 using System.Text;
-using MatterFlow.Reports.Application;
-using MatterFlow.Reports.Domain.Parameters;
+using LptHub.Reports.Application;
+using LptHub.Reports.Domain.Parameters;
 using Microsoft.Data.SqlClient;
 
-namespace MatterFlow.Reports.Infrastructure;
+namespace LptHub.Reports.Infrastructure;
 
 /// <summary>
 /// The directory behind the lookup parameters, read with the application connection (the report login is not involved). Each kind has ONE fixed statement text that selects

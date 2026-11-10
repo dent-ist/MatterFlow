@@ -1,7 +1,7 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 
-namespace MatterFlow.Reports.Infrastructure;
+namespace LptHub.Reports.Infrastructure;
 
 /// <summary>
 /// The application's own connection, for the Reports tables (definitions, assignments, the run log). It is never used to run a report:
@@ -10,8 +10,8 @@ namespace MatterFlow.Reports.Infrastructure;
 internal sealed class ReportAppConnection(IConfiguration configuration)
 {
     private string ConnectionString =>
-        configuration.GetConnectionString("MatterFlow") ?? configuration.GetConnectionString("Default")
-        ?? throw new InvalidOperationException("ConnectionStrings:MatterFlow is not configured.");
+        configuration.GetConnectionString("LptHub") ?? configuration.GetConnectionString("Default")
+        ?? throw new InvalidOperationException("ConnectionStrings:LptHub is not configured.");
 
     public async Task<SqlConnection> OpenAsync(CancellationToken cancellationToken)
     {

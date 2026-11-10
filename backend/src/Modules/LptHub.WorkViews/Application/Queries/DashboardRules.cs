@@ -1,7 +1,7 @@
 using System.Globalization;
-using MatterFlow.SharedKernel.Tasks;
+using LptHub.SharedKernel.Tasks;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>One age band: whole calendar days since creation, counted in the viewer's zone (<c>MaxDays</c> null: no upper limit).</summary>
 public sealed record AgingBand(string Key, string Label, int MinDays, int? MaxDays);

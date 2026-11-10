@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace MatterFlow.Reports.Domain.Parameters;
+namespace LptHub.Reports.Domain.Parameters;
 
 /// <summary>The parameter types of spec 5.1.</summary>
 public enum ReportParameterType

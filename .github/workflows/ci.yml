@@ -39,7 +39,7 @@ jobs:
         run: dotnet format --no-restore --verify-no-changes
       - name: Unit and architecture tests
         run: |
-          for project in MatterFlow.UnitTests MatterFlow.ArchitectureTests; do
+          for project in LptHub.UnitTests LptHub.ArchitectureTests; do
             dotnet test "tests/$project" --no-build -c Release \
               --logger "trx;LogFileName=$project.trx" --results-directory ../TestResults/quick
           done
@@ -73,7 +73,7 @@ jobs:
         run: dotnet build --no-restore -c Release -warnaserror
       - name: Integration and schema tests
         run: |
-          for project in MatterFlow.IntegrationTests MatterFlow.SchemaTests; do
+          for project in LptHub.IntegrationTests LptHub.SchemaTests; do
             dotnet test "tests/$project" --no-build -c Release \
               --logger "trx;LogFileName=$project.trx" --results-directory ../TestResults/integration
           done

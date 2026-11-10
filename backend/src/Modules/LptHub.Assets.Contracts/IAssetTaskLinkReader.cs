@@ -1,4 +1,4 @@
-namespace MatterFlow.Assets.Contracts;
+namespace LptHub.Assets.Contracts;
 
 /// <summary>A Task that an Asset is linked to ("Linked Tasks" on the Asset detail).</summary>
 /// <param name="TaskId">Internal Task id.</param>

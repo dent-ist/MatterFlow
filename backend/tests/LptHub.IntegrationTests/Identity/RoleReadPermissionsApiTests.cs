@@ -1,11 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.Identity.Contracts;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Identity;
+namespace LptHub.IntegrationTests.Identity;
 
 /// <summary>
 /// Users epic #453: each administration permission is enough to READ what it manages. There is no <c>Role.View</c>, so a person who holds
@@ -31,7 +31,7 @@ public sealed class RoleReadPermissionsApiTests(SqlServerFixture sql) : IAsyncLi
     private HttpClient As(string user = DatabaseApiFactory.AdminAccount)
     {
         var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        client.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         client.DefaultRequestHeaders.Add("X-Dev-User", user);
         return client;
     }

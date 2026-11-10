@@ -1,8 +1,8 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using MatterFlow.Configuration.Domain.Forms.Rules;
+using LptHub.Configuration.Domain.Forms.Rules;
 
-namespace MatterFlow.Configuration.Domain.Forms;
+namespace LptHub.Configuration.Domain.Forms;
 
 /// <summary>A problem with a form definition. <see cref="Path"/> locates it for the API (<c>fields[2].key</c>, or <c>form:&lt;fieldKey&gt;</c> style keys are built by the caller).</summary>
 /// <param name="Code">Stable code: a contract section 4 code (for example <c>CIRCULAR_DEPENDENCY</c>) or one of <see cref="FormPublishCodes"/>.</param>

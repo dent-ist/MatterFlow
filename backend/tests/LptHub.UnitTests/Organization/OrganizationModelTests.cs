@@ -1,21 +1,21 @@
 using System.Reflection;
-using MatterFlow.Data;
-using MatterFlow.Organization.Application;
-using MatterFlow.Organization.Contracts;
-using MatterFlow.Organization.Domain;
-using MatterFlow.SharedKernel.Audit;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.ValueObjects;
+using LptHub.Data;
+using LptHub.Organization.Application;
+using LptHub.Organization.Contracts;
+using LptHub.Organization.Domain;
+using LptHub.SharedKernel.Audit;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Organization;
+namespace LptHub.UnitTests.Organization;
 
 public class OrganizationModelTests
 {
-    private static MatterFlowDbContext NewContext() =>
-        new(new DbContextOptionsBuilder<MatterFlowDbContext>().UseSqlServer("Server=localhost;Database=unused;").Options);
+    private static LptHubDbContext NewContext() =>
+        new(new DbContextOptionsBuilder<LptHubDbContext>().UseSqlServer("Server=localhost;Database=unused;").Options);
 
     [Fact]
     public void Entities_map_to_the_script_tables_and_columns()

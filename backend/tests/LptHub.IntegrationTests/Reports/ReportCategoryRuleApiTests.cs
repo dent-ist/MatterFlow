@@ -1,10 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Reports;
+namespace LptHub.IntegrationTests.Reports;
 
 /// <summary>A report whose category is deactivated is hidden like an inactive report: not listed, not opened, not run, not exported, no views (one rule, <c>MayRun</c> in <c>ReportCatalog</c>).</summary>
 [Collection(SqlServerCollection.Name)]

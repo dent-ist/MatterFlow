@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 
-namespace MatterFlow.IntegrationTests.Fixtures;
+namespace LptHub.IntegrationTests.Fixtures;
 
 /// <summary>
 /// Captures the text of every SQL command EF Core executes (add as a logger provider and enable the

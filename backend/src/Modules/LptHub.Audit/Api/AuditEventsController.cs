@@ -1,14 +1,14 @@
 using System.ComponentModel.DataAnnotations;
-using MatterFlow.Audit.Application;
-using MatterFlow.Audit.Domain;
-using MatterFlow.SharedKernel.Audit;
-using MatterFlow.SharedKernel.Authorization;
+using LptHub.Audit.Application;
+using LptHub.Audit.Domain;
+using LptHub.SharedKernel.Audit;
+using LptHub.SharedKernel.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Audit.Api;
+namespace LptHub.Audit.Api;
 
 /// <summary>Permission-scoped read access to the audit trail. Requires the <c>Audit.View</c> policy.</summary>
 [ApiController]

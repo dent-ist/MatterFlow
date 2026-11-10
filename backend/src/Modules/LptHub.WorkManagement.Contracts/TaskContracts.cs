@@ -1,6 +1,6 @@
-using MatterFlow.SharedKernel.Tasks;
+using LptHub.SharedKernel.Tasks;
 
-namespace MatterFlow.WorkManagement.Contracts;
+namespace LptHub.WorkManagement.Contracts;
 
 /// <summary>A Task in short, as other modules (Assets "linked tasks", work views, search) see it.</summary>
 /// <param name="TaskId">Internal id.</param>

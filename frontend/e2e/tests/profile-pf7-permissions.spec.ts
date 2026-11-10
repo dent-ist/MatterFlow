@@ -30,7 +30,7 @@ const MATRIX: readonly (PersonaSpec & { key: string })[] = [
 
 async function holdsTaskView(page: Page): Promise<boolean> {
   return page.evaluate(async () => {
-    const r = await fetch('/api/v1/me', { headers: { 'X-MatterFlow-Client': 'web' } });
+    const r = await fetch('/api/v1/me', { headers: { 'X-LptHub-Client': 'web' } });
     const me = (await r.json()) as { permissions: string[]; isSystemAdmin: boolean };
     return me.isSystemAdmin || me.permissions.includes('Task.View');
   });
@@ -64,7 +64,7 @@ test.describe('pf7-permissions: who gets My profile, the menu entries and the di
         // The card is for a person who can open at least one page (a Pod.View-only person can open none).
         const pages = await me.evaluate(async () => {
           const r = await fetch('/api/v1/me/landing-pages', {
-            headers: { 'X-MatterFlow-Client': 'web' },
+            headers: { 'X-LptHub-Client': 'web' },
           });
           return ((await r.json()) as { pages: unknown[] }).pages.length;
         });

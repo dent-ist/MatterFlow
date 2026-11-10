@@ -1,12 +1,12 @@
-using MatterFlow.Audit.Contracts;
-using MatterFlow.Audit.Domain;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.Audit.Contracts;
+using LptHub.Audit.Domain;
+using LptHub.IntegrationTests.Fixtures;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Audit;
+namespace LptHub.IntegrationTests.Audit;
 
 /// <summary>Audit capture against a real SQL Server: atomicity, rollback, correlation and append-only enforcement.</summary>
 [Collection(SqlServerCollection.Name)]

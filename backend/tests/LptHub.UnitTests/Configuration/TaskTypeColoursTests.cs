@@ -1,8 +1,8 @@
 using System.Text.Json;
-using MatterFlow.Configuration.Contracts;
+using LptHub.Configuration.Contracts;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Configuration;
+namespace LptHub.UnitTests.Configuration;
 
 /// <summary>The Task Type colour palette (contracts/task-type-colours.json, shared with the Angular palette).</summary>
 public class TaskTypeColoursTests

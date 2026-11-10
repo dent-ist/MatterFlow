@@ -1,13 +1,13 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Identity.Domain;
-using MatterFlow.SharedKernel.Availability;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Identity.Contracts;
+using LptHub.Identity.Domain;
+using LptHub.SharedKernel.Availability;
+using LptHub.SharedKernel.Results;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Identity.Holidays;
+namespace LptHub.Identity.Holidays;
 
 /// <summary>
 /// Administration of holiday calendars and holidays (Dashboard Calendar, epic #1074; needs <c>Settings.Manage</c> except the person's calendar, <c>User.Manage</c>): calendars, rules,

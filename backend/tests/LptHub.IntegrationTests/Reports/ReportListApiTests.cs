@@ -1,10 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Reports;
+namespace LptHub.IntegrationTests.Reports;
 
 /// <summary>GET /api/v1/reports: the reports a person may run, grouped by category, with no SQL and nothing about reports the person may not run (issue #718).</summary>
 [Collection(SqlServerCollection.Name)]

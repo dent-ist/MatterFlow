@@ -34,7 +34,7 @@ test.describe('Link Roles tab chrome and list (#640)', () => {
     await page.goto(TAB_URL);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Lists');
     await expect(page.getByRole('heading', { level: 2 })).toHaveText('Link Roles');
-    await expect(page).toHaveTitle('Lists: Link Roles - MatterFlow');
+    await expect(page).toHaveTitle('Lists: Link Roles - LPT Hub');
     await expect(page.getByRole('navigation', { name: 'Breadcrumb' }).locator('li')).toHaveText([
       /Administration/,
       /Lists/,

@@ -1,6 +1,6 @@
-using MatterFlow.Notifications.Contracts;
+using LptHub.Notifications.Contracts;
 
-namespace MatterFlow.Notifications.Domain;
+namespace LptHub.Notifications.Domain;
 
 /// <summary>One notification to create: a request resolved to a single recipient.</summary>
 public sealed record PlannedNotification(int RecipientUserId, NotificationRequest Request);

@@ -1,12 +1,12 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Assets.AssetTestKit;
+using static LptHub.IntegrationTests.Assets.AssetTestKit;
 
-namespace MatterFlow.IntegrationTests.Assets;
+namespace LptHub.IntegrationTests.Assets;
 
 /// <summary>
 /// Automatic asset numbering (issue #1297) through the HTTP API on a real SQL Server: the first number, the restart per matter, interleaved matters, other asset types, numbering off and on,
@@ -276,7 +276,7 @@ public sealed class AssetNumberingApiTests(SqlServerFixture sql) : IAsyncLifetim
 
         // The same number as the current next number (101 after the asset above) is accepted and changes nothing: no audit event.
         await OkAsync(await _kit.As().PutAsJsonAsync($"/api/v1/asset-types/{media}/numbering/counters/{matter}", new { nextNumber = 101 }));
-        (await _factory.WithDbAsync(db => db.Set<MatterFlow.Audit.Domain.AuditEvent>().AsNoTracking().Where(e => e.EventType == "ASSET_NEXT_NUMBER_SET").CountAsync())).ShouldBe(2); // 38 and 100 only
+        (await _factory.WithDbAsync(db => db.Set<LptHub.Audit.Domain.AuditEvent>().AsNoTracking().Where(e => e.EventType == "ASSET_NEXT_NUMBER_SET").CountAsync())).ShouldBe(2); // 38 and 100 only
 
         (await _kit.As().PutAsJsonAsync($"/api/v1/asset-types/{media}/numbering/counters/{matter}", new { nextNumber = 0 })).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
@@ -293,7 +293,7 @@ public sealed class AssetNumberingApiTests(SqlServerFixture sql) : IAsyncLifetim
         await OkAsync(await _kit.As().PutAsJsonAsync($"/api/v1/asset-types/{media}/numbering/counters/{matter}", new { nextNumber = 12 }));
         await OkAsync(await _kit.As().PutAsJsonAsync($"/api/v1/asset-types/{media}/numbering/counters/{matter}", new { nextNumber = 12 })); // unchanged: no second event
 
-        var events = await _factory.WithDbAsync(db => db.Set<MatterFlow.Audit.Domain.AuditEvent>().AsNoTracking().Where(e => e.EventType == "ASSET_NEXT_NUMBER_SET").ToListAsync());
+        var events = await _factory.WithDbAsync(db => db.Set<LptHub.Audit.Domain.AuditEvent>().AsNoTracking().Where(e => e.EventType == "ASSET_NEXT_NUMBER_SET").ToListAsync());
         var e = events.ShouldHaveSingleItem();
         e.ObjectType.ShouldBe("AssetType");
         e.ObjectId.ShouldBe(media.ToString());

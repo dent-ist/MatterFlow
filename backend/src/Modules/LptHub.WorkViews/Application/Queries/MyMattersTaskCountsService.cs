@@ -1,9 +1,9 @@
-using MatterFlow.SharedKernel.Paging;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Tasks;
+using LptHub.SharedKernel.Paging;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Tasks;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>
 /// Status counts and Show counts for a My Matters scope (UI-04, #957). Seven statements whatever the number of matters, all through the scope's tasks (visible matters by construction).

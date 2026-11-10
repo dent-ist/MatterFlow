@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using Microsoft.Extensions.Options;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>Settings of the dashboard output cache, section <c>Dashboard</c>.</summary>
 public sealed class DashboardOptions
@@ -21,7 +21,7 @@ public sealed class DashboardOptions
 /// <summary>Settings of the Dashboard capacity battery: how many open Tasks (New or In progress) a person can hold before they are full (default 3).</summary>
 public sealed class CapacityOptions
 {
-    public int SlotsPerPerson { get; set; } = MatterFlow.SharedKernel.Tasks.CapacityRules.DefaultSlotsPerPerson;
+    public int SlotsPerPerson { get; set; } = LptHub.SharedKernel.Tasks.CapacityRules.DefaultSlotsPerPerson;
 }
 
 /// <summary>

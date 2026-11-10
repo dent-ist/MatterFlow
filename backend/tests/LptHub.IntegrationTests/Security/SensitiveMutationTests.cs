@@ -1,9 +1,9 @@
 using System.Net.Http.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Security;
+namespace LptHub.IntegrationTests.Security;
 
 /// <summary>
 /// Mutation-style tests of the persona walk (epic #788, SM-16, README 12.2 step 5 and 12.3): the walk must FAIL when the rule is bypassed (a read path that ignores it), and

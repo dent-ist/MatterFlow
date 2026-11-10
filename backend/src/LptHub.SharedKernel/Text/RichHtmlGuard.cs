@@ -1,4 +1,4 @@
-namespace MatterFlow.SharedKernel.Text;
+namespace LptHub.SharedKernel.Text;
 
 /// <summary>
 /// Linear-time structural pre-scan of comment HTML (SEC2-01/02). AngleSharp builds its tree recursively, so a few hundred nested

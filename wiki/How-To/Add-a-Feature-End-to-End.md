@@ -13,7 +13,7 @@
 ## 1. Database
 
 - [ ] Write the numbered script (next free number; one logical change) ([How to Change the Schema](../Database/How-to-Change-the-Schema.md)).
-- [ ] Classify new tables in `db/report-access.json` and add GRANT or DENY for `mf_report_reader`.
+- [ ] Classify new tables in `db/report-access.json` and add GRANT or DENY for `lpt_report_reader`.
 - [ ] New permission? Insert and grant it in the same script (pattern scripts 34, 46, 60).
 
 ## 2. Backend

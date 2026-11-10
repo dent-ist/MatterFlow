@@ -1,7 +1,7 @@
 using System.Net;
 using System.Text;
 
-namespace MatterFlow.Intake.Application;
+namespace LptHub.Intake.Application;
 
 /// <summary>
 /// Converts an HTML email body to plain text. The output is text, so no markup is left to attack, and nothing is fetched.

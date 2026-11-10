@@ -1,4 +1,4 @@
-namespace MatterFlow.SharedKernel.Data;
+namespace LptHub.SharedKernel.Data;
 
 /// <summary>
 /// Tags a module puts on an EF query (<c>TagWith</c>) to ask the data layer for a plan that does not depend on who compiled it first (issue #938). A statement whose cost depends on

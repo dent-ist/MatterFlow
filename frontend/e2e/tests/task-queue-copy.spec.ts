@@ -122,11 +122,11 @@ test.describe('Task Queue copy', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     const queue = new TaskQueuePage(page);
     await queue.open();
-    await expect(page).toHaveTitle('Task Queue - MatterFlow');
+    await expect(page).toHaveTitle('Task Queue - LPT Hub');
     await expect(page.locator('table caption')).toHaveText('Task Queue');
 
     await queue.quickView('Overdue').click();
-    await expect(page).toHaveTitle('Task Queue: Overdue - MatterFlow');
+    await expect(page).toHaveTitle('Task Queue: Overdue - LPT Hub');
     await expect(page.locator('table caption')).toHaveText('Task Queue: Overdue');
     const live = page.locator('.wl-sr');
     await expect(live).toHaveText(
@@ -141,7 +141,7 @@ test.describe('Task Queue copy', () => {
 
     // A hand-made filter: no view in the name.
     await page.goto('/tasks?q=zzz');
-    await expect(page).toHaveTitle('Task Queue - MatterFlow');
+    await expect(page).toHaveTitle('Task Queue - LPT Hub');
     await expect(live).toHaveText(
       /^(No tasks|1 task|\d+ tasks, (page 1 of \d+, )?showing 1 to \d+)$/,
     );

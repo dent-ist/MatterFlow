@@ -1,7 +1,7 @@
 using System.Text.Json;
-using MatterFlow.Configuration.Domain.Forms.Rules;
+using LptHub.Configuration.Domain.Forms.Rules;
 
-namespace MatterFlow.Configuration.Domain.Forms;
+namespace LptHub.Configuration.Domain.Forms;
 
 /// <summary>An option as authored in the designer.</summary>
 /// <param name="Key">Stable option key.</param>

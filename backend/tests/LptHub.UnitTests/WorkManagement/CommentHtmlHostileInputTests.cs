@@ -1,8 +1,8 @@
 using System.Diagnostics;
-using MatterFlow.WorkManagement.Domain;
+using LptHub.WorkManagement.Domain;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.WorkManagement;
+namespace LptHub.UnitTests.WorkManagement;
 
 /// <summary>SEC2-01/02: hostile nesting must be rejected before AngleSharp runs (a stack overflow kills the process) and must be fast.</summary>
 public sealed class CommentHtmlHostileInputTests

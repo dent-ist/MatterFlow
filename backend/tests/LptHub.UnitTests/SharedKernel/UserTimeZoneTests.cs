@@ -1,7 +1,7 @@
-using MatterFlow.SharedKernel.Time;
+using LptHub.SharedKernel.Time;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.SharedKernel;
+namespace LptHub.UnitTests.SharedKernel;
 
 public class UserTimeZoneTests
 {

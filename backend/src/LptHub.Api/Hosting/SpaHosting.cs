@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Net.Http.Headers;
 
-namespace MatterFlow.Api.Hosting;
+namespace LptHub.Api.Hosting;
 
 /// <summary>
 /// Serves the Angular production build from <c>wwwroot</c> on the same origin as the API (architecture section 2): static files with cache
@@ -32,7 +32,7 @@ public static partial class SpaHosting
     }
 
     /// <summary>Gzip and Brotli for text assets. JSON is left out on purpose: compressing secret-bearing API responses over HTTPS invites BREACH-style attacks.</summary>
-    public static IServiceCollection AddMatterFlowSpaCompression(this IServiceCollection services) =>
+    public static IServiceCollection AddLptHubSpaCompression(this IServiceCollection services) =>
         services.AddResponseCompression(o =>
         {
             o.EnableForHttps = true;
@@ -40,7 +40,7 @@ public static partial class SpaHosting
         });
 
     /// <summary>Compression and static files. Call after the error handling and before the API guards.</summary>
-    public static void UseMatterFlowStaticFiles(this WebApplication app)
+    public static void UseLptHubStaticFiles(this WebApplication app)
     {
         app.UseResponseCompression();
         app.UseStaticFiles(new StaticFileOptions
@@ -51,7 +51,7 @@ public static partial class SpaHosting
     }
 
     /// <summary>Client routes (no file extension) that match no endpoint answer with <c>index.html</c>.</summary>
-    public static void MapMatterFlowSpaFallback(this WebApplication app)
+    public static void MapLptHubSpaFallback(this WebApplication app)
     {
         app.MapFallback("{**path:nonfile}", async context =>
         {

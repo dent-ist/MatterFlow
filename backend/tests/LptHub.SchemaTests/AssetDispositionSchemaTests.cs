@@ -1,9 +1,9 @@
-using MatterFlow.Data.SchemaMigrations;
+using LptHub.Data.SchemaMigrations;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 
-namespace MatterFlow.SchemaTests;
+namespace LptHub.SchemaTests;
 
 /// <summary>Asset disposition (epic #851, issue #864; baseline, formerly script 43): the disposition columns, the index, the guard trigger and the IsActive/disposition agreement.</summary>
 [Collection(SqlServerCollection.Name)]

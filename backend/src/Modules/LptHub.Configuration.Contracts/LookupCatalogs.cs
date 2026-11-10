@@ -1,4 +1,4 @@
-namespace MatterFlow.Configuration.Contracts;
+namespace LptHub.Configuration.Contracts;
 
 /// <summary>A task priority as other modules see it. Users see the label, never <see cref="SortOrder"/> (UX 4.5).</summary>
 /// <param name="Id">Priority id (Task.PriorityId references it).</param>

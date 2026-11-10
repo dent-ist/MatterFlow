@@ -1,7 +1,7 @@
-using MatterFlow.Audit.Application;
+using LptHub.Audit.Application;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Audit;
+namespace LptHub.UnitTests.Audit;
 
 public class AuditSummaryComposerTests
 {

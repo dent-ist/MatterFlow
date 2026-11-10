@@ -1,6 +1,6 @@
-using MatterFlow.SharedKernel.Results;
+using LptHub.SharedKernel.Results;
 
-namespace MatterFlow.Identity.Contracts;
+namespace LptHub.Identity.Contracts;
 
 /// <summary>The firm holiday calendar setting: its id (null = none) and the row version (base64, empty when no row) that edits send back.</summary>
 public sealed record FirmCalendarSetting(int? CalendarId, string RowVersion);

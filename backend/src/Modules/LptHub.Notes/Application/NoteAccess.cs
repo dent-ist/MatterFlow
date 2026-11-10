@@ -1,11 +1,11 @@
 using System.Linq.Expressions;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Notes.Domain;
-using MatterFlow.Organization.Contracts;
-using MatterFlow.SharedKernel.Visibility;
+using LptHub.Identity.Contracts;
+using LptHub.Notes.Domain;
+using LptHub.Organization.Contracts;
+using LptHub.SharedKernel.Visibility;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Notes.Application;
+namespace LptHub.Notes.Application;
 
 /// <summary>
 /// The sensitive-matter rule for this module (epic #788, mode M): notes, their links and the matter templates are those of a matter the caller may see, for reads and writes alike.

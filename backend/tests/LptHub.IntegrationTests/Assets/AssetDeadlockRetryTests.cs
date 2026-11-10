@@ -2,11 +2,11 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Microsoft.Data.SqlClient;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Assets;
+namespace LptHub.IntegrationTests.Assets;
 
 /// <summary>
 /// BUG-6 of the Assets UX review: one <c>POST /assets</c> answered 500 among 1,150 creates while another process wrote to the same database.
@@ -37,7 +37,7 @@ public sealed class AssetDeadlockRetryTests(SqlServerFixture sql) : IAsyncLifeti
     private HttpClient Admin()
     {
         var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        client.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         client.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
         return client;
     }

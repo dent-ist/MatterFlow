@@ -1,4 +1,4 @@
-namespace MatterFlow.Reports.Application;
+namespace LptHub.Reports.Application;
 
 /// <summary>A report as the authoring side sees it: the working row and its current version.</summary>
 public sealed record AuthoringReport(

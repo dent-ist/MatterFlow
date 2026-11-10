@@ -31,7 +31,7 @@ memory="${PERF_SQL_MEMORY_MB:-3072}"
 publish_dir="${PERF_API_DIR:-$root/artifacts/perf-publish}"
 results="$root/artifacts/perf-results"
 sql_name="mf-perf-sql-$$"
-sql_password='MatterFlow_Perf1!'
+sql_password='LptHub_Perf1!'
 api_pid=""
 
 need_kb="$(awk -v s="$scale" 'BEGIN { print (s >= 0.5) ? 6000000 : 2500000 }')"
@@ -57,9 +57,9 @@ sqlcmd() { docker exec "$sql_name" /opt/mssql-tools18/bin/sqlcmd -I -C -S localh
 
 mkdir -p "$results"
 
-if [ ! -f "$publish_dir/MatterFlow.Api.dll" ]; then
+if [ ! -f "$publish_dir/LptHub.Api.dll" ]; then
   echo "==> dotnet publish (Release, linux-x64) -> $publish_dir"
-  dotnet publish "$root/backend/src/MatterFlow.Api/MatterFlow.Api.csproj" -c Release -r linux-x64 --self-contained false -o "$publish_dir" -p:OpenApiGenerateDocuments=false >/dev/null
+  dotnet publish "$root/backend/src/LptHub.Api/LptHub.Api.csproj" -c Release -r linux-x64 --self-contained false -o "$publish_dir" -p:OpenApiGenerateDocuments=false >/dev/null
 fi
 
 echo "==> SQL Server container $sql_name"
@@ -71,16 +71,16 @@ for _ in $(seq 1 90); do
   sleep 2
 done
 # Pre-sized files (no growth pauses during the load), simple recovery, read committed snapshot as the runbook asks.
-sqlcmd -b -Q "CREATE DATABASE MatterFlow; ALTER DATABASE MatterFlow SET RECOVERY SIMPLE; ALTER DATABASE MatterFlow SET READ_COMMITTED_SNAPSHOT ON WITH ROLLBACK IMMEDIATE; ALTER DATABASE MatterFlow MODIFY FILE (NAME=MatterFlow, SIZE=1024MB, FILEGROWTH=256MB); ALTER DATABASE MatterFlow MODIFY FILE (NAME=MatterFlow_log, SIZE=512MB, FILEGROWTH=256MB);"
+sqlcmd -b -Q "CREATE DATABASE LptHub; ALTER DATABASE LptHub SET RECOVERY SIMPLE; ALTER DATABASE LptHub SET READ_COMMITTED_SNAPSHOT ON WITH ROLLBACK IMMEDIATE; ALTER DATABASE LptHub MODIFY FILE (NAME=LptHub, SIZE=1024MB, FILEGROWTH=256MB); ALTER DATABASE LptHub MODIFY FILE (NAME=LptHub_log, SIZE=512MB, FILEGROWTH=256MB);"
 
 api_port="${PERF_API_PORT:-$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1]); s.close()')}"
-connection="Server=127.0.0.1,$sql_port;Database=MatterFlow;User Id=sa;Password=$sql_password;TrustServerCertificate=True;Encrypt=False;Max Pool Size=200;Application Name=MatterFlow"
+connection="Server=127.0.0.1,$sql_port;Database=LptHub;User Id=sa;Password=$sql_password;TrustServerCertificate=True;Encrypt=False;Max Pool Size=200;Application Name=LptHub"
 
 start_api() {
   (
     cd "$publish_dir"
     export ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS="http://127.0.0.1:$api_port"
-    export ConnectionStrings__MatterFlow="$connection" ConnectionStrings__Migrations="$connection"
+    export ConnectionStrings__LptHub="$connection" ConnectionStrings__Migrations="$connection"
     export Seed__StarterConfiguration__Enabled=true Security__AllowPrivilegedDatabaseIdentity=true Hosting__ServeSpa=false
     export Dev__Users__0__Username=perf.admin Dev__Users__0__DisplayName="Perf Admin" Dev__Users__0__Roles__0="System Admin"
     export Logging__LogLevel__Default=Warning
@@ -90,11 +90,11 @@ start_api() {
         export "RateLimits__$budget=1000000"
       done
     fi
-    exec dotnet MatterFlow.Api.dll >"$results/api.log" 2>&1
+    exec dotnet LptHub.Api.dll >"$results/api.log" 2>&1
   ) &
   api_pid=$!
   for _ in $(seq 1 90); do
-    curl -s -o /dev/null -H 'X-MatterFlow-Client: web' -H 'X-Dev-User: perf.admin' "http://127.0.0.1:$api_port/api/v1/me" && return 0
+    curl -s -o /dev/null -H 'X-LptHub-Client: web' -H 'X-Dev-User: perf.admin' "http://127.0.0.1:$api_port/api/v1/me" && return 0
     sleep 1
   done
   echo "The API did not start; see $results/api.log" >&2
@@ -113,21 +113,21 @@ stop_api
 
 echo "==> Seeding the dataset (Scale=$scale)"
 docker cp "$here/seed-perf-data.sql" "$sql_name:/tmp/seed-perf-data.sql"
-sqlcmd -b -d MatterFlow -v "Scale=$scale" -i /tmp/seed-perf-data.sql | tee "$results/seed.txt" | tail -16
+sqlcmd -b -d LptHub -v "Scale=$scale" -i /tmp/seed-perf-data.sql | tee "$results/seed.txt" | tail -16
 
 echo "==> Backup of the seeded database (restored before every run)"
-sqlcmd -b -Q "BACKUP DATABASE MatterFlow TO DISK='/var/opt/mssql/data/seeded.bak' WITH INIT, COMPRESSION" >/dev/null
+sqlcmd -b -Q "BACKUP DATABASE LptHub TO DISK='/var/opt/mssql/data/seeded.bak' WITH INIT, COMPRESSION" >/dev/null
 
 docker cp "$here/top-queries.sql" "$sql_name:/tmp/top-queries.sql"
 for vus in $vus_list; do
   if [ "${PERF_RESTORE_BETWEEN:-1}" = "1" ]; then
-    sqlcmd -b -Q "ALTER DATABASE MatterFlow SET SINGLE_USER WITH ROLLBACK IMMEDIATE; RESTORE DATABASE MatterFlow FROM DISK='/var/opt/mssql/data/seeded.bak' WITH REPLACE; ALTER DATABASE MatterFlow SET MULTI_USER;" >/dev/null
+    sqlcmd -b -Q "ALTER DATABASE LptHub SET SINGLE_USER WITH ROLLBACK IMMEDIATE; RESTORE DATABASE LptHub FROM DISK='/var/opt/mssql/data/seeded.bak' WITH REPLACE; ALTER DATABASE LptHub SET MULTI_USER;" >/dev/null
   fi
   echo "==> $vus virtual users, ${duration}s (think $think ms)"
   start_api
   node "$here/loadtest.mjs" --base "http://127.0.0.1:$api_port" --vus "$vus" --duration "$duration" --warmup "$warmup" --think "$think" \
     --out "$results/run-$vus.json" | tee "$results/run-$vus.md"
-  sqlcmd -d MatterFlow -W -w 600 -i /tmp/top-queries.sql >"$results/top-queries-$vus.txt"
+  sqlcmd -d LptHub -W -w 600 -i /tmp/top-queries.sql >"$results/top-queries-$vus.txt"
   stop_api
 done
 

@@ -2,11 +2,11 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Security;
+namespace LptHub.IntegrationTests.Security;
 
 /// <summary>One persona of README 12.2 with what the access matrix says they may see (data, not code).</summary>
 public sealed record WalkPersona(string Name, HttpClient Client, HashSet<int> Matters, HashSet<long> Tasks, HashSet<int> Projects, HashSet<int> Assets, HashSet<int> HeaderOnlyMatters);
@@ -90,7 +90,7 @@ public sealed class PersonaWalk
             INSERT dbo.ReportVersion (ReportId, VersionNo, SqlText, SqlHash, ParametersJson) VALUES (@r, 1, N'WALKSQL', 0xHASH, N'WALKPARAMETERS');
             UPDATE dbo.ReportDefinition SET CurrentVersionId = SCOPE_IDENTITY(), IsActive = 1 WHERE ReportId = @r;
             INSERT dbo.RoleReport (RoleId, ReportId) SELECT RoleId, @r FROM dbo.Role;
-            """.Replace("WALKSQL", walkSql, StringComparison.Ordinal).Replace("WALKPARAMETERS", walkParameters, StringComparison.Ordinal).Replace("HASH", Convert.ToHexString(MatterFlow.Reports.Domain.SqlValidator.Hash(walkSql)), StringComparison.Ordinal));
+            """.Replace("WALKSQL", walkSql, StringComparison.Ordinal).Replace("WALKPARAMETERS", walkParameters, StringComparison.Ordinal).Replace("HASH", Convert.ToHexString(LptHub.Reports.Domain.SqlValidator.Hash(walkSql)), StringComparison.Ordinal));
         var report = Convert.ToInt32(await SqlServerFixture.ScalarAsync(cs, "SELECT ReportId FROM dbo.ReportDefinition WHERE Name = N'Walk report'"), System.Globalization.CultureInfo.InvariantCulture);
 
         return new WalkIds(u.AllMatters, [u.TN1, u.TS1, u.TS2, u.TS3], [u.World.ProjectId, u.PN1, u.PS1, u.PS2, u.PS3], [an, a1, a2, a3, a3b], clientId, u.Assignee, typeId, u.World.TaskTypeId, refs, [.. specs], [.. productions], [.. notes], report);

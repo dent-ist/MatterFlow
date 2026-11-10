@@ -1,6 +1,6 @@
-using MatterFlow.SharedKernel.Results;
+using LptHub.SharedKernel.Results;
 
-namespace MatterFlow.WorkflowEngine.Domain;
+namespace LptHub.WorkflowEngine.Domain;
 
 /// <summary>Counts and flags describing a workflow instance.</summary>
 public sealed record WorkflowProgress(

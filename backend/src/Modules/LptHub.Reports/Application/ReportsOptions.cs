@@ -1,4 +1,4 @@
-namespace MatterFlow.Reports.Application;
+namespace LptHub.Reports.Application;
 
 /// <summary>Limits and tunables of the Reports module (configuration section <c>Reports</c>). Defaults are the owner's decisions (spec 6.5).</summary>
 public sealed class ReportsOptions

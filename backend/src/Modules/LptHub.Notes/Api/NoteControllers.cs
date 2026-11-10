@@ -1,12 +1,12 @@
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Notes.Application;
-using MatterFlow.SharedKernel.Paging;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Identity.Contracts;
+using LptHub.Notes.Application;
+using LptHub.SharedKernel.Paging;
+using LptHub.SharedKernel.Results;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MatterFlow.Notes.Api;
+namespace LptHub.Notes.Api;
 
 /// <summary>Permission policy names for the Notes endpoints ("Perm:" plus the permission code, resolved by the Identity module).</summary>
 internal static class NotePolicies

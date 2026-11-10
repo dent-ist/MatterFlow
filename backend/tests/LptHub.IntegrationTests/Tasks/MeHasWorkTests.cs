@@ -1,9 +1,9 @@
 using System.Net.Http.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Tasks;
+namespace LptHub.IntegrationTests.Tasks;
 
 /// <summary>
 /// <c>GET /api/v1/me</c> returns <c>hasWork</c> (#142): true for an active Pod member or a user with an open assigned Task (New, In Progress,

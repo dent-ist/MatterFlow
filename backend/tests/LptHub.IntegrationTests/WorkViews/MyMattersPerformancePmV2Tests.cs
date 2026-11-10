@@ -1,13 +1,13 @@
 using System.Diagnostics;
 using System.Net.Http.Json;
 using System.Xml.Linq;
-using MatterFlow.IntegrationTests.Assets;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Assets;
+using LptHub.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.WorkViews;
+namespace LptHub.IntegrationTests.WorkViews;
 
 /// <summary>
 /// PM v2 (epic #851, issue #887, PV-36): the Breakdown, Data, volume, asset report, section and export reads against the harness size of this class (200 matters, 24,000 tasks,
@@ -29,7 +29,7 @@ public sealed partial class MyMattersPerformanceTests
     private HttpClient AdminAll()
     {
         var http = _logged.CreateClient();
-        http.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        http.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         http.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
         return http;
     }

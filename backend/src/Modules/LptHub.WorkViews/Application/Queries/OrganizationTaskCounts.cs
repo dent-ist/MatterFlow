@@ -1,12 +1,12 @@
-using MatterFlow.Organization.Contracts;
-using MatterFlow.Organization.Domain;
-using MatterFlow.SharedKernel.Tasks;
-using MatterFlow.SharedKernel.Time;
-using MatterFlow.SharedKernel.Visibility;
-using MatterFlow.WorkManagement.Domain;
+using LptHub.Organization.Contracts;
+using LptHub.Organization.Domain;
+using LptHub.SharedKernel.Tasks;
+using LptHub.SharedKernel.Time;
+using LptHub.SharedKernel.Visibility;
+using LptHub.WorkManagement.Domain;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>
 /// The one query helper behind the Task counts of the Client, Matter and Project lists and summaries (#258, #259). It lives in WorkViews (the query

@@ -1,7 +1,7 @@
-using MatterFlow.Reports.Domain;
+using LptHub.Reports.Domain;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Reports;
+namespace LptHub.UnitTests.Reports;
 
 /// <summary>The one-SELECT-only validator (ScriptDom, spec 6.3; issue #690): a rejection corpus with stable reason codes and a corpus of valid reports.</summary>
 public class SqlValidatorTests
@@ -28,8 +28,8 @@ public class SqlValidatorTests
         ("EXEC xp_cmdshell 'whoami'", MustSelect),
         ("GRANT SELECT ON dbo.Pod TO public", MustSelect),
         ("DENY SELECT ON dbo.Pod TO public", MustSelect),
-        ("BACKUP DATABASE MatterFlow TO DISK = 'c:\\x.bak'", MustSelect),
-        ("RESTORE DATABASE MatterFlow FROM DISK = 'c:\\x.bak'", MustSelect),
+        ("BACKUP DATABASE LptHub TO DISK = 'c:\\x.bak'", MustSelect),
+        ("RESTORE DATABASE LptHub FROM DISK = 'c:\\x.bak'", MustSelect),
         ("DBCC CHECKDB", MustSelect),
         ("KILL 55", MustSelect),
         ("SHUTDOWN", MustSelect),

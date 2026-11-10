@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Demo data seeder for a running MatterFlow API (local development, Dev authentication).
+// Demo data seeder for a running LPT Hub API (local development, Dev authentication).
 //
 //   npm run seed:demo                              50 test users, Demo clients/matters/projects, 200 tasks
 //   npm run seed:demo -- --tasks 50 --seed 7       another batch of 50 tasks, reproducible
@@ -38,7 +38,7 @@ const SENSITIVE_MATTER_INDEXES = new Set([5, 9]);
 // ---------------------------------------------------------------------------------------------------------------------------------
 // Options
 
-const HELP = `MatterFlow demo data seeder
+const HELP = `LPT Hub demo data seeder
 
 Usage: npm run seed:demo -- [options]      (node tools/seed-demo/seed-demo.mjs [options])
 
@@ -54,7 +54,7 @@ Usage: npm run seed:demo -- [options]      (node tools/seed-demo/seed-demo.mjs [
                     task type's target turnaround (At risk) and tasks that have been On hold for 3 to 21 days. The API cannot do this (it
                     creates every task "now"), so this one step runs UPDATE statements inside the local development SQL Server container
                     (docker exec). Local API only; only Demo tasks (requestor "[demo <tag>]"); safe to repeat. Needs Docker.
-  --sql-container <name>  the SQL Server container for --aged (default $SEED_SQL_CONTAINER or matterflow-sql)
+  --sql-container <name>  the SQL Server container for --aged (default $SEED_SQL_CONTAINER or lpt-hub-sql)
   --sql-password <pw>     its sa password (default $SEED_SQL_PASSWORD or the development password of docker-compose.dev.yml)
   --dry-run         read the system and print the plan, create nothing
   --help
@@ -75,8 +75,8 @@ function parseArgs(argv) {
     concurrency: env.SEED_CONCURRENCY !== undefined ? Number(env.SEED_CONCURRENCY) : 3,
     dryRun: env.SEED_DRY_RUN === '1' || env.SEED_DRY_RUN === 'true',
     aged: env.SEED_AGED === '1' || env.SEED_AGED === 'true',
-    sqlContainer: env.SEED_SQL_CONTAINER ?? 'matterflow-sql',
-    sqlPassword: env.SEED_SQL_PASSWORD ?? 'MatterFlow_Dev1!',
+    sqlContainer: env.SEED_SQL_CONTAINER ?? 'lpt-hub-sql',
+    sqlPassword: env.SEED_SQL_PASSWORD ?? 'LptHub_Dev1!',
   };
   const takesValue = new Set([
     'api',
@@ -1178,7 +1178,7 @@ async function reportSensitive(admin, ctx) {
 
 const REPORT_ROLE = 'Report Runner (demo)';
 const STARTER_MANIFEST = fileURLToPath(
-  new URL('../../backend/src/Modules/MatterFlow.Reports/Starters/manifest.json', import.meta.url),
+  new URL('../../backend/src/Modules/LptHub.Reports/Starters/manifest.json', import.meta.url),
 );
 
 /**
@@ -1186,7 +1186,7 @@ const STARTER_MANIFEST = fileURLToPath(
  * Seed__StarterReports__Enabled), as active, previewed reports; this step does what the API does not do on purpose: only the Project Manager starter
  * role holds Report.Run (owner decision 8; the seeder gives it the two Project Manager starters), so the demo also gets its own role "Report Runner (demo)" with only Report.Run, gives it every starter
  * and gives it to the Director persona (Test User 02, who may see sensitive matters). The System Admin role gets the starters too, so the
- * bootstrap admin of "npm start" can run them. Safe to repeat: assignments are merged, never replaced. The report login (mf_reports) is
+ * bootstrap admin of "npm start" can run them. Safe to repeat: assignments are merged, never replaced. The report login (lpt_reports) is
  * provisioned by "npm start" (db:report-login), not here: this step only reads its state and says what is missing.
  */
 async function ensureReports(admin, ctx, opts, summary) {
@@ -1631,7 +1631,7 @@ function summarize(rows, ctx, label) {
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
   const startedAt = Date.now();
-  log(`MatterFlow demo data seeder${opts.dryRun ? ' (dry run: nothing is created)' : ''}`);
+  log(`LPT Hub demo data seeder${opts.dryRun ? ' (dry run: nothing is created)' : ''}`);
   log(`API ${opts.api} as ${opts.admin}, seed ${opts.seed}, run tag ${opts.tag}`);
 
   const stats = { retries429: 0, retriesTransient: 0, calls: 0 };

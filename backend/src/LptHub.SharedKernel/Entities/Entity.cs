@@ -1,4 +1,4 @@
-namespace MatterFlow.SharedKernel.Entities;
+namespace LptHub.SharedKernel.Entities;
 
 /// <summary>Non-generic view of the standard audit columns, used by the Data layer to stamp them on save.</summary>
 public interface IAuditStamped

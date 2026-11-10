@@ -1,14 +1,14 @@
-using MatterFlow.Audit;
-using MatterFlow.Audit.Contracts;
-using MatterFlow.Data;
-using MatterFlow.SharedKernel.Audit;
-using MatterFlow.SharedKernel.Entities;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Time;
+using LptHub.Audit;
+using LptHub.Audit.Contracts;
+using LptHub.Data;
+using LptHub.SharedKernel.Audit;
+using LptHub.SharedKernel.Entities;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Time;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace MatterFlow.IntegrationTests.Audit;
+namespace LptHub.IntegrationTests.Audit;
 
 /// <summary>Test-only audited entity (no business tables are added to the product schema).</summary>
 [Audited(ObjectType = "SampleDocument")]
@@ -31,7 +31,7 @@ public sealed class SampleDocument : AuditedEntity<int>, IAuditScoped
 }
 
 /// <summary>The product DbContext plus the throw-away <see cref="SampleDocument"/> table (created by the test, not by a script).</summary>
-public sealed class AuditTestDbContext(DbContextOptions<AuditTestDbContext> options) : MatterFlowDbContext(options)
+public sealed class AuditTestDbContext(DbContextOptions<AuditTestDbContext> options) : LptHubDbContext(options)
 {
     public const string CreateTableSql = """
         CREATE TABLE dbo.SampleDocument (

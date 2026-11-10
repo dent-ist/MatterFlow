@@ -1,4 +1,4 @@
-# MatterFlow Test Plan
+# LPT Hub Test Plan
 
 Version 1.0, 2026-10-14. Owner: QA Lead. Sources: `requirements/baseline-v1.1.md`, `requirements/decisions-addendum.md` (A to K override the baseline), `architecture.md` (sections 8, 15, 16), `ux/ux-spec.md` (section 9 checklists). Companion files: `traceability.md`, `permission-matrix-tests.md`, `risk-register.md`, `findings.md`.
 

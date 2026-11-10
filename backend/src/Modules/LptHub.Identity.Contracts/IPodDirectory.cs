@@ -1,4 +1,4 @@
-namespace MatterFlow.Identity.Contracts;
+namespace LptHub.Identity.Contracts;
 
 /// <summary>A Pod as other modules see it.</summary>
 /// <param name="PodId">Pod id.</param>

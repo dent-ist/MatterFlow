@@ -1,11 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.IntegrationTests.Tasks;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Tasks;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Search;
+namespace LptHub.IntegrationTests.Search;
 
 /// <summary>
 /// One seeded database shared by the search tests (building it through the real APIs takes a while and the tests only read). Names are unique so a

@@ -1,7 +1,7 @@
-using MatterFlow.SharedKernel.Results;
+using LptHub.SharedKernel.Results;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MatterFlow.Identity.Pods;
+namespace LptHub.Identity.Pods;
 
 /// <summary>Turns a <see cref="Result"/> into an action result; a failure becomes an <see cref="ObjectResult"/> carrying the <see cref="Error"/>, which the host renders as problem+json.</summary>
 internal static class PodResults

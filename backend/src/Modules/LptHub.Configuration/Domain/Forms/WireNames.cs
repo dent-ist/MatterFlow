@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace MatterFlow.Configuration.Domain.Forms;
+namespace LptHub.Configuration.Domain.Forms;
 
 /// <summary>Maps enum members to their persisted <c>UPPER_SNAKE_CASE</c> names (for example <c>AssetType</c> to <c>ASSET_TYPE</c>) and back.</summary>
 public static class WireNames

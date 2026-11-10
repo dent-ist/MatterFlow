@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace MatterFlow.SharedKernel.Availability;
+namespace LptHub.SharedKernel.Availability;
 
 /// <summary>Rule kinds of a holiday (script 59).</summary>
 public static class HolidayRuleKinds

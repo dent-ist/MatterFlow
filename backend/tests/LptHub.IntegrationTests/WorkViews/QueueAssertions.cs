@@ -1,6 +1,6 @@
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.WorkViews;
+namespace LptHub.IntegrationTests.WorkViews;
 
 public static class QueueAssertions
 {

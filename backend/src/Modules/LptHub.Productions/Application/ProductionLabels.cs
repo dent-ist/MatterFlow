@@ -1,8 +1,8 @@
-using MatterFlow.Productions.Contracts;
-using MatterFlow.Productions.Domain;
+using LptHub.Productions.Contracts;
+using LptHub.Productions.Domain;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Productions.Application;
+namespace LptHub.Productions.Application;
 
 /// <summary>Internal lookup for other modules (names only; the caller gates by matter).</summary>
 internal sealed class ProductionLabels(DbContext db) : IProductionLabels

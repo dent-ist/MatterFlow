@@ -1,7 +1,7 @@
-using MatterFlow.Search.Application.Queries;
+using LptHub.Search.Application.Queries;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Search;
+namespace LptHub.UnitTests.Search;
 
 /// <summary>Relevance tiers (exact, start, word start, inside): the C# rule that the SQL tiers mirror.</summary>
 public class SearchRankingTests

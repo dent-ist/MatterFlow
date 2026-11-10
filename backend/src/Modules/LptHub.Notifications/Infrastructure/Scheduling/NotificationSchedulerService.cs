@@ -1,4 +1,4 @@
-using MatterFlow.SharedKernel.Time;
+using LptHub.SharedKernel.Time;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -7,7 +7,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace MatterFlow.Notifications.Infrastructure.Scheduling;
+namespace LptHub.Notifications.Infrastructure.Scheduling;
 
 /// <summary>
 /// The timer of the notification scheduler (issue #741): a <see cref="BackgroundService"/> that calls <see cref="NotificationScheduler.RunOnceAsync"/>
@@ -32,7 +32,7 @@ public sealed class NotificationSchedulerService(
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(configuration.GetConnectionString("MatterFlow")) && string.IsNullOrWhiteSpace(configuration.GetConnectionString("Default")))
+        if (string.IsNullOrWhiteSpace(configuration.GetConnectionString("LptHub")) && string.IsNullOrWhiteSpace(configuration.GetConnectionString("Default")))
         {
             logger.LogInformation("Notification scheduler: no database configured, not starting.");
             return;

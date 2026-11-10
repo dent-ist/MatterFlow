@@ -1,9 +1,9 @@
 using System.Globalization;
-using MatterFlow.Notifications.Contracts;
-using MatterFlow.SharedKernel.Time;
+using LptHub.Notifications.Contracts;
+using LptHub.SharedKernel.Time;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Notifications.Infrastructure.Scheduling;
+namespace LptHub.Notifications.Infrastructure.Scheduling;
 
 /// <summary>An open task with a due date, as the due job reads it (the recipients are already limited to active people).</summary>
 public sealed class DueTaskRow

@@ -1,6 +1,6 @@
-using MatterFlow.Audit.Contracts;
+using LptHub.Audit.Contracts;
 
-namespace MatterFlow.Audit.Infrastructure;
+namespace LptHub.Audit.Infrastructure;
 
 /// <summary>
 /// Scoped queue behind <see cref="IAuditWriter"/>. The Data layer's SaveChanges interceptor drains it and persists the entries in

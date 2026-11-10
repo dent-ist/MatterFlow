@@ -1,4 +1,4 @@
-namespace MatterFlow.SharedKernel.Results;
+namespace LptHub.SharedKernel.Results;
 
 /// <summary>Outcome of an operation without a value.</summary>
 public class Result

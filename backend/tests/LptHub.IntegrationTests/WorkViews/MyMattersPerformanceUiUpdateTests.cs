@@ -1,8 +1,8 @@
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.WorkViews;
+namespace LptHub.IntegrationTests.WorkViews;
 
 /// <summary>
 /// UI update (epic #953, QA): the reads the new My Matters page makes (tree, upcoming events, calendar events, the six-kind feed, task counts with Show, the assets list and the asset detail) against the same

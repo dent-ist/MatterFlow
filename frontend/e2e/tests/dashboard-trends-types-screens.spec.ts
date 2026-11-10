@@ -15,7 +15,7 @@ import { dateInZone, FIRM_ZONE } from '../support/time';
  * Seeds 10 task types and about 150 tasks, back-dates their created, completed and due dates, then takes the Trends tab at 1366x768, 1920x1080, 768x1024 and 375x812.
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
-const SQL_PASSWORD = 'MatterFlow_Dev1!';
+const SQL_PASSWORD = 'LptHub_Dev1!';
 
 const NAMES = [
   'Data Processing',
@@ -56,7 +56,7 @@ function sql(query: string, tag?: string): string | null {
           '-P',
           SQL_PASSWORD,
           '-d',
-          'MatterFlow',
+          'LptHub',
           '-h',
           '-1',
           '-W',

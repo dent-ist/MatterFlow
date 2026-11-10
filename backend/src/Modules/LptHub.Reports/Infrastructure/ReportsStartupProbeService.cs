@@ -1,8 +1,8 @@
-using MatterFlow.Reports.Application;
+using LptHub.Reports.Application;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace MatterFlow.Reports.Infrastructure;
+namespace LptHub.Reports.Infrastructure;
 
 /// <summary>
 /// Probes the report login when the host starts and keeps trying for a few minutes while it is not ready, so a demo whose login is

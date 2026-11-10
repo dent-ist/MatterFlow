@@ -1,14 +1,14 @@
 using System.Linq.Expressions;
 using System.Text.Json;
-using MatterFlow.Identity.Domain;
-using MatterFlow.Organization.Domain;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Visibility;
-using MatterFlow.WorkManagement.Domain;
+using LptHub.Identity.Domain;
+using LptHub.Organization.Domain;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Visibility;
+using LptHub.WorkManagement.Domain;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>
 /// Recent activity and the unread marker (issue #683). The events come from the audit log by matter (<c>IX_Audit_Matter</c>) and by a lower bound on the

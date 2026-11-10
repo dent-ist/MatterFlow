@@ -1,10 +1,10 @@
 using System.Linq.Expressions;
-using MatterFlow.Configuration.Domain;
-using MatterFlow.SharedKernel.Tasks;
-using MatterFlow.WorkManagement.Domain;
+using LptHub.Configuration.Domain;
+using LptHub.SharedKernel.Tasks;
+using LptHub.WorkManagement.Domain;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>
 /// "Needs my attention" as one set (epic #893, issue #905): an open task that is overdue, at risk, due today, unassigned with a due date within

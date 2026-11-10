@@ -1,7 +1,7 @@
-using MatterFlow.Reports.Application.Results;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Reports.Application.Results;
+using LptHub.SharedKernel.Results;
 
-namespace MatterFlow.Reports.Application;
+namespace LptHub.Reports.Application;
 
 /// <summary>
 /// The rules a saved layout must meet before it is stored (issue #722): sizes, counts, the filter operators the rows endpoint knows, the page sizes the

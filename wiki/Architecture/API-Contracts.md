@@ -15,7 +15,7 @@ flowchart LR
   TS -.->|"CI: git diff --exit-code"| CI2["frontend job drift check"]
 :::
 
-1. **Code first.** Endpoints and DTOs are written in C#. The `MatterFlow.Api` build generates the OpenAPI 3 document (`OpenApiGenerateDocuments` in `MatterFlow.Api.csproj`; output folder `contracts/openapi`, file `v1.json`). At the time of writing it holds 249 paths, 335 operations and 516 schemas.
+1. **Code first.** Endpoints and DTOs are written in C#. The `LptHub.Api` build generates the OpenAPI 3 document (`OpenApiGenerateDocuments` in `LptHub.Api.csproj`; output folder `contracts/openapi`, file `v1.json`). At the time of writing it holds 249 paths, 335 operations and 516 schemas.
 2. **Committed document.** `contracts/openapi/v1.json` is committed. The CI backend job builds and then runs `git diff --exit-code -- ../contracts/openapi/v1.json`; any difference fails the job.
 3. **Generated client.** `frontend/nswag.json` (NSwag, runtime `Net100`, template `Angular`, class name `{controller}Client`) generates `frontend/src/app/api/generated/api-client.ts`. The frontend CI job runs `npm run api:generate` and then `git diff --exit-code -- src/app/api/generated`.
 4. **Never edit either file by hand and never merge them by hand.** After a merge or pull, rebuild the backend and run `npm run api:generate`, then commit.
@@ -34,7 +34,7 @@ NSwag is a frontend dev dependency (`npm run api:generate` uses the local copy).
 
 - REST over JSON under `/api/v1`, plural kebab-case resources, camelCase JSON, enums as strings, dates `yyyy-MM-dd`, instants ISO 8601 UTC with `Z`, `rowVersion` as a base64 string. See `docs/architecture.md` section 11 and [Conventions](../Reference/Conventions.md).
 - Number handling is strict (`JsonNumberHandling.Strict`) so numbers stay plain integers in the schemas.
-- Errors: `application/problem+json` with a stable `code`. An `ErrorCodeEnumTransformer` (`MatterFlow.Api/OpenApi/OpenApiSetup.cs`) makes the codes a closed enum on `ApiProblemDetails.code`.
+- Errors: `application/problem+json` with a stable `code`. An `ErrorCodeEnumTransformer` (`LptHub.Api/OpenApi/OpenApiSetup.cs`) makes the codes a closed enum on `ApiProblemDetails.code`.
 - Give every action an `[Authorize(Policy = "Perm:...")]`; the OpenAPI document and architecture tests rely on it.
 - Reports pages are lazy routes so the generated client never enters the initial bundle (ADR 029).
 

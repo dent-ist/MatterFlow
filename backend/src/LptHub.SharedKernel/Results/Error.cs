@@ -1,4 +1,4 @@
-namespace MatterFlow.SharedKernel.Results;
+namespace LptHub.SharedKernel.Results;
 
 /// <summary>A single field-level validation message. <see cref="Code"/> is a stable machine string.</summary>
 public sealed record FieldError(string Code, string Message);

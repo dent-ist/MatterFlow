@@ -1,9 +1,9 @@
-using MatterFlow.Configuration.Domain;
-using MatterFlow.SharedKernel.Tasks;
-using MatterFlow.WorkManagement.Domain;
+using LptHub.Configuration.Domain;
+using LptHub.SharedKernel.Tasks;
+using LptHub.WorkManagement.Domain;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>What a My Matters row says about the kind of work, the priority and the state of a task (PM v2, #855). Loaded for the few rows a call returns.</summary>
 public sealed record TaskFacts(

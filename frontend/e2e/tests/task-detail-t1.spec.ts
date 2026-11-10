@@ -204,7 +204,7 @@ test.describe('Task detail T1: load states (S2 #290, BUG-4 #291)', () => {
     for (const id of ['99999999', 'abc']) {
       await page.goto(`/tasks/${id}`);
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(NOT_FOUND);
-      await expect(page).toHaveTitle('Task not found - MatterFlow');
+      await expect(page).toHaveTitle('Task not found - LPT Hub');
       await expect(page.getByRole('button', { name: 'Retry' })).toHaveCount(0);
       await expect(page.getByRole('navigation', { name: 'Breadcrumb' })).toBeVisible();
       await expect(page.locator('[data-toast]')).toHaveCount(0);
@@ -237,7 +237,7 @@ test.describe('Task detail T1: load states (S2 #290, BUG-4 #291)', () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(
       "You don't have access to this task.",
     );
-    await expect(page).toHaveTitle('No access to this task - MatterFlow');
+    await expect(page).toHaveTitle('No access to this task - LPT Hub');
     await expect(page.getByRole('button', { name: 'Retry' })).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'Go to Task Queue' })).toBeVisible();
     await expect(page.locator('[data-toast]')).toHaveCount(0);
@@ -263,7 +263,7 @@ test.describe('Task detail T1: load states (S2 #290, BUG-4 #291)', () => {
     await page.goto(`/tasks/${task.taskId}`);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText("Couldn't load this task.");
     await expect(page.locator('[data-error-reference]')).toContainText(reference);
-    await expect(page).toHaveTitle('Task could not be loaded - MatterFlow');
+    await expect(page).toHaveTitle('Task could not be loaded - LPT Hub');
     await expect(page.locator('[data-toast]')).toHaveCount(0);
     await atEverySize(page, 'state-500');
 
@@ -449,27 +449,27 @@ test.describe('Task detail T1: Activity drawer (BUG-5 #293, BUG-8 #294) and docu
     await page.setViewportSize({ width: 1366, height: 768 });
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
-    await expect(page).toHaveTitle(`${cut} - MatterFlow`);
+    await expect(page).toHaveTitle(`${cut} - LPT Hub`);
     expect((await page.title()).length).toBeLessThanOrEqual(
-      60 + task.taskNumber.length + 1 + ' - MatterFlow'.length + 1,
+      60 + task.taskNumber.length + 1 + ' - LPT Hub'.length + 1,
     );
 
     const drawer = await detail.openActivity();
-    await expect(page).toHaveTitle(`${cut}: Activity - MatterFlow`);
+    await expect(page).toHaveTitle(`${cut}: Activity - LPT Hub`);
     await page.keyboard.press('Escape');
     await expect(drawer).toBeHidden();
-    await expect(page).toHaveTitle(`${cut} - MatterFlow`);
+    await expect(page).toHaveTitle(`${cut} - LPT Hub`);
 
     // The old link that opens the drawer: closing it removes ?tab=activity, and the title stays right.
     await page.goto(`/tasks/${task.taskId}?tab=activity`);
-    await expect(page).toHaveTitle(`${cut}: Activity - MatterFlow`);
+    await expect(page).toHaveTitle(`${cut}: Activity - LPT Hub`);
     await page.keyboard.press('Escape');
-    await expect(page).toHaveTitle(`${cut} - MatterFlow`);
+    await expect(page).toHaveTitle(`${cut} - LPT Hub`);
   });
 
   test('a short title is not cut', async ({ seed, page }) => {
     const task = await seed.task(await seed.world(), { title: 'Load Jones mailbox' });
     await page.goto(`/tasks/${task.taskId}`);
-    await expect(page).toHaveTitle(`${task.taskNumber} Load Jones mailbox - MatterFlow`);
+    await expect(page).toHaveTitle(`${task.taskNumber} Load Jones mailbox - LPT Hub`);
   });
 });

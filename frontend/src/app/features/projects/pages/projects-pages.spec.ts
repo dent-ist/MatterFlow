@@ -695,10 +695,10 @@ describe('Projects pages', () => {
 
     it('names the project and its view in the document title', async () => {
       await create(['Project.View']);
-      expect(document.title).toBe('Custodian Processing: Tasks - MatterFlow');
+      expect(document.title).toBe('Custodian Processing: Tasks - LPT Hub');
       fixture.componentRef.setInput('tab', 'details');
       await settle(fixture);
-      expect(document.title).toBe('Custodian Processing: Details - MatterFlow');
+      expect(document.title).toBe('Custodian Processing: Details - LPT Hub');
     });
   });
 });

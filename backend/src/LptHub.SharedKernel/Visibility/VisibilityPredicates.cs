@@ -1,6 +1,6 @@
 using System.Linq.Expressions;
 
-namespace MatterFlow.SharedKernel.Visibility;
+namespace LptHub.SharedKernel.Visibility;
 
 /// <summary>
 /// The sensitive-matter rule as expression trees (README section 1), one definition for every module. The same rule exists in SQL as

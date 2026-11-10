@@ -1,10 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Reports;
+namespace LptHub.IntegrationTests.Reports;
 
 /// <summary>Date-time columns: the SQL type decides whether the value is an instant (UTC with Z, shown in the person's zone) or a wall-clock value (as stored).</summary>
 [Collection(SqlServerCollection.Name)]

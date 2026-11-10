@@ -9,7 +9,7 @@ import { uid } from '../support/seed';
 /**
  * PM v2 final gate (epic #851, issue #889, PV-38): what is true of every new screen together, on top of the per-screen specs (`pv-*.spec.ts`).
  * One Project Manager with a task of two types, an overdue task and assets, then:
- *  - all four My Matters tabs: the title rule `My Matters: <Tab> - MatterFlow`, one level-one heading, axe (including best practice) finds nothing and the page
+ *  - all four My Matters tabs: the title rule `My Matters: <Tab> - LPT Hub`, one level-one heading, axe (including best practice) finds nothing and the page
  *    does not scroll sideways at 1920x1080, 1366x768, 768x1024 and 375x812;
  *  - keyboard only: the Options menu, Focus, the Views and Export menus open from the keyboard, Escape closes them and puts focus back on their button, and a
  *    Breakdown cell is a link that Enter follows to the Task Queue;
@@ -18,15 +18,15 @@ import { uid } from '../support/seed';
  * Screenshots: E2E_SCREENSHOTS=docs/ux/pm-v2-review/after.
  */
 const TABS = [
-  { tab: 'overview', title: 'My Matters - MatterFlow', ready: 'mf-mm-task-list a[data-task-link]' },
-  { tab: 'calendar', title: 'My Matters: Calendar - MatterFlow', ready: '[data-month-title]' },
-  { tab: 'assets', title: 'My Matters: Assets - MatterFlow', ready: 'mf-mm-assets-tab' },
+  { tab: 'overview', title: 'My Matters - LPT Hub', ready: 'mf-mm-task-list a[data-task-link]' },
+  { tab: 'calendar', title: 'My Matters: Calendar - LPT Hub', ready: '[data-month-title]' },
+  { tab: 'assets', title: 'My Matters: Assets - LPT Hub', ready: 'mf-mm-assets-tab' },
   {
     tab: 'metrics',
-    title: 'My Matters: Metrics - MatterFlow',
+    title: 'My Matters: Metrics - LPT Hub',
     ready: 'mf-mm-metrics-work .card',
   },
-  { tab: 'activity', title: 'My Matters: Activity - MatterFlow', ready: 'mf-mm-activity-tab' },
+  { tab: 'activity', title: 'My Matters: Activity - LPT Hub', ready: 'mf-mm-activity-tab' },
 ] as const;
 
 test.describe('PM v2 final gate', () => {

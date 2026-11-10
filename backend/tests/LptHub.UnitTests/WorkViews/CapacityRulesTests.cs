@@ -1,8 +1,8 @@
-using MatterFlow.SharedKernel.Availability;
-using MatterFlow.SharedKernel.Tasks;
+using LptHub.SharedKernel.Availability;
+using LptHub.SharedKernel.Tasks;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.WorkViews;
+namespace LptHub.UnitTests.WorkViews;
 
 /// <summary>Dashboard v4 (issue #1065): the shared capacity states and free slots.</summary>
 public class CapacityRulesTests

@@ -1,4 +1,4 @@
-namespace MatterFlow.Configuration.Domain.Settings;
+namespace LptHub.Configuration.Domain.Settings;
 
 /// <summary>How a setting is stored: in <c>ValueText</c> or in <c>ValueBinary</c> (with content type and hash).</summary>
 public enum SettingValueType

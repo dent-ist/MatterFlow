@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace MatterFlow.Search.Application.Queries;
+namespace LptHub.Search.Application.Queries;
 
 /// <summary>The searchable object types (the <c>type</c> of a hit and of an advanced search).</summary>
 public static class SearchTypes

@@ -1,19 +1,19 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.Configuration.Application.Lookups;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.IntegrationTests.Organization;
-using MatterFlow.IntegrationTests.Tasks;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Configuration.Application.Lookups;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Organization;
+using LptHub.IntegrationTests.Tasks;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Results;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Configuration;
+namespace LptHub.IntegrationTests.Configuration;
 
 /// <summary>
 /// <c>openTaskCount</c> on the priorities and <c>taskCount</c> on the status labels (#599): open = New, In Progress, On Hold (the Task Queue
@@ -190,7 +190,7 @@ public sealed class LabelCountsApiTests(SqlServerFixture sql) : IAsyncLifetime
             logging.AddProvider(commands);
         })));
         var http = logged.CreateClient();
-        http.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        http.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         http.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
 
         async Task<(int Statements, int Grouped, int Rows)> MeasureAsync()

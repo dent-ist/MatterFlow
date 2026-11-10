@@ -1,11 +1,11 @@
-using MatterFlow.Notifications.Application;
-using MatterFlow.Notifications.Contracts;
-using MatterFlow.Notifications.Infrastructure.Scheduling;
+using LptHub.Notifications.Application;
+using LptHub.Notifications.Contracts;
+using LptHub.Notifications.Infrastructure.Scheduling;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
-namespace MatterFlow.Notifications;
+namespace LptHub.Notifications;
 
 /// <summary>Composition entry point of the Notifications module.</summary>
 public static class NotificationsModule

@@ -1,14 +1,14 @@
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using MatterFlow.Configuration.Contracts.Forms;
-using MatterFlow.Configuration.Domain.Forms;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.Configuration.Contracts.Forms;
+using LptHub.Configuration.Domain.Forms;
+using LptHub.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Forms;
+namespace LptHub.IntegrationTests.Forms;
 
 /// <summary>
 /// Stored values keep the form version they were captured under, the typed filter index follows every save, and the reusable validator
@@ -24,7 +24,7 @@ public sealed class FormValueStoreTests(SqlServerFixture sql) : IAsyncLifetime
     {
         _factory = new DatabaseApiFactory(await sql.CreateDatabaseAsync());
         _admin = _factory.CreateClient();
-        _admin.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        _admin.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         _admin.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
     }
 

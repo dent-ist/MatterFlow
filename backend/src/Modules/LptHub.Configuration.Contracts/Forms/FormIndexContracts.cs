@@ -1,4 +1,4 @@
-namespace MatterFlow.Configuration.Contracts.Forms;
+namespace LptHub.Configuration.Contracts.Forms;
 
 /// <summary>One option of a published SELECT field.</summary>
 /// <param name="Key">Stable option key (what the filter index stores).</param>

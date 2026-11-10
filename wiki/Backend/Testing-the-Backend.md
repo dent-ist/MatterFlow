@@ -8,20 +8,20 @@
 
 | Project | Needs Docker | Speed | What it proves |
 |---|---|---|---|
-| `MatterFlow.UnitTests` | No | Fast | Pure rules and services with mocks: lifecycle state machine, due dates, availability evaluator, holiday rules, capacity and coverage maths, form rule engine and validator, rich HTML sanitiser, email parsers, search ranking, permission catalog equality, web.config. Folders mirror the modules (`Identity/`, `WorkManagement/`, `SharedKernel/`, ...) |
-| `MatterFlow.ArchitectureTests` | No | Fast | Module dependency graph, controller policies, audit scope, rowVersion on updates, visibility source allow-lists, source hygiene (uses NetArchTest and reads csproj files) |
-| `MatterFlow.SchemaTests` | Yes | Medium | The schema runner (order, checksum, rollback, concurrency, `GO` splitting) and each script's tables, constraints, triggers and permissions on a real SQL Server (one `*SchemaTests.cs` per area) |
-| `MatterFlow.IntegrationTests` | Yes | Slow (about 5 minutes in CI) | The real API against a real migrated SQL Server with Dev authentication, through HTTP: endpoints, permissions, concurrency, audit, visibility |
+| `LptHub.UnitTests` | No | Fast | Pure rules and services with mocks: lifecycle state machine, due dates, availability evaluator, holiday rules, capacity and coverage maths, form rule engine and validator, rich HTML sanitiser, email parsers, search ranking, permission catalog equality, web.config. Folders mirror the modules (`Identity/`, `WorkManagement/`, `SharedKernel/`, ...) |
+| `LptHub.ArchitectureTests` | No | Fast | Module dependency graph, controller policies, audit scope, rowVersion on updates, visibility source allow-lists, source hygiene (uses NetArchTest and reads csproj files) |
+| `LptHub.SchemaTests` | Yes | Medium | The schema runner (order, checksum, rollback, concurrency, `GO` splitting) and each script's tables, constraints, triggers and permissions on a real SQL Server (one `*SchemaTests.cs` per area) |
+| `LptHub.IntegrationTests` | Yes | Slow (about 5 minutes in CI) | The real API against a real migrated SQL Server with Dev authentication, through HTTP: endpoints, permissions, concurrency, audit, visibility |
 
 Frameworks: xUnit, Shouldly, NSubstitute, Testcontainers.MsSql, `Microsoft.AspNetCore.Mvc.Testing`, NetArchTest.Rules, coverlet.
 
 ## Commands (run in `backend/`)
 
 ```
-dotnet test tests/MatterFlow.UnitTests              # fast, no Docker
-dotnet test tests/MatterFlow.ArchitectureTests      # fast, no Docker
+dotnet test tests/LptHub.UnitTests              # fast, no Docker
+dotnet test tests/LptHub.ArchitectureTests      # fast, no Docker
 dotnet test                                         # everything (starts SQL Server containers)
-dotnet test tests/MatterFlow.IntegrationTests --filter "FullyQualifiedName~Sensitive"
+dotnet test tests/LptHub.IntegrationTests --filter "FullyQualifiedName~Sensitive"
 ```
 
 CI runs unit and architecture tests in the `backend` job and schema and integration tests in the `backend-integration` job (see [Continuous Integration](../Getting-Started/Continuous-Integration.md)). `nightly.yml` runs all four weekly.
@@ -48,7 +48,7 @@ CI runs unit and architecture tests in the `backend` job and schema and integrat
 
 - **Persona walk (Sensitive matters)** in `IntegrationTests/Security`: `SensitiveAccessCatalog` classifies every endpoint; `PersonaWalk` calls every catalogued GET as six personas and compares hidden and missing ids byte for byte; mutation tests prove immediate revocation and that the walk is not vacuous. Details: [Sensitive Matter Visibility](../Architecture/Sensitive-Matter-Visibility.md).
 - **Architecture rules** in `ArchitectureTests`: see [Backend Modules](../Architecture/Backend-Modules.md).
-- **Report access catalogue**: a unit test fails for a table not classified in `db/report-access.json` and when the GRANT and DENY lines differ from the file; a schema test checks the effective permissions of `mf_report_reader`. `SqlServerFixture.CreateServerLoginAsync` creates the report login the way the provisioning does, including the user in `master` with `DENY EXECUTE` on the `xp_` procedures `PUBLIC` may run (issue #1292); pass `denyServerProcedures: false` to test a login without it (`ReportLoginProbeTests` expects the warning, `ReportLoginRightsTests` proves the procedures are callable without the deny and refused with it).
+- **Report access catalogue**: a unit test fails for a table not classified in `db/report-access.json` and when the GRANT and DENY lines differ from the file; a schema test checks the effective permissions of `lpt_report_reader`. `SqlServerFixture.CreateServerLoginAsync` creates the report login the way the provisioning does, including the user in `master` with `DENY EXECUTE` on the `xp_` procedures `PUBLIC` may run (issue #1292); pass `denyServerProcedures: false` to test a login without it (`ReportLoginProbeTests` expects the warning, `ReportLoginRightsTests` proves the procedures are callable without the deny and refused with it).
 - **Permission catalog**: `UnitTests/Identity/PermissionCatalogTests` keeps JSON, C# constants and the Angular list equal.
 - **Contract vectors**: `contracts/form-rules.vectors.json` is run unchanged by the .NET and TypeScript suites.
 

@@ -1,4 +1,4 @@
-namespace MatterFlow.Configuration.Contracts.Forms;
+namespace LptHub.Configuration.Contracts.Forms;
 
 /// <summary>What owns a form definition (the <c>Scope</c> of the form, docs/erd.md section 6).</summary>
 public enum FormOwnerKind

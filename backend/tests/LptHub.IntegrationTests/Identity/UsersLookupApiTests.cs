@@ -1,12 +1,12 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.Identity.Domain;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.Identity.Domain;
+using LptHub.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Identity;
+namespace LptHub.IntegrationTests.Identity;
 
 /// <summary>The assignee lookup (Create Task) through the full HTTP pipeline: active users only, id and name only, Task.Assign required.</summary>
 [Collection(SqlServerCollection.Name)]
@@ -21,7 +21,7 @@ public sealed class UsersLookupApiTests(SqlServerFixture sql) : IAsyncLifetime
     private HttpClient As(string user)
     {
         var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        client.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         client.DefaultRequestHeaders.Add("X-Dev-User", user);
         return client;
     }

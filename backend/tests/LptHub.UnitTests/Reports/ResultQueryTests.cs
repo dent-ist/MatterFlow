@@ -1,8 +1,8 @@
-using MatterFlow.Reports.Application;
-using MatterFlow.Reports.Application.Results;
+using LptHub.Reports.Application;
+using LptHub.Reports.Application.Results;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Reports;
+namespace LptHub.UnitTests.Reports;
 
 /// <summary>Server-side sort, filter and paging per column type: nulls last ascending, text case-insensitive, stable ties (spec 11; issue #705).</summary>
 public class ResultQueryTests

@@ -1,17 +1,17 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.IntegrationTests.Tasks;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Tasks;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Shouldly;
 using Xunit.Abstractions;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
-using Place = MatterFlow.IntegrationTests.Workflows.WorkflowInstanceHarness.Place;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
+using Place = LptHub.IntegrationTests.Workflows.WorkflowInstanceHarness.Place;
 
-namespace MatterFlow.IntegrationTests.Workflows;
+namespace LptHub.IntegrationTests.Workflows;
 
 /// <summary>
 /// The additive list fields and the health-strip summaries of the Workflows and Workflow Steps lists (#366): publication date, step count, version
@@ -291,7 +291,7 @@ public sealed class AdminListFieldsApiTests(SqlServerFixture sql, ITestOutputHel
             logging.AddProvider(_commands);
         })));
         var http = logged.CreateClient();
-        http.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        http.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         http.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
 
         foreach (var (list, sorts) in new[] { ("workflows", new[] { "", "&sort=-publishedAtUtc", "&sort=-taskTypeCount" }), ("step-definitions", new[] { "", "&sort=-usedInWorkflows" }) })

@@ -1,10 +1,10 @@
-using MatterFlow.Audit.Application;
-using MatterFlow.Audit.Contracts;
-using MatterFlow.Audit.Domain;
-using MatterFlow.SharedKernel.Audit;
+using LptHub.Audit.Application;
+using LptHub.Audit.Contracts;
+using LptHub.Audit.Domain;
+using LptHub.SharedKernel.Audit;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Audit.Infrastructure;
+namespace LptHub.Audit.Infrastructure;
 
 /// <summary>Implements <see cref="IAuditReader"/> over the append-only <c>AuditEvent</c> table (index <c>IX_Audit_Task</c>).</summary>
 internal sealed class AuditReader(DbContext db, AuditVisibility visibility) : IAuditReader

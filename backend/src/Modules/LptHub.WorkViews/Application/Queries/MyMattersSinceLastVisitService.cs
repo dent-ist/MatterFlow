@@ -1,12 +1,12 @@
 using System.Globalization;
-using MatterFlow.Identity.Domain;
-using MatterFlow.Organization.Domain;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Tasks;
-using MatterFlow.WorkManagement.Domain;
+using LptHub.Identity.Domain;
+using LptHub.Organization.Domain;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Tasks;
+using LptHub.WorkManagement.Domain;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>
 /// "Since your last visit" (epic #758, PX-10): what changed on my matters since the person's marker (the last explicit "Mark as read"), or in the last 7 days when they have no marker yet.

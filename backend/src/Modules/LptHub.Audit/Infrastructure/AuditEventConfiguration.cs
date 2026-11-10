@@ -1,8 +1,8 @@
-using MatterFlow.Audit.Domain;
+using LptHub.Audit.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace MatterFlow.Audit.Infrastructure;
+namespace LptHub.Audit.Infrastructure;
 
 /// <summary>Maps <see cref="AuditEvent"/> to dbo.AuditEvent (00-baseline.sql). The table has UPDATE/DELETE triggers, so EF is told about them.</summary>
 public sealed class AuditEventConfiguration : IEntityTypeConfiguration<AuditEvent>

@@ -1,9 +1,9 @@
-using MatterFlow.Identity.Authorization;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Identity.Authorization;
+using LptHub.SharedKernel.Results;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Policy;
 
-namespace MatterFlow.Api.Http;
+namespace LptHub.Api.Http;
 
 /// <summary>
 /// Maps authorization failures to the stable error model (architecture 6.5): 403 with <c>ACCESS_PENDING</c>, <c>ACCOUNT_DISABLED</c> or

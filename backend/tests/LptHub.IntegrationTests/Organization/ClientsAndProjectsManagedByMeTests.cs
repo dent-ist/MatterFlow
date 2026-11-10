@@ -1,10 +1,10 @@
 using System.Net;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Organization;
+namespace LptHub.IntegrationTests.Organization;
 
 /// <summary>
 /// <c>GET /clients</c> and <c>GET /projects</c> with <c>matterManagedByMe=true&amp;role=</c> (epic #758, PX-04, #762), on the data of <see cref="PmScopeFixture"/>: a client is "mine" when at least one of

@@ -6,7 +6,7 @@
 
 ## How these diagrams were made
 
-- Derived from the real database: the demo SQL Server container `matterflow-sql` (database `MatterFlow`, built by the archived scripts 01 to 66, which `db/scripts/00-baseline.sql` reproduces exactly), with read-only queries on `sys.tables`, `sys.columns`, `sys.foreign_keys` and `sys.indexes`. Nothing was written to the database.
+- Derived from the real database: the demo SQL Server container `lpt-hub-sql` (database `LptHub`, built by the archived scripts 01 to 66, which `db/scripts/00-baseline.sql` reproduces exactly), with read-only queries on `sys.tables`, `sys.columns`, `sys.foreign_keys` and `sys.indexes`. Nothing was written to the database.
 - Cross-checked with `db/scripts` (the baseline, the scripts after it and the archive) by [wiki/tools/check-db-docs.mjs](../tools/check-db-docs.mjs) (see "Completeness" below).
 - 71 tables and 183 foreign keys exist. **Every table and every foreign key appears in exactly one diagram below.** A foreign key is drawn in the diagram of the table that holds it (the child).
 - Each diagram shows the primary key (PK), the foreign key columns (FK), single-column unique keys (UK) and a few key columns, not every column. Context tables from another area appear with their primary key only.

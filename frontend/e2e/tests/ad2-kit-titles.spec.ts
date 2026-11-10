@@ -26,34 +26,34 @@ async function shot(page: Page, name: string): Promise<void> {
 
 test.describe('titles and crumbs on the administration routes (#588)', () => {
   const LISTS: [string, string, string, string[]][] = [
-    ['/admin/audit', 'Audit Logs - MatterFlow', 'Audit Logs', ['Administration', 'Audit Logs']],
+    ['/admin/audit', 'Audit Logs - LPT Hub', 'Audit Logs', ['Administration', 'Audit Logs']],
     [
       '/admin/lists/priorities',
-      'Lists: Priorities - MatterFlow',
+      'Lists: Priorities - LPT Hub',
       'Lists',
       ['Administration', 'Lists'],
     ],
     [
       '/admin/lists/status-labels',
-      'Lists: Status Labels - MatterFlow',
+      'Lists: Status Labels - LPT Hub',
       'Lists',
       ['Administration', 'Lists'],
     ],
     [
       '/admin/asset-types',
-      'Asset Types - MatterFlow',
+      'Asset Types - LPT Hub',
       'Asset Types',
       ['Administration', 'Asset Types'],
     ],
     [
       '/admin/lists/link-roles',
-      'Lists: Link Roles - MatterFlow',
+      'Lists: Link Roles - LPT Hub',
       'Lists',
       ['Administration', 'Lists'],
     ],
     [
       '/admin/custom-fields',
-      'Custom Fields - MatterFlow',
+      'Custom Fields - LPT Hub',
       'Custom Fields',
       ['Administration', 'Custom Fields'],
     ],
@@ -78,7 +78,7 @@ test.describe('titles and crumbs on the administration routes (#588)', () => {
     const at = await assetTypeWorld(admin, { published: true, draft: false });
     await page.setViewportSize(SIZES[1]);
     await page.goto(at.url);
-    await expect(page).toHaveTitle(`${at.name}: Fields - MatterFlow`);
+    await expect(page).toHaveTitle(`${at.name}: Fields - LPT Hub`);
     await expect(crumbs(page)).toHaveText([
       /Administration/,
       /Asset Types/,
@@ -94,7 +94,7 @@ test.describe('titles and crumbs on the administration routes (#588)', () => {
 
     await customFieldWorld(admin, 'matter');
     await page.goto('/admin/custom-fields/matter/form');
-    await expect(page).toHaveTitle('Matter Custom Fields - MatterFlow');
+    await expect(page).toHaveTitle('Matter Custom Fields - LPT Hub');
     await expect(crumbs(page)).toHaveText([/Administration/, /Custom Fields/, /Matter/]);
     await expect(
       page

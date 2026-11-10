@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace MatterFlow.Configuration.Contracts;
+namespace LptHub.Configuration.Contracts;
 
 /// <summary>
 /// The Dashboard unassigned-gauge settings (Dashboard v4, decision AS item 7): the firm's working day used to measure how long the oldest unassigned Task has waited, the age basis, and the level steps.

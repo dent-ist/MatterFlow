@@ -1,10 +1,10 @@
 using System.Globalization;
-using MatterFlow.Assets.Domain;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Time;
+using LptHub.Assets.Domain;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Time;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>
 /// Data volume over time (epic #851, issue #871): the cumulative size of the scope's assets by the month they were created, with disposed assets leaving at the month their

@@ -1,10 +1,10 @@
 using System.Data;
 using System.Text.Json;
-using MatterFlow.Reports.Domain;
-using MatterFlow.Reports.Domain.Parameters;
+using LptHub.Reports.Domain;
+using LptHub.Reports.Domain.Parameters;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Reports;
+namespace LptHub.UnitTests.Reports;
 
 /// <summary>
 /// The security corpora of issue #725 (spec 16.3 a and b) as data files: the validator corpus (bypass attempts and inert look-alikes) and the injection values,

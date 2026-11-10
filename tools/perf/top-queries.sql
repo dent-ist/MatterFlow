@@ -1,5 +1,5 @@
 -- Top statements by total elapsed time since the plan cache was last cleared (run after a load test, before restoring/restarting).
--- sqlcmd -I -d MatterFlow -W -w 400 -i top-queries.sql
+-- sqlcmd -I -d LptHub -W -w 400 -i top-queries.sql
 SET NOCOUNT ON;
 SELECT TOP (25)
     qs.execution_count AS execs,

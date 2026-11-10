@@ -6,9 +6,9 @@
 
 Conventions common to all modules:
 
-- Project `MatterFlow.<Module>` has `Domain/` (entities and pure rules, no EF), `Application/` (services, DTOs, validation), `Infrastructure/` (EF configurations, queries), `Api/` (controllers). `MatterFlow.<Module>.Contracts` is the public surface for other modules.
-- Each module registers itself in `<Module>Module.cs` (`Add<Module>Module`), listed in `backend/src/MatterFlow.Api/ModuleComposition.cs`. Controllers are found through `AddApplicationPart`.
-- Unit tests are in `backend/tests/MatterFlow.UnitTests/<Module>/`; HTTP tests in `backend/tests/MatterFlow.IntegrationTests/<Area>/`; schema tests in `backend/tests/MatterFlow.SchemaTests`.
+- Project `LPT Hub.<Module>` has `Domain/` (entities and pure rules, no EF), `Application/` (services, DTOs, validation), `Infrastructure/` (EF configurations, queries), `Api/` (controllers). `LPT Hub.<Module>.Contracts` is the public surface for other modules.
+- Each module registers itself in `<Module>Module.cs` (`Add<Module>Module`), listed in `backend/src/LptHub.Api/ModuleComposition.cs`. Controllers are found through `AddApplicationPart`.
+- Unit tests are in `backend/tests/LptHub.UnitTests/<Module>/`; HTTP tests in `backend/tests/LptHub.IntegrationTests/<Area>/`; schema tests in `backend/tests/LptHub.SchemaTests`.
 - The permission list per module is what the module's source references (`Permissions.X.Y`); the meaning of each code is in [Permission Catalogue](../Reference/Permission-Catalogue.md).
 
 ## Identity
@@ -27,7 +27,7 @@ Conventions common to all modules:
 - **Purpose:** the audit trail and its browser.
 - **Tables:** `AuditEvent`, `AuditEventGuard`.
 - **Controllers:** `/api/v1/audit` (`AuditEventsController`: events; `AuditSearchController`: search, facets).
-- **Key services:** `AuditSearchService`, `AuditSummaryComposer`, `AuditVisibility`, `AuditReader`, `AuditEntryBuffer` (queued explicit entries); the interceptor itself is in `MatterFlow.Data`.
+- **Key services:** `AuditSearchService`, `AuditSummaryComposer`, `AuditVisibility`, `AuditReader`, `AuditEntryBuffer` (queued explicit entries); the interceptor itself is in `LptHub.Data`.
 - **Contracts:** `IAuditWriter`, `IAuditReader`, `IAuditDisplayLookup`.
 - **Permission:** `Audit.View` for the browser.
 - **Frontend:** `features/admin/audit`; task Activity drawer (`shared/ui/activity-drawer.ts`, `entity-activity.ts`).
@@ -43,7 +43,7 @@ Conventions common to all modules:
 - **Permissions:** `Priority.Manage`, `StatusLabel.Manage`, `TaskType.Manage`, `OnHoldReason.Manage`, `AssetType.Manage`, `CustomField.Manage`, `Settings.Manage`, plus `Task.View` for lookups.
 - **Frontend:** `features/admin/task-types`, `lists` (the Lists page), `priorities`, `status-labels`, `on-hold-reasons`, `asset-link-roles`, `custom-fields`, `settings`; the shared engine is `frontend/projects/form-engine`.
 - **Tests:** `IntegrationTests/Configuration`, `Forms`, `Settings`; `UnitTests/Configuration`; contract vectors `contracts/form-rules.vectors.json`.
-- **Related:** the startup starter configuration is seeded by the host (`MatterFlow.Api/Seeding`).
+- **Related:** the startup starter configuration is seeded by the host (`LptHub.Api/Seeding`).
 
 ## Organization
 
@@ -172,9 +172,9 @@ Rule of thumb: **a visibility filter decides who may touch a row; it must never 
 
 | Project | What it is |
 |---|---|
-| `MatterFlow.SharedKernel` | Result and error types, paging, time (`IClock`), `IMatterVisibility`, audit attributes, text sanitiser `RichHtml`, availability and capacity rules |
-| `MatterFlow.Data` | `MatterFlowDbContext`, interceptors, model conventions, schema runner |
-| `MatterFlow.Api` | Host, middleware, error format, OpenAPI, starter seeding, `SystemController` (`/api/v1/system`) |
+| `LptHub.SharedKernel` | Result and error types, paging, time (`IClock`), `IMatterVisibility`, audit attributes, text sanitiser `RichHtml`, availability and capacity rules |
+| `LptHub.Data` | `LptHubDbContext`, interceptors, model conventions, schema runner |
+| `LptHub.Api` | Host, middleware, error format, OpenAPI, starter seeding, `SystemController` (`/api/v1/system`) |
 
 ## Related pages
 

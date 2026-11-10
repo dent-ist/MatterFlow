@@ -312,13 +312,13 @@ test.describe('Detail pages: document title (#248)', () => {
     const client = await seed.client({ name: `Hartwell & Bryce ${uid()}` });
     const record = `${client.clientNumber} ${client.name}`;
     await page.goto(`/clients/${client.clientId}?tab=matters`);
-    await expect.poll(() => title(page)).toBe(`${record}: Matters - MatterFlow`);
+    await expect.poll(() => title(page)).toBe(`${record}: Matters - LPT Hub`);
     await page.getByRole('tab', { name: 'Overview' }).click();
-    await expect.poll(() => title(page)).toBe(`${record}: Overview - MatterFlow`);
+    await expect.poll(() => title(page)).toBe(`${record}: Overview - LPT Hub`);
     await page.getByRole('tab', { name: 'Overview' }).press('ArrowRight');
-    await expect.poll(() => title(page)).toBe(`${record}: Matters - MatterFlow`);
+    await expect.poll(() => title(page)).toBe(`${record}: Matters - LPT Hub`);
     await page.goto(`/clients/${client.clientId}`);
-    await expect.poll(() => title(page)).toBe(`${record}: Overview - MatterFlow`);
+    await expect.poll(() => title(page)).toBe(`${record}: Overview - LPT Hub`);
   });
 
   test('Matter: every tab is named; a 150 character name is cut at 60 characters in the title only', async ({
@@ -337,13 +337,13 @@ test.describe('Detail pages: document title (#248)', () => {
       ['assets', 'Assets'],
     ] as const) {
       await page.goto(`/matters/${matter.matterId}${tab ? `?tab=${tab}` : ''}`);
-      await expect.poll(() => title(page)).toBe(`${short}: ${label} - MatterFlow`);
+      await expect.poll(() => title(page)).toBe(`${short}: ${label} - LPT Hub`);
     }
     await expect(page.locator('[data-page-title]')).toContainText(longName); // the page shows the whole name
     await page.getByRole('tab', { name: /^Tasks/ }).click();
-    await expect.poll(() => title(page)).toBe(`${short}: Tasks - MatterFlow`);
+    await expect.poll(() => title(page)).toBe(`${short}: Tasks - LPT Hub`);
     await page.getByRole('tab', { name: /^Tasks/ }).press('ArrowRight');
-    await expect.poll(() => title(page)).toBe(`${short}: Projects - MatterFlow`);
+    await expect.poll(() => title(page)).toBe(`${short}: Projects - LPT Hub`);
   });
 
   test('Project: Name: Tasks, then Name: Details; the lists keep their plain names; the id gives the plain name while loading', async ({
@@ -360,18 +360,18 @@ test.describe('Detail pages: document title (#248)', () => {
       await route.continue();
     });
     await page.goto(`/projects/${project.projectId}`, { waitUntil: 'commit' });
-    await expect.poll(() => title(page)).toBe('Project - MatterFlow');
+    await expect.poll(() => title(page)).toBe('Project - LPT Hub');
     release();
-    await expect.poll(() => title(page)).toBe(`${project.name}: Tasks - MatterFlow`);
+    await expect.poll(() => title(page)).toBe(`${project.name}: Tasks - LPT Hub`);
     await page.getByRole('tab', { name: 'Details' }).click();
-    await expect.poll(() => title(page)).toBe(`${project.name}: Details - MatterFlow`);
+    await expect.poll(() => title(page)).toBe(`${project.name}: Details - LPT Hub`);
 
     await page.goto('/clients');
-    await expect.poll(() => title(page)).toBe('Clients - MatterFlow');
+    await expect.poll(() => title(page)).toBe('Clients - LPT Hub');
     await page.goto('/matters');
-    await expect.poll(() => title(page)).toBe('Matters - MatterFlow');
+    await expect.poll(() => title(page)).toBe('Matters - LPT Hub');
     await page.goto('/projects');
-    await expect.poll(() => title(page)).toBe('Projects - MatterFlow');
+    await expect.poll(() => title(page)).toBe('Projects - LPT Hub');
   });
 });
 

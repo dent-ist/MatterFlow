@@ -1,12 +1,12 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Audit;
+namespace LptHub.IntegrationTests.Audit;
 
 /// <summary>GET /api/v1/audit/search and /audit/facets against a real database, signed in through the Dev provider (admin holds Audit.View).</summary>
 [Collection(SqlServerCollection.Name)]
@@ -32,7 +32,7 @@ public sealed class AuditSearchApiTests(SqlServerFixture sql) : IAsyncLifetime
     private HttpClient Client(string user, string? timeZone = null)
     {
         var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        client.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         client.DefaultRequestHeaders.Add("X-Dev-User", user);
         if (timeZone is not null)
             client.DefaultRequestHeaders.Add("X-Time-Zone", timeZone);

@@ -17,7 +17,7 @@ import { USER_TIME_ZONE } from '../time/clock';
 import { ApiError } from './api-error';
 
 export const TIME_ZONE_HEADER = 'X-Time-Zone';
-export const CSRF_HEADER = 'X-MatterFlow-Client';
+export const CSRF_HEADER = 'X-LptHub-Client';
 export const CSRF_HEADER_VALUE = 'web';
 
 /** Set `true` on a request's HttpContext when the caller handles its errors itself. */

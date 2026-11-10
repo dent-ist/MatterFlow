@@ -413,7 +413,7 @@ export class SearchResultsPage {
   private focusGridHeading = false;
 
   constructor() {
-    // The document title follows the tab: `Search results: Tasks - MatterFlow` (S21).
+    // The document title follows the tab: `Search results: Tasks - LPT Hub` (S21).
     effect(() => {
       this.pageTitle.pin(
         pageTab('Search Results', this.tab() === ALL_TAB ? 'All' : this.tabLabel()),

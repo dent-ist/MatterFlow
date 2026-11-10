@@ -1,8 +1,8 @@
-using MatterFlow.SharedKernel.Tasks;
-using MatterFlow.WorkViews.Application.Queries;
+using LptHub.SharedKernel.Tasks;
+using LptHub.WorkViews.Application.Queries;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.WorkViews;
+namespace LptHub.UnitTests.WorkViews;
 
 /// <summary>The Dashboard's pure rules: periods, aging bands, top-N folding and the Task Queue query strings behind each number.</summary>
 public class DashboardRulesTests

@@ -1,10 +1,10 @@
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Notifications.Contracts;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.WorkManagement.Domain;
+using LptHub.Identity.Contracts;
+using LptHub.Notifications.Contracts;
+using LptHub.SharedKernel.Identity;
+using LptHub.WorkManagement.Domain;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.WorkManagement.Application;
+namespace LptHub.WorkManagement.Application;
 
 /// <summary>
 /// Which Tasks the caller may view, for the notification reads (permission re-check): <c>Task.View</c> and the sensitive-matter task rule (epic #788, mode T),

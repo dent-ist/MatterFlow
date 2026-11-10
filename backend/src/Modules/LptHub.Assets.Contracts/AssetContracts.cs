@@ -1,4 +1,4 @@
-namespace MatterFlow.Assets.Contracts;
+namespace LptHub.Assets.Contracts;
 
 /// <summary>An Asset as other modules see it (Tasks link Assets of their own Matter only).</summary>
 /// <param name="AssetId">Internal id.</param>

@@ -121,7 +121,7 @@ describe('search box words and the searched-in line (#465)', () => {
     expect(searchBoxPlaceholder(all)).toBe('Search clients, matters, tasks, assets... (Ctrl+K)');
     expect(searchBoxName(only('Asset.View'))).toBe('Search assets');
     expect(searchBoxName(only('Project.View'))).toBe('Search projects');
-    expect(searchBoxName(only())).toBe('Search MatterFlow');
+    expect(searchBoxName(only())).toBe('Search LPT Hub');
   });
 
   it('writes the searched-in line only when fewer than five types were searched', () => {

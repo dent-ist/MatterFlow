@@ -1,9 +1,9 @@
-using MatterFlow.Data.SchemaMigrations;
+using LptHub.Data.SchemaMigrations;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 
-namespace MatterFlow.SchemaTests;
+namespace LptHub.SchemaTests;
 
 /// <summary>Constraints, indexes, triggers and defaults of the baseline (archived 12-tasks.sql) (docs/erd.md section 5, decisions addendum A, M).</summary>
 [Collection(SqlServerCollection.Name)]

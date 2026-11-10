@@ -1,4 +1,4 @@
-namespace MatterFlow.Notifications.Domain;
+namespace LptHub.Notifications.Domain;
 
 /// <summary>
 /// One in-app notification for one recipient (script 29). Written by the server in the same transaction as the action that caused it;

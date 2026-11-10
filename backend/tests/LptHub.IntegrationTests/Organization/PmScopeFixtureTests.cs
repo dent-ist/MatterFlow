@@ -1,10 +1,10 @@
 using System.Net;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Organization;
+namespace LptHub.IntegrationTests.Organization;
 
 /// <summary>
 /// The Project Manager scope fixture (epic #758, PX-01, #759) and the behaviour of "matters managed by me" as it is today, on that data. These tests are

@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace MatterFlow.Identity.Authentication;
+namespace LptHub.Identity.Authentication;
 
 /// <summary>Scheme options carrier for the Dev handler (the real settings are <see cref="DevAuthOptions"/>).</summary>
 public sealed class DevSchemeOptions : AuthenticationSchemeOptions;

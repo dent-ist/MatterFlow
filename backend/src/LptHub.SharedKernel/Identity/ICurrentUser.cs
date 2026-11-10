@@ -1,4 +1,4 @@
-namespace MatterFlow.SharedKernel.Identity;
+namespace LptHub.SharedKernel.Identity;
 
 /// <summary>The acting user of the current request/operation. Implemented by the Identity module; consumed everywhere else.</summary>
 public interface ICurrentUser

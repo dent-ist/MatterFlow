@@ -1,11 +1,11 @@
-using MatterFlow.Data;
-using MatterFlow.SharedKernel.Entities;
-using MatterFlow.SharedKernel.ValueObjects;
+using LptHub.Data;
+using LptHub.SharedKernel.Entities;
+using LptHub.SharedKernel.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Data;
+namespace LptHub.UnitTests.Data;
 
 public class DbContextConventionTests
 {

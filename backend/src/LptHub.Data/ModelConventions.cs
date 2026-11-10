@@ -1,8 +1,8 @@
-using MatterFlow.SharedKernel.Entities;
+using LptHub.SharedKernel.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
-namespace MatterFlow.Data;
+namespace LptHub.Data;
 
 /// <summary>
 /// Mapping conventions shared by every entity (schema is hand-written SQL, ADR 003, so these must match the scripts):

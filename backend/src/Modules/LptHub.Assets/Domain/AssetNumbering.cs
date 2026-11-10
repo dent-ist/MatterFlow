@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text;
 
-namespace MatterFlow.Assets.Domain;
+namespace LptHub.Assets.Domain;
 
 /// <summary>
 /// The pure rules of the automatic asset numbering (issue #1297). An Asset Number ALWAYS starts with the matter's CM Number (<c>123456-123444</c>: client number, a hyphen, matter number, as the

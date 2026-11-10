@@ -1,8 +1,8 @@
 using System.Text.RegularExpressions;
-using MatterFlow.WorkManagement.Domain;
+using LptHub.WorkManagement.Domain;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.WorkManagement;
+namespace LptHub.UnitTests.WorkManagement;
 
 /// <summary>Comment sanitizing (decision D): the allow-list, links, and a battery of XSS payloads that must never survive.</summary>
 public sealed partial class CommentHtmlTests

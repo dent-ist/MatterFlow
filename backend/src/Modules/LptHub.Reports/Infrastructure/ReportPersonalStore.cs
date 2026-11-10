@@ -1,8 +1,8 @@
 using System.Data;
-using MatterFlow.Reports.Application;
+using LptHub.Reports.Application;
 using Microsoft.Data.SqlClient;
 
-namespace MatterFlow.Reports.Infrastructure;
+namespace LptHub.Reports.Infrastructure;
 
 /// <summary>
 /// <c>dbo.ReportFavourite</c> and the Recent line (derived from <c>dbo.ReportRun</c>, owner decision 15: <c>ReportRecent</c> stays unused) with the

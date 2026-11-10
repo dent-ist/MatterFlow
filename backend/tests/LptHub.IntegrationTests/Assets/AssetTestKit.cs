@@ -2,11 +2,11 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Assets;
+namespace LptHub.IntegrationTests.Assets;
 
 /// <summary>
 /// Shared setup of the PM v2 asset tests (epic #851): users, clients, matters, asset types with a published form and assets, all through the HTTP API
@@ -19,7 +19,7 @@ internal sealed class AssetTestKit(DatabaseApiFactory factory)
     public HttpClient As(string user = DatabaseApiFactory.AdminAccount)
     {
         var client = Factory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        client.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         client.DefaultRequestHeaders.Add("X-Dev-User", user);
         return client;
     }

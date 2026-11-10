@@ -1,16 +1,16 @@
 using System.Diagnostics;
 using System.Text.RegularExpressions;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.IntegrationTests.Tasks;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Tasks;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Shouldly;
 using Xunit.Abstractions;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.WorkViews;
+namespace LptHub.IntegrationTests.WorkViews;
 
 /// <summary>
 /// The queue against about 5,000 Tasks seeded with set-based SQL: the default page must come back quickly, and the number of SQL commands must not
@@ -85,7 +85,7 @@ public sealed partial class TaskQueuePerformanceTests(SqlServerFixture sql, ITes
     {
         var client = _h.As(DatabaseApiFactory.AdminAccount);
         var http = _logged.CreateClient();
-        http.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        http.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         http.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
         client.ShouldNotBeNull();
 
@@ -132,7 +132,7 @@ public sealed partial class TaskQueuePerformanceTests(SqlServerFixture sql, ITes
     public async Task The_quick_view_counts_are_one_statement_that_stays_under_100_ms_at_5000_tasks()
     {
         var http = _logged.CreateClient();
-        http.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        http.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         http.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
 
         const string query = "/api/v1/task-queue?pageSize=1";
@@ -160,7 +160,7 @@ public sealed partial class TaskQueuePerformanceTests(SqlServerFixture sql, ITes
     public async Task The_new_sort_keys_stay_fast_at_5000_tasks_and_add_no_statements()
     {
         var http = _logged.CreateClient();
-        http.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        http.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         http.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
 
         var baseline = 0;
@@ -196,7 +196,7 @@ public sealed partial class TaskQueuePerformanceTests(SqlServerFixture sql, ITes
     public async Task The_column_text_filters_stay_fast_at_5000_tasks_and_add_no_statements()
     {
         var http = _logged.CreateClient();
-        http.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        http.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         http.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
 
         var open = "status=NEW&status=IN_PROGRESS&status=ON_HOLD&pageSize=100";

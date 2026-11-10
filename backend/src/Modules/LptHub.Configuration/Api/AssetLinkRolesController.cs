@@ -1,10 +1,10 @@
-using MatterFlow.Configuration.Application.Lookups;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Configuration.Application.Lookups;
+using LptHub.SharedKernel.Results;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MatterFlow.Configuration.Api;
+namespace LptHub.Configuration.Api;
 
 /// <summary>Task-to-Asset link roles (Source, Destination, Subject, Result, ...): lookup for Task screens and admin maintenance.</summary>
 [ApiController]

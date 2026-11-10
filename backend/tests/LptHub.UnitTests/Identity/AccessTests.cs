@@ -1,10 +1,10 @@
 using System.Security.Claims;
-using MatterFlow.Identity.Access;
-using MatterFlow.Identity.Authentication;
-using MatterFlow.Identity.Authorization;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Time;
+using LptHub.Identity.Access;
+using LptHub.Identity.Authentication;
+using LptHub.Identity.Authorization;
+using LptHub.Identity.Contracts;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Time;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,7 +13,7 @@ using Microsoft.Extensions.Options;
 using NSubstitute;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Identity;
+namespace LptHub.UnitTests.Identity;
 
 internal sealed class FakeClock(DateTime start) : IClock
 {

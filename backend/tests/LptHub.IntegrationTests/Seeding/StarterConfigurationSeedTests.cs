@@ -1,20 +1,20 @@
-using MatterFlow.Api.Seeding;
-using MatterFlow.Assets.Application;
-using MatterFlow.Configuration.Application.Forms;
-using MatterFlow.Configuration.Application.TaskTypes;
-using MatterFlow.Configuration.Contracts;
-using MatterFlow.Configuration.Contracts.Forms;
-using MatterFlow.Configuration.Domain.Forms;
-using MatterFlow.Configuration.Domain.Forms.Rules;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.WorkflowEngine.Application.Steps;
-using MatterFlow.WorkflowEngine.Application.Workflows;
+using LptHub.Api.Seeding;
+using LptHub.Assets.Application;
+using LptHub.Configuration.Application.Forms;
+using LptHub.Configuration.Application.TaskTypes;
+using LptHub.Configuration.Contracts;
+using LptHub.Configuration.Contracts.Forms;
+using LptHub.Configuration.Domain.Forms;
+using LptHub.Configuration.Domain.Forms.Rules;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.WorkflowEngine.Application.Steps;
+using LptHub.WorkflowEngine.Application.Workflows;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Seeding;
+namespace LptHub.IntegrationTests.Seeding;
 
 /// <summary>The embedded SME seed file itself: complete, and every form passes the real publish validation (no database needed).</summary>
 public sealed class StarterSeedDataTests

@@ -1,14 +1,14 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.IntegrationTests.Tasks;
-using MatterFlow.Notifications.Domain;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Tasks;
+using LptHub.Notifications.Domain;
 using Microsoft.EntityFrameworkCore;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Notifications;
+namespace LptHub.IntegrationTests.Notifications;
 
 /// <summary>
 /// WP-NT2 manager events against a real SQL Server: 5 a task was created on your matter (#738) and 7 you were set as a matter's Primary or Secondary

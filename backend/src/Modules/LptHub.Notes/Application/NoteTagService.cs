@@ -1,10 +1,10 @@
-using MatterFlow.Audit.Contracts;
-using MatterFlow.Configuration.Contracts;
-using MatterFlow.Notes.Domain;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Audit.Contracts;
+using LptHub.Configuration.Contracts;
+using LptHub.Notes.Domain;
+using LptHub.SharedKernel.Results;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Notes.Application;
+namespace LptHub.Notes.Application;
 
 /// <summary>
 /// The firm-wide list of note tags. Anyone who reads notes can read the list; administrators (<c>StatusLabel.Manage</c>, the Labels administration) create, rename, recolour,

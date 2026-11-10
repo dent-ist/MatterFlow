@@ -1,12 +1,12 @@
 using System.Diagnostics;
 using System.Net;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Microsoft.Data.SqlClient;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Reports.ReportSecurityKit;
+using static LptHub.IntegrationTests.Reports.ReportSecurityKit;
 
-namespace MatterFlow.IntegrationTests.Reports;
+namespace LptHub.IntegrationTests.Reports;
 
 /// <summary>
 /// Injection through the real report login (issue #725, spec 16.3 a, threat 7.1). The values come from the checked-in corpus

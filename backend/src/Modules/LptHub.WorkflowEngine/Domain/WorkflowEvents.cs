@@ -1,4 +1,4 @@
-namespace MatterFlow.WorkflowEngine.Domain;
+namespace LptHub.WorkflowEngine.Domain;
 
 /// <summary>A domain event produced by a successful step operation; callers persist these to the audit trail.</summary>
 public abstract record WorkflowDomainEvent(int StepId, StepStatus From, StepStatus To);

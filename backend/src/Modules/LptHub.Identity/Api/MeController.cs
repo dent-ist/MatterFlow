@@ -1,14 +1,14 @@
 using System.ComponentModel.DataAnnotations;
-using MatterFlow.Identity.Access;
-using MatterFlow.Identity.Authorization;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Identity.Domain;
-using MatterFlow.Identity.Pods;
+using LptHub.Identity.Access;
+using LptHub.Identity.Authorization;
+using LptHub.Identity.Contracts;
+using LptHub.Identity.Domain;
+using LptHub.Identity.Pods;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Identity.Api;
+namespace LptHub.Identity.Api;
 
 /// <summary>The signed-in user's own profile. The only endpoint an Access Pending user may call (architecture 6.5).</summary>
 [ApiController]

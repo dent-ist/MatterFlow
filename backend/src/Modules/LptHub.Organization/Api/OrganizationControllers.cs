@@ -1,12 +1,12 @@
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Organization.Application;
-using MatterFlow.SharedKernel.Paging;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Identity.Contracts;
+using LptHub.Organization.Application;
+using LptHub.SharedKernel.Paging;
+using LptHub.SharedKernel.Results;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MatterFlow.Organization.Api;
+namespace LptHub.Organization.Api;
 
 /// <summary>Permission policy names for the Organization endpoints ("Perm:" plus the permission code, resolved by the Identity module).</summary>
 internal static class OrganizationPolicies

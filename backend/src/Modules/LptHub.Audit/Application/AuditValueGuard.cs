@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
-using MatterFlow.SharedKernel.Audit;
+using LptHub.SharedKernel.Audit;
 
-namespace MatterFlow.Audit.Application;
+namespace LptHub.Audit.Application;
 
 /// <summary>
 /// Last line of defence for the audit browser: the viewer holds Audit.View and may read full values, but secrets and tokens are never returned

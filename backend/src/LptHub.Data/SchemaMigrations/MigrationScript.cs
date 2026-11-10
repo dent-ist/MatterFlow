@@ -2,7 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace MatterFlow.Data.SchemaMigrations;
+namespace LptHub.Data.SchemaMigrations;
 
 /// <summary>A discovered script: name, numeric prefix, normalized content and checksum.</summary>
 public sealed partial class MigrationScript

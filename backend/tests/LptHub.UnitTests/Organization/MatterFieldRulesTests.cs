@@ -1,8 +1,8 @@
-using MatterFlow.Organization.Application;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Organization.Application;
+using LptHub.SharedKernel.Results;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Organization;
+namespace LptHub.UnitTests.Organization;
 
 /// <summary>The input rules of the matter fields (epic #1298, UI spec section 3.3): paths, team names and e-mail addresses.</summary>
 public class MatterFieldRulesTests

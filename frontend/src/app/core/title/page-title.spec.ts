@@ -8,10 +8,10 @@ import { MfTitleStrategy, PageTitle, documentTitle, recordTitle } from './page-t
 class Blank {}
 
 describe('document title (UXR-01)', () => {
-  it('formats "<page> - MatterFlow" and falls back to the app name', () => {
-    expect(documentTitle('Clients')).toBe('Clients - MatterFlow');
-    expect(documentTitle('  ')).toBe('MatterFlow');
-    expect(documentTitle(undefined)).toBe('MatterFlow');
+  it('formats "<page> - LPT Hub" and falls back to the app name', () => {
+    expect(documentTitle('Clients')).toBe('Clients - LPT Hub');
+    expect(documentTitle('  ')).toBe('LPT Hub');
+    expect(documentTitle(undefined)).toBe('LPT Hub');
   });
 
   it('names the record and the tab, cutting a long record text at 60 characters (#248)', () => {
@@ -19,7 +19,7 @@ describe('document title (UXR-01)', () => {
       '00107 Hartwell & Bryce LLP: Matters',
     );
     expect(documentTitle(recordTitle('00107-00001 Merger', 'Tasks'))).toBe(
-      '00107-00001 Merger: Tasks - MatterFlow',
+      '00107-00001 Merger: Tasks - LPT Hub',
     );
     const long = 'M'.repeat(150);
     const title = recordTitle(`00107-00001 ${long}`, 'Details');
@@ -41,15 +41,15 @@ describe('document title (UXR-01)', () => {
     const title = TestBed.inject(Title);
 
     await router.navigateByUrl('/clients');
-    expect(title.getTitle()).toBe('Clients - MatterFlow');
+    expect(title.getTitle()).toBe('Clients - LPT Hub');
 
     await router.navigateByUrl('/tasks/12');
-    expect(title.getTitle()).toBe('Task - MatterFlow');
+    expect(title.getTitle()).toBe('Task - LPT Hub');
     TestBed.inject(PageTitle).set('TSK-12 Load Jones mailbox');
-    expect(title.getTitle()).toBe('TSK-12 Load Jones mailbox - MatterFlow');
+    expect(title.getTitle()).toBe('TSK-12 Load Jones mailbox - LPT Hub');
 
     await router.navigateByUrl('/clients');
-    expect(title.getTitle()).toBe('Clients - MatterFlow');
+    expect(title.getTitle()).toBe('Clients - LPT Hub');
   });
 
   it('keeps a pinned list-page name through query-parameter navigations until the page unpins it', async () => {
@@ -68,12 +68,12 @@ describe('document title (UXR-01)', () => {
 
     await router.navigateByUrl('/my-work');
     page.pin('My Work: Closed');
-    expect(title.getTitle()).toBe('My Work: Closed - MatterFlow');
+    expect(title.getTitle()).toBe('My Work: Closed - LPT Hub');
     await router.navigateByUrl('/my-work?view=completed');
-    expect(title.getTitle()).toBe('My Work: Closed - MatterFlow');
+    expect(title.getTitle()).toBe('My Work: Closed - LPT Hub');
 
     page.unpin();
     await router.navigateByUrl('/clients');
-    expect(title.getTitle()).toBe('Clients - MatterFlow');
+    expect(title.getTitle()).toBe('Clients - LPT Hub');
   });
 });

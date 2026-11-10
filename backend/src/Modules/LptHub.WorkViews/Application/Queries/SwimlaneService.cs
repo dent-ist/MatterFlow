@@ -1,17 +1,17 @@
-using MatterFlow.Configuration.Domain;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Identity.Domain;
-using MatterFlow.Organization.Domain;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Tasks;
-using MatterFlow.SharedKernel.Time;
-using MatterFlow.SharedKernel.ValueObjects;
-using MatterFlow.WorkflowEngine.Domain;
-using MatterFlow.WorkManagement.Domain;
+using LptHub.Configuration.Domain;
+using LptHub.Identity.Contracts;
+using LptHub.Identity.Domain;
+using LptHub.Organization.Domain;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Tasks;
+using LptHub.SharedKernel.Time;
+using LptHub.SharedKernel.ValueObjects;
+using LptHub.WorkflowEngine.Domain;
+using LptHub.WorkManagement.Domain;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>
 /// Read side of the Dashboard Swimlane tab: every open Task plus the Tasks closed in the last N days, as four lanes of cards. It reuses
@@ -311,7 +311,7 @@ public sealed class SwimlaneService(DbContext db, IClock clock, IUserTimeZone ti
         public int? AssigneeId => Row.AssigneeId;
     }
 
-    private static SwimlaneCard ToCard(Card card, IReadOnlyDictionary<int, MatterFlow.SharedKernel.Availability.AvailabilityEvaluation> states, IReadOnlySet<int> openableMatterIds)
+    private static SwimlaneCard ToCard(Card card, IReadOnlyDictionary<int, LptHub.SharedKernel.Availability.AvailabilityEvaluation> states, IReadOnlySet<int> openableMatterIds)
     {
         var r = card.Row;
         return new SwimlaneCard(

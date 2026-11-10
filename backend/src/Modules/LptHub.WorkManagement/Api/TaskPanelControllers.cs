@@ -1,12 +1,12 @@
-using MatterFlow.Identity.Contracts;
-using MatterFlow.SharedKernel.Paging;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.WorkManagement.Application;
+using LptHub.Identity.Contracts;
+using LptHub.SharedKernel.Paging;
+using LptHub.SharedKernel.Results;
+using LptHub.WorkManagement.Application;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MatterFlow.WorkManagement.Api;
+namespace LptHub.WorkManagement.Api;
 
 /// <summary>Permission policies of the comment, asset-link and activity endpoints.</summary>
 internal static class TaskPanelPolicies

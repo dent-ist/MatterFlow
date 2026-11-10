@@ -1,6 +1,6 @@
-using MatterFlow.Reports.Application.Starters;
+using LptHub.Reports.Application.Starters;
 
-namespace MatterFlow.Api.Seeding;
+namespace LptHub.Api.Seeding;
 
 /// <summary>Settings of the starter reports seed (<c>Seed:StarterReports</c>, issue #724). Same meaning as <see cref="StarterConfigurationOptions"/>.</summary>
 /// <param name="Enabled">Whether the seed runs at startup. Default: on in Development, off everywhere else.</param>

@@ -1,4 +1,4 @@
-namespace MatterFlow.SharedKernel.Availability;
+namespace LptHub.SharedKernel.Availability;
 
 /// <summary>Coverage levels of a day or a pod (Dashboard Calendar, plan section 3).</summary>
 public static class CoverageLevels

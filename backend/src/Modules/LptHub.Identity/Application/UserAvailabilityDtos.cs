@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace MatterFlow.Identity.Application;
+namespace LptHub.Identity.Application;
 
 /// <summary>One working day. <see cref="DayOfWeek"/> is ISO (1 = Monday ... 7 = Sunday); times are local wall-clock <c>HH:mm</c> in the user's zone.</summary>
 public sealed record WorkHourDto([Required] int DayOfWeek, [Required] string Start, [Required] string End);

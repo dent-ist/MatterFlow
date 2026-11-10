@@ -1,14 +1,14 @@
 using System.Globalization;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Organization.Domain;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Time;
-using MatterFlow.SharedKernel.Visibility;
-using MatterFlow.WorkManagement.Domain;
+using LptHub.Identity.Contracts;
+using LptHub.Organization.Domain;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Time;
+using LptHub.SharedKernel.Visibility;
+using LptHub.WorkManagement.Domain;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>
 /// The matters one My Matters call is about and the helpers that read their tasks. Matters are a SQL subquery (never a client-side id list), so the
@@ -89,7 +89,7 @@ public sealed class MyMattersScope
     public string QueueOpen(params string[] extra) => DashboardRules.Open([.. ScopeParts(), .. extra]);
 
     /// <summary>The tasks of the scope in one status: <see cref="Queue"/> with that status.</summary>
-    public string QueueStatus(MatterFlow.SharedKernel.Tasks.TaskStatusCode status, params string[] extra) => DashboardRules.Status(status, [.. ScopeParts(), .. extra]);
+    public string QueueStatus(LptHub.SharedKernel.Tasks.TaskStatusCode status, params string[] extra) => DashboardRules.Status(status, [.. ScopeParts(), .. extra]);
 
     /// <summary>The Matters list query string for the scope (active matters of the same managers and client).</summary>
     public string MattersQuery()
@@ -126,7 +126,7 @@ public sealed class MyMattersScope
     public string QueueOpenInWindow(params string[] extra) => DashboardRules.Open([.. ScopeParts(withRange: false), .. extra]);
 
     /// <summary>The tasks of the scope in one status, without the scope's own date range (a day that names its own <c>dueFrom</c> / <c>dueTo</c> must not repeat the key).</summary>
-    public string QueueStatusInWindow(MatterFlow.SharedKernel.Tasks.TaskStatusCode status, params string[] extra) => DashboardRules.Status(status, [.. ScopeParts(withRange: false), .. extra]);
+    public string QueueStatusInWindow(LptHub.SharedKernel.Tasks.TaskStatusCode status, params string[] extra) => DashboardRules.Status(status, [.. ScopeParts(withRange: false), .. extra]);
 
     private List<string> ScopeParts(bool withRange = true)
     {

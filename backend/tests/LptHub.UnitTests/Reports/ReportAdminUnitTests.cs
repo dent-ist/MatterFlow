@@ -1,13 +1,13 @@
 using System.Text.Json;
-using MatterFlow.Reports.Api;
-using MatterFlow.Reports.Application;
-using MatterFlow.Reports.Application.Results;
-using MatterFlow.Reports.Domain;
-using MatterFlow.Reports.Domain.Parameters;
-using MatterFlow.Reports.Infrastructure;
+using LptHub.Reports.Api;
+using LptHub.Reports.Application;
+using LptHub.Reports.Application.Results;
+using LptHub.Reports.Domain;
+using LptHub.Reports.Domain.Parameters;
+using LptHub.Reports.Infrastructure;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Reports;
+namespace LptHub.UnitTests.Reports;
 
 /// <summary>Line diff, definition validation, schema search, choice list reading and the small admin helpers (epic #671, issues #708, #710, #711).</summary>
 public class LineDiffTests

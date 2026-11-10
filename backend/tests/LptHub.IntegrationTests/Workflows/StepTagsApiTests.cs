@@ -2,11 +2,11 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.Identity.Contracts;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Workflows;
+namespace LptHub.IntegrationTests.Workflows;
 
 /// <summary>
 /// Step tags through the full HTTP pipeline against a real SQL Server: normalisation and limits with stable error codes, case-insensitive
@@ -25,7 +25,7 @@ public sealed class StepTagsApiTests(SqlServerFixture sql) : IAsyncLifetime
     private HttpClient As(string user = DatabaseApiFactory.AdminAccount)
     {
         var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        client.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         client.DefaultRequestHeaders.Add("X-Dev-User", user);
         return client;
     }

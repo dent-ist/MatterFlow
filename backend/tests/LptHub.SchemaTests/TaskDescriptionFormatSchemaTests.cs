@@ -1,9 +1,9 @@
-using MatterFlow.Data.SchemaMigrations;
+using LptHub.Data.SchemaMigrations;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 
-namespace MatterFlow.SchemaTests;
+namespace LptHub.SchemaTests;
 
 /// <summary>Baseline (archived 26-task-description-format.sql) (decision R): existing descriptions stay TEXT, the format is TEXT or HTML, and a missing value defaults to TEXT.</summary>
 [Collection(SqlServerCollection.Name)]

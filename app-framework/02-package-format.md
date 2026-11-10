@@ -35,7 +35,7 @@ Field summary (all names are final for `manifestVersion` 1):
 | `category` | yes | One of the admin-managed categories (`Conversion`, `Transfer`, `Review`, `Utility`, `Other`...). |
 | `publisher` | yes | `{ "name": "Data Services", "contact": "dataservices@firm.example" }` - display only; internal team. |
 | `display` | no | `{ "mode": "window" }` (default); `"embedded"` is reserved and rejected in release 1. |
-| `minMatterFlowVersion` | no | Semver; the platform refuses activation on older hosts. |
+| `minLptHubVersion` | no | Semver; the platform refuses activation on older hosts. |
 | `entryPoints` | no | `{ "launcher": true, "task": false, "step": true }` where the app may appear. Defaults: launcher true, task false, step true. |
 | `frontend` | yes | `{ "entry": "index.html", "spa": true }` (`spa`: unknown paths without extension fall back to the entry). |
 | `backend` | no | `{ "runtime": "dotnet10", "entrypoint": "backend/HarveyUploader.Api.dll", "healthPath": "/health", "startMode": "onDemand|always", "maxRequestBodyMb": 25, "requestTimeoutSeconds": 100, "memoryMb": 512, "cpuPercent": 25, "websockets": false }` |
@@ -52,8 +52,8 @@ Field summary (all names are final for `manifestVersion` 1):
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://matterflow/apps/_mf/schemas/app-manifest-1.json",
-  "title": "MatterFlow app manifest v1",
+  "$id": "https://lpt-hub/apps/_mf/schemas/app-manifest-1.json",
+  "title": "LPT Hub app manifest v1",
   "type": "object",
   "additionalProperties": false,
   "required": ["manifestVersion", "id", "name", "version", "description", "category", "publisher", "frontend"],
@@ -78,7 +78,7 @@ Field summary (all names are final for `manifestVersion` 1):
           "properties": { "width": { "type": "integer", "minimum": 400, "maximum": 3000 }, "height": { "type": "integer", "minimum": 300, "maximum": 2000 } } }
       }
     },
-    "minMatterFlowVersion": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "minLptHubVersion": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
     "entryPoints": {
       "type": "object", "additionalProperties": false,
       "properties": { "launcher": { "type": "boolean" }, "task": { "type": "boolean" }, "step": { "type": "boolean" } }
@@ -182,7 +182,7 @@ Cross-field rules enforced by the validator code (not expressible in the schema)
   "icon": "cloud-upload",
   "category": "Transfer",
   "publisher": { "name": "Data Services", "contact": "dataservices@firm.example" },
-  "minMatterFlowVersion": "1.4.0",
+  "minLptHubVersion": "1.4.0",
   "display": { "mode": "window" },
   "entryPoints": { "launcher": true, "task": true, "step": true },
   "frontend": { "entry": "index.html", "spa": true },
@@ -234,7 +234,7 @@ Run in a temporary folder `\apps\_staging\<upload-id>\` that is deleted afterwar
 | V5 | File count | <= 10,000 files, depth <= 20 | error |
 | V6 | Extensions allow-list | `frontend/`: html, htm, js, mjs, css, map, json, txt, svg, png, jpg, jpeg, gif, webp, ico, woff, woff2, ttf, wasm, pdf, md. `backend/`: dll, json, pdb, xml, txt, config (`.exe` is **forbidden** in the first release: framework-dependent backends start as `dotnet <dll>`) | error |
 | V7 | Forbidden files | `.exe`, `.bat`, `.cmd`, `.ps1`, `.vbs`, `.js` in `backend/`, `.lnk`, `.msi`, `web.config`, `.htaccess`, `.git/`, `node_modules/` (frontend must be built), private keys (`*.pfx`, `*.key`, `*.pem` containing `PRIVATE KEY`), `appsettings.Production.json` with a non-empty connection string | error |
-| V8 | Manifest | Valid against the JSON Schema; cross-field rules; `id` equals the existing app's id when adding a version; version greater than any existing and not a duplicate; `minMatterFlowVersion` satisfied | error |
+| V8 | Manifest | Valid against the JSON Schema; cross-field rules; `id` equals the existing app's id when adding a version; version greater than any existing and not a duplicate; `minLptHubVersion` satisfied | error |
 | V9 | Frontend entry | Entry exists; HTML contains no `<base href>` pointing outside, no `<meta http-equiv="refresh">` to another host; warns when scripts are inline (blocked by CSP) | warning |
 | V10 | Backend binary | Entrypoint exists, valid PE/managed assembly, `runtimeconfig.json` targets `net10.0` framework-dependent, no native executables other than allow-listed NuGet runtimes folder `runtimes/win-x64/native/*.dll` (list shown for review) | error/warning |
 | V11 | Dependency report | Reads `deps.json` and `package-lock.json` if present: lists packages and versions; optional `dotnet list package --vulnerable` / `npm audit` results if the dev CLI attached `audit.json` (informational; admin decides) | warning |
@@ -273,7 +273,7 @@ stateDiagram-v2
 | Command | Does |
 |---|---|
 | `mf-app init <id> --template static|dotnet` | Scaffolds from the template repo (`08`). |
-| `mf-app validate` | Runs the same validator locally (shared library `MatterFlow.Apps.Packaging`), so errors appear before upload. |
+| `mf-app validate` | Runs the same validator locally (shared library `LptHub.Apps.Packaging`), so errors appear before upload. |
 | `mf-app pack` | Builds, publishes backend, writes `app.json` version from `Directory.Build.props`/`package.json`, zips with forward slashes, no timestamps (reproducible), prints SHA-256. |
 | `mf-app sign --key dev.key` | Optional internal signature. |
 | `mf-app push --server https://<host> ` | Optional: uploads through `POST /api/v1/admin/apps/packages` using the developer's Windows credentials (they must be System Admin); otherwise the zip is handed to a System Admin. |

@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-namespace MatterFlow.Configuration.Domain.Forms.Rules;
+namespace LptHub.Configuration.Domain.Forms.Rules;
 
 /// <summary>Result of evaluating a submission against a <see cref="FormSchema"/>.</summary>
 /// <param name="Visible">Visibility of every field (headings and help text included).</param>

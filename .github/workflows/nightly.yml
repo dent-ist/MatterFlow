@@ -68,7 +68,7 @@ jobs:
       - name: NuGet vulnerabilities (direct and transitive)
         working-directory: backend
         run: |
-          dotnet list MatterFlow.sln package --vulnerable --include-transitive 2>&1 | tee ../nuget-audit.txt
+          dotnet list LptHub.sln package --vulnerable --include-transitive 2>&1 | tee ../nuget-audit.txt
           if grep -q "has the following vulnerable packages" ../nuget-audit.txt; then
             echo "::error::Vulnerable NuGet packages found (see the log). Bump or pin them in backend/Directory.Packages.props."
             exit 1

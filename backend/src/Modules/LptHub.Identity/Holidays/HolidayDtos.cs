@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace MatterFlow.Identity.Holidays;
+namespace LptHub.Identity.Holidays;
 
 /// <summary>A holiday calendar for the administration.</summary>
 /// <param name="ColourKey">A name of the tag palette (<c>contracts/task-type-colours.json</c>).</param>

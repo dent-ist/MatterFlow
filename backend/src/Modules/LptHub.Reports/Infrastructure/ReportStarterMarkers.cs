@@ -1,7 +1,7 @@
-using MatterFlow.Reports.Application.Starters;
+using LptHub.Reports.Application.Starters;
 using Microsoft.Data.SqlClient;
 
-namespace MatterFlow.Reports.Infrastructure;
+namespace LptHub.Reports.Infrastructure;
 
 /// <summary>The seed markers of the starter reports in <c>dbo.SeedMarker</c> (application connection; the report login cannot read this table).</summary>
 internal sealed class ReportStarterMarkers(ReportAppConnection app) : IReportStarterMarkers

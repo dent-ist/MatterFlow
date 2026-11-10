@@ -1,11 +1,11 @@
-using MatterFlow.Assets.Domain;
-using MatterFlow.Configuration.Domain;
-using MatterFlow.Organization.Domain;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Assets.Domain;
+using LptHub.Configuration.Domain;
+using LptHub.Organization.Domain;
+using LptHub.SharedKernel.Results;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>
 /// The client/matter tree (UI-03, #956): clients with the scope's visible matters, the open, overdue, unassigned and critical counts per matter and the "active" flag (an open task, or an

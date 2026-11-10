@@ -1,10 +1,10 @@
 using System.Text;
 using System.Text.RegularExpressions;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.ValueObjects;
-using DomainTaskNumber = MatterFlow.WorkManagement.Domain.TaskNumber;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.ValueObjects;
+using DomainTaskNumber = LptHub.WorkManagement.Domain.TaskNumber;
 
-namespace MatterFlow.Search.Application.Queries;
+namespace LptHub.Search.Application.Queries;
 
 /// <summary>
 /// A validated search input reduced to everything the SQL needs: the LIKE patterns (escaped, so a typed <c>%</c>, <c>_</c> or <c>[</c> is matched

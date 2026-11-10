@@ -1,12 +1,12 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
-using MatterFlow.Configuration.Application.Lookups;
-using MatterFlow.Configuration.Contracts;
-using MatterFlow.Configuration.Domain.Settings;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Configuration.Application.Lookups;
+using LptHub.Configuration.Contracts;
+using LptHub.Configuration.Domain.Settings;
+using LptHub.Identity.Contracts;
+using LptHub.SharedKernel.Results;
 
-namespace MatterFlow.Configuration.Application.Settings;
+namespace LptHub.Configuration.Application.Settings;
 
 /// <summary>The gauge settings as the settings form edits them: times as <c>HH:mm</c>, weekdays as ISO numbers (1 Monday to 7 Sunday).</summary>
 public sealed record DashboardGaugeValues(
@@ -129,7 +129,7 @@ public sealed class DashboardSettingsService(AppSettingsService settings, IUserD
             ToValues(DashboardGaugeSettings.Default),
             stored is not null,
             row is null ? string.Empty : LookupSupport.FormatRowVersion(row.RowVersion),
-            configuration["Firm:TimeZoneId"] ?? MatterFlow.SharedKernel.Time.UserTimeZone.DefaultFirmZoneId,
+            configuration["Firm:TimeZoneId"] ?? LptHub.SharedKernel.Time.UserTimeZone.DefaultFirmZoneId,
             row?.UpdatedAtUtc,
             by);
     }

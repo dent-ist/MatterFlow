@@ -1,6 +1,6 @@
 using MimeKit;
 
-namespace MatterFlow.Intake.Application;
+namespace LptHub.Intake.Application;
 
 /// <summary>Reads RFC 5322 / MIME messages (<c>.eml</c>) with MimeKit. Attachment parts and their names are never examined.</summary>
 internal static class EmlEmailParser

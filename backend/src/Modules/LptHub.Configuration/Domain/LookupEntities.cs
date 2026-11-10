@@ -1,7 +1,7 @@
-using MatterFlow.SharedKernel.Audit;
-using MatterFlow.SharedKernel.Entities;
+using LptHub.SharedKernel.Audit;
+using LptHub.SharedKernel.Entities;
 
-namespace MatterFlow.Configuration.Domain;
+namespace LptHub.Configuration.Domain;
 
 /// <summary>A task priority. Tasks reference <see cref="Entity{TKey}.Id"/>, so deactivating one never breaks history.</summary>
 [Audited(ObjectType = "Priority")]

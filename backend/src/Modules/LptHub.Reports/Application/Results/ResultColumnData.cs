@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace MatterFlow.Reports.Application.Results;
+namespace LptHub.Reports.Application.Results;
 
 /// <summary>
 /// One column of a stored result, kept as a typed array instead of boxed objects (spec 6.4). Rows are appended while the reader streams and the column is

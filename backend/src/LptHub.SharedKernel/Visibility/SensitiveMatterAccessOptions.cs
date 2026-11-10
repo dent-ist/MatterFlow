@@ -1,4 +1,4 @@
-namespace MatterFlow.SharedKernel.Visibility;
+namespace LptHub.SharedKernel.Visibility;
 
 /// <summary>
 /// The go-live switch of the sensitive-matter rule (<c>Features:SensitiveMatterAccess</c>, default false). While it is off every visibility

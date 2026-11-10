@@ -1,4 +1,4 @@
-/* MatterFlow Outlook drag-and-drop spike. No dependencies. Logs everything; stores/uploads nothing. */
+/* LPT Hub Outlook drag-and-drop spike. No dependencies. Logs everything; stores/uploads nothing. */
 (function () {
   'use strict';
   var events = [];
@@ -121,7 +121,7 @@
   });
 
   function report() {
-    return JSON.stringify({ tool: 'matterflow-outlook-dnd-spike', version: 1, generatedUtc: new Date().toISOString(), events: events }, null, 2);
+    return JSON.stringify({ tool: 'lpt-hub-outlook-dnd-spike', version: 1, generatedUtc: new Date().toISOString(), events: events }, null, 2);
   }
   $('copy').addEventListener('click', function () {
     var text = report();

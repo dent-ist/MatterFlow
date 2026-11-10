@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text;
 
-namespace MatterFlow.Notifications.Contracts;
+namespace LptHub.Notifications.Contracts;
 
 /// <summary>
 /// The wording of every notification (README section 3.1), built by the server at creation time as a snapshot: English, at most

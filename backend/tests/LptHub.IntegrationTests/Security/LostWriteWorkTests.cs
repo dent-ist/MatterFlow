@@ -1,11 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Security;
+namespace LptHub.IntegrationTests.Security;
 
 /// <summary>
 /// Lost-write audit (issue #1304), Tasks, task comments, task assets, workflow steps, bulk changes and notifications: with the sensitive-matter rule on, a caller who is NOT "see all" makes a

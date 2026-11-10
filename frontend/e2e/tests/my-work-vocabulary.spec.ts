@@ -81,13 +81,13 @@ test.describe('My Work vocabulary and tab rules', () => {
     );
 
     // Title, caption and live region on Active, then after a tab change without a reload.
-    await expect(page).toHaveTitle('My Work: Active - MatterFlow');
+    await expect(page).toHaveTitle('My Work: Active - LPT Hub');
     await expect(page.locator('table caption')).toHaveText('My Work: Active');
     await expect(page.locator('.wl-sr')).toHaveText(/^Active: 7 tasks, showing 1 to 7$/);
 
     await myWork.tab(/^Due Soon and Overdue/).click();
     await expect(page).toHaveURL(/view=dueSoon/);
-    await expect(page).toHaveTitle('My Work: Due soon and overdue - MatterFlow');
+    await expect(page).toHaveTitle('My Work: Due soon and overdue - LPT Hub');
     await expect(page.locator('table caption')).toHaveText('My Work: Due soon and overdue');
     await expect(page.locator('.wl-sr')).toHaveText(
       /^Due soon and overdue: 5 tasks, showing 1 to 5$/,
@@ -119,13 +119,13 @@ test.describe('My Work vocabulary and tab rules', () => {
 
     // Active keeps its own rule: ASAP above the dated ones of the same priority.
     await myWork.tab(/^Active/).click();
-    await expect(page).toHaveTitle('My Work: Active - MatterFlow');
+    await expect(page).toHaveTitle('My Work: Active - LPT Hub');
     await expect.poll(async () => (await titles())[0]).toBe('Asap');
 
     // The old link opens Closed.
     await myWork.open('?view=completed');
     await expect(myWork.tab(/^Closed/)).toHaveAttribute('aria-selected', 'true');
-    await expect(page).toHaveTitle('My Work: Closed - MatterFlow');
+    await expect(page).toHaveTitle('My Work: Closed - LPT Hub');
     await expect(page.locator('table caption')).toHaveText('My Work: Closed');
   });
 

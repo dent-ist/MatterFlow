@@ -1,7 +1,7 @@
-using MatterFlow.Assets.Domain;
+using LptHub.Assets.Domain;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Assets;
+namespace LptHub.UnitTests.Assets;
 
 /// <summary>The disposition transition matrix (epic #851, issue #865) and the size units.</summary>
 public class AssetDispositionRulesTests

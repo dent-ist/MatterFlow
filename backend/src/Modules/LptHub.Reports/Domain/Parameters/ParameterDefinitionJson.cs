@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace MatterFlow.Reports.Domain.Parameters;
+namespace LptHub.Reports.Domain.Parameters;
 
 /// <summary>The JSON form of the parameter definitions that a <c>ReportVersion</c> snapshots (<c>ParametersJson</c>), so an old version always runs with the parameters it was saved with.</summary>
 public static class ParameterDefinitionJson

@@ -1,11 +1,11 @@
 using System.Diagnostics;
 using System.Globalization;
-using MatterFlow.Reports.Application;
+using LptHub.Reports.Application;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace MatterFlow.Reports.Infrastructure;
+namespace LptHub.Reports.Infrastructure;
 
 /// <summary>
 /// Runs one validated query on the **read-only report connection** (spec 6.1, 6.2): a session preamble as its own batch, then the query as its

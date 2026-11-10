@@ -1,11 +1,11 @@
 using System.Text;
-using MatterFlow.Intake.Application;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Time;
+using LptHub.Intake.Application;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Time;
 using Microsoft.Extensions.Options;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Intake;
+namespace LptHub.UnitTests.Intake;
 
 /// <summary>Parsing of uploaded .eml / .msg through the service: the five spike samples with their expected values, encodings, hostile input.</summary>
 public class EmailParseServiceTests

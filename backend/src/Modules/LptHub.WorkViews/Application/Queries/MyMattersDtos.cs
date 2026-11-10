@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
-using MatterFlow.Identity.Contracts;
+using LptHub.Identity.Contracts;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>
 /// The count strip of My Matters (6.1). Every count carries the query string that lists exactly the counted records: the Task Queue for the task

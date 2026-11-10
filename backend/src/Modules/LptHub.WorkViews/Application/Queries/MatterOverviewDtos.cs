@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>A matter's project manager as the overview header shows them. No manager is normal and is never a warning.</summary>
 public sealed record MatterOverviewManager([property: Required] int UserId, [property: Required] string DisplayName, [property: Required] bool IsActive);

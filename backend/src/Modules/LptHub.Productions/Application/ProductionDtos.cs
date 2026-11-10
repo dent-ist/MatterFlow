@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace MatterFlow.Productions.Application;
+namespace LptHub.Productions.Application;
 
 /// <summary>Paging and sort parameters shared by the list endpoints of the module.</summary>
 public class ProductionListQueryBase

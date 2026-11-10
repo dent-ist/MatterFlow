@@ -1,6 +1,6 @@
 using Shouldly;
 
-namespace MatterFlow.ArchitectureTests;
+namespace LptHub.ArchitectureTests;
 
 /// <summary>Source-level guard rails from security review 1 that are cheap to check and expensive to rediscover.</summary>
 public class SourceHygieneRulesTests
@@ -61,13 +61,13 @@ public class SourceHygieneRulesTests
     public void Only_the_reports_module_reads_the_report_connection_string()
     {
         var offenders = ProductSources()
-            .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}MatterFlow.Reports{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}LptHub.Reports{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
             .Where(f => File.ReadAllText(f).Contains("ReportsReadOnly", StringComparison.Ordinal))
             .Select(Path.GetFileName)
             .Order()
             .ToList();
 
-        offenders.ShouldBeEmpty("Only MatterFlow.Reports may resolve ConnectionStrings:ReportsReadOnly: " + string.Join(", ", offenders));
+        offenders.ShouldBeEmpty("Only LptHub.Reports may resolve ConnectionStrings:ReportsReadOnly: " + string.Join(", ", offenders));
     }
 
     /// <summary>Inside the module only <c>ReportsAvailability</c> (the report login) and <c>ReportAppConnection</c> (the application's own, for the Reports tables) read connection strings; everything else asks <c>IReportsAvailability.ReportConnectionString</c>, which is null unless the login passed the probe.</summary>
@@ -75,7 +75,7 @@ public class SourceHygieneRulesTests
     public void Inside_the_reports_module_two_classes_read_connection_strings_and_they_stay_apart()
     {
         var offenders = ProductSources()
-            .Where(f => f.Contains($"{Path.DirectorySeparatorChar}MatterFlow.Reports{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            .Where(f => f.Contains($"{Path.DirectorySeparatorChar}LptHub.Reports{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
             .Where(f => File.ReadAllText(f).Contains("GetConnectionString(", StringComparison.Ordinal))
             .Select(Path.GetFileName)
             .Order()
@@ -84,7 +84,7 @@ public class SourceHygieneRulesTests
         offenders.ShouldBe(["ReportAppConnection.cs", "ReportsAvailability.cs"]);
 
         // The executor (the code that runs report SQL) never touches the application connection; the availability class never reads the application's.
-        var module = ProductSources().Where(f => f.Contains($"{Path.DirectorySeparatorChar}MatterFlow.Reports{Path.DirectorySeparatorChar}", StringComparison.Ordinal)).ToList();
+        var module = ProductSources().Where(f => f.Contains($"{Path.DirectorySeparatorChar}LptHub.Reports{Path.DirectorySeparatorChar}", StringComparison.Ordinal)).ToList();
         File.ReadAllText(module.Single(f => f.EndsWith("ReportExecutor.cs", StringComparison.Ordinal))).ShouldNotContain("ReportAppConnection");
         File.ReadAllText(module.Single(f => f.EndsWith("ReportAppConnection.cs", StringComparison.Ordinal))).ShouldNotContain("ReportsReadOnly");
     }

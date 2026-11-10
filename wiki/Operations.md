@@ -1,6 +1,6 @@
 # Operations
 
-**What this page is for.** Entry page of the Operations section: running, configuring and troubleshooting MatterFlow.
+**What this page is for.** Entry page of the Operations section: running, configuring and troubleshooting LPT Hub.
 
 [[_TOC_]]
 

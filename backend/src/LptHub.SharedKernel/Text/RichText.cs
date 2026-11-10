@@ -1,4 +1,4 @@
-namespace MatterFlow.SharedKernel.Text;
+namespace LptHub.SharedKernel.Text;
 
 /// <summary>
 /// Plain-text views of rich text, for places that must not carry markup: list and queue snippets, the audit trail, exports, summaries

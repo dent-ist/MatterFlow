@@ -1,9 +1,9 @@
-using MatterFlow.Reports.Application;
+using LptHub.Reports.Application;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MatterFlow.Reports.Api;
+namespace LptHub.Reports.Api;
 
 /// <summary>A saved view of the person's result grid for one report.</summary>
 /// <param name="ViewId">Id of the view (unique across people; only its owner can use it).</param>

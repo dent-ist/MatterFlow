@@ -1,6 +1,6 @@
 -- schema-fingerprint.sql
--- Purpose: describe a MatterFlow database as sorted text lines, so two databases can be compared with a plain diff (issue #1307).
--- Used by: backend/tests/MatterFlow.SchemaTests/BaselineEquivalenceTests.cs and tools/db/compare-schema.sh.
+-- Purpose: describe an LPT Hub database as sorted text lines, so two databases can be compared with a plain diff (issue #1307).
+-- Used by: backend/tests/LptHub.SchemaTests/BaselineEquivalenceTests.cs and tools/db/compare-schema.sh.
 -- Run it as ONE batch (no GO) in the database to describe; it returns one column, `line`, already ordered.
 -- It covers: tables, columns (position, type, nullability, identity, computed, collation, default constraints), primary key / unique / check /
 --   foreign key constraints, every index (type, uniqueness, filter, key and included columns), sequences, functions, procedures and triggers (by a

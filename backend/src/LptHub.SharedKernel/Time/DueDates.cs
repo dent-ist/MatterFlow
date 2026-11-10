@@ -1,4 +1,4 @@
-namespace MatterFlow.SharedKernel.Time;
+namespace LptHub.SharedKernel.Time;
 
 /// <summary>
 /// Due-date semantics (addendum M). A due value is one of:

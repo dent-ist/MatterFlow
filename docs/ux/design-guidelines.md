@@ -1,4 +1,4 @@
-# MatterFlow design guidelines (the UI standard)
+# LPT Hub design guidelines (the UI standard)
 
 **Normative.** Every screen, dialog, drawer, menu, button, chip, link, icon, grid, form, message, date, number and label follows this file. It is the final form of the UI update 2 standard (`docs/ux/ui-update/ui-spec.md` is its history). Token values and CSS detail live in `docs/ux/tokens.css` and `docs/ux/theme-guide.md`; they link here. The UI designer role owns this file (section 8).
 

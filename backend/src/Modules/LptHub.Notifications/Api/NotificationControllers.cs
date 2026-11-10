@@ -1,13 +1,13 @@
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Notifications.Application;
-using MatterFlow.SharedKernel.Paging;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Identity.Contracts;
+using LptHub.Notifications.Application;
+using LptHub.SharedKernel.Paging;
+using LptHub.SharedKernel.Results;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
 
-namespace MatterFlow.Notifications.Api;
+namespace LptHub.Notifications.Api;
 
 /// <summary>
 /// Permission policy for the notification endpoints. There is no notification permission (decision AH-6): the bell belongs to everyone who may

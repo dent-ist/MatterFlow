@@ -1,20 +1,20 @@
 using System.Net;
 using System.Text.Json;
-using MatterFlow.Api.Hosting;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.Api.Hosting;
+using LptHub.IntegrationTests.Fixtures;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.SqlClient;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests;
+namespace LptHub.IntegrationTests;
 
 /// <summary>Ticket #60: <c>/health/ready</c> states and the <c>--migrate-only</c> command, against a real SQL Server.</summary>
 [Collection(SqlServerCollection.Name)]
 public sealed class ReadinessAndMigrateOnlyTests(SqlServerFixture sql)
 {
     // A port nothing listens on: the connection is refused at once.
-    private const string UnreachableConnection = "Server=127.0.0.1,1;Database=MatterFlow;User Id=x;Password=x;Encrypt=False;Connect Timeout=3";
+    private const string UnreachableConnection = "Server=127.0.0.1,1;Database=LptHub;User Id=x;Password=x;Encrypt=False;Connect Timeout=3";
 
     private static HttpClient Client(string? connectionString, out WebApplicationFactory<Program> factory)
     {
@@ -25,7 +25,7 @@ public sealed class ReadinessAndMigrateOnlyTests(SqlServerFixture sql)
             b.UseSetting("AllowedHosts", "*");
             b.UseSetting("Seeds:Enabled", "false"); // the readiness probe is tested on its own: no startup seeds against empty or unreachable databases
             if (connectionString is not null)
-                b.UseSetting("ConnectionStrings:MatterFlow", connectionString);
+                b.UseSetting("ConnectionStrings:LptHub", connectionString);
         });
         return factory.CreateClient();
     }

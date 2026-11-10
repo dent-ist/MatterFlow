@@ -1,9 +1,9 @@
-using MatterFlow.Data.SchemaMigrations;
+using LptHub.Data.SchemaMigrations;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 
-namespace MatterFlow.SchemaTests;
+namespace LptHub.SchemaTests;
 
 /// <summary>
 /// Baseline (archived 37-task-matter-sensitivity.sql) (epic #788, issue #810): <c>dbo.Task.IsMatterSensitive</c> is the database's own copy of the matter's flag. It is filled for the rows that existed,

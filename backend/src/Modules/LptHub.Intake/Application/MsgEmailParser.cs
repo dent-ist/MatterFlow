@@ -2,7 +2,7 @@ using System.Text;
 using MimeKit;
 using MsgReader.Outlook;
 
-namespace MatterFlow.Intake.Application;
+namespace LptHub.Intake.Application;
 
 /// <summary>Reads Outlook <c>.msg</c> (OLE compound file) with MsgReader. Reads from a stream only; attachments are never touched.</summary>
 internal static class MsgEmailParser

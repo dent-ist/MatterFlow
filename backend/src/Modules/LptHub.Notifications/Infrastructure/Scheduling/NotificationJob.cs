@@ -1,4 +1,4 @@
-namespace MatterFlow.Notifications.Infrastructure.Scheduling;
+namespace LptHub.Notifications.Infrastructure.Scheduling;
 
 /// <summary>What a job needs to know about this run: the instant, the firm zone and its calendar day.</summary>
 public sealed record JobContext(DateTime NowUtc, TimeZoneInfo FirmZone)

@@ -1,11 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.IntegrationTests.Tasks;
-using MatterFlow.Reports.Api;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Tasks;
+using LptHub.Reports.Api;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Reports;
+namespace LptHub.IntegrationTests.Reports;
 
 /// <summary>The Reports module is composed into the host and its endpoints are permission-guarded (epic #671, issue #680).</summary>
 [Collection(SqlServerCollection.Name)]

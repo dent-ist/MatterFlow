@@ -1,12 +1,12 @@
 using System.Text.Json;
-using MatterFlow.Data.SchemaMigrations;
+using LptHub.Data.SchemaMigrations;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 
-namespace MatterFlow.SchemaTests;
+namespace LptHub.SchemaTests;
 
-/// <summary>Baseline (archived 30-reports.sql) (epic #671, issue #677): constraints, append-only guards and the effective rights of the role mf_report_reader.</summary>
+/// <summary>Baseline (archived 30-reports.sql) (epic #671, issue #677): constraints, append-only guards and the effective rights of the role lpt_report_reader.</summary>
 [Collection(SqlServerCollection.Name)]
 public class ReportsSchemaTests(SqlServerFixture sql)
 {
@@ -69,7 +69,7 @@ public class ReportsSchemaTests(SqlServerFixture sql)
         (await ExecAsync(cs, """
             SELECT COUNT(*) FROM sys.tables WHERE name IN ('ReportCategory','ReportDefinition','ReportVersion','ReportParameter','RoleReport','SavedReportView','ReportFavourite','ReportRecent','ReportRun')
             """)).ShouldBe(9);
-        (await ExecAsync(cs, "SELECT COUNT(*) FROM sys.database_principals WHERE name = 'mf_report_reader' AND type = 'R'")).ShouldBe(1);
+        (await ExecAsync(cs, "SELECT COUNT(*) FROM sys.database_principals WHERE name = 'lpt_report_reader' AND type = 'R'")).ShouldBe(1);
 
         await SeedReportAsync(cs);
         await ShouldRejectAsync(cs, "INSERT dbo.ReportCategory (Name) VALUES (N'Cat');", "UQ_ReportCategory_Name");
@@ -114,7 +114,7 @@ public class ReportsSchemaTests(SqlServerFixture sql)
     {
         var admin = await MigratedAsync();
         await SeedReportAsync(admin);
-        var app = await LoginInRoleAsync(admin, "mf_app");
+        var app = await LoginInRoleAsync(admin, "lpt_app");
 
         await ExecAsync(app, "INSERT dbo.ReportVersion (ReportId, VersionNo, SqlText, SqlHash) VALUES (1, 2, N'SELECT 2', 0x01);");
         await ExecAsync(app, InsertRun);
@@ -160,7 +160,7 @@ public class ReportsSchemaTests(SqlServerFixture sql)
     public async Task The_catalogue_equals_the_effective_rights_of_the_report_role()
     {
         var admin = await MigratedAsync();
-        var reader = await LoginInRoleAsync(admin, "mf_report_reader");
+        var reader = await LoginInRoleAsync(admin, "lpt_report_reader");
         using var catalogue = JsonDocument.Parse(await File.ReadAllTextAsync(RepoFile("db", "report-access.json")));
         var entries = catalogue.RootElement.GetProperty("tables").EnumerateArray().Select(t => (Name: t.GetProperty("name").GetString()!, Allow: t.GetProperty("access").GetString() == "allow")).ToList();
         entries.Count.ShouldBeGreaterThan(50);
@@ -194,7 +194,7 @@ public class ReportsSchemaTests(SqlServerFixture sql)
     {
         var admin = await MigratedAsync();
         await SeedReportAsync(admin);
-        var reader = await LoginInRoleAsync(admin, "mf_report_reader");
+        var reader = await LoginInRoleAsync(admin, "lpt_report_reader");
 
         await ShouldRejectAsync(reader, "INSERT dbo.Pod (Name) VALUES (N'x')", "permission was denied");
         await ShouldRejectAsync(reader, "UPDATE dbo.AppUser SET DisplayName = N'x'", "permission was denied");
@@ -213,9 +213,9 @@ public class ReportsSchemaTests(SqlServerFixture sql)
         await ShouldRejectAsync(reader, "SELECT COUNT(*) FROM dbo.UserIdentity", "permission was denied");
         await ShouldRejectAsync(reader, "SELECT SqlText FROM dbo.ReportVersion", "permission was denied");
 
-        (await ExecAsync(reader, "SELECT IS_MEMBER('db_owner') + IS_MEMBER('db_datareader') + IS_MEMBER('db_datawriter') + IS_MEMBER('db_ddladmin') + IS_MEMBER('mf_app') + IS_MEMBER('mf_migrator')")).ShouldBe(0);
+        (await ExecAsync(reader, "SELECT IS_MEMBER('db_owner') + IS_MEMBER('db_datareader') + IS_MEMBER('db_datawriter') + IS_MEMBER('db_ddladmin') + IS_MEMBER('lpt_app') + IS_MEMBER('lpt_migrator')")).ShouldBe(0);
         (await ExecAsync(reader, "SELECT IS_SRVROLEMEMBER('sysadmin')")).ShouldBe(0);
-        (await ExecAsync(reader, "SELECT IS_MEMBER('mf_report_reader')")).ShouldBe(1);
+        (await ExecAsync(reader, "SELECT IS_MEMBER('lpt_report_reader')")).ShouldBe(1);
         (await ExecAsync(reader, "SELECT COUNT(*) FROM dbo.Task")).ShouldBe(0);
     }
 }

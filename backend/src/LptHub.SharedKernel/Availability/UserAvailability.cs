@@ -1,6 +1,6 @@
-using MatterFlow.SharedKernel.Time;
+using LptHub.SharedKernel.Time;
 
-namespace MatterFlow.SharedKernel.Availability;
+namespace LptHub.SharedKernel.Availability;
 
 /// <summary>Absence types (script 58): the reason of one Out of office entry.</summary>
 public static class AbsenceTypes

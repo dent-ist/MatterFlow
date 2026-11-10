@@ -1,11 +1,11 @@
-using MatterFlow.Assets.Application;
-using MatterFlow.Assets.Contracts;
-using MatterFlow.Configuration.Contracts.Forms;
-using MatterFlow.Organization.Contracts;
+using LptHub.Assets.Application;
+using LptHub.Assets.Contracts;
+using LptHub.Configuration.Contracts.Forms;
+using LptHub.Organization.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-namespace MatterFlow.Assets;
+namespace LptHub.Assets;
 
 /// <summary>Composition entry point of the Assets module.</summary>
 public static class AssetsModule

@@ -1,10 +1,10 @@
-using MatterFlow.Configuration.Contracts;
-using MatterFlow.Configuration.Domain;
+using LptHub.Configuration.Contracts;
+using LptHub.Configuration.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace MatterFlow.Configuration.Application.Lookups;
+namespace LptHub.Configuration.Application.Lookups;
 
 /// <summary>
 /// Startup seeding for the configuration lookups, run after the schema scripts and idempotent (architecture 4.6): default priorities
@@ -143,7 +143,7 @@ public static class ConfigurationSeederExtensions
     public static async Task ReindexAssetValuesAsync(this IServiceProvider services, CancellationToken ct = default)
     {
         await using var scope = services.CreateAsyncScope();
-        var count = await scope.ServiceProvider.GetRequiredService<MatterFlow.Configuration.Contracts.Forms.IFormIndexMaintenance>().ReindexMissingAsync(MatterFlow.Configuration.Contracts.Forms.FormValueOwnerKind.Asset, ct);
+        var count = await scope.ServiceProvider.GetRequiredService<LptHub.Configuration.Contracts.Forms.IFormIndexMaintenance>().ReindexMissingAsync(LptHub.Configuration.Contracts.Forms.FormValueOwnerKind.Asset, ct);
         if (count > 0)
             scope.ServiceProvider.GetRequiredService<ILogger<ConfigurationSeeder>>().LogInformation("Filter index rebuilt for {Count} asset value sets.", count);
     }

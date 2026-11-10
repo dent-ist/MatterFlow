@@ -1,15 +1,15 @@
-using MatterFlow.SharedKernel.Results;
+using LptHub.SharedKernel.Results;
 
-namespace MatterFlow.Api.Http;
+namespace LptHub.Api.Http;
 
 /// <summary>
 /// CSRF protection for Windows-authenticated calls (architecture 6.6): browsers attach credentials automatically, so every state-changing
-/// request under <c>/api</c> must carry <c>X-MatterFlow-Client: web</c> and, when it has a body, a JSON or multipart content type; a cross-site
+/// request under <c>/api</c> must carry <c>X-LptHub-Client: web</c> and, when it has a body, a JSON or multipart content type; a cross-site
 /// <c>Sec-Fetch-Site</c> is rejected. Runs before authentication and authorization, so a forged request never reaches permission logic.
 /// </summary>
 public sealed class RequestForgeryGuard(RequestDelegate next)
 {
-    public const string HeaderName = "X-MatterFlow-Client";
+    public const string HeaderName = "X-LptHub-Client";
     public const string HeaderValue = "web";
 
     public async Task InvokeAsync(HttpContext context)

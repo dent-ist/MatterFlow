@@ -1,8 +1,8 @@
 using System.Text.Json;
-using MatterFlow.Assets.Domain;
+using LptHub.Assets.Domain;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Assets;
+namespace LptHub.UnitTests.Assets;
 
 /// <summary>The Asset Number tail rules (issue #1297): the shared vectors of contracts/asset-numbering/pattern-vectors.json plus the rendering edge cases.</summary>
 public class AssetNumberingTests

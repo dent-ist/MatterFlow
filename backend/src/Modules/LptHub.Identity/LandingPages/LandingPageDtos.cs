@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace MatterFlow.Identity.LandingPages;
+namespace LptHub.Identity.LandingPages;
 
 /// <summary>One page of the catalogue: the stable key the API stores and returns, its name as the navigation shows it and its address.</summary>
 public sealed record LandingPageDto([property: Required] string Key, [property: Required] string Label, [property: Required] string Path);

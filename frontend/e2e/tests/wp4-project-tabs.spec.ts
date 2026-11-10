@@ -207,13 +207,13 @@ test.describe('WP4: behaviour', () => {
     await expect(page.locator('[data-details-tab]')).toBeVisible();
     // The count is known even though the person opened Details first.
     await expect(page.getByRole('tab', { name: /^Tasks/ })).toHaveText(`Tasks (${data.taskCount})`);
-    await expect.poll(() => page.title()).toMatch(/^Custodian Interviews.*: Details - MatterFlow$/);
+    await expect.poll(() => page.title()).toMatch(/^Custodian Interviews.*: Details - LPT Hub$/);
 
     await page.getByRole('tab', { name: 'Details' }).focus();
     await page.keyboard.press('Home');
     await expect(page.getByRole('tab', { name: /^Tasks/ })).toBeFocused();
     await expect(page).not.toHaveURL(/tab=/);
-    await expect.poll(() => page.title()).toMatch(/^Custodian Interviews.*: Tasks - MatterFlow$/);
+    await expect.poll(() => page.title()).toMatch(/^Custodian Interviews.*: Tasks - LPT Hub$/);
     await page.keyboard.press('ArrowRight');
     await expect(page.getByRole('tab', { name: 'Details' })).toBeFocused();
     await expect(page).toHaveURL(/tab=details/);

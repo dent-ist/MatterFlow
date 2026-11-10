@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace MatterFlow.Notes.Application;
+namespace LptHub.Notes.Application;
 
 /// <summary>Paging and sort parameters shared by the list endpoints of the module.</summary>
 public class NoteListQueryBase

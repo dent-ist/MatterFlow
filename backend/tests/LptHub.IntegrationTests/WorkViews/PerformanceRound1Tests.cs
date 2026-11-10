@@ -1,16 +1,16 @@
 using System.Net;
-using MatterFlow.Api.Http;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.IntegrationTests.Tasks;
-using MatterFlow.IntegrationTests.Workflows;
+using LptHub.Api.Http;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Tasks;
+using LptHub.IntegrationTests.Workflows;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.WorkViews;
+namespace LptHub.IntegrationTests.WorkViews;
 
 /// <summary>
 /// Regression tests for the first performance pass (ticket 64): the dashboard output cache, the read command timeout, the batched step-value
@@ -94,7 +94,7 @@ public sealed class PerformanceRound1Tests(SqlServerFixture sql)
             logging.AddProvider(log);
         })));
         var client = logged.CreateClient();
-        client.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        client.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         client.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
         await client.GetAsync("/api/v1/me");
 
@@ -121,7 +121,7 @@ public sealed class PerformanceRound1Tests(SqlServerFixture sql)
             logging.AddProvider(log);
         })));
         var client = logged.CreateClient();
-        client.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        client.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         client.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
         await client.GetAsync("/api/v1/me");
 
@@ -178,7 +178,7 @@ public sealed class PerformanceRound1Tests(SqlServerFixture sql)
             logging.AddProvider(log);
         })));
         var client = logged.CreateClient();
-        client.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        client.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         client.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
         await client.GetAsync("/api/v1/me");
 

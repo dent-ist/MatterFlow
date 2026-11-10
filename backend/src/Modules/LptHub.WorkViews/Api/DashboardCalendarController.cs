@@ -1,12 +1,12 @@
-using MatterFlow.Identity.Contracts;
-using MatterFlow.SharedKernel.Paging;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.WorkViews.Application.Queries;
+using LptHub.Identity.Contracts;
+using LptHub.SharedKernel.Paging;
+using LptHub.SharedKernel.Results;
+using LptHub.WorkViews.Application.Queries;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MatterFlow.WorkViews.Api;
+namespace LptHub.WorkViews.Api;
 
 /// <summary>
 /// The Dashboard Calendar (epic #1074, decision AT): who can work on each day and where coverage is thin. Needs <c>Dashboard.View</c> and <c>Dashboard.ViewCalendar</c> (Director and Pod Lead by default; a Pod Lead sees only the pods they

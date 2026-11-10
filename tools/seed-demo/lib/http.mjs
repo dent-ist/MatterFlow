@@ -1,4 +1,4 @@
-// Minimal JSON client for the MatterFlow API with the Dev-auth headers, a per-user request pacer and retries.
+// Minimal JSON client for the LPT Hub API with the Dev-auth headers, a per-user request pacer and retries.
 // Uses the global fetch of Node 22+. Nothing here talks to the database: the seeder only uses the public HTTP API.
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -104,7 +104,7 @@ export class Api {
         method,
         headers: {
           'X-Dev-User': this.user,
-          'X-MatterFlow-Client': 'web',
+          'X-LptHub-Client': 'web',
           Accept: 'application/json',
           ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
         },

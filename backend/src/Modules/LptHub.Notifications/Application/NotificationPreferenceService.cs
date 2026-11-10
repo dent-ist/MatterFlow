@@ -1,11 +1,11 @@
-using MatterFlow.Notifications.Contracts;
-using MatterFlow.Notifications.Domain;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Time;
+using LptHub.Notifications.Contracts;
+using LptHub.Notifications.Domain;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Time;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Notifications.Application;
+namespace LptHub.Notifications.Application;
 
 /// <summary>
 /// The caller's switches. One switch per event type, all on by default; only "off" rows are stored, so a new event type is on for everybody

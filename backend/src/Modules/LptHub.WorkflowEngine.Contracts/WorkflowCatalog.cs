@@ -1,6 +1,6 @@
-using MatterFlow.SharedKernel.Results;
+using LptHub.SharedKernel.Results;
 
-namespace MatterFlow.WorkflowEngine.Contracts;
+namespace LptHub.WorkflowEngine.Contracts;
 
 /// <summary>Lifecycle of one workflow version (architecture 8.1).</summary>
 public enum WorkflowVersionStatus

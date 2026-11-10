@@ -1,4 +1,4 @@
-namespace MatterFlow.SharedKernel.Time;
+namespace LptHub.SharedKernel.Time;
 
 /// <summary>Source of the current instant. Inject instead of reading <c>DateTime.UtcNow</c> so time is testable.</summary>
 public interface IClock

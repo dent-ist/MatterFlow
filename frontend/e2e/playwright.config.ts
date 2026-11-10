@@ -1,7 +1,7 @@
 import { defineConfig } from '@playwright/test';
 
 /**
- * Playwright configuration for the MatterFlow end-to-end suite (docs/qa/e2e.md).
+ * Playwright configuration for the LPT Hub end-to-end suite (docs/qa/e2e.md).
  *
  * The suite talks to a running stack and never starts one itself: `e2e/run-local.sh` (or CI) starts SQL Server and the API that
  * serves the built Angular app on one origin, then runs `playwright test`.

@@ -1,7 +1,7 @@
-using MatterFlow.SharedKernel.Availability;
+using LptHub.SharedKernel.Availability;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.SharedKernel;
+namespace LptHub.UnitTests.SharedKernel;
 
 /// <summary>The holiday-rule expansion against the dates of the mockup calendars (US federal and England and Wales) for 2026 and 2027, and the rule maths.</summary>
 public class HolidayRulesEngineTests

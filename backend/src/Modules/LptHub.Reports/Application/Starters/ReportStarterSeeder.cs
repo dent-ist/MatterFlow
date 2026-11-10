@@ -1,8 +1,8 @@
-using MatterFlow.Reports.Domain;
-using MatterFlow.Reports.Domain.Parameters;
+using LptHub.Reports.Domain;
+using LptHub.Reports.Domain.Parameters;
 using Microsoft.Extensions.Logging;
 
-namespace MatterFlow.Reports.Application.Starters;
+namespace LptHub.Reports.Application.Starters;
 
 /// <summary>What happened to one starter report.</summary>
 public enum StarterSeedOutcome

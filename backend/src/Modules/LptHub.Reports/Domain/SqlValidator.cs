@@ -2,7 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.SqlServer.TransactSql.ScriptDom;
 
-namespace MatterFlow.Reports.Domain;
+namespace LptHub.Reports.Domain;
 
 /// <summary>One reason a query was refused. <see cref="Code"/> is stable (tests and the UI rely on it); the position is in the text as the author typed it.</summary>
 public sealed record SqlValidationError(string Code, string Message, int Position, int Line, int Column);

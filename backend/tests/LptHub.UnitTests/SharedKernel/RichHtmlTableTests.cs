@@ -1,8 +1,8 @@
 using System.Diagnostics;
-using MatterFlow.SharedKernel.Text;
+using LptHub.SharedKernel.Text;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.SharedKernel;
+namespace LptHub.UnitTests.SharedKernel;
 
 /// <summary>Tables in the shared sanitizer (decision R): what is kept, what is normalised, the limits, and plain-text rendering.</summary>
 public sealed class RichHtmlTableTests

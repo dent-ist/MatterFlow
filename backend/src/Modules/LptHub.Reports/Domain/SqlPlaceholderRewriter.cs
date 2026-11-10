@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace MatterFlow.Reports.Domain;
+namespace LptHub.Reports.Domain;
 
 /// <summary>One replaced token: where it sits in the rewritten text and in the original.</summary>
 public readonly record struct RewriteSpan(int ParseStart, int ParseLength, int OriginalStart, int OriginalLength);

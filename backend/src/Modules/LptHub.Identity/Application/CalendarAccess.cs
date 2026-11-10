@@ -1,9 +1,9 @@
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Identity.Domain;
-using MatterFlow.SharedKernel.Identity;
+using LptHub.Identity.Contracts;
+using LptHub.Identity.Domain;
+using LptHub.SharedKernel.Identity;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Identity.Application;
+namespace LptHub.Identity.Application;
 
 /// <summary>See <see cref="ICalendarAccess"/>.</summary>
 public sealed class CalendarAccess(DbContext db, ICurrentUser currentUser, IPermissionChecker permissions) : ICalendarAccess

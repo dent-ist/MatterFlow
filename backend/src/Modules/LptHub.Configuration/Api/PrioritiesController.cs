@@ -1,12 +1,12 @@
-using MatterFlow.Configuration.Application.Lookups;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.SharedKernel.Authorization;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Configuration.Application.Lookups;
+using LptHub.Identity.Contracts;
+using LptHub.SharedKernel.Authorization;
+using LptHub.SharedKernel.Results;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MatterFlow.Configuration.Api;
+namespace LptHub.Configuration.Api;
 
 /// <summary>
 /// Policy names for the Configuration endpoints. Modules cannot reference the Identity module's <c>[RequirePermission]</c>, so the

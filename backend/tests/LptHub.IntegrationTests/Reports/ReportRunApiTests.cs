@@ -1,14 +1,14 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.IntegrationTests.Tasks;
-using MatterFlow.Reports.Api;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Tasks;
+using LptHub.Reports.Api;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Reports;
+namespace LptHub.IntegrationTests.Reports;
 
 /// <summary>
 /// POST /api/v1/reports/{id}/runs against a real API, SQL Server and the read-only report login (epic #671, issue #702): the run itself, the
@@ -56,18 +56,18 @@ public sealed class ReportRunApiTests(SqlServerFixture sql)
     {
         await using var h = await ReportTestHarness.StartAsync(sql);
         var (runner, role) = await h.PersonAsync(@"KE\runner", "Report.Run");
-        var id = await h.AddReportAsync("SELECT SUSER_SNAME() AS who, APP_NAME() AS app, IS_MEMBER('mf_report_reader') AS reader", roleIds: role);
+        var id = await h.AddReportAsync("SELECT SUSER_SNAME() AS who, APP_NAME() AS app, IS_MEMBER('lpt_report_reader') AS reader", roleIds: role);
 
         var response = await runner.PostAsync(RunUrl(id), ReportTestHarness.Parameters(new { }));
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var runId = Guid.Parse((await ReadAsync(response)).GetProperty("runId").GetString()!);
         var userId = await h.Tasks.UserIdAsync(@"KE\runner");
-        var stored = h.Factory.Services.GetRequiredService<MatterFlow.Reports.Application.Results.ReportResultStore>().Get(userId, runId).Result!.Table;
+        var stored = h.Factory.Services.GetRequiredService<LptHub.Reports.Application.Results.ReportResultStore>().Get(userId, runId).Result!.Table;
         stored.RowCount.ShouldBe(1);
         stored.Get(0, 0).ShouldBe(h.Login.Name);
         stored.Get(0, 0).ShouldNotBe(new SqlConnectionStringBuilder(h.AppConnection).UserID);
-        stored.Get(0, 1).ShouldBe("MatterFlow.Reports");
+        stored.Get(0, 1).ShouldBe("LptHub.Reports");
         stored.Get(0, 2).ShouldBe(1L);
     }
 

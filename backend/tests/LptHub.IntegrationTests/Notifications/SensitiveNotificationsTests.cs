@@ -1,14 +1,14 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.Notifications.Infrastructure.Scheduling;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.Notifications.Infrastructure.Scheduling;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Notifications;
+namespace LptHub.IntegrationTests.Notifications;
 
 /// <summary>
 /// Notifications under the sensitive-matter rule (epic #788, SM-12, inventory R47 to R52): a notification is only created for a recipient who can see its subject,
@@ -51,7 +51,7 @@ public sealed class SensitiveNotificationsTests(SqlServerFixture sql)
 
     private static async Task<int> PodWithLeadAsync(SensitiveUniverse u)
     {
-        var roleId = await u.H.Factory.WithDbAsync(db => db.Set<MatterFlow.Identity.Domain.Role>().Where(r => r.Name == "Pod Lead").Select(r => r.Id).SingleAsync());
+        var roleId = await u.H.Factory.WithDbAsync(db => db.Set<LptHub.Identity.Domain.Role>().Where(r => r.Name == "Pod Lead").Select(r => r.Id).SingleAsync());
         await u.H.Factory.GrantRoleAsync(@"KE\unrelated", roleId);
         return await u.H.CreatePodAsync("Review pod", u.Unrelated);
     }
@@ -165,7 +165,7 @@ public sealed class SensitiveNotificationsTests(SqlServerFixture sql)
             (await IdsAsync(u.PmPrimaryClient)).ShouldContain(o1);
             (await IdsAsync(u.PmSecondaryClient)).ShouldContain(o1);
             (await IdsAsync(u.AssigneeClient)).ShouldContain(o3);
-            var rows = await u.H.Factory.WithDbAsync(db => db.Set<MatterFlow.Notifications.Domain.Notification>().Where(n => n.EventType == "TaskDue" || n.EventType == "MatterTaskOverdue").ToListAsync());
+            var rows = await u.H.Factory.WithDbAsync(db => db.Set<LptHub.Notifications.Domain.Notification>().Where(n => n.EventType == "TaskDue" || n.EventType == "MatterTaskOverdue").ToListAsync());
             rows.Count.ShouldBeGreaterThan(0);
             rows.ShouldAllBe(n => n.ObjectId == o1 || n.ObjectId == o3);
             (await IdsAsync(u.UnrelatedClient)).ShouldBeEmpty();

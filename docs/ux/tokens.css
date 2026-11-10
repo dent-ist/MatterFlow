@@ -1,4 +1,4 @@
-/* MatterFlow design tokens (light theme, Phase 1). Contrast ratios noted are against --mf-surface (#FFFFFF) unless stated. */
+/* LPT Hub design tokens (light theme, Phase 1). Contrast ratios noted are against --mf-surface (#FFFFFF) unless stated. */
 :root {
   /* Neutrals */
   --mf-bg: #f5f6f8; /* app background */

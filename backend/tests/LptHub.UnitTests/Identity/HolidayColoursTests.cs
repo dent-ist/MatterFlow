@@ -1,8 +1,8 @@
-using MatterFlow.Configuration.Contracts;
-using MatterFlow.Identity.Holidays;
+using LptHub.Configuration.Contracts;
+using LptHub.Identity.Holidays;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Identity;
+namespace LptHub.UnitTests.Identity;
 
 /// <summary>The holiday calendar colours repeat the tag palette (Identity may not read the Configuration module): the two lists must stay in step.</summary>
 public class HolidayColoursTests

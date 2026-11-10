@@ -1,7 +1,7 @@
 using System.Collections.Frozen;
 using System.Text.Json;
 
-namespace MatterFlow.Configuration.Contracts;
+namespace LptHub.Configuration.Contracts;
 
 /// <summary>One colour of the Task Type palette (<c>contracts/task-type-colours.json</c>).</summary>
 /// <param name="Key">Stable lower-case name; this is what <c>TaskType.ColourKey</c> stores.</param>

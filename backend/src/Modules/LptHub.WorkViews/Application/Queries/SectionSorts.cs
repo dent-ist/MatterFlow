@@ -1,10 +1,10 @@
-using MatterFlow.Configuration.Domain;
-using MatterFlow.Organization.Domain;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.WorkManagement.Domain;
+using LptHub.Configuration.Domain;
+using LptHub.Organization.Domain;
+using LptHub.SharedKernel.Results;
+using LptHub.WorkManagement.Domain;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>The type filter and the sort of a My Matters task section (PM v2, #855), parsed once and applied to the task query.</summary>
 public sealed record SectionOptions(IReadOnlyList<int> TaskTypeIds, string? Sort, bool Descending)

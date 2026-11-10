@@ -1,18 +1,18 @@
 using System.Globalization;
-using MatterFlow.Configuration.Contracts;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Identity.Domain;
-using MatterFlow.SharedKernel.Availability;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Tasks;
-using MatterFlow.SharedKernel.Time;
-using MatterFlow.WorkManagement.Domain;
+using LptHub.Configuration.Contracts;
+using LptHub.Identity.Contracts;
+using LptHub.Identity.Domain;
+using LptHub.SharedKernel.Availability;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Tasks;
+using LptHub.SharedKernel.Time;
+using LptHub.WorkManagement.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>
 /// Read side of the Dashboard Calendar (epic #1074, decision AT): who can work on each day and where coverage is thin. A fixed number of statements whatever the number of people:

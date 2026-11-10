@@ -1,7 +1,7 @@
 using Microsoft.Data.SqlClient;
 using Testcontainers.MsSql;
 
-namespace MatterFlow.SchemaTests;
+namespace LptHub.SchemaTests;
 
 /// <summary>One real SQL Server container (random host port) shared by the tests; each test gets its own database.</summary>
 public sealed class SqlServerFixture : IAsyncLifetime

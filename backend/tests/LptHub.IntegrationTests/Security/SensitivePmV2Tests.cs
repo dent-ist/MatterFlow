@@ -1,11 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Security;
+namespace LptHub.IntegrationTests.Security;
 
 /// <summary>
 /// The aggregates of PM v2 against the access matrix of the sensitive-matter walk (epic #788 README sections 12 and 16, epic #851 issue #888, PV-37): for every persona the Breakdown, the

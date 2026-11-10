@@ -275,7 +275,7 @@ async function deepLinks(
       if (!open && !notFound) problems.push(`${who} should get "not found" for ${url} (${item})`);
       if (!open && notFound) {
         const title = await w.page.title();
-        if (title !== `${NOUN[kind]} not found - MatterFlow`)
+        if (title !== `${NOUN[kind]} not found - LPT Hub`)
           problems.push(`${url}: title "${title}"`);
       }
     }

@@ -1,4 +1,4 @@
-namespace MatterFlow.Data.SchemaMigrations;
+namespace LptHub.Data.SchemaMigrations;
 
 /// <summary>Settings bound from the <c>Migrations</c> configuration section (architecture 4.3, item 8).</summary>
 public sealed class MigrationsOptions
@@ -8,7 +8,7 @@ public sealed class MigrationsOptions
     /// <summary>When false the runner is skipped at startup.</summary>
     public bool Enabled { get; set; } = true;
 
-    /// <summary>Directory with *.sql files. Null (default) uses the scripts embedded in MatterFlow.Data.</summary>
+    /// <summary>Directory with *.sql files. Null (default) uses the scripts embedded in LptHub.Data.</summary>
     public string? ScriptsFolder { get; set; }
 
     public int LockTimeoutSeconds { get; set; } = 300;

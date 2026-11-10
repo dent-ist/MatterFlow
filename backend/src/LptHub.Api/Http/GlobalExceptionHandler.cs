@@ -1,9 +1,9 @@
-using MatterFlow.SharedKernel.Results;
+using LptHub.SharedKernel.Results;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Api.Http;
+namespace LptHub.Api.Http;
 
 /// <summary>The single exception-handling point: maps known exceptions to ProblemDetails; everything else is a 500 with a traceId only.</summary>
 public sealed class GlobalExceptionHandler(IProblemDetailsService problemDetails, ILogger<GlobalExceptionHandler> logger) : IExceptionHandler

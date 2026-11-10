@@ -2,11 +2,11 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Reports;
+namespace LptHub.UnitTests.Reports;
 
 /// <summary>
 /// The access catalogue of the report login (db/report-access.json, issue #677): every table is a conscious allow/deny decision and the
-/// GRANT/DENY lines for the role mf_report_reader in db/scripts equal the catalogue. A new table without an entry fails here.
+/// GRANT/DENY lines for the role lpt_report_reader in db/scripts equal the catalogue. A new table without an entry fails here.
 /// </summary>
 public partial class ReportAccessCatalogueTests
 {
@@ -36,7 +36,7 @@ public partial class ReportAccessCatalogueTests
     [GeneratedRegex(@"^\s*CREATE\s+TABLE\s+(?:\[?dbo\]?\.)?\[?(\w+)\]?", RegexOptions.Multiline | RegexOptions.IgnoreCase)]
     private static partial Regex CreateTable();
 
-    [GeneratedRegex(@"^(GRANT|DENY)\s+(.+?)\s+ON\s+(?:OBJECT::)?dbo\.(\w+)\s+TO\s+mf_report_reader\s*;", RegexOptions.Multiline | RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"^(GRANT|DENY)\s+(.+?)\s+ON\s+(?:OBJECT::)?dbo\.(\w+)\s+TO\s+lpt_report_reader\s*;", RegexOptions.Multiline | RegexOptions.IgnoreCase)]
     private static partial Regex ReaderStatement();
 
     [Fact]
@@ -108,7 +108,7 @@ public partial class ReportAccessCatalogueTests
 
         functions.ShouldContain("fnMatterVisible");
         foreach (var function in functions)
-            scripts.Any(s => Regex.IsMatch(s, @$"^\s*DENY\s+SELECT\s+ON\s+\[dbo\]\.\[{function}\]\s+TO\s+\[mf_report_reader\]\s*;", RegexOptions.Multiline | RegexOptions.IgnoreCase)).ShouldBeTrue($"{function} has no DENY SELECT for mf_report_reader");
+            scripts.Any(s => Regex.IsMatch(s, @$"^\s*DENY\s+SELECT\s+ON\s+\[dbo\]\.\[{function}\]\s+TO\s+\[lpt_report_reader\]\s*;", RegexOptions.Multiline | RegexOptions.IgnoreCase)).ShouldBeTrue($"{function} has no DENY SELECT for lpt_report_reader");
     }
 
     [Fact]
@@ -116,8 +116,8 @@ public partial class ReportAccessCatalogueTests
     {
         foreach (var script in ScriptTexts())
         {
-            Regex.IsMatch(script, @"ALTER\s+ROLE\s+\[?(db_\w+|sysadmin|mf_app|mf_migrator)\]?\s+ADD\s+MEMBER\s+\[?mf_report_reader", RegexOptions.IgnoreCase).ShouldBeFalse();
-            Regex.IsMatch(script, @"GRANT\s+(?!SELECT\s+ON\s+dbo\.)[^;]*\bTO\s+mf_report_reader", RegexOptions.IgnoreCase | RegexOptions.Singleline).ShouldBeFalse("the role only ever gets table-level SELECT");
+            Regex.IsMatch(script, @"ALTER\s+ROLE\s+\[?(db_\w+|sysadmin|lpt_app|lpt_migrator)\]?\s+ADD\s+MEMBER\s+\[?lpt_report_reader", RegexOptions.IgnoreCase).ShouldBeFalse();
+            Regex.IsMatch(script, @"GRANT\s+(?!SELECT\s+ON\s+dbo\.)[^;]*\bTO\s+lpt_report_reader", RegexOptions.IgnoreCase | RegexOptions.Singleline).ShouldBeFalse("the role only ever gets table-level SELECT");
         }
     }
 }

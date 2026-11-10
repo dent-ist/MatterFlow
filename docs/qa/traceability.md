@@ -183,7 +183,7 @@ Maps every baseline scenario SCN-001..020, the baseline section 6.4 acceptance s
 | I1 Windows Integrated + JIT | ID-01, ID-06, WIN-01..WIN-08 (manual list in Part 6) | IT, MAN | | | | #16 |
 | I2 Dev provider only off-domain | SEC-DEV-01 | IT | Production config | Start app with `Production` env and Dev auth configured | Startup fails or Dev scheme not registered; Dev header ignored | #16 |
 | I3 Initial admin seeded by config | ID-10 | IT | | | | #16 |
-| I4 Same-origin; CSRF guard | SEC-05 | IT | | POST without `X-MatterFlow-Client`; with wrong content-type; `Sec-Fetch-Site: cross-site`; GET | 400/403 for the first three; GET fine | #15, #16 |
+| I4 Same-origin; CSRF guard | SEC-05 | IT | | POST without `X-LptHub-Client`; with wrong content-type; `Sec-Fetch-Site: cross-site`; GET | 400/403 for the first three; GET fine | #15, #16 |
 
 ### J. Database migrations
 

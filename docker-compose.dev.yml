@@ -1,17 +1,17 @@
-# Local development database: SQL Server 2022 with an empty MatterFlow database.
+# Local development database: SQL Server 2022 with an empty LPT Hub database.
 #   docker compose -f docker-compose.dev.yml up -d
 # The API creates the schema itself at startup (Migrations:Enabled, default true). Development only: the password is not a secret.
 services:
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: matterflow-sql
+    container_name: lpt-hub-sql
     environment:
       ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "MatterFlow_Dev1!"
+      MSSQL_SA_PASSWORD: "LptHub_Dev1!"
     ports:
       - "127.0.0.1:1433:1433" # loopback only: the sa password above is public (security review SEC-19)
     volumes:
-      - matterflow-sql-data:/var/opt/mssql
+      - lpt-hub-sql-data:/var/opt/mssql
     healthcheck:
       test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q \"SELECT 1\" -b -o /dev/null"]
       interval: 5s
@@ -27,13 +27,13 @@ services:
         condition: service_healthy
     restart: "no"
     environment:
-      MSSQL_SA_PASSWORD: "MatterFlow_Dev1!"
+      MSSQL_SA_PASSWORD: "LptHub_Dev1!"
     entrypoint:
       - /bin/bash
       - -c
-      - /opt/mssql-tools18/bin/sqlcmd -C -S sqlserver -U sa -P "$$MSSQL_SA_PASSWORD" -b -Q "IF DB_ID('MatterFlow') IS NULL CREATE DATABASE MatterFlow;"
+      - /opt/mssql-tools18/bin/sqlcmd -C -S sqlserver -U sa -P "$$MSSQL_SA_PASSWORD" -b -Q "IF DB_ID('LptHub') IS NULL CREATE DATABASE LptHub;"
 
-  # One-shot: creates the read-only report login (demo only) and adds it to the role mf_report_reader once the API has applied the schema.
+  # One-shot: creates the read-only report login (demo only) and adds it to the role lpt_report_reader once the API has applied the schema.
   # WAIT_SECONDS=0 (db:up) creates only the login and user; db:report-login waits for the role, so a first start works without a second command.
   report-login-init:
     image: mcr.microsoft.com/mssql/server:2022-latest
@@ -43,7 +43,7 @@ services:
     restart: "no"
     profiles: ["tools"]
     environment:
-      MSSQL_SA_PASSWORD: "MatterFlow_Dev1!"
+      MSSQL_SA_PASSWORD: "LptHub_Dev1!"
       WAIT_SECONDS: "0"
     volumes:
       - ./tools/db:/scripts:ro
@@ -51,10 +51,10 @@ services:
       - /bin/bash
       - -c
       - |
-        q() { /opt/mssql-tools18/bin/sqlcmd -C -S sqlserver -U sa -P "$$MSSQL_SA_PASSWORD" -d MatterFlow -b -h -1 -W "$$@"; }
+        q() { /opt/mssql-tools18/bin/sqlcmd -C -S sqlserver -U sa -P "$$MSSQL_SA_PASSWORD" -d LptHub -b -h -1 -W "$$@"; }
         waited=0
-        until [ "$$(q -Q "SET NOCOUNT ON; SELECT DATABASE_PRINCIPAL_ID('mf_report_reader')" | tr -d '[:space:]')" != "NULL" ] || [ "$$waited" -ge "$$WAIT_SECONDS" ]; do sleep 2; waited=$$((waited + 2)); done
+        until [ "$$(q -Q "SET NOCOUNT ON; SELECT DATABASE_PRINCIPAL_ID('lpt_report_reader')" | tr -d '[:space:]')" != "NULL" ] || [ "$$waited" -ge "$$WAIT_SECONDS" ]; do sleep 2; waited=$$((waited + 2)); done
         q -i /scripts/provision-report-login.sql
 
 volumes:
-  matterflow-sql-data:
+  lpt-hub-sql-data:

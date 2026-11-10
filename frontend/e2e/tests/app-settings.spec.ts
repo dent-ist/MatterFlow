@@ -32,7 +32,7 @@ const publicBranding = async (): Promise<{
 }> => {
   const anonymous = await request.newContext({
     baseURL: BASE_URL,
-    extraHTTPHeaders: { 'X-MatterFlow-Client': 'web' },
+    extraHTTPHeaders: { 'X-LptHub-Client': 'web' },
   });
   try {
     const response = await anonymous.get('/api/v1/branding');
@@ -48,10 +48,10 @@ test.describe('the administrator changes the name and the icon', () => {
     page,
   }) => {
     await page.goto('/admin/settings');
-    await expect(page).toHaveTitle('Settings: Branding - MatterFlow');
+    await expect(page).toHaveTitle('Settings: Branding - LPT Hub');
     await expect(page.getByRole('heading', { level: 1, name: 'Settings' })).toBeVisible();
     await expect(page.getByRole('tab', { name: 'Branding' })).toBeVisible();
-    await expect(page.getByLabel('Application name (required)')).toHaveValue('MatterFlow');
+    await expect(page.getByLabel('Application name (required)')).toHaveValue('LPT Hub');
 
     await page.getByLabel('Application name (required)').fill('Smith & Co Legal');
     await expect(page.locator('[data-preview-header]')).toHaveText('Smith & Co Legal');
@@ -157,7 +157,7 @@ test.describe('the administrator changes the name and the icon', () => {
     await expect(pending.locator('main')).toContainText('before you can use Harbor Legal.');
   });
 
-  test('Reset to default returns MatterFlow and the built-in icon, and nothing changes until Save', async ({
+  test('Reset to default returns LPT Hub and the built-in icon, and nothing changes until Save', async ({
     page,
     admin,
   }) => {
@@ -170,7 +170,7 @@ test.describe('the administrator changes the name and the icon', () => {
 
     await page.locator('[data-reset-name]').getByRole('button').click();
     await page.locator('[data-reset-icon]').getByRole('button').click();
-    await expect(page.getByLabel('Application name (required)')).toHaveValue('MatterFlow');
+    await expect(page.getByLabel('Application name (required)')).toHaveValue('LPT Hub');
     await expect(page.locator('[data-icon-file]')).toContainText('Built-in icon');
     // Not saved yet: everyone still sees the custom values.
     expect((await publicBranding()).appName).toBe('Temporary Name');
@@ -182,15 +182,15 @@ test.describe('the administrator changes the name and the icon', () => {
         const view = await publicBranding();
         return [view.appName, view.iconUrl];
       })
-      .toEqual(['MatterFlow', null]);
+      .toEqual(['LPT Hub', null]);
     await page.reload();
-    await expect(page.locator('.mf-logo [data-app-name]')).toHaveText('MatterFlow');
+    await expect(page.locator('.mf-logo [data-app-name]')).toHaveText('LPT Hub');
     await expect(page.locator('link[rel="icon"]').first()).toHaveAttribute('href', 'favicon.svg');
     await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute(
       'href',
       'apple-touch-icon.png',
     );
-    await expect(page).toHaveTitle('Settings: Branding - MatterFlow');
+    await expect(page).toHaveTitle('Settings: Branding - LPT Hub');
   });
 });
 
@@ -249,7 +249,7 @@ test.describe('refusals', () => {
       'aria-invalid',
       'true',
     );
-    expect((await publicBranding()).appName).toBe('MatterFlow');
+    expect((await publicBranding()).appName).toBe('LPT Hub');
   });
 
   test('a 40 character limit stops the typing', async ({ page }) => {

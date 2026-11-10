@@ -1,16 +1,16 @@
 using System.Globalization;
-using MatterFlow.Audit.Contracts;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Organization.Contracts;
-using MatterFlow.Organization.Domain;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Paging;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.ValueObjects;
-using MatterFlow.SharedKernel.Visibility;
+using LptHub.Audit.Contracts;
+using LptHub.Identity.Contracts;
+using LptHub.Organization.Contracts;
+using LptHub.Organization.Domain;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Paging;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.ValueObjects;
+using LptHub.SharedKernel.Visibility;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Organization.Application;
+namespace LptHub.Organization.Application;
 
 public sealed class ProjectService(DbContext db, IAuditWriter audit, CustomFieldValues custom, IOrganizationTaskCounts taskCounts, IPermissionChecker permissions, IMatterVisibility visibility, IManagedMatterScope managed)
 {

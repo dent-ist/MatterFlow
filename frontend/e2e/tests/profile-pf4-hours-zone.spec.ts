@@ -57,7 +57,7 @@ test.describe('pf4-hours: compact work hours (#534)', () => {
 
     const saved = await me.evaluate(async () => {
       const r = await fetch('/api/v1/me/availability', {
-        headers: { 'X-MatterFlow-Client': 'web' },
+        headers: { 'X-LptHub-Client': 'web' },
       });
       return (
         (await r.json()) as { workHours: { dayOfWeek: number; start: string; end: string }[] }

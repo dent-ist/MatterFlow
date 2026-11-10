@@ -102,7 +102,7 @@ describe('the state pages are one family', () => {
       expect(el.querySelector('[data-state-reason]')!.textContent!.trim().length).toBeGreaterThan(
         0,
       );
-      expect(el.querySelector('[data-state-brand]')!.textContent).toContain('MatterFlow');
+      expect(el.querySelector('[data-state-brand]')!.textContent).toContain('LPT Hub');
     }
   });
 

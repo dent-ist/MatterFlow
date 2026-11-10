@@ -1,8 +1,8 @@
 {
-  "name": "matterflow",
+  "name": "lpt-hub",
   "version": "0.1.1",
   "private": true,
-  "description": "Root scripts to run MatterFlow locally: SQL Server (Docker), API, Angular dev server.",
+  "description": "Root scripts to run LPT Hub locally: SQL Server (Docker), API, Angular dev server.",
   "scripts": {
     "setup": "npm --prefix frontend ci && npm --prefix frontend exec -- ng build form-engine",
     "start": "npm run db:up && npm run form-engine && concurrently --kill-others-on-fail --names api,web,rpt --prefix-colors blue,green,gray \"npm:api\" \"npm:web\" \"npm:db:report-login\"",
@@ -19,7 +19,7 @@
     "api:user1": "cross-env \"Auth__Dev__DefaultUser=KE\\user1\" npm run api:run",
     "api:user2": "cross-env \"Auth__Dev__DefaultUser=KE\\user2\" npm run api:run",
     "api:user3": "cross-env \"Auth__Dev__DefaultUser=KE\\user3\" npm run api:run",
-    "api:run": "cross-env ASPNETCORE_ENVIRONMENT=Development \"ConnectionStrings__Default=Server=127.0.0.1,1433;Database=MatterFlow;User Id=sa;Password=MatterFlow_Dev1!;TrustServerCertificate=True;Connect Timeout=60\" \"ConnectionStrings__MatterFlow=Server=127.0.0.1,1433;Database=MatterFlow;User Id=sa;Password=MatterFlow_Dev1!;TrustServerCertificate=True;Connect Timeout=60\" \"Bootstrap__SystemAdmins__0=KE\\kekim\" Seed__StarterConfiguration__Enabled=true dotnet run --project backend/src/MatterFlow.Api",
+    "api:run": "cross-env ASPNETCORE_ENVIRONMENT=Development \"ConnectionStrings__Default=Server=127.0.0.1,1433;Database=LptHub;User Id=sa;Password=LptHub_Dev1!;TrustServerCertificate=True;Connect Timeout=60\" \"ConnectionStrings__LptHub=Server=127.0.0.1,1433;Database=LptHub;User Id=sa;Password=LptHub_Dev1!;TrustServerCertificate=True;Connect Timeout=60\" \"Bootstrap__SystemAdmins__0=KE\\kekim\" Seed__StarterConfiguration__Enabled=true dotnet run --project backend/src/LptHub.Api",
     "web": "npm --prefix frontend run start:api",
     "seed:demo": "node tools/seed-demo/seed-demo.mjs"
   },

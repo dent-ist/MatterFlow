@@ -2,7 +2,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.IntegrationTests.Fixtures;
+namespace LptHub.IntegrationTests.Fixtures;
 
 /// <summary>
 /// Puts Out of office entries straight into <c>dbo.UserAbsence</c> (script 58) so a test can set up a person who is away with any dates, in the past too; the entry rules of the API are tested in

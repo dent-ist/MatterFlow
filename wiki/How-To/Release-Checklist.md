@@ -2,7 +2,7 @@
 
 [[_TOC_]]
 
-**What this page is for.** What to check before and during a release. MatterFlow has not been deployed yet (`CLAUDE.md`), so this checklist is built from the CI definitions and `docs/runbook.md` (sections 5 to 9, 12) and has not been rehearsed on a real server. The remaining owner items are in runbook section 9 ("What the product owner must verify on the real server"). Which branch a release comes from and the steps before it (pull request, full QA, security check, UAT, tag) are on [Change Management Process](../Getting-Started/Change-Management-Process.md).
+**What this page is for.** What to check before and during a release. LPT Hub has not been deployed yet (`CLAUDE.md`), so this checklist is built from the CI definitions and `docs/runbook.md` (sections 5 to 9, 12) and has not been rehearsed on a real server. The remaining owner items are in runbook section 9 ("What the product owner must verify on the real server"). Which branch a release comes from and the steps before it (pull request, full QA, security check, UAT, tag) are on [Change Management Process](../Getting-Started/Change-Management-Process.md).
 
 ## Before the release branch is merged to `dev`
 
@@ -18,14 +18,14 @@
 
 ## Build the package
 
-1. Run the manual `publish` workflow, or locally `deploy/publish.sh <out> win-x64` (Linux or macOS) or `deploy/publish.ps1` (Windows). The workflow checks the package contents and uploads it as an artifact named `matterflow-publish-<sha>`.
+1. Run the manual `publish` workflow, or locally `deploy/publish.sh <out> win-x64` (Linux or macOS) or `deploy/publish.ps1` (Windows). The workflow checks the package contents and uploads it as an artifact named `lpt-hub-publish-<sha>`.
 2. The package is framework-dependent: the server needs the .NET 10 Hosting Bundle.
 
 ## Deploy (summary of runbook section 7)
 
 1. Announce a window. Take a full database backup (the rollback point).
 2. Unzip the package to a staging folder; copy the live `appsettings.Production.json` into it (it is not in the package).
-3. Run `dotnet MatterFlow.Api.dll --migrate-only` as the migrator account with `ASPNETCORE_ENVIRONMENT=Production`; stop if the exit code is not 0.
+3. Run `dotnet LptHub.Api.dll --migrate-only` as the migrator account with `ASPNETCORE_ENVIRONMENT=Production`; stop if the exit code is not 0.
 4. Stop the site, swap folders (keep the previous one), start the site.
 5. Verify `/health/ready`, sign in, open the Dashboard and one task. Keep the previous folder and the backup for at least a week.
 6. Rollback: with no schema change, swap folders back; with schema scripts applied, fix forward or restore the backup (old binaries refuse to start against scripts they do not contain).
@@ -33,7 +33,7 @@
 ## First deployment extras (runbook sections 5, 9, 11, 12)
 
 - [ ] IIS site, application pool identity, Windows authentication on, anonymous off, `AllowedHosts` set to the real host names, site in the Intranet zone.
-- [ ] Database roles and members (`mf_app`, `mf_migrator`) and the audit table permissions; the API refuses to start if its identity can alter the audit table.
+- [ ] Database roles and members (`lpt_app`, `lpt_migrator`) and the audit table permissions; the API refuses to start if its identity can alter the audit table.
 - [ ] `READ_COMMITTED_SNAPSHOT` set by the DBA (recommended).
 - [ ] `deploy/configure-iis.ps1` run so the notification scheduler keeps running.
 - [ ] Report login created and the startup check green (or reports left off).

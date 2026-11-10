@@ -1,10 +1,10 @@
 using System.Linq.Expressions;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Visibility;
+using LptHub.Identity.Contracts;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Visibility;
 
-namespace MatterFlow.Identity.Access;
+namespace LptHub.Identity.Access;
 
 /// <summary>
 /// The implementation of <see cref="IManagedMatterScope"/> (epic #758, PX-02). The manager rule is <see cref="ManagedMatterRule"/>; the matters it

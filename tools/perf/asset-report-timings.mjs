@@ -4,7 +4,7 @@
 // report shapes of the builder, 40 runs each (the first 5 are warm-up and dropped, the very first call is shown as "cold").
 //
 //   node tools/perf/asset-report-timings.mjs --base http://127.0.0.1:5271 --container mf-e2e-sql-1234 [--assets 100000] [--runs 40] [--reuse <assetTypeId>] [--plans]
-//   (SQL password MatterFlow_Dev1!, Dev auth user ke\kekim, the defaults of frontend/e2e/run-local.sh)
+//   (SQL password LptHub_Dev1!, Dev auth user ke\kekim, the defaults of frontend/e2e/run-local.sh)
 //
 // With --plans it also prints, for each shape, the statement count and the logical reads and index scans seen in the plan cache (sys.dm_exec_*).
 import { execFileSync } from 'node:child_process';
@@ -21,11 +21,11 @@ const container = arg('container', '');
 const assets = Number(arg('assets', '100000'));
 const runs = Number(arg('runs', '40'));
 const user = 'ke\\kekim';
-const password = 'MatterFlow_Dev1!';
+const password = 'LptHub_Dev1!';
 const here = dirname(fileURLToPath(import.meta.url));
 if (!container) throw new Error('--container <sql container name> is required');
 
-const headers = { 'X-Dev-User': user, 'X-MatterFlow-Client': 'web', 'Content-Type': 'application/json' };
+const headers = { 'X-Dev-User': user, 'X-LptHub-Client': 'web', 'Content-Type': 'application/json' };
 async function api(method, path, body) {
   const res = await fetch(base + path, { method, headers, body: body ? JSON.stringify(body) : undefined });
   const text = await res.text();
@@ -33,7 +33,7 @@ async function api(method, path, body) {
   return text ? JSON.parse(text) : null;
 }
 const sql = (query) =>
-  execFileSync('docker', ['exec', container, '/opt/mssql-tools18/bin/sqlcmd', '-C', '-S', 'localhost', '-U', 'sa', '-P', password, '-d', 'MatterFlow', '-I', '-b', '-W', '-s', '|', '-Q', query], { encoding: 'utf8' });
+  execFileSync('docker', ['exec', container, '/opt/mssql-tools18/bin/sqlcmd', '-C', '-S', 'localhost', '-U', 'sa', '-P', password, '-d', 'LptHub', '-I', '-b', '-W', '-s', '|', '-Q', query], { encoding: 'utf8' });
 
 // 1. the type and its form (--reuse <assetTypeId>: the data of an earlier run is there, only time it again)
 const reuse = arg('reuse', '');
@@ -56,7 +56,7 @@ let script = readFileSync(join(here, 'seed-asset-report-data.sql'), 'utf8');
 for (const [k, v] of Object.entries({ Assets: assets, TypeId: type.assetTypeId, FieldDefinitionId: definition.formDefinitionId, Manager: user })) script = script.replaceAll(`$(${k})`, String(v));
 execFileSync('docker', ['exec', '-i', container, 'sh', '-c', 'cat > /tmp/seed-asset-report-data.sql'], { input: script });
 const t0 = Date.now();
-console.log(execFileSync('docker', ['exec', container, '/opt/mssql-tools18/bin/sqlcmd', '-C', '-S', 'localhost', '-U', 'sa', '-P', password, '-d', 'MatterFlow', '-I', '-b', '-W', '-i', '/tmp/seed-asset-report-data.sql'], { encoding: 'utf8' }).trim());
+console.log(execFileSync('docker', ['exec', container, '/opt/mssql-tools18/bin/sqlcmd', '-C', '-S', 'localhost', '-U', 'sa', '-P', password, '-d', 'LptHub', '-I', '-b', '-W', '-i', '/tmp/seed-asset-report-data.sql'], { encoding: 'utf8' }).trim());
 console.log(`loaded in ${Math.round((Date.now() - t0) / 1000)} s`);
 sql('UPDATE STATISTICS dbo.Asset; UPDATE STATISTICS dbo.CustomFieldIndex;');
 }

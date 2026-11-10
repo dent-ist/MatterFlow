@@ -1,4 +1,4 @@
-namespace MatterFlow.Reports.Application;
+namespace LptHub.Reports.Application;
 
 /// <summary>A report in the person's Recent line.</summary>
 /// <param name="LastRunAtUtc">When the person last ran this report successfully (UTC).</param>

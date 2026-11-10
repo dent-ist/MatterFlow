@@ -1,8 +1,8 @@
-using MatterFlow.Notifications.Domain;
+using LptHub.Notifications.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace MatterFlow.Notifications.Infrastructure;
+namespace LptHub.Notifications.Infrastructure;
 
 internal sealed class NotificationConfiguration : IEntityTypeConfiguration<Notification>
 {

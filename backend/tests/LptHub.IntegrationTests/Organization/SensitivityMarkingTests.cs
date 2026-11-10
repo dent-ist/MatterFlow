@@ -1,11 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Organization;
+namespace LptHub.IntegrationTests.Organization;
 
 /// <summary>
 /// Marking and un-marking a matter sensitive (epic #788, SM-05, #793): one dedicated audit event, the confirmation when the actor would lose sight of the matter,
@@ -26,9 +26,9 @@ public sealed class SensitivityMarkingTests(SqlServerFixture sql)
             rowVersion = matter.GetProperty("rowVersion").GetString(),
         });
 
-    private static Task<List<MatterFlow.Audit.Domain.AuditEvent>> EventsAsync(SensitiveUniverse u, int matterId) =>
+    private static Task<List<LptHub.Audit.Domain.AuditEvent>> EventsAsync(SensitiveUniverse u, int matterId) =>
         u.H.Factory.WithDbAsync(db => Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.ToListAsync(
-            db.Set<MatterFlow.Audit.Domain.AuditEvent>().Where(a => a.MatterId == matterId && a.EventType == "MATTER_SENSITIVITY_CHANGED").OrderBy(a => a.Id)));
+            db.Set<LptHub.Audit.Domain.AuditEvent>().Where(a => a.MatterId == matterId && a.EventType == "MATTER_SENSITIVITY_CHANGED").OrderBy(a => a.Id)));
 
     [Fact]
     public async Task Marking_and_un_marking_write_one_dedicated_event_each_and_no_generic_field_change()
@@ -55,7 +55,7 @@ public sealed class SensitivityMarkingTests(SqlServerFixture sql)
             await OkAsync(await PutAsync(u.ViewerClient, unmarked, false));
             (await EventsAsync(u, u.N1)).Count.ShouldBe(2);
             (await u.H.Factory.WithDbAsync(db => Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.CountAsync(
-                db.Set<MatterFlow.Audit.Domain.AuditEvent>().Where(a => a.EventType == "FIELD_CHANGED" && a.FieldKey == "IsSensitive")))).ShouldBe(0);
+                db.Set<LptHub.Audit.Domain.AuditEvent>().Where(a => a.EventType == "FIELD_CHANGED" && a.FieldKey == "IsSensitive")))).ShouldBe(0);
         }
         finally
         {

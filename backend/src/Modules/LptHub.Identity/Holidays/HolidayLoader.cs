@@ -1,9 +1,9 @@
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Identity.Domain;
-using MatterFlow.SharedKernel.Availability;
+using LptHub.Identity.Contracts;
+using LptHub.Identity.Domain;
+using LptHub.SharedKernel.Availability;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Identity.Holidays;
+namespace LptHub.Identity.Holidays;
 
 /// <summary>Where a person's holiday calendar comes from.</summary>
 public static class HolidayCalendarSources

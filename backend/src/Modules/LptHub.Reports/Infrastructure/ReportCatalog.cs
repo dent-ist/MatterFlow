@@ -1,7 +1,7 @@
-using MatterFlow.Reports.Application;
+using LptHub.Reports.Application;
 using Microsoft.Data.SqlClient;
 
-namespace MatterFlow.Reports.Infrastructure;
+namespace LptHub.Reports.Infrastructure;
 
 /// <summary>
 /// Reads what a person may run: the current version of an <b>active</b> report that is assigned to one of the person's <b>active</b> roles

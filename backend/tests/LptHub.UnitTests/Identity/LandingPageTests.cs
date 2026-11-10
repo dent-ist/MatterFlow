@@ -1,11 +1,11 @@
 using System.Reflection;
-using MatterFlow.Identity.Authorization;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Identity.LandingPages;
-using MatterFlow.Identity.Seeding;
+using LptHub.Identity.Authorization;
+using LptHub.Identity.Contracts;
+using LptHub.Identity.LandingPages;
+using LptHub.Identity.Seeding;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Identity;
+namespace LptHub.UnitTests.Identity;
 
 /// <summary>Landing pages (epic #1330, issue #1332): the catalogue, the "who can open a page" rule, the role list order and the fallback chain.</summary>
 public class LandingPageTests
@@ -172,7 +172,7 @@ public class LandingPageTests
     [Fact]
     public void Role_endpoints_use_the_role_permissions()
     {
-        var controller = typeof(MatterFlow.Identity.Api.LandingPagesController);
+        var controller = typeof(LptHub.Identity.Api.LandingPagesController);
         controller.GetMethod("SetRole")!.GetCustomAttribute<RequirePermissionAttribute>()!.Code.ShouldBe(Permissions.Role.Manage);
     }
 }

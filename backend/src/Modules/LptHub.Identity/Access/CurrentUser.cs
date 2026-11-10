@@ -1,7 +1,7 @@
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Results;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Results;
 
-namespace MatterFlow.Identity.Access;
+namespace LptHub.Identity.Access;
 
 /// <summary>
 /// Request-scoped caller. Populated by the authorization handler once the principal has been resolved to an <see cref="AccessSnapshot"/>

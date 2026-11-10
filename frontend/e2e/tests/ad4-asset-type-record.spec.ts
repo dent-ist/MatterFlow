@@ -39,7 +39,7 @@ test.describe('Asset type record page (#635, #636, #638)', () => {
     await page.getByRole('button', { name: 'New Asset Type' }).click();
     await expect(page).toHaveURL(/\/admin\/asset-types\/new$/);
     await expect(heading(page)).toHaveText('New Asset Type');
-    await expect(page).toHaveTitle('New Asset Type - MatterFlow');
+    await expect(page).toHaveTitle('New Asset Type - LPT Hub');
     await expect(crumbs(page)).toHaveText([/Administration/, /Asset Types/, /New asset type/i]);
     // A new type has no tabs and no state badge; Create and Cancel are there from the start.
     await expect(page.getByRole('tab')).toHaveCount(0);
@@ -98,7 +98,7 @@ test.describe('Asset type record page (#635, #636, #638)', () => {
     await link.click();
     await expect(page).toHaveURL(new RegExp(`/admin/asset-types/${t.assetTypeId}$`));
     await expect(heading(page)).toContainText(`Back ${token}`);
-    await expect(page).toHaveTitle(`Back ${token} - MatterFlow`);
+    await expect(page).toHaveTitle(`Back ${token} - LPT Hub`);
     await crumbs(page).filter({ hasText: 'Asset Types' }).getByRole('link').click();
     await expect(page).toHaveURL(new RegExp(`name=${token}`));
     await expect(page.getByRole('link', { name: `Back ${token}` })).toBeFocused();
@@ -222,7 +222,7 @@ test.describe('Asset type record page (#635, #636, #638)', () => {
       new RegExp(published.name),
       /Fields/,
     ]);
-    await expect(page).toHaveTitle(`${published.name}: Fields - MatterFlow`);
+    await expect(page).toHaveTitle(`${published.name}: Fields - LPT Hub`);
     await crumbs(page).filter({ hasText: published.name }).getByRole('link').click();
     await expect(page).toHaveURL(new RegExp(`/admin/asset-types/${published.id}$`));
   });

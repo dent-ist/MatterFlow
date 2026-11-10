@@ -90,7 +90,7 @@ test.describe('Landing pages (#1333)', () => {
     await expect(toasts(page)).toContainText('Landing page saved');
     await expect(toasts(page)).toContainText('You start on Clients after you sign in.');
     await expect(card.locator('[data-landing-result]')).toHaveText('You start on Clients.');
-    await page.getByRole('link', { name: 'MatterFlow home' }).click();
+    await page.getByRole('link', { name: 'LPT Hub home' }).click();
     await expect(page).toHaveURL(/\/clients$/);
 
     // The choice survives a reload (stored on the server).

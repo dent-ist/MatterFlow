@@ -264,7 +264,7 @@ describe('Administration record pages: not found, no access and failure (#353)',
         );
         expect(crumbs).toEqual(c.crumbs);
         // The tab title names the state; one message only, no toast.
-        expect(TestBed.inject(Title).getTitle()).toBe(`${c.title[f.what]} - MatterFlow`);
+        expect(TestBed.inject(Title).getTitle()).toBe(`${c.title[f.what]} - LPT Hub`);
         expect(TestBed.inject(NotificationService).toasts()).toEqual([]);
         expect(document.activeElement).toBe(el.querySelector('h1'));
 

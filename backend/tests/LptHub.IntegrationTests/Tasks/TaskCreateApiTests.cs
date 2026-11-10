@@ -1,12 +1,12 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.Audit.Domain;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.Audit.Domain;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Tasks;
+namespace LptHub.IntegrationTests.Tasks;
 
 /// <summary>Task creation (tickets 41, 44) against a real SQL Server through the HTTP pipeline: SCN-004, 005, 008, 009, 015.</summary>
 [Collection(SqlServerCollection.Name)]
@@ -97,7 +97,7 @@ public sealed class TaskCreateApiTests(SqlServerFixture sql) : IAsyncLifetime
     public async Task Scn009_exactly_one_eligible_workflow_must_be_chosen()
     {
         var other = await _h.Workflows.CreateStepAsync("Other step");
-        var notEligible = await _h.Workflows.CreatePublishedWorkflowAsync("Not eligible", false, new MatterFlow.IntegrationTests.Workflows.WorkflowInstanceHarness.Place(other));
+        var notEligible = await _h.Workflows.CreatePublishedWorkflowAsync("Not eligible", false, new LptHub.IntegrationTests.Workflows.WorkflowInstanceHarness.Place(other));
 
         var ineligible = _h.NewTask(_w, extra: new() { ["workflowDefinitionId"] = notEligible.WorkflowId });
         await ProblemAsync(await _h.Admin.PostAsJsonAsync("/api/v1/tasks", ineligible), HttpStatusCode.Conflict, "WORKFLOW_NOT_ELIGIBLE");

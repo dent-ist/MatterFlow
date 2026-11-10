@@ -1,8 +1,8 @@
-using MatterFlow.Reports.Application;
+using LptHub.Reports.Application;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
-namespace MatterFlow.Reports.Infrastructure;
+namespace LptHub.Reports.Infrastructure;
 
 /// <summary>
 /// Holds the current Reports health. The only place in the product that reads <c>ConnectionStrings:ReportsReadOnly</c>
@@ -12,7 +12,7 @@ internal sealed class ReportsAvailability(IConfiguration configuration, ILogger<
 {
     public const string ConnectionName = "ReportsReadOnly";
 
-    private static readonly string[] ApplicationConnectionNames = ["MatterFlow", "Default", "Migrations"];
+    private static readonly string[] ApplicationConnectionNames = ["LptHub", "Default", "Migrations"];
 
     private readonly SemaphoreSlim _check = new(1, 1);
     private volatile ReportsStatus _current = new(false, ReportsStates.Checking, "Reports are being checked.");

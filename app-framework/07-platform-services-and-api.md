@@ -2,7 +2,7 @@
 
 Related: `03-security-model.md` sections 6 and 8, `04-launch-identity-and-tokens.md`, `06-hosting-and-app-host.md`, `docs/architecture.md` 11 (API conventions, ProblemDetails, stable error codes).
 
-Platform services are what a browser cannot do: read network folders and call other systems with credentials the app must never hold. They are offered by MatterFlow under `https://<host>/apps/_mf/v1/*`, used by an app **front end** (bearer session token) or **back end** (`X-MF-Service-Token` forwarded by the gateway). All calls are on behalf of the launching user, limited to what the manifest requested and an admin approved, and audited in `AppServiceAudit`. Conventions as the main API: JSON, ProblemDetails with stable `code`, `traceId`, offset or cursor paging, CORS `null` + `Vary: Origin`, no cookies.
+Platform services are what a browser cannot do: read network folders and call other systems with credentials the app must never hold. They are offered by LPT Hub under `https://<host>/apps/_mf/v1/*`, used by an app **front end** (bearer session token) or **back end** (`X-MF-Service-Token` forwarded by the gateway). All calls are on behalf of the launching user, limited to what the manifest requested and an admin approved, and audited in `AppServiceAudit`. Conventions as the main API: JSON, ProblemDetails with stable `code`, `traceId`, offset or cursor paging, CORS `null` + `Vary: Origin`, no cookies.
 
 ```mermaid
 flowchart LR
@@ -55,7 +55,7 @@ Canonicalise (`Path.GetFullPath`, then open with `FILE_FLAG_BACKUP_SEMANTICS` an
 
 ### 2.1 Model
 
-`Connector` = admin-created integration instance: `Name`, `Type` (implementation key, `harvey`), `BaseUrl`, non-secret `ConfigJson`, secrets (`SecretProtected`), `RateLimitPerMinute`, `TimeoutSeconds`, `IsActive`. A connector **type** is a .NET class in MatterFlow (`IConnector`) that exposes a closed list of named **operations** with typed arguments and results; apps cannot send arbitrary HTTP. `AppConnectorGrant` binds an app's logical connector name (`harvey`) to a connector instance and an operation allow-list (intersection with the manifest list).
+`Connector` = admin-created integration instance: `Name`, `Type` (implementation key, `harvey`), `BaseUrl`, non-secret `ConfigJson`, secrets (`SecretProtected`), `RateLimitPerMinute`, `TimeoutSeconds`, `IsActive`. A connector **type** is a .NET class in LPT Hub (`IConnector`) that exposes a closed list of named **operations** with typed arguments and results; apps cannot send arbitrary HTTP. `AppConnectorGrant` binds an app's logical connector name (`harvey`) to a connector instance and an operation allow-list (intersection with the manifest list).
 
 ```text
 POST /apps/_mf/v1/connectors/{name}/operations/{operation}     body: { "args": { ... } }
@@ -72,12 +72,12 @@ Config: `BaseUrl=https://api.harvey.example/` (tenant URL), `AuthMode=ApiKey|OAu
 
 | Operation | Args | Result | Maps to |
 |---|---|---|---|
-| `vaults.list` | `{ "search": "string?" , "cursor": "string?" }` | `{ vaults:[{id,name}], next }` filtered to vaults the connector account can see; (**user-level vault permissions are not known to MatterFlow**: see risk below) | `GET /vaults` |
+| `vaults.list` | `{ "search": "string?" , "cursor": "string?" }` | `{ vaults:[{id,name}], next }` filtered to vaults the connector account can see; (**user-level vault permissions are not known to LPT Hub**: see risk below) | `GET /vaults` |
 | `vaults.create` | `{ "name": "..." }` | `{ id }` | `POST /vaults` |
 | `files.upload` | `{ "vaultId": "...", "fileRef": "fr_...", "targetPath": "string?" }` | stream from the File Service into Harvey (multipart/resumable), returns `{ id, bytes, sha256 }` | upload endpoint |
 | `files.uploadStatus` | `{ id }` | state | |
 
-Connector-to-file-service: `files.upload` takes a `fileRef`, so bytes flow **broker -> web process -> Harvey** without passing through the browser or the app; the app back end orchestrates (decides which files) but never sees credentials. Risk/decision: the Harvey service account may see more vaults than the user; either (a) MatterFlow filters vault choices by a per-vault allow-list in connector config, or (b) the Harvey API supports per-user tokens (OAuth on-behalf-of); recommendation: (a) in release 1, (b) if Harvey supports it. See `10` Q-HARVEY.
+Connector-to-file-service: `files.upload` takes a `fileRef`, so bytes flow **broker -> web process -> Harvey** without passing through the browser or the app; the app back end orchestrates (decides which files) but never sees credentials. Risk/decision: the Harvey service account may see more vaults than the user; either (a) LPT Hub filters vault choices by a per-vault allow-list in connector config, or (b) the Harvey API supports per-user tokens (OAuth on-behalf-of); recommendation: (a) in release 1, (b) if Harvey supports it. See `10` Q-HARVEY.
 
 ## 3. Jobs and progress (long-running work, for example a 5 GB upload)
 
@@ -111,8 +111,8 @@ Every callback writes the normal `AuditEvent` with `ActorUserId=user` and `Summa
 
 ```yaml
 openapi: 3.1.0
-info: { title: MatterFlow App Platform API, version: v1 }
-servers: [ { url: https://matterflow.firm.local/apps/_mf/v1 } ]
+info: { title: LPT Hub App Platform API, version: v1 }
+servers: [ { url: https://lpt-hub.firm.local/apps/_mf/v1 } ]
 security: [ { appSession: [] } ]
 components:
   securitySchemes:

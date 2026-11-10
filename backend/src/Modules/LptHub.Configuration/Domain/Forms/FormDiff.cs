@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace MatterFlow.Configuration.Domain.Forms;
+namespace LptHub.Configuration.Domain.Forms;
 
 /// <summary>How a field differs between two form versions.</summary>
 public enum FormFieldChangeKind

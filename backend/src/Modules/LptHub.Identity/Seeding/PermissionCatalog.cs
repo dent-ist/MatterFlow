@@ -1,7 +1,7 @@
 using System.Reflection;
 using System.Text.Json;
 
-namespace MatterFlow.Identity.Seeding;
+namespace LptHub.Identity.Seeding;
 
 /// <summary>One catalog entry of <c>contracts/permissions.json</c>.</summary>
 public sealed record PermissionDefinition(string Code, string Group, string Description);

@@ -1,9 +1,9 @@
-using MatterFlow.Data.SchemaMigrations;
+using LptHub.Data.SchemaMigrations;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 
-namespace MatterFlow.SchemaTests;
+namespace LptHub.SchemaTests;
 
 /// <summary>Baseline (archived 48-app-settings.sql) (epic #850, BR-01): the permission row, dbo.AppSetting with its checks, and the grants.</summary>
 [Collection(SqlServerCollection.Name)]
@@ -85,11 +85,11 @@ public class AppSettingSchemaTests(SqlServerFixture sql)
         var cs = await sql.CreateDatabaseAsync();
         await RunAsync(cs);
 
-        var reader = await ScalarAsync(cs, "SELECT COUNT(*) FROM sys.database_permissions WHERE major_id = OBJECT_ID('dbo.AppSetting') AND state_desc = 'DENY' AND permission_name IN ('SELECT','VIEW DEFINITION') AND USER_NAME(grantee_principal_id) = 'mf_report_reader'");
+        var reader = await ScalarAsync(cs, "SELECT COUNT(*) FROM sys.database_permissions WHERE major_id = OBJECT_ID('dbo.AppSetting') AND state_desc = 'DENY' AND permission_name IN ('SELECT','VIEW DEFINITION') AND USER_NAME(grantee_principal_id) = 'lpt_report_reader'");
         reader.ShouldBe(2);
-        var app = await ScalarAsync(cs, "SELECT COUNT(*) FROM sys.database_permissions WHERE major_id = OBJECT_ID('dbo.AppSetting') AND state_desc = 'GRANT' AND permission_name = 'DELETE' AND USER_NAME(grantee_principal_id) = 'mf_app'");
+        var app = await ScalarAsync(cs, "SELECT COUNT(*) FROM sys.database_permissions WHERE major_id = OBJECT_ID('dbo.AppSetting') AND state_desc = 'GRANT' AND permission_name = 'DELETE' AND USER_NAME(grantee_principal_id) = 'lpt_app'");
         app.ShouldBe(1);
-        var alter = await ScalarAsync(cs, "SELECT COUNT(*) FROM sys.database_permissions WHERE major_id = OBJECT_ID('dbo.AppSetting') AND state_desc = 'DENY' AND permission_name = 'ALTER' AND USER_NAME(grantee_principal_id) = 'mf_app'");
+        var alter = await ScalarAsync(cs, "SELECT COUNT(*) FROM sys.database_permissions WHERE major_id = OBJECT_ID('dbo.AppSetting') AND state_desc = 'DENY' AND permission_name = 'ALTER' AND USER_NAME(grantee_principal_id) = 'lpt_app'");
         alter.ShouldBe(1);
     }
 }

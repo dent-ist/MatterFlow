@@ -4,11 +4,11 @@
  * This file is read by `main.ts` before the first render, so it is tiny and has no Angular, `api-client` or `lookup-store` imports
  * (bundle rule; `initial-bundle.spec.ts` checks it). It keeps the current branding in a module-level holder (a plain object plus listeners),
  * which the `BrandingService` signal facade and the pure `documentTitle()` read. Everything here is defensive: a failed fetch, a slow API,
- * a blocked `localStorage` or an unexpected answer all end in the built-in `MatterFlow` and the built-in icon, never in an error or a blank title.
+ * a blocked `localStorage` or an unexpected answer all end in the built-in `LPT Hub` and the built-in icon, never in an error or a blank title.
  */
 
 /** The built-in name; also what a reset restores and what the static `index.html` says. */
-export const DEFAULT_APP_NAME = 'MatterFlow';
+export const DEFAULT_APP_NAME = 'LPT Hub';
 
 /** The kinds of custom icon the server accepts. */
 export type IconKind = 'png' | 'svg' | 'ico';
@@ -127,7 +127,7 @@ function readRemembered(): Branding | null {
 /**
  * The startup read: applies the last known copy at once (so a repeat visit never flashes the default), then asks the server (plain `fetch`,
  * 1.5 second limit) and applies and remembers the answer. Never throws and never waits longer than the limit; with the API down or slow the
- * app starts with what it has (the copy, or `MatterFlow` and the built-in icon).
+ * app starts with what it has (the copy, or `LPT Hub` and the built-in icon).
  */
 export async function loadBranding(): Promise<Branding> {
   const remembered = readRemembered();

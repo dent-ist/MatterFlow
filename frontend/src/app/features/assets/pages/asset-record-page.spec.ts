@@ -99,7 +99,7 @@ describe('AssetRecordPage', () => {
     expect(matter.textContent).toContain('Merger Review');
     expect(matter.querySelector('a.mf-ref')?.getAttribute('href')).toBe('/matters/7');
     expect(assets.getAsset).toHaveBeenCalledWith(9);
-    expect(document.title).toBe('Contract bundle: Details - MatterFlow');
+    expect(document.title).toBe('Contract bundle: Details - LPT Hub');
   });
 
   it('shows the matter as plain text without Matter.View', async () => {
@@ -347,7 +347,7 @@ describe('AssetRecordPage', () => {
     await openTab('tasks');
     expect(tab('Linked Tasks').getAttribute('aria-selected')).toBe('true');
     expect(el().querySelector('mf-asset-linked-tasks')).not.toBeNull();
-    expect(document.title).toBe('Contract bundle: Linked Tasks - MatterFlow');
+    expect(document.title).toBe('Contract bundle: Linked Tasks - LPT Hub');
 
     await openTab('history');
     expect(el().querySelector('mf-entity-activity')).not.toBeNull();
@@ -395,7 +395,7 @@ describe('AssetRecordPage', () => {
     expect(el().querySelector('[data-back-link]')?.textContent).toContain('Go to Assets');
     expect(buttonByLabel(el(), 'Retry')).toBeUndefined();
     expect(el().querySelector('[role=tablist]')).toBeNull();
-    expect(document.title).toBe('Asset not found - MatterFlow');
+    expect(document.title).toBe('Asset not found - LPT Hub');
   });
 
   it('shows the access text and no Retry for a 403', async () => {

@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace MatterFlow.Identity.LandingPages;
+namespace LptHub.Identity.LandingPages;
 
 /// <summary>The stable page keys (<c>contracts/landing-pages.json</c>); code that names a page (the starter roles) uses these.</summary>
 public static class LandingPageKeys

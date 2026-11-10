@@ -21,7 +21,7 @@ browser="$root/frontend/dist/frontend/browser"
 
 echo "==> dotnet publish ($rid) -> $out"
 rm -rf "$out"
-dotnet publish "$root/backend/src/MatterFlow.Api/MatterFlow.Api.csproj" -c Release -r "$rid" --self-contained false -o "$out" -p:OpenApiGenerateDocuments=false
+dotnet publish "$root/backend/src/LptHub.Api/LptHub.Api.csproj" -c Release -r "$rid" --self-contained false -o "$out" -p:OpenApiGenerateDocuments=false
 
 echo "==> Copy the Angular build into wwwroot"
 rm -rf "$out/wwwroot"

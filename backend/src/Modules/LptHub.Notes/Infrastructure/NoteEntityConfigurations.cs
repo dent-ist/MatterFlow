@@ -1,9 +1,9 @@
-using MatterFlow.Notes.Application;
-using MatterFlow.Notes.Domain;
+using LptHub.Notes.Application;
+using LptHub.Notes.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace MatterFlow.Notes.Infrastructure;
+namespace LptHub.Notes.Infrastructure;
 
 internal sealed class NoteConfiguration : IEntityTypeConfiguration<Note>
 {

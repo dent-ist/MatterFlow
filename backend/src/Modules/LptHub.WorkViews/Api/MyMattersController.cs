@@ -1,8 +1,8 @@
-using MatterFlow.Identity.Contracts;
+using LptHub.Identity.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MatterFlow.WorkViews.Api;
+namespace LptHub.WorkViews.Api;
 
 /// <summary>
 /// My Matters, the landing page of project managers (epic #667): what needs attention across the matters a person manages. Everything here is a
@@ -16,7 +16,7 @@ namespace MatterFlow.WorkViews.Api;
 [Route("api/v1/my-matters")]
 [Authorize(Policy = "Perm:" + Permissions.Task.View)]
 [Authorize(Policy = "Perm:" + Permissions.Matter.BeManager + "|" + Permissions.Matter.AssignManagers)]
-[MatterFlow.SharedKernel.Visibility.PreparesViewer(Stamp = true)]
+[LptHub.SharedKernel.Visibility.PreparesViewer(Stamp = true)]
 public partial class MyMattersController : ControllerBase
 {
 }

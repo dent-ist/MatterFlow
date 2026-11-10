@@ -1,9 +1,9 @@
-using MatterFlow.Data.SchemaMigrations;
+using LptHub.Data.SchemaMigrations;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 
-namespace MatterFlow.SchemaTests;
+namespace LptHub.SchemaTests;
 
 /// <summary>Baseline (archived 28-matter-managers.sql) (epic #667): the two optional manager columns of Matter, their constraints and indexes, and the grants of the two new permissions.</summary>
 [Collection(SqlServerCollection.Name)]

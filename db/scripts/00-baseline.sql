@@ -1,12 +1,12 @@
 -- 00-baseline.sql
--- Purpose: the complete MatterFlow database schema in one script (issue #1307). It replaces the 63 incremental scripts 01 to 66 (16, 61 and 62 never
+-- Purpose: the complete LPT Hub database schema in one script (issue #1307). It replaces the 63 incremental scripts 01 to 66 (16, 61 and 62 never
 --   existed), which are kept for history in db/scripts/archive/ and are NOT run by the application any more.
 -- Owner: Platform.
 --
 -- How it fits the runner (docs/architecture.md section 4, db/scripts/README.md):
 --   * The baseline has prefix 0, so it is always applied first. Every later script has a prefix of 67 or more (the first new script is 67).
 --   * A database created before the baseline (its dbo.SchemaMigration lists 01-init.sql and the other old scripts but not 00-baseline.sql) is
---     refused at startup with the instruction to rebuild it (npm run db:reset). There is no data migration: MatterFlow had not been deployed.
+--     refused at startup with the instruction to rebuild it (npm run db:reset). There is no data migration: LPT Hub had not been deployed.
 --   * The baseline is immutable from the first real deployment on, like every other applied script. Until then it may only change together with
 --     a rebuild of every demo and test database; after that, schema changes are new numbered scripts (67 and up).
 --   * dbo.SchemaMigration (the runner's own journal) is created by the runner before any script, so it is not created here.
@@ -17,7 +17,7 @@
 --
 -- Carried over deliberately from the old chain:
 --   * Seed rows: dbo.Role (System Admin), dbo.Permission (the 25 rows the scripts inserted), dbo.TaskStatusLabel (5 fixed labels).
---   * Roles mf_app, mf_migrator, mf_report_reader and all their permissions, the TaskNumberSeq sequence, TR_Asset_Guard (with the asset number rule).
+--   * Roles lpt_app, lpt_migrator, lpt_report_reader and all their permissions, the TaskNumberSeq sequence, TR_Asset_Guard (with the asset number rule).
 -- Dropped deliberately (they only changed data that exists in a database that was already running):
 --   * Backfills and data fixes: copying LastLoginAt to UserIdentity, default activity markers, matter sensitivity propagation to tasks, asset
 --     disposition and calendar backfills, brand-icon retirement, task type colour defaults.
@@ -2010,7 +2010,7 @@ GO
 
 GO
 
--- The one write path that completes a run (Running -> final status). Runs with the owner's rights, so the DENY UPDATE of mf_app does not apply.
+-- The one write path that completes a run (Running -> final status). Runs with the owner's rights, so the DENY UPDATE of lpt_app does not apply.
 CREATE PROCEDURE dbo.usp_ReportRunComplete
   @ReportRunId      BIGINT,
   @Status           VARCHAR(12),
@@ -2407,179 +2407,179 @@ GO
 -- Database roles and permissions
 -- -----------------------------------------------------------------------------------------------------------------------------
 
--- mf_app: the application identity (data access and EXECUTE only, no DDL). mf_migrator: the schema runner (DDL plus data).
--- mf_report_reader: the read-only role every report runs under (db/report-access.json; membership comes from tools/db/provision-report-login.sql or the DBA).
+-- lpt_app: the application identity (data access and EXECUTE only, no DDL). lpt_migrator: the schema runner (DDL plus data).
+-- lpt_report_reader: the read-only role every report runs under (db/report-access.json; membership comes from tools/db/provision-report-login.sql or the DBA).
 -- DBA step after the first deployment (logins are server level and site specific):
---   CREATE USER [DOMAIN\app-pool-gmsa$] FOR LOGIN [DOMAIN\app-pool-gmsa$];  ALTER ROLE mf_app ADD MEMBER [DOMAIN\app-pool-gmsa$];
+--   CREATE USER [DOMAIN\app-pool-gmsa$] FOR LOGIN [DOMAIN\app-pool-gmsa$];  ALTER ROLE lpt_app ADD MEMBER [DOMAIN\app-pool-gmsa$];
 -- The application identity must NOT be db_owner or sysadmin; the API verifies this at startup (docs/runbook.md section 3).
-IF DATABASE_PRINCIPAL_ID('mf_app') IS NULL
-  CREATE ROLE mf_app;
-IF DATABASE_PRINCIPAL_ID('mf_migrator') IS NULL
-  CREATE ROLE mf_migrator;
-IF DATABASE_PRINCIPAL_ID('mf_report_reader') IS NULL
-  CREATE ROLE mf_report_reader;
+IF DATABASE_PRINCIPAL_ID('lpt_app') IS NULL
+  CREATE ROLE lpt_app;
+IF DATABASE_PRINCIPAL_ID('lpt_migrator') IS NULL
+  CREATE ROLE lpt_migrator;
+IF DATABASE_PRINCIPAL_ID('lpt_report_reader') IS NULL
+  CREATE ROLE lpt_report_reader;
 GO
 
-GRANT SELECT, INSERT, UPDATE, DELETE, EXECUTE ON SCHEMA::dbo TO mf_app;
-ALTER ROLE db_ddladmin ADD MEMBER mf_migrator;
-ALTER ROLE db_datareader ADD MEMBER mf_migrator;
-ALTER ROLE db_datawriter ADD MEMBER mf_migrator;
-GRANT EXECUTE ON SCHEMA::dbo TO mf_migrator;
+GRANT SELECT, INSERT, UPDATE, DELETE, EXECUTE ON SCHEMA::dbo TO lpt_app;
+ALTER ROLE db_ddladmin ADD MEMBER lpt_migrator;
+ALTER ROLE db_datareader ADD MEMBER lpt_migrator;
+ALTER ROLE db_datawriter ADD MEMBER lpt_migrator;
+GRANT EXECUTE ON SCHEMA::dbo TO lpt_migrator;
 GO
 
 -- The report role: nothing that writes, executes or changes the schema, whatever else the login might inherit.
 -- (No DENY CONTROL: CONTROL implies every right, so denying it would also deny the SELECT grants below.)
-DENY INSERT, UPDATE, DELETE, EXECUTE, ALTER, REFERENCES, TAKE OWNERSHIP ON SCHEMA::dbo TO mf_report_reader;
-DENY CREATE TABLE, CREATE VIEW, CREATE PROCEDURE, CREATE FUNCTION, CREATE SCHEMA, CREATE TYPE, CREATE RULE, CREATE DEFAULT TO mf_report_reader;
+DENY INSERT, UPDATE, DELETE, EXECUTE, ALTER, REFERENCES, TAKE OWNERSHIP ON SCHEMA::dbo TO lpt_report_reader;
+DENY CREATE TABLE, CREATE VIEW, CREATE PROCEDURE, CREATE FUNCTION, CREATE SCHEMA, CREATE TYPE, CREATE RULE, CREATE DEFAULT TO lpt_report_reader;
 GO
 
 -- Application identity: object-level rights. A DENY here beats the schema-level GRANT above (append-only, guard and counter tables).
-GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.AppSetting TO mf_app;
-DENY ALTER ON dbo.AppSetting TO mf_app;
-GRANT SELECT, INSERT, UPDATE ON dbo.AssetNumberCounter TO mf_app;
-DENY DELETE, ALTER ON dbo.AssetNumberCounter TO mf_app;
-GRANT SELECT, INSERT ON dbo.AuditEvent TO mf_app;
-DENY UPDATE, DELETE, ALTER ON dbo.AuditEvent TO mf_app;
-DENY SELECT, INSERT, UPDATE, DELETE, REFERENCES, ALTER ON dbo.AuditEventGuard TO mf_app;
-GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.CurrentState TO mf_app;
-DENY ALTER ON dbo.CurrentState TO mf_app;
-GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.Holiday TO mf_app;
-DENY ALTER ON dbo.Holiday TO mf_app;
-GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.HolidayCalendar TO mf_app;
-DENY ALTER ON dbo.HolidayCalendar TO mf_app;
-GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.MatterEvent TO mf_app;
-DENY ALTER ON dbo.MatterEvent TO mf_app;
-GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.MatterTeamMember TO mf_app;
-DENY ALTER ON dbo.MatterTeamMember TO mf_app;
-GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.MatterType TO mf_app;
-DENY ALTER ON dbo.MatterType TO mf_app;
-GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.Note TO mf_app;
-DENY ALTER ON dbo.Note TO mf_app;
-GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.NoteLink TO mf_app;
-DENY ALTER ON dbo.NoteLink TO mf_app;
-GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.NoteTag TO mf_app;
-DENY ALTER ON dbo.NoteTag TO mf_app;
-GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.NoteTagLink TO mf_app;
-DENY ALTER ON dbo.NoteTagLink TO mf_app;
-GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.NoteTemplate TO mf_app;
-DENY ALTER ON dbo.NoteTemplate TO mf_app;
-GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.NoteTemplateTag TO mf_app;
-DENY ALTER ON dbo.NoteTemplateTag TO mf_app;
-GRANT SELECT, INSERT, DELETE ON dbo.Notification TO mf_app;
-DENY ALTER ON dbo.Notification TO mf_app;
-DENY UPDATE (ActorUserId, CreatedUtc, DedupeKey, EventType, MatterId, Message, ObjectId, ObjectKind, RecipientUserId) ON dbo.Notification TO mf_app;
-GRANT SELECT, INSERT, DELETE ON dbo.NotificationPreference TO mf_app;
-DENY ALTER ON dbo.NotificationPreference TO mf_app;
-DENY UPDATE (EventType, UserId) ON dbo.NotificationPreference TO mf_app;
-GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.Production TO mf_app;
-DENY ALTER ON dbo.Production TO mf_app;
-GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.ProductionComment TO mf_app;
-DENY ALTER ON dbo.ProductionComment TO mf_app;
-GRANT SELECT, INSERT, UPDATE ON dbo.ProductionSpec TO mf_app;
-DENY DELETE, ALTER ON dbo.ProductionSpec TO mf_app;
-DENY UPDATE, DELETE, ALTER ON dbo.ReportRun TO mf_app;
-DENY UPDATE, DELETE, ALTER ON dbo.ReportVersion TO mf_app;
-GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.TeamTitle TO mf_app;
-DENY ALTER ON dbo.TeamTitle TO mf_app;
-GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.UserAbsence TO mf_app;
-DENY ALTER ON dbo.UserAbsence TO mf_app;
-GRANT SELECT, INSERT, UPDATE ON dbo.UserMatterActivitySeen TO mf_app;
-DENY DELETE, ALTER ON dbo.UserMatterActivitySeen TO mf_app;
-GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.UserView TO mf_app;
-DENY ALTER ON dbo.UserView TO mf_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.AppSetting TO lpt_app;
+DENY ALTER ON dbo.AppSetting TO lpt_app;
+GRANT SELECT, INSERT, UPDATE ON dbo.AssetNumberCounter TO lpt_app;
+DENY DELETE, ALTER ON dbo.AssetNumberCounter TO lpt_app;
+GRANT SELECT, INSERT ON dbo.AuditEvent TO lpt_app;
+DENY UPDATE, DELETE, ALTER ON dbo.AuditEvent TO lpt_app;
+DENY SELECT, INSERT, UPDATE, DELETE, REFERENCES, ALTER ON dbo.AuditEventGuard TO lpt_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.CurrentState TO lpt_app;
+DENY ALTER ON dbo.CurrentState TO lpt_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.Holiday TO lpt_app;
+DENY ALTER ON dbo.Holiday TO lpt_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.HolidayCalendar TO lpt_app;
+DENY ALTER ON dbo.HolidayCalendar TO lpt_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.MatterEvent TO lpt_app;
+DENY ALTER ON dbo.MatterEvent TO lpt_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.MatterTeamMember TO lpt_app;
+DENY ALTER ON dbo.MatterTeamMember TO lpt_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.MatterType TO lpt_app;
+DENY ALTER ON dbo.MatterType TO lpt_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.Note TO lpt_app;
+DENY ALTER ON dbo.Note TO lpt_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.NoteLink TO lpt_app;
+DENY ALTER ON dbo.NoteLink TO lpt_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.NoteTag TO lpt_app;
+DENY ALTER ON dbo.NoteTag TO lpt_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.NoteTagLink TO lpt_app;
+DENY ALTER ON dbo.NoteTagLink TO lpt_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.NoteTemplate TO lpt_app;
+DENY ALTER ON dbo.NoteTemplate TO lpt_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.NoteTemplateTag TO lpt_app;
+DENY ALTER ON dbo.NoteTemplateTag TO lpt_app;
+GRANT SELECT, INSERT, DELETE ON dbo.Notification TO lpt_app;
+DENY ALTER ON dbo.Notification TO lpt_app;
+DENY UPDATE (ActorUserId, CreatedUtc, DedupeKey, EventType, MatterId, Message, ObjectId, ObjectKind, RecipientUserId) ON dbo.Notification TO lpt_app;
+GRANT SELECT, INSERT, DELETE ON dbo.NotificationPreference TO lpt_app;
+DENY ALTER ON dbo.NotificationPreference TO lpt_app;
+DENY UPDATE (EventType, UserId) ON dbo.NotificationPreference TO lpt_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.Production TO lpt_app;
+DENY ALTER ON dbo.Production TO lpt_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.ProductionComment TO lpt_app;
+DENY ALTER ON dbo.ProductionComment TO lpt_app;
+GRANT SELECT, INSERT, UPDATE ON dbo.ProductionSpec TO lpt_app;
+DENY DELETE, ALTER ON dbo.ProductionSpec TO lpt_app;
+DENY UPDATE, DELETE, ALTER ON dbo.ReportRun TO lpt_app;
+DENY UPDATE, DELETE, ALTER ON dbo.ReportVersion TO lpt_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.TeamTitle TO lpt_app;
+DENY ALTER ON dbo.TeamTitle TO lpt_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.UserAbsence TO lpt_app;
+DENY ALTER ON dbo.UserAbsence TO lpt_app;
+GRANT SELECT, INSERT, UPDATE ON dbo.UserMatterActivitySeen TO lpt_app;
+DENY DELETE, ALTER ON dbo.UserMatterActivitySeen TO lpt_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.UserView TO lpt_app;
+DENY ALTER ON dbo.UserView TO lpt_app;
 GO
 
 -- Schema runner: the audit table is append-only for it too.
-GRANT SELECT, INSERT ON dbo.AuditEvent TO mf_migrator;
-DENY UPDATE, DELETE ON dbo.AuditEvent TO mf_migrator;
+GRANT SELECT, INSERT ON dbo.AuditEvent TO lpt_migrator;
+DENY UPDATE, DELETE ON dbo.AuditEvent TO lpt_migrator;
 GO
 
 -- Allowed (db/report-access.json, access = allow): read-only business data.
-GRANT SELECT ON dbo.AppUser TO mf_report_reader;
-GRANT SELECT ON dbo.Asset TO mf_report_reader;
-GRANT SELECT ON dbo.AssetLinkRole TO mf_report_reader;
-GRANT SELECT ON dbo.AssetType TO mf_report_reader;
-GRANT SELECT ON dbo.Client TO mf_report_reader;
-GRANT SELECT ON dbo.CurrentState TO mf_report_reader;
-GRANT SELECT ON dbo.CustomFieldIndex TO mf_report_reader;
-GRANT SELECT ON dbo.FormDefinition TO mf_report_reader;
-GRANT SELECT ON dbo.FormField TO mf_report_reader;
-GRANT SELECT ON dbo.FormFieldOption TO mf_report_reader;
-GRANT SELECT ON dbo.FormValueSet TO mf_report_reader;
-GRANT SELECT ON dbo.FormVersion TO mf_report_reader;
-GRANT SELECT ON dbo.Holiday TO mf_report_reader;
-GRANT SELECT ON dbo.HolidayCalendar TO mf_report_reader;
-GRANT SELECT ON dbo.Matter TO mf_report_reader;
-GRANT SELECT ON dbo.MatterType TO mf_report_reader;
-GRANT SELECT ON dbo.OnHoldReason TO mf_report_reader;
-GRANT SELECT ON dbo.Pod TO mf_report_reader;
-GRANT SELECT ON dbo.PodMember TO mf_report_reader;
-GRANT SELECT ON dbo.Priority TO mf_report_reader;
-GRANT SELECT ON dbo.Project TO mf_report_reader;
-GRANT SELECT ON dbo.Role TO mf_report_reader;
-GRANT SELECT ON dbo.StepDefinition TO mf_report_reader;
-GRANT SELECT ON dbo.StepDefinitionTag TO mf_report_reader;
-GRANT SELECT ON dbo.StepInstance TO mf_report_reader;
-GRANT SELECT ON dbo.StepTag TO mf_report_reader;
-GRANT SELECT ON dbo.Task TO mf_report_reader;
-GRANT SELECT ON dbo.TaskAsset TO mf_report_reader;
-GRANT SELECT ON dbo.TaskComment TO mf_report_reader;
-GRANT SELECT ON dbo.TaskStatusLabel TO mf_report_reader;
-GRANT SELECT ON dbo.TaskType TO mf_report_reader;
-GRANT SELECT ON dbo.TaskTypeWorkflowEligibility TO mf_report_reader;
-GRANT SELECT ON dbo.TeamTitle TO mf_report_reader;
-GRANT SELECT ON dbo.UserAvailability TO mf_report_reader;
-GRANT SELECT ON dbo.UserRole TO mf_report_reader;
-GRANT SELECT ON dbo.UserWorkHour TO mf_report_reader;
-GRANT SELECT ON dbo.WorkflowDefinition TO mf_report_reader;
-GRANT SELECT ON dbo.WorkflowInstance TO mf_report_reader;
-GRANT SELECT ON dbo.WorkflowVersion TO mf_report_reader;
-GRANT SELECT ON dbo.WorkflowVersionStep TO mf_report_reader;
+GRANT SELECT ON dbo.AppUser TO lpt_report_reader;
+GRANT SELECT ON dbo.Asset TO lpt_report_reader;
+GRANT SELECT ON dbo.AssetLinkRole TO lpt_report_reader;
+GRANT SELECT ON dbo.AssetType TO lpt_report_reader;
+GRANT SELECT ON dbo.Client TO lpt_report_reader;
+GRANT SELECT ON dbo.CurrentState TO lpt_report_reader;
+GRANT SELECT ON dbo.CustomFieldIndex TO lpt_report_reader;
+GRANT SELECT ON dbo.FormDefinition TO lpt_report_reader;
+GRANT SELECT ON dbo.FormField TO lpt_report_reader;
+GRANT SELECT ON dbo.FormFieldOption TO lpt_report_reader;
+GRANT SELECT ON dbo.FormValueSet TO lpt_report_reader;
+GRANT SELECT ON dbo.FormVersion TO lpt_report_reader;
+GRANT SELECT ON dbo.Holiday TO lpt_report_reader;
+GRANT SELECT ON dbo.HolidayCalendar TO lpt_report_reader;
+GRANT SELECT ON dbo.Matter TO lpt_report_reader;
+GRANT SELECT ON dbo.MatterType TO lpt_report_reader;
+GRANT SELECT ON dbo.OnHoldReason TO lpt_report_reader;
+GRANT SELECT ON dbo.Pod TO lpt_report_reader;
+GRANT SELECT ON dbo.PodMember TO lpt_report_reader;
+GRANT SELECT ON dbo.Priority TO lpt_report_reader;
+GRANT SELECT ON dbo.Project TO lpt_report_reader;
+GRANT SELECT ON dbo.Role TO lpt_report_reader;
+GRANT SELECT ON dbo.StepDefinition TO lpt_report_reader;
+GRANT SELECT ON dbo.StepDefinitionTag TO lpt_report_reader;
+GRANT SELECT ON dbo.StepInstance TO lpt_report_reader;
+GRANT SELECT ON dbo.StepTag TO lpt_report_reader;
+GRANT SELECT ON dbo.Task TO lpt_report_reader;
+GRANT SELECT ON dbo.TaskAsset TO lpt_report_reader;
+GRANT SELECT ON dbo.TaskComment TO lpt_report_reader;
+GRANT SELECT ON dbo.TaskStatusLabel TO lpt_report_reader;
+GRANT SELECT ON dbo.TaskType TO lpt_report_reader;
+GRANT SELECT ON dbo.TaskTypeWorkflowEligibility TO lpt_report_reader;
+GRANT SELECT ON dbo.TeamTitle TO lpt_report_reader;
+GRANT SELECT ON dbo.UserAvailability TO lpt_report_reader;
+GRANT SELECT ON dbo.UserRole TO lpt_report_reader;
+GRANT SELECT ON dbo.UserWorkHour TO lpt_report_reader;
+GRANT SELECT ON dbo.WorkflowDefinition TO lpt_report_reader;
+GRANT SELECT ON dbo.WorkflowInstance TO lpt_report_reader;
+GRANT SELECT ON dbo.WorkflowVersion TO lpt_report_reader;
+GRANT SELECT ON dbo.WorkflowVersionStep TO lpt_report_reader;
 GO
 
 -- Denied (db/report-access.json, access = deny): audit, credentials, internal bookkeeping, authorization data, the report tables and the other personal or
 -- application-owned tables.
-DENY SELECT, VIEW DEFINITION ON dbo.AppSetting TO mf_report_reader;
-DENY SELECT, VIEW DEFINITION ON dbo.AssetNumberCounter TO mf_report_reader;
-DENY SELECT, VIEW DEFINITION ON dbo.AssetReport TO mf_report_reader;
-DENY SELECT, VIEW DEFINITION ON dbo.AuditEvent TO mf_report_reader;
-DENY SELECT, VIEW DEFINITION ON dbo.AuditEventGuard TO mf_report_reader;
-DENY SELECT, VIEW DEFINITION ON dbo.MatterEvent TO mf_report_reader;
-DENY SELECT, VIEW DEFINITION ON dbo.MatterTeamMember TO mf_report_reader;
-DENY SELECT, VIEW DEFINITION ON dbo.Note TO mf_report_reader;
-DENY SELECT, VIEW DEFINITION ON dbo.NoteLink TO mf_report_reader;
-DENY SELECT, VIEW DEFINITION ON dbo.NoteTag TO mf_report_reader;
-DENY SELECT, VIEW DEFINITION ON dbo.NoteTagLink TO mf_report_reader;
-DENY SELECT, VIEW DEFINITION ON dbo.NoteTemplate TO mf_report_reader;
-DENY SELECT, VIEW DEFINITION ON dbo.NoteTemplateTag TO mf_report_reader;
-DENY SELECT, VIEW DEFINITION ON dbo.Notification TO mf_report_reader;
-DENY SELECT, VIEW DEFINITION ON dbo.NotificationPreference TO mf_report_reader;
-DENY SELECT, VIEW DEFINITION ON dbo.Permission TO mf_report_reader;
-DENY SELECT, VIEW DEFINITION ON dbo.Production TO mf_report_reader;
-DENY SELECT, VIEW DEFINITION ON dbo.ProductionComment TO mf_report_reader;
-DENY SELECT, VIEW DEFINITION ON dbo.ProductionSpec TO mf_report_reader;
-DENY SELECT, VIEW DEFINITION ON dbo.ReportCategory TO mf_report_reader;
-DENY SELECT, VIEW DEFINITION ON dbo.ReportDefinition TO mf_report_reader;
-DENY SELECT, VIEW DEFINITION ON dbo.ReportFavourite TO mf_report_reader;
-DENY SELECT, VIEW DEFINITION ON dbo.ReportParameter TO mf_report_reader;
-DENY SELECT, VIEW DEFINITION ON dbo.ReportRecent TO mf_report_reader;
-DENY SELECT, VIEW DEFINITION ON dbo.ReportRun TO mf_report_reader;
-DENY SELECT, VIEW DEFINITION ON dbo.ReportVersion TO mf_report_reader;
-DENY SELECT, VIEW DEFINITION ON dbo.RolePermission TO mf_report_reader;
-DENY SELECT, VIEW DEFINITION ON dbo.RoleReport TO mf_report_reader;
-DENY SELECT, VIEW DEFINITION ON dbo.SavedReportView TO mf_report_reader;
-DENY SELECT, VIEW DEFINITION ON dbo.SchemaMigration TO mf_report_reader;
-DENY SELECT, VIEW DEFINITION ON dbo.SeedMarker TO mf_report_reader;
-DENY SELECT, VIEW DEFINITION ON dbo.TaskCommentRevision TO mf_report_reader;
-DENY SELECT, VIEW DEFINITION ON dbo.UserAbsence TO mf_report_reader;
-DENY SELECT, VIEW DEFINITION ON dbo.UserIdentity TO mf_report_reader;
-DENY SELECT, VIEW DEFINITION ON dbo.UserMatterActivitySeen TO mf_report_reader;
-DENY SELECT, VIEW DEFINITION ON dbo.UserView TO mf_report_reader;
+DENY SELECT, VIEW DEFINITION ON dbo.AppSetting TO lpt_report_reader;
+DENY SELECT, VIEW DEFINITION ON dbo.AssetNumberCounter TO lpt_report_reader;
+DENY SELECT, VIEW DEFINITION ON dbo.AssetReport TO lpt_report_reader;
+DENY SELECT, VIEW DEFINITION ON dbo.AuditEvent TO lpt_report_reader;
+DENY SELECT, VIEW DEFINITION ON dbo.AuditEventGuard TO lpt_report_reader;
+DENY SELECT, VIEW DEFINITION ON dbo.MatterEvent TO lpt_report_reader;
+DENY SELECT, VIEW DEFINITION ON dbo.MatterTeamMember TO lpt_report_reader;
+DENY SELECT, VIEW DEFINITION ON dbo.Note TO lpt_report_reader;
+DENY SELECT, VIEW DEFINITION ON dbo.NoteLink TO lpt_report_reader;
+DENY SELECT, VIEW DEFINITION ON dbo.NoteTag TO lpt_report_reader;
+DENY SELECT, VIEW DEFINITION ON dbo.NoteTagLink TO lpt_report_reader;
+DENY SELECT, VIEW DEFINITION ON dbo.NoteTemplate TO lpt_report_reader;
+DENY SELECT, VIEW DEFINITION ON dbo.NoteTemplateTag TO lpt_report_reader;
+DENY SELECT, VIEW DEFINITION ON dbo.Notification TO lpt_report_reader;
+DENY SELECT, VIEW DEFINITION ON dbo.NotificationPreference TO lpt_report_reader;
+DENY SELECT, VIEW DEFINITION ON dbo.Permission TO lpt_report_reader;
+DENY SELECT, VIEW DEFINITION ON dbo.Production TO lpt_report_reader;
+DENY SELECT, VIEW DEFINITION ON dbo.ProductionComment TO lpt_report_reader;
+DENY SELECT, VIEW DEFINITION ON dbo.ProductionSpec TO lpt_report_reader;
+DENY SELECT, VIEW DEFINITION ON dbo.ReportCategory TO lpt_report_reader;
+DENY SELECT, VIEW DEFINITION ON dbo.ReportDefinition TO lpt_report_reader;
+DENY SELECT, VIEW DEFINITION ON dbo.ReportFavourite TO lpt_report_reader;
+DENY SELECT, VIEW DEFINITION ON dbo.ReportParameter TO lpt_report_reader;
+DENY SELECT, VIEW DEFINITION ON dbo.ReportRecent TO lpt_report_reader;
+DENY SELECT, VIEW DEFINITION ON dbo.ReportRun TO lpt_report_reader;
+DENY SELECT, VIEW DEFINITION ON dbo.ReportVersion TO lpt_report_reader;
+DENY SELECT, VIEW DEFINITION ON dbo.RolePermission TO lpt_report_reader;
+DENY SELECT, VIEW DEFINITION ON dbo.RoleReport TO lpt_report_reader;
+DENY SELECT, VIEW DEFINITION ON dbo.SavedReportView TO lpt_report_reader;
+DENY SELECT, VIEW DEFINITION ON dbo.SchemaMigration TO lpt_report_reader;
+DENY SELECT, VIEW DEFINITION ON dbo.SeedMarker TO lpt_report_reader;
+DENY SELECT, VIEW DEFINITION ON dbo.TaskCommentRevision TO lpt_report_reader;
+DENY SELECT, VIEW DEFINITION ON dbo.UserAbsence TO lpt_report_reader;
+DENY SELECT, VIEW DEFINITION ON dbo.UserIdentity TO lpt_report_reader;
+DENY SELECT, VIEW DEFINITION ON dbo.UserMatterActivitySeen TO lpt_report_reader;
+DENY SELECT, VIEW DEFINITION ON dbo.UserView TO lpt_report_reader;
 GO
 
 -- The visibility functions take the viewer as a parameter; the report login must not use them as a way around, or to learn the rule.
-DENY SELECT ON [dbo].[fnAssetVisible] TO [mf_report_reader];
-DENY SELECT ON [dbo].[fnMatterVisible] TO [mf_report_reader];
-DENY SELECT ON [dbo].[fnTaskVisible] TO [mf_report_reader];
+DENY SELECT ON [dbo].[fnAssetVisible] TO [lpt_report_reader];
+DENY SELECT ON [dbo].[fnMatterVisible] TO [lpt_report_reader];
+DENY SELECT ON [dbo].[fnTaskVisible] TO [lpt_report_reader];
 GO
 

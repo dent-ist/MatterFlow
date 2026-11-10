@@ -1,13 +1,13 @@
 using System.ComponentModel.DataAnnotations;
-using MatterFlow.Configuration.Contracts;
-using MatterFlow.Configuration.Domain;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Tasks;
+using LptHub.Configuration.Contracts;
+using LptHub.Configuration.Domain;
+using LptHub.Identity.Contracts;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Tasks;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Configuration.Application.Lookups;
+namespace LptHub.Configuration.Application.Lookups;
 
 /// <summary>One of the five fixed lifecycle statuses with its display label.</summary>
 /// <param name="Code">Internal code (NEW, IN_PROGRESS, ON_HOLD, COMPLETED, CANCELLED). Immutable.</param>

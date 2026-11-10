@@ -1,8 +1,8 @@
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Identity.Domain;
+using LptHub.Identity.Contracts;
+using LptHub.Identity.Domain;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Identity.Application;
+namespace LptHub.Identity.Application;
 
 /// <summary>Read-only user lookups exposed to other modules through <see cref="IUserDirectory"/>.</summary>
 public sealed class UserDirectory(DbContext db) : IUserDirectory

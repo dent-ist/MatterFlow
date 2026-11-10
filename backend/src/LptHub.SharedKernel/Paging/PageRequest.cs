@@ -1,6 +1,6 @@
-using MatterFlow.SharedKernel.Results;
+using LptHub.SharedKernel.Results;
 
-namespace MatterFlow.SharedKernel.Paging;
+namespace LptHub.SharedKernel.Paging;
 
 /// <summary>Offset paging parameters (architecture section 11): 1-based page, default 25, max 100.</summary>
 public sealed record PageRequest(int Page = PageRequest.FirstPage, int PageSize = PageRequest.DefaultPageSize)

@@ -1,6 +1,6 @@
 using System.Reflection;
 
-namespace MatterFlow.SharedKernel.Results;
+namespace LptHub.SharedKernel.Results;
 
 /// <summary>Stable error code strings (architecture section 11). Part of the public API contract and OpenAPI document.</summary>
 public static class ErrorCodes

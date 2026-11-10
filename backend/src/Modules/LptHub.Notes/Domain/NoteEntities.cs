@@ -1,6 +1,6 @@
-using MatterFlow.SharedKernel.Entities;
+using LptHub.SharedKernel.Entities;
 
-namespace MatterFlow.Notes.Domain;
+namespace LptHub.Notes.Domain;
 
 /// <summary>What a note can refer to. The stored codes of <c>NoteLink.TargetType</c>.</summary>
 public static class NoteLinkTarget

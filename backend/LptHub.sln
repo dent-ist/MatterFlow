@@ -3,77 +3,77 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterFlow.SharedKernel", "src\MatterFlow.SharedKernel\MatterFlow.SharedKernel.csproj", "{0A63623F-4131-4D88-94CF-965CDA095626}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LptHub.SharedKernel", "src\LptHub.SharedKernel\LptHub.SharedKernel.csproj", "{0A63623F-4131-4D88-94CF-965CDA095626}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterFlow.Api", "src\MatterFlow.Api\MatterFlow.Api.csproj", "{E6A892DF-2CA1-4AA6-8117-5F7ECF7C1086}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LptHub.Api", "src\LptHub.Api\LptHub.Api.csproj", "{E6A892DF-2CA1-4AA6-8117-5F7ECF7C1086}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterFlow.Data", "src\MatterFlow.Data\MatterFlow.Data.csproj", "{BF8ABCB2-4CFC-431B-A42E-115877307412}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LptHub.Data", "src\LptHub.Data\LptHub.Data.csproj", "{BF8ABCB2-4CFC-431B-A42E-115877307412}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Modules", "Modules", "{EC447DCF-ABFA-6E24-52A5-D7FD48A5C558}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterFlow.Identity", "src\Modules\MatterFlow.Identity\MatterFlow.Identity.csproj", "{52B55F2D-19CB-478A-9660-DBF21BCFF35B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LptHub.Identity", "src\Modules\LptHub.Identity\LptHub.Identity.csproj", "{52B55F2D-19CB-478A-9660-DBF21BCFF35B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterFlow.Identity.Contracts", "src\Modules\MatterFlow.Identity.Contracts\MatterFlow.Identity.Contracts.csproj", "{574EC832-3D79-4C05-BDDF-1F2FAEBD6E79}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LptHub.Identity.Contracts", "src\Modules\LptHub.Identity.Contracts\LptHub.Identity.Contracts.csproj", "{574EC832-3D79-4C05-BDDF-1F2FAEBD6E79}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterFlow.Audit", "src\Modules\MatterFlow.Audit\MatterFlow.Audit.csproj", "{17378F1F-87B7-464F-8ADD-58325D066EF0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LptHub.Audit", "src\Modules\LptHub.Audit\LptHub.Audit.csproj", "{17378F1F-87B7-464F-8ADD-58325D066EF0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterFlow.Audit.Contracts", "src\Modules\MatterFlow.Audit.Contracts\MatterFlow.Audit.Contracts.csproj", "{F14EB603-D30D-4C96-BD00-CA584C9C8FDD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LptHub.Audit.Contracts", "src\Modules\LptHub.Audit.Contracts\LptHub.Audit.Contracts.csproj", "{F14EB603-D30D-4C96-BD00-CA584C9C8FDD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterFlow.Configuration", "src\Modules\MatterFlow.Configuration\MatterFlow.Configuration.csproj", "{2CAD17FA-71C2-41DB-82E1-11F6D706A3B3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LptHub.Configuration", "src\Modules\LptHub.Configuration\LptHub.Configuration.csproj", "{2CAD17FA-71C2-41DB-82E1-11F6D706A3B3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterFlow.Configuration.Contracts", "src\Modules\MatterFlow.Configuration.Contracts\MatterFlow.Configuration.Contracts.csproj", "{A82CDE35-0F47-4FC9-BF61-3F5C33C8CB89}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LptHub.Configuration.Contracts", "src\Modules\LptHub.Configuration.Contracts\LptHub.Configuration.Contracts.csproj", "{A82CDE35-0F47-4FC9-BF61-3F5C33C8CB89}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterFlow.Organization", "src\Modules\MatterFlow.Organization\MatterFlow.Organization.csproj", "{CF7CAD79-C40A-4400-AE5C-04299F6893B0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LptHub.Organization", "src\Modules\LptHub.Organization\LptHub.Organization.csproj", "{CF7CAD79-C40A-4400-AE5C-04299F6893B0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterFlow.Organization.Contracts", "src\Modules\MatterFlow.Organization.Contracts\MatterFlow.Organization.Contracts.csproj", "{81464AFA-3A03-4FE3-BCB5-92E734C5D3E4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LptHub.Organization.Contracts", "src\Modules\LptHub.Organization.Contracts\LptHub.Organization.Contracts.csproj", "{81464AFA-3A03-4FE3-BCB5-92E734C5D3E4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterFlow.Assets", "src\Modules\MatterFlow.Assets\MatterFlow.Assets.csproj", "{0E2AE2E6-CD46-4FD5-BFDE-A97736F04A38}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LptHub.Assets", "src\Modules\LptHub.Assets\LptHub.Assets.csproj", "{0E2AE2E6-CD46-4FD5-BFDE-A97736F04A38}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterFlow.Assets.Contracts", "src\Modules\MatterFlow.Assets.Contracts\MatterFlow.Assets.Contracts.csproj", "{62BA6E77-A7A4-4F6F-B21A-3AD784E6424E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LptHub.Assets.Contracts", "src\Modules\LptHub.Assets.Contracts\LptHub.Assets.Contracts.csproj", "{62BA6E77-A7A4-4F6F-B21A-3AD784E6424E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterFlow.WorkflowEngine", "src\Modules\MatterFlow.WorkflowEngine\MatterFlow.WorkflowEngine.csproj", "{5D72C8C6-D895-45F0-845F-D4158E0AEB94}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LptHub.WorkflowEngine", "src\Modules\LptHub.WorkflowEngine\LptHub.WorkflowEngine.csproj", "{5D72C8C6-D895-45F0-845F-D4158E0AEB94}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterFlow.WorkflowEngine.Contracts", "src\Modules\MatterFlow.WorkflowEngine.Contracts\MatterFlow.WorkflowEngine.Contracts.csproj", "{593BCB7E-57E8-4AE0-957F-D3F72E1FE182}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LptHub.WorkflowEngine.Contracts", "src\Modules\LptHub.WorkflowEngine.Contracts\LptHub.WorkflowEngine.Contracts.csproj", "{593BCB7E-57E8-4AE0-957F-D3F72E1FE182}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterFlow.WorkManagement", "src\Modules\MatterFlow.WorkManagement\MatterFlow.WorkManagement.csproj", "{098F34D2-1C44-40B9-8621-3175D2557875}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LptHub.WorkManagement", "src\Modules\LptHub.WorkManagement\LptHub.WorkManagement.csproj", "{098F34D2-1C44-40B9-8621-3175D2557875}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterFlow.WorkManagement.Contracts", "src\Modules\MatterFlow.WorkManagement.Contracts\MatterFlow.WorkManagement.Contracts.csproj", "{16B10979-3CC7-42D3-9C06-67FC17AE6959}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LptHub.WorkManagement.Contracts", "src\Modules\LptHub.WorkManagement.Contracts\LptHub.WorkManagement.Contracts.csproj", "{16B10979-3CC7-42D3-9C06-67FC17AE6959}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterFlow.WorkViews", "src\Modules\MatterFlow.WorkViews\MatterFlow.WorkViews.csproj", "{1B69D475-4076-49AC-BD44-809C8AB280AE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LptHub.WorkViews", "src\Modules\LptHub.WorkViews\LptHub.WorkViews.csproj", "{1B69D475-4076-49AC-BD44-809C8AB280AE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterFlow.Search", "src\Modules\MatterFlow.Search\MatterFlow.Search.csproj", "{584CA34F-62AF-47E9-9051-8D973DA73228}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LptHub.Search", "src\Modules\LptHub.Search\LptHub.Search.csproj", "{584CA34F-62AF-47E9-9051-8D973DA73228}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterFlow.Intake", "src\Modules\MatterFlow.Intake\MatterFlow.Intake.csproj", "{7B25B82E-471C-494D-858E-DB7F8942C8A4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LptHub.Intake", "src\Modules\LptHub.Intake\LptHub.Intake.csproj", "{7B25B82E-471C-494D-858E-DB7F8942C8A4}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterFlow.ArchitectureTests", "tests\MatterFlow.ArchitectureTests\MatterFlow.ArchitectureTests.csproj", "{F3206DFF-6B2F-4FD6-B0DE-56DB148B151A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LptHub.ArchitectureTests", "tests\LptHub.ArchitectureTests\LptHub.ArchitectureTests.csproj", "{F3206DFF-6B2F-4FD6-B0DE-56DB148B151A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterFlow.IntegrationTests", "tests\MatterFlow.IntegrationTests\MatterFlow.IntegrationTests.csproj", "{6BD175EF-549A-4C9C-949D-DC0E224DCE35}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LptHub.IntegrationTests", "tests\LptHub.IntegrationTests\LptHub.IntegrationTests.csproj", "{6BD175EF-549A-4C9C-949D-DC0E224DCE35}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterFlow.SchemaTests", "tests\MatterFlow.SchemaTests\MatterFlow.SchemaTests.csproj", "{2C88D319-088C-49E7-BC55-722A8BEE1CF9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LptHub.SchemaTests", "tests\LptHub.SchemaTests\LptHub.SchemaTests.csproj", "{2C88D319-088C-49E7-BC55-722A8BEE1CF9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterFlow.UnitTests", "tests\MatterFlow.UnitTests\MatterFlow.UnitTests.csproj", "{4238CD52-1E71-4C01-87B9-6B5F8C917750}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LptHub.UnitTests", "tests\LptHub.UnitTests\LptHub.UnitTests.csproj", "{4238CD52-1E71-4C01-87B9-6B5F8C917750}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterFlow.Notifications", "src\Modules\MatterFlow.Notifications\MatterFlow.Notifications.csproj", "{870AC983-952E-4666-9345-815649694975}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LptHub.Notifications", "src\Modules\LptHub.Notifications\LptHub.Notifications.csproj", "{870AC983-952E-4666-9345-815649694975}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterFlow.Notifications.Contracts", "src\Modules\MatterFlow.Notifications.Contracts\MatterFlow.Notifications.Contracts.csproj", "{268F0E48-D6EF-4C38-865B-29E1743D740D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LptHub.Notifications.Contracts", "src\Modules\LptHub.Notifications.Contracts\LptHub.Notifications.Contracts.csproj", "{268F0E48-D6EF-4C38-865B-29E1743D740D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterFlow.Reports", "src\Modules\MatterFlow.Reports\MatterFlow.Reports.csproj", "{E890450E-9A68-402C-8CDF-CB0121816EFA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LptHub.Reports", "src\Modules\LptHub.Reports\LptHub.Reports.csproj", "{E890450E-9A68-402C-8CDF-CB0121816EFA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterFlow.Reports.Contracts", "src\Modules\MatterFlow.Reports.Contracts\MatterFlow.Reports.Contracts.csproj", "{FBF29730-9A5F-402A-90E9-D1E22FE92E8C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LptHub.Reports.Contracts", "src\Modules\LptHub.Reports.Contracts\LptHub.Reports.Contracts.csproj", "{FBF29730-9A5F-402A-90E9-D1E22FE92E8C}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Modules", "Modules", "{CA253913-39DE-BFD0-C9A3-4B7EC6FBDF17}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterFlow.Productions", "src\Modules\MatterFlow.Productions\MatterFlow.Productions.csproj", "{55B4670E-3345-4BD0-AADA-5D389026A139}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LptHub.Productions", "src\Modules\LptHub.Productions\LptHub.Productions.csproj", "{55B4670E-3345-4BD0-AADA-5D389026A139}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterFlow.Productions.Contracts", "src\Modules\MatterFlow.Productions.Contracts\MatterFlow.Productions.Contracts.csproj", "{BDAF785E-27DC-467E-97E1-3DA3FFEF05B7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LptHub.Productions.Contracts", "src\Modules\LptHub.Productions.Contracts\LptHub.Productions.Contracts.csproj", "{BDAF785E-27DC-467E-97E1-3DA3FFEF05B7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterFlow.Notes", "src\Modules\MatterFlow.Notes\MatterFlow.Notes.csproj", "{51346B1D-898A-417F-B8AF-94D5CEF27E3B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LptHub.Notes", "src\Modules\LptHub.Notes\LptHub.Notes.csproj", "{51346B1D-898A-417F-B8AF-94D5CEF27E3B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MatterFlow.Notes.Contracts", "src\Modules\MatterFlow.Notes.Contracts\MatterFlow.Notes.Contracts.csproj", "{EEA41E3F-B8CF-4990-B95C-AFD7A20CD10B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LptHub.Notes.Contracts", "src\Modules\LptHub.Notes.Contracts\LptHub.Notes.Contracts.csproj", "{EEA41E3F-B8CF-4990-B95C-AFD7A20CD10B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

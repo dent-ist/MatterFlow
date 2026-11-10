@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
-using MatterFlow.Identity.Contracts;
+using LptHub.Identity.Contracts;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>Query of the Dashboard Users tab (team workload).</summary>
 public class WorkloadQuery

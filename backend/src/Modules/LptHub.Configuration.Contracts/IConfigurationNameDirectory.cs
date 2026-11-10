@@ -1,6 +1,6 @@
-using MatterFlow.Configuration.Contracts.Forms;
+using LptHub.Configuration.Contracts.Forms;
 
-namespace MatterFlow.Configuration.Contracts;
+namespace LptHub.Configuration.Contracts;
 
 /// <summary>The owner of a form definition, as the audit browser words it ("Matter custom fields", "Relativity Workspace fields").</summary>
 /// <param name="Scope">What owns the form.</param>

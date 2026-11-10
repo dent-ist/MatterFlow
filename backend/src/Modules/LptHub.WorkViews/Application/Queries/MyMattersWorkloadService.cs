@@ -1,11 +1,11 @@
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Identity.Domain;
-using MatterFlow.Organization.Domain;
-using MatterFlow.SharedKernel.Availability;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Identity.Contracts;
+using LptHub.Identity.Domain;
+using LptHub.Organization.Domain;
+using LptHub.SharedKernel.Availability;
+using LptHub.SharedKernel.Results;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>
 /// Workload and capacity (issue #682): the open tasks on my matters grouped by pod, then person. One grouped statement over the open tasks of the scope

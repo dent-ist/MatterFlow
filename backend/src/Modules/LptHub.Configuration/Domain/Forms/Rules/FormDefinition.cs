@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace MatterFlow.Configuration.Domain.Forms.Rules;
+namespace LptHub.Configuration.Domain.Forms.Rules;
 
 /// <summary>One option of a SELECT, RADIO or MULTISELECT field.</summary>
 /// <param name="Key">Stable option key.</param>

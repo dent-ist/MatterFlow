@@ -1,10 +1,10 @@
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Reports.Domain.Parameters;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Time;
+using LptHub.Identity.Contracts;
+using LptHub.Reports.Domain.Parameters;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Time;
 using Microsoft.Extensions.Configuration;
 
-namespace MatterFlow.Reports.Application;
+namespace LptHub.Reports.Application;
 
 /// <summary>Collects the facts the server supplies as built-in values for the caller: who they are, "today" in the firm time zone, their pods, the zone offset and whether they may assign matter managers.</summary>
 public sealed class BuiltInContextFactory(ICurrentUser user, IPodDirectory pods, IConfiguration configuration, TimeProvider time, IPermissionChecker permissions)

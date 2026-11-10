@@ -1,15 +1,15 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.IntegrationTests.Tasks;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Tasks;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Assets;
+namespace LptHub.IntegrationTests.Assets;
 
 /// <summary>
 /// <c>linkedTaskCount</c> and <c>openLinkedTaskCount</c> on the Asset list and detail, and the sorts <c>matter</c> and <c>linkedTaskCount</c> (#496):
@@ -173,7 +173,7 @@ public sealed class AssetLinkedTaskCountsApiTests(SqlServerFixture sql) : IAsync
         await LinkAsync(await _h.CreateTaskAsync(_w), first.Id);
 
         var http = _logged.CreateClient();
-        http.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        http.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         http.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
 
         async Task<(int Statements, int Grouped)> MeasureAsync(string url)
@@ -250,7 +250,7 @@ public sealed class AssetLinkedTaskCountsApiTests(SqlServerFixture sql) : IAsync
             await LinkAsync(await _h.CreateTaskAsync(_w), many.Id);
 
         var http = _logged.CreateClient();
-        http.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        http.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         http.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
 
         async Task<int> StatementsAsync(int assetId)

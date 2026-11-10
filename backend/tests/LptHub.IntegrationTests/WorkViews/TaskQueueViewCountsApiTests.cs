@@ -1,11 +1,11 @@
 using System.Globalization;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.IntegrationTests.Tasks;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Tasks;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.WorkViews;
+namespace LptHub.IntegrationTests.WorkViews;
 
 /// <summary>
 /// The Task Queue quick-view counts (<c>views</c> on GET /api/v1/task-queue, #218): each equals the grid total of the same view's filters and, where
@@ -204,7 +204,7 @@ public sealed class TaskQueueViewCountsApiTests(SqlServerFixture sql) : IAsyncLi
         if (row.GetProperty("isOverdue").GetBoolean())
             return 1;
         var due = DateOnly.Parse(row.GetProperty("dueDate").GetString()!, CultureInfo.InvariantCulture);
-        var weekEnd = MatterFlow.WorkViews.Application.Queries.TaskQueueRules.EndOfWeek(today);
+        var weekEnd = LptHub.WorkViews.Application.Queries.TaskQueueRules.EndOfWeek(today);
         return due <= today ? 2 : due == today.AddDays(1) ? 3 : due <= weekEnd ? 4 : 5;
     }
 

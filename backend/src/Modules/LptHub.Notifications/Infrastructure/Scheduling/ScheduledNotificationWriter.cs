@@ -1,8 +1,8 @@
-using MatterFlow.Notifications.Contracts;
-using MatterFlow.Notifications.Domain;
+using LptHub.Notifications.Contracts;
+using LptHub.Notifications.Domain;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Notifications.Infrastructure.Scheduling;
+namespace LptHub.Notifications.Infrastructure.Scheduling;
 
 /// <summary>
 /// Writes the notifications of the scheduled jobs. Like the publisher it drops the actor (none for system events), applies the switches and
@@ -10,7 +10,7 @@ namespace MatterFlow.Notifications.Infrastructure.Scheduling;
 /// winning. Unlike the publisher it is idempotent: a row whose key (recipient, event type, object, dedupe key) exists is not written again, so a
 /// repeated, overlapping or restarted run creates nothing new. Saves itself, in batches.
 /// </summary>
-public sealed class ScheduledNotificationWriter(DbContext db, MatterFlow.SharedKernel.Time.IClock clock, MatterFlow.Notifications.Application.RecipientVisibility recipientVisibility)
+public sealed class ScheduledNotificationWriter(DbContext db, LptHub.SharedKernel.Time.IClock clock, LptHub.Notifications.Application.RecipientVisibility recipientVisibility)
 {
     /// <param name="actions">The rule hits, grouped by action (one group per task and stage).</param>
     /// <returns>The number of notification rows created.</returns>

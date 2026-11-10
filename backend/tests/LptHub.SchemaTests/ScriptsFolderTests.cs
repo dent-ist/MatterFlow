@@ -1,8 +1,8 @@
 using System.Text.RegularExpressions;
-using MatterFlow.Data.SchemaMigrations;
+using LptHub.Data.SchemaMigrations;
 using Shouldly;
 
-namespace MatterFlow.SchemaTests;
+namespace LptHub.SchemaTests;
 
 public class ScriptsFolderTests
 {

@@ -1,10 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests;
+namespace LptHub.IntegrationTests;
 
 /// <summary>Pipeline proof for GET /api/v1/system/ping: success shape, X-Time-Zone handling and the ProblemDetails error model. No database needed.</summary>
 public class SystemPingTests(NoDatabaseApiFactory factory) : IClassFixture<NoDatabaseApiFactory>
@@ -64,7 +64,7 @@ public class SystemPingTests(NoDatabaseApiFactory factory) : IClassFixture<NoDat
         var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
         problem.GetProperty("status").GetInt32().ShouldBe(400);
         problem.GetProperty("code").GetString().ShouldBe("VALIDATION_FAILED");
-        problem.GetProperty("type").GetString().ShouldBe("urn:matterflow:error:validation-failed");
+        problem.GetProperty("type").GetString().ShouldBe("urn:lpt-hub:error:validation-failed");
         problem.GetProperty("title").GetString().ShouldNotBeNullOrWhiteSpace();
         problem.GetProperty("traceId").GetString().ShouldNotBeNullOrWhiteSpace();
         var fieldErrors = problem.GetProperty("errors").GetProperty("message");

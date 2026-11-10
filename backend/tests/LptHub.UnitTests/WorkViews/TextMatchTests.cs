@@ -1,7 +1,7 @@
-using MatterFlow.WorkViews.Application.Queries;
+using LptHub.WorkViews.Application.Queries;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.WorkViews;
+namespace LptHub.UnitTests.WorkViews;
 
 /// <summary>The binary-collation "contains" the queue filters use: lower-cased term, LIKE wildcards matched literally.</summary>
 public class TextMatchTests

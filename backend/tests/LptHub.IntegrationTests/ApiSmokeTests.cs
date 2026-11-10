@@ -1,8 +1,8 @@
 using System.Net;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests;
+namespace LptHub.IntegrationTests;
 
 public class ApiSmokeTests(NoDatabaseApiFactory factory) : IClassFixture<NoDatabaseApiFactory>
 {

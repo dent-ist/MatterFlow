@@ -21,7 +21,7 @@ const OTHER = '__other__';
  * all IANA zones (the old input). The browser's zone and the saved zone are always selectable, as extra first options when they are not US
  * zones, so a legacy value is never overwritten silently. The value is the IANA id string; validation stays with the form.
  * Under it: the local time there ("It is 9:41 AM there now.", refreshed each minute, not announced on every tick) and one sentence about
- * the zone the rest of MatterFlow uses (the browser's, addendum M).
+ * the zone the rest of LPT Hub uses (the browser's, addendum M).
  */
 @Component({
   selector: 'mf-time-zone-select',

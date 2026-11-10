@@ -1,10 +1,10 @@
 using System.Net;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.WorkViews;
+namespace LptHub.IntegrationTests.WorkViews;
 
 /// <summary>
 /// GET /my-matters/deadlines?groupBy=day|matter (epic #758, PX-07, #765): the calendar buckets and the matters with their next deadlines. Every count equals the Task Queue list its query

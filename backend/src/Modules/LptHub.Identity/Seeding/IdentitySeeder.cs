@@ -1,15 +1,15 @@
-using MatterFlow.Identity.Access;
-using MatterFlow.Identity.Authentication;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Identity.Domain;
-using MatterFlow.SharedKernel.Time;
+using LptHub.Identity.Access;
+using LptHub.Identity.Authentication;
+using LptHub.Identity.Contracts;
+using LptHub.Identity.Domain;
+using LptHub.SharedKernel.Time;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace MatterFlow.Identity.Seeding;
+namespace LptHub.Identity.Seeding;
 
 /// <summary>A user defined in <c>Dev:Users</c> (Dev provider only).</summary>
 public sealed class DevUserConfig

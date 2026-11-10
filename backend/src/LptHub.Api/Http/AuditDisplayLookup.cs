@@ -1,17 +1,17 @@
 using System.Globalization;
-using MatterFlow.Assets.Contracts;
-using MatterFlow.Audit.Contracts;
-using MatterFlow.Configuration.Contracts;
-using MatterFlow.Configuration.Contracts.Forms;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Notes.Contracts;
-using MatterFlow.Organization.Contracts;
-using MatterFlow.Productions.Contracts;
-using MatterFlow.SharedKernel.Visibility;
-using MatterFlow.WorkManagement.Contracts;
+using LptHub.Assets.Contracts;
+using LptHub.Audit.Contracts;
+using LptHub.Configuration.Contracts;
+using LptHub.Configuration.Contracts.Forms;
+using LptHub.Identity.Contracts;
+using LptHub.Notes.Contracts;
+using LptHub.Organization.Contracts;
+using LptHub.Productions.Contracts;
+using LptHub.SharedKernel.Visibility;
+using LptHub.WorkManagement.Contracts;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Api.Http;
+namespace LptHub.Api.Http;
 
 /// <summary>
 /// Composes the audit browser's display lookups from the owning modules' Contracts (the Audit module itself must not depend on them).

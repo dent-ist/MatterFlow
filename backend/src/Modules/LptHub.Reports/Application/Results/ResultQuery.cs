@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 
-namespace MatterFlow.Reports.Application.Results;
+namespace LptHub.Reports.Application.Results;
 
 /// <summary>A filter on one column of the result, from the grid's header filters (spec 11).</summary>
 /// <param name="Column">Column name.</param>

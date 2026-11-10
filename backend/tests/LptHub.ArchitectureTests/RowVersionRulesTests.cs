@@ -1,9 +1,9 @@
 using System.ComponentModel.DataAnnotations;
 using System.Reflection;
-using MatterFlow.Identity;
+using LptHub.Identity;
 using Shouldly;
 
-namespace MatterFlow.ArchitectureTests;
+namespace LptHub.ArchitectureTests;
 
 /// <summary>
 /// Optimistic concurrency contract (architecture 10, risk R-05, security review SEC-09): every request that changes an existing record
@@ -26,7 +26,7 @@ public class RowVersionRulesTests
     {
         var assemblies = new List<Assembly> { typeof(Program).Assembly, typeof(IdentityModule).Assembly };
         foreach (var name in new[] { "Audit", "Configuration", "Organization", "Assets", "WorkflowEngine", "WorkManagement", "WorkViews", "Search", "Intake", "Productions", "Notes" })
-            assemblies.Add(Assembly.Load($"MatterFlow.{name}"));
+            assemblies.Add(Assembly.Load($"LptHub.{name}"));
 
         return assemblies
             .SelectMany(a => a.GetTypes())

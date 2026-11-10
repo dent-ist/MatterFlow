@@ -3,7 +3,7 @@
 # Usage:  MF_SQL_PASSWORD=... tools/db/compare-schema.sh <databaseA> <databaseB>
 # Env:    MF_SQL_SERVER (default localhost), MF_SQL_USER (default sa), MF_SQL_PASSWORD (required),
 #         MF_SQLCMD (default: sqlcmd; for the dev container use
-#         "docker exec -i matterflow-sql /opt/mssql-tools18/bin/sqlcmd" and run the script from a place where docker is available).
+#         "docker exec -i lpt-hub-sql /opt/mssql-tools18/bin/sqlcmd" and run the script from a place where docker is available).
 # Output: a unified diff of the two descriptions; exit code 0 and no output lines starting with + or - means the schemas are equal.
 set -euo pipefail
 a=${1:?database A}

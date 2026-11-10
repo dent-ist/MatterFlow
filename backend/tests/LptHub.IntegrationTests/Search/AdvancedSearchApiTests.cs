@@ -1,10 +1,10 @@
 using System.Net;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Search.SearchData;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Search.SearchData;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Search;
+namespace LptHub.IntegrationTests.Search;
 
 /// <summary>GET /api/v1/search/advanced (ticket 53): per-type filters, paging, permissions, validation.</summary>
 [Collection(SqlServerCollection.Name)]

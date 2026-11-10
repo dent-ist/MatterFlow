@@ -1,7 +1,7 @@
-using MatterFlow.Configuration.Domain.Forms.Rules;
+using LptHub.Configuration.Domain.Forms.Rules;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Configuration.Forms;
+namespace LptHub.UnitTests.Configuration.Forms;
 
 public class FormRulesEdgeCaseTests
 {

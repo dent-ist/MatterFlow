@@ -1,12 +1,12 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.Identity.Contracts;
+using LptHub.IntegrationTests.Fixtures;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Organization;
+namespace LptHub.IntegrationTests.Organization;
 
 /// <summary>
 /// The column filters of the Clients, Matters and Projects lists (epic #75, Batch 2): each box searches its own column with a
@@ -24,7 +24,7 @@ public sealed class OrganizationColumnFilterTests(SqlServerFixture sql) : IAsync
     private HttpClient As(string user, WebApplicationFactory<Program>? factory = null)
     {
         var client = (factory ?? _factory).CreateClient();
-        client.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        client.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         client.DefaultRequestHeaders.Add("X-Dev-User", user);
         return client;
     }

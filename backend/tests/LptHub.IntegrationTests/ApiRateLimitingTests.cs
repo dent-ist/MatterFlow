@@ -1,11 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Microsoft.AspNetCore.Hosting;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests;
+namespace LptHub.IntegrationTests;
 
 /// <summary>SEC2-03: per-user budgets for the expensive API calls, 429 with Retry-After, and the query string caps.</summary>
 [Collection(SqlServerCollection.Name)]
@@ -34,7 +34,7 @@ public sealed class ApiRateLimitingTests(SqlServerFixture sql) : IAsyncLifetime
     private HttpClient As(string user)
     {
         var client = _limited.CreateClient();
-        client.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        client.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         client.DefaultRequestHeaders.Add("X-Dev-User", user);
         return client;
     }

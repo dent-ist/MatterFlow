@@ -1,4 +1,4 @@
-namespace MatterFlow.Audit.Contracts;
+namespace LptHub.Audit.Contracts;
 
 /// <summary>
 /// Records semantic audit events (STEP_COMPLETED, TASK_STATUS_CHANGED, ...). Writing only queues the entry; it is persisted by the

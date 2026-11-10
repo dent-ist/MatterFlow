@@ -1,8 +1,8 @@
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.WorkViews;
+namespace LptHub.IntegrationTests.WorkViews;
 
 /// <summary>GET /audit/search?matterId= (MD-07, #1008): the Activities tab of a matter lists only the events scoped to that matter, newest first.</summary>
 [Collection(SqlServerCollection.Name)]

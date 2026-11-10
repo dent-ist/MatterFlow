@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
-using MatterFlow.Organization.Contracts;
+using LptHub.Organization.Contracts;
 
-namespace MatterFlow.Organization.Application;
+namespace LptHub.Organization.Application;
 
 /// <summary>A Client.</summary>
 /// <param name="ClientId">Internal immutable id.</param>

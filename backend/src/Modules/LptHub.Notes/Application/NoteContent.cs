@@ -1,10 +1,10 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
-using MatterFlow.Notes.Domain;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Text;
+using LptHub.Notes.Domain;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Text;
 
-namespace MatterFlow.Notes.Application;
+namespace LptHub.Notes.Application;
 
 /// <summary>A reference found in a note body: a kind (<see cref="NoteLinkTarget"/>) and the id of the target.</summary>
 /// <param name="Embed">True when the note is shown inline (<c>data-embed-id</c>) instead of as a chip.</param>

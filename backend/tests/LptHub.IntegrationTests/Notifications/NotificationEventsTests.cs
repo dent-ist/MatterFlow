@@ -1,14 +1,14 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.IntegrationTests.Tasks;
-using MatterFlow.Notifications.Domain;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Tasks;
+using LptHub.Notifications.Domain;
 using Microsoft.EntityFrameworkCore;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Notifications;
+namespace LptHub.IntegrationTests.Notifications;
 
 /// <summary>
 /// WP-NT2 create-path events against a real SQL Server: 1 task assigned to you (#735), 3 comment on your task (#736) and 8 task unassigned in your
@@ -206,7 +206,7 @@ public sealed class NotificationEventsTests(SqlServerFixture sql) : IAsyncLifeti
     {
         var leadPerms = AllTaskPermissions;
         // The starter role "Pod Lead" is seeded at startup: Pod Lead is a role, and the leads of a pod are its members who hold it.
-        var roleId = await _factory.WithDbAsync(db => db.Set<MatterFlow.Identity.Domain.Role>().Where(r => r.Name == "Pod Lead").Select(r => r.Id).SingleAsync());
+        var roleId = await _factory.WithDbAsync(db => db.Set<LptHub.Identity.Domain.Role>().Where(r => r.Name == "Pod Lead").Select(r => r.Id).SingleAsync());
         var lead1 = await _h.UserWithAsync(@"KE\lead1", leadPerms);
         var lead2 = await _h.UserWithAsync(@"KE\lead2", leadPerms);
         var lead1Id = await _h.UserIdAsync(@"KE\lead1");

@@ -1,9 +1,9 @@
-using MatterFlow.Data.SchemaMigrations;
+using LptHub.Data.SchemaMigrations;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 
-namespace MatterFlow.SchemaTests;
+namespace LptHub.SchemaTests;
 
 /// <summary>Baseline (archived 57-task-unassigned-at.sql) (Dashboard v4, epic #1063, issue #1064): the nullable column, no backfill, and the filtered index of open unassigned Tasks.</summary>
 [Collection(SqlServerCollection.Name)]

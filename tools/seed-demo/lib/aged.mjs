@@ -4,7 +4,7 @@
 // was created) and no task could have been On hold for days. This step moves two dates of Demo tasks back with a few UPDATE statements inside
 // the SQL Server container of the local development database. It is the only place where the seeder writes to the database directly,
 // so it is opt-in and guarded:
-//   - only for a local API (localhost / 127.0.0.1), and only the database named MatterFlow in the named container;
+//   - only for a local API (localhost / 127.0.0.1), and only the database named LPT Hub in the named container;
 //   - only tasks whose requestor name carries the demo marker "[demo <tag>]" (the seeder puts it on every task it creates);
 //   - only tasks that still have today's dates (a task that was aged before is not moved again), so it is safe to run twice.
 // Nothing here is used by the application, by CI or by the e2e suite (which has its own helper in frontend/e2e/support/seed.ts).
@@ -41,7 +41,7 @@ export async function sql(target, statement) {
       '-P',
       target.password,
       '-d',
-      'MatterFlow',
+      'LptHub',
       '-b',
       '-h',
       '-1',

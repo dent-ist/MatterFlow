@@ -1,8 +1,8 @@
-using MatterFlow.Reports.Application;
+using LptHub.Reports.Application;
 using Microsoft.Extensions.Options;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Reports;
+namespace LptHub.UnitTests.Reports;
 
 /// <summary>One running report per person, a global cap and an hourly budget (spec 6.5; issue #702).</summary>
 public class ReportRunGateTests

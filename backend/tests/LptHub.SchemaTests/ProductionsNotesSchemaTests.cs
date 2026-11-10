@@ -1,9 +1,9 @@
-using MatterFlow.Data.SchemaMigrations;
+using LptHub.Data.SchemaMigrations;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 
-namespace MatterFlow.SchemaTests;
+namespace LptHub.SchemaTests;
 
 /// <summary>Scripts 52 to 55 (epic #1001): production specs, productions and comments, notes with tags and links, note templates, and the permission rows.</summary>
 [Collection(SqlServerCollection.Name)]

@@ -1,14 +1,14 @@
 using System.ComponentModel.DataAnnotations;
-using MatterFlow.Identity.Application;
-using MatterFlow.Identity.Authorization;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.SharedKernel.Availability;
-using MatterFlow.SharedKernel.Paging;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Identity.Application;
+using LptHub.Identity.Authorization;
+using LptHub.Identity.Contracts;
+using LptHub.SharedKernel.Availability;
+using LptHub.SharedKernel.Paging;
+using LptHub.SharedKernel.Results;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MatterFlow.Identity.Api;
+namespace LptHub.Identity.Api;
 
 /// <summary>Users queue (Access Pending admin) and role assignment (UX S12). Viewing needs <c>User.View</c>, changes need <c>User.Manage</c>.</summary>
 [ApiController]

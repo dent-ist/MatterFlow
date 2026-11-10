@@ -1,9 +1,9 @@
-using MatterFlow.Organization.Application;
-using MatterFlow.Organization.Contracts;
+using LptHub.Organization.Application;
+using LptHub.Organization.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-namespace MatterFlow.Organization;
+namespace LptHub.Organization;
 
 /// <summary>Composition entry point of the Organization module.</summary>
 public static class OrganizationModule
@@ -17,16 +17,16 @@ public static class OrganizationModule
         services.AddControllers().AddApplicationPart(typeof(OrganizationModule).Assembly);
 
         services.AddScoped<CustomFieldValues>();
-        services.AddScoped<MatterFlow.SharedKernel.Visibility.IMatterAccessSource, MatterAccessSource>();
+        services.AddScoped<LptHub.SharedKernel.Visibility.IMatterAccessSource, MatterAccessSource>();
         services.AddScoped<ClientService>();
         services.AddScoped<MatterService>();
         services.AddScoped<MatterTeamService>();
-        services.AddScoped<MatterFlow.Configuration.Contracts.IMatterListUsage, MatterListUsage>();
+        services.AddScoped<LptHub.Configuration.Contracts.IMatterListUsage, MatterListUsage>();
         services.AddScoped<ProjectService>();
         services.AddScoped<MatterEventService>();
         services.AddScoped<IMatterDirectory, MatterDirectory>();
         services.AddScoped<IProjectDirectory, ProjectDirectory>();
-        services.AddScoped<MatterFlow.Notifications.Contracts.IObjectVisibility, MatterObjectVisibility>();
+        services.AddScoped<LptHub.Notifications.Contracts.IObjectVisibility, MatterObjectVisibility>();
         services.TryAddScoped<IMatterTaskGuard, NoTasksMatterTaskGuard>();
         services.TryAddScoped<IOrganizationTaskCounts, NoTasksOrganizationTaskCounts>();
         services.TryAddScoped<IMatterAssetCounts, NoAssetsMatterAssetCounts>();

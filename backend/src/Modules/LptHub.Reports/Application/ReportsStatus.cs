@@ -1,4 +1,4 @@
-namespace MatterFlow.Reports.Application;
+namespace LptHub.Reports.Application;
 
 /// <summary>Why Reports can or cannot run (spec sections 6.3 layer 4, 7.10 and 8.2). Stable codes; the wording is for administrators.</summary>
 public static class ReportsStates
@@ -17,7 +17,7 @@ public static class ReportsStates
     /// <summary>The report login could not connect (wrong password, login or database user missing, server down).</summary>
     public const string LoginFailed = "LoginFailed";
 
-    /// <summary>The login can connect but is not a member of <c>mf_report_reader</c>.</summary>
+    /// <summary>The login can connect but is not a member of <c>lpt_report_reader</c>.</summary>
     public const string RoleMissing = "RoleMissing";
 
     /// <summary>The login can write, execute, change the schema or read a denied table.</summary>

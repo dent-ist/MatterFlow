@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.OpenApi;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi;
 
-namespace MatterFlow.Configuration.Api;
+namespace LptHub.Configuration.Api;
 
 /// <summary>
 /// Describes the multipart body of <c>PUT /api/v1/admin/settings/branding/icon</c> (the action reads the form itself so it can answer an oversized

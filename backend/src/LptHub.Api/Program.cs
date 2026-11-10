@@ -1,14 +1,14 @@
 using System.Text.Json.Serialization;
-using MatterFlow.Api;
-using MatterFlow.Api.Hosting;
-using MatterFlow.Api.Http;
-using MatterFlow.Api.OpenApi;
-using MatterFlow.Api.Security;
-using MatterFlow.Data.SchemaMigrations;
+using LptHub.Api;
+using LptHub.Api.Hosting;
+using LptHub.Api.Http;
+using LptHub.Api.OpenApi;
+using LptHub.Api.Security;
+using LptHub.Data.SchemaMigrations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-// `--migrate-only` (or MATTERFLOW_MIGRATE_ONLY=true): apply the schema scripts and exit without starting the web host (docs/runbook.md section 7).
+// `--migrate-only` (or LPTHUB_MIGRATE_ONLY=true): apply the schema scripts and exit without starting the web host (docs/runbook.md section 7).
 if (MigrateOnlyCommand.IsRequested(args))
     return await MigrateOnlyCommand.RunAsync(args);
 
@@ -18,7 +18,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.ConfigureKestrel(o => o.AddServerHeader = false);
 builder.Services.AddHsts(o => o.MaxAge = TimeSpan.FromDays(365));
 
-builder.Services.AddMatterFlowModules(builder.Configuration, builder.Environment);
+builder.Services.AddLptHubModules(builder.Configuration, builder.Environment);
 builder.Services
     .AddControllers(o =>
     {
@@ -48,7 +48,7 @@ builder.Services.AddHealthChecks().AddCheck<ReadinessHealthCheck>("database", ta
 // The Angular build is served from wwwroot on the same origin when it is deployed there (Hosting/SpaHosting.cs).
 var serveSpa = SpaHosting.IsEnabled(builder.Configuration, builder.Environment);
 if (serveSpa)
-    builder.Services.AddMatterFlowSpaCompression();
+    builder.Services.AddLptHubSpaCompression();
 // Policies (e.g. Audit.View) are registered by the Identity/authorization module; the host only enables the middleware.
 builder.Services.AddAuthorization();
 builder.Services.AddSchemaMigrations(builder.Configuration);
@@ -69,8 +69,8 @@ builder.Services.AddProblemDetails(o =>
     };
 });
 builder.Services.AddApiRateLimiting(builder.Configuration);
-builder.Services.Configure<MatterFlow.SharedKernel.Paging.ReadQueryOptions>(builder.Configuration.GetSection(MatterFlow.SharedKernel.Paging.ReadQueryOptions.SectionName));
-builder.Services.AddMatterFlowOpenApi();
+builder.Services.Configure<LptHub.SharedKernel.Paging.ReadQueryOptions>(builder.Configuration.GetSection(LptHub.SharedKernel.Paging.ReadQueryOptions.SectionName));
+builder.Services.AddLptHubOpenApi();
 builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, AuthorizationResultHandler>();
 
 var app = builder.Build();
@@ -85,7 +85,7 @@ if (System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name != "GetDocumen
     // API has a database, also when a separate step migrated it (Migrations:Enabled=false), so new permission codes are synced after upgrades;
     // Seeds:Enabled=false turns them off (security review SEC-18).
     var configuration = app.Services.GetRequiredService<IConfiguration>();
-    var hasDatabase = !string.IsNullOrWhiteSpace(configuration.GetConnectionString("MatterFlow"));
+    var hasDatabase = !string.IsNullOrWhiteSpace(configuration.GetConnectionString("LptHub"));
     var seedsEnabled = app.Services.GetRequiredService<MigrationsOptions>().Enabled || (hasDatabase && configuration.GetValue("Seeds:Enabled", true));
     if (seedsEnabled)
         await app.Services.RunModuleSeedsAsync();
@@ -108,7 +108,7 @@ app.UseMiddleware<QueryLimitMiddleware>();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 if (serveSpa)
-    app.UseMatterFlowStaticFiles();
+    app.UseLptHubStaticFiles();
 
 app.UseMiddleware<RequestForgeryGuard>();
 app.UseAuthentication();
@@ -123,10 +123,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(options =>
     {
         options.RoutePrefix = "swagger";
-        options.DocumentTitle = "MatterFlow API";
-        options.SwaggerEndpoint("/openapi/v1.json", "MatterFlow v1");
+        options.DocumentTitle = "LPT Hub API";
+        options.SwaggerEndpoint("/openapi/v1.json", "LPT Hub v1");
         options.EnablePersistAuthorization();
-        options.UseRequestInterceptor("(req) => { req.headers['X-MatterFlow-Client'] = 'web'; return req; }");
+        options.UseRequestInterceptor("(req) => { req.headers['X-LptHub-Client'] = 'web'; return req; }");
     });
 }
 
@@ -134,7 +134,7 @@ app.MapHealthChecks("/health/live", new() { Predicate = r => !r.Tags.Contains(Re
 app.MapHealthChecks("/health/ready", ReadinessHealthCheck.EndpointOptions()).AllowAnonymous();
 app.MapControllers();
 if (serveSpa)
-    app.MapMatterFlowSpaFallback();
+    app.MapLptHubSpaFallback();
 
 app.Run();
 return 0;

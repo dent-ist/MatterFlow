@@ -1,9 +1,9 @@
-using MatterFlow.Configuration.Application.Settings;
-using MatterFlow.Configuration.Domain.Settings;
-using MatterFlow.SharedKernel.Time;
+using LptHub.Configuration.Application.Settings;
+using LptHub.Configuration.Domain.Settings;
+using LptHub.SharedKernel.Time;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Configuration.Settings;
+namespace LptHub.UnitTests.Configuration.Settings;
 
 public class AppSettingsCacheTests
 {
@@ -64,7 +64,7 @@ public class AppSettingsCacheTests
     [Fact]
     public void Definitions_name_the_audit_events_and_the_defaults_live_in_code()
     {
-        SettingDefinitions.BrandingAppName.DefaultText.ShouldBe("MatterFlow");
+        SettingDefinitions.BrandingAppName.DefaultText.ShouldBe("LPT Hub");
         SettingDefinitions.BrandingIcon.DefaultText.ShouldBeNull();
         SettingDefinitions.BrandingAppName.ChangedEvent.ShouldBe("SETTINGS_BRANDING_NAME_CHANGED");
         SettingDefinitions.BrandingIcon.ChangedEvent.ShouldBe("SETTINGS_BRANDING_ICON_CHANGED");

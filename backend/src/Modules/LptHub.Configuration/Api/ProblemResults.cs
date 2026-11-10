@@ -1,9 +1,9 @@
 using System.Diagnostics;
-using MatterFlow.SharedKernel.Results;
+using LptHub.SharedKernel.Results;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MatterFlow.Configuration.Api;
+namespace LptHub.Configuration.Api;
 
 /// <summary>
 /// Turns a failed <see cref="Result"/> into the standard RFC 9457 response (architecture section 11). Same shape as the host's
@@ -27,7 +27,7 @@ internal static class ProblemResults
         var lower = error.Code.ToLowerInvariant().Replace('_', ' ');
         var problem = new ProblemDetails
         {
-            Type = "urn:matterflow:error:" + error.Code.ToLowerInvariant().Replace('_', '-'),
+            Type = "urn:lpt-hub:error:" + error.Code.ToLowerInvariant().Replace('_', '-'),
             Title = lower.Length == 0 ? lower : char.ToUpperInvariant(lower[0]) + lower[1..],
             Status = status,
             Detail = error.Message,

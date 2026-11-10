@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>Request of <c>GET /dashboard/calendar/days</c>: at most 62 days, the pod scope of the capacity endpoints and an optional primary-role filter.</summary>
 public class CalendarDaysQuery

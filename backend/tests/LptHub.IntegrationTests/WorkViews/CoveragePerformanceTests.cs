@@ -1,11 +1,11 @@
 using System.Diagnostics;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.IntegrationTests.Tasks;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Tasks;
 using Shouldly;
 using Xunit.Abstractions;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.WorkViews;
+namespace LptHub.IntegrationTests.WorkViews;
 
 /// <summary>GET /api/v1/dashboard/coverage against about 5,000 Tasks, 300 people and 12 task types seeded with set-based SQL: median under 400 ms.</summary>
 [Collection(SqlServerCollection.Name)]
@@ -71,7 +71,7 @@ public sealed class CoveragePerformanceTests(SqlServerFixture sql, ITestOutputHe
     private HttpClient Client()
     {
         var http = _factory.CreateClient();
-        http.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        http.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         http.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
         return http;
     }

@@ -1,4 +1,4 @@
-namespace MatterFlow.Identity.Contracts;
+namespace LptHub.Identity.Contracts;
 
 /// <summary>A user as other modules see them (assignee and author display).</summary>
 /// <param name="UserId">AppUser id.</param>

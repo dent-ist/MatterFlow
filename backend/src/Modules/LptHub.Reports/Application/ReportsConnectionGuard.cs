@@ -1,6 +1,6 @@
 using Microsoft.Data.SqlClient;
 
-namespace MatterFlow.Reports.Application;
+namespace LptHub.Reports.Application;
 
 /// <summary>
 /// Decides whether a reports connection string may be used at all (spec 7.10): it must exist, parse, and must not be the application's own login.
@@ -11,7 +11,7 @@ public static class ReportsConnectionGuard
     public sealed record Result(bool Ok, string State, string Message, string? ConnectionString);
 
     /// <param name="reports">The value of <c>ConnectionStrings:ReportsReadOnly</c>.</param>
-    /// <param name="appConnectionStrings">Every connection string the application itself uses (MatterFlow, Default, Migrations).</param>
+    /// <param name="appConnectionStrings">Every connection string the application itself uses (LPT Hub, Default, Migrations).</param>
     public static Result Evaluate(string? reports, IEnumerable<string?> appConnectionStrings)
     {
         if (string.IsNullOrWhiteSpace(reports))
@@ -44,7 +44,7 @@ public static class ReportsConnectionGuard
     {
         var builder = new SqlConnectionStringBuilder(source.ConnectionString)
         {
-            ApplicationName = "MatterFlow.Reports",
+            ApplicationName = "LptHub.Reports",
             ApplicationIntent = ApplicationIntent.ReadOnly,
             ConnectTimeout = Math.Min(source.ConnectTimeout, 10),
             MaxPoolSize = Math.Min(source.MaxPoolSize, 8),

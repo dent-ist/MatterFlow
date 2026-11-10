@@ -1,7 +1,7 @@
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Identity.LandingPages;
+using LptHub.Identity.Contracts;
+using LptHub.Identity.LandingPages;
 
-namespace MatterFlow.Identity.Seeding;
+namespace LptHub.Identity.Seeding;
 
 /// <summary>A starter role and its default grants.</summary>
 public sealed record StarterRole(string Name, string Description, IReadOnlyList<string> Permissions, string? LandingPage = null);

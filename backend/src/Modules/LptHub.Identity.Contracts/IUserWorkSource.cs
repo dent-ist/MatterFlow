@@ -1,4 +1,4 @@
-namespace MatterFlow.Identity.Contracts;
+namespace LptHub.Identity.Contracts;
 
 /// <summary>
 /// Lets a module that owns work items tell Identity whether a user has open work, without Identity depending on it

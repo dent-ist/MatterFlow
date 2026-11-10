@@ -2,11 +2,11 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Microsoft.Data.SqlClient;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Reports;
+namespace LptHub.IntegrationTests.Reports;
 
 /// <summary>Helpers shared by the security suite of the Reports feature (issue #725): the corpus files, a CSV reader, and a few HTTP and SQL shortcuts.</summary>
 internal static class ReportSecurityKit
@@ -120,7 +120,7 @@ internal static class ReportSecurityKit
     /// <summary>For answers that echo the caller's own input (a bad sort or filter): no stack trace, no SQL Server message, no exception type.</summary>
     public static void ShouldHoldNoServerTrace(string body, string where)
     {
-        foreach (var trace in new[] { "Exception", "   at ", "Msg ", "Stack", "MatterFlow.", "Microsoft." })
+        foreach (var trace in new[] { "Exception", "   at ", "Msg ", "Stack", "LptHub.", "Microsoft." })
             body.ShouldNotContain(trace, Case.Sensitive, $"{where}: {body}");
     }
 

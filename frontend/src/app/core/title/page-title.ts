@@ -53,7 +53,7 @@ export class MfTitleStrategy extends TitleStrategy {
 }
 
 /**
- * Lets a detail page replace the route's generic title with the loaded record (`TSK-12 Load Jones mailbox - MatterFlow`).
+ * Lets a detail page replace the route's generic title with the loaded record (`TSK-12 Load Jones mailbox - LPT Hub`).
  * The next navigation resets it through `MfTitleStrategy`.
  */
 @Injectable({ providedIn: 'root' })

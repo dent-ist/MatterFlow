@@ -2,7 +2,7 @@
 
 [[_TOC_]]
 
-**What this page is for.** The three cross-cutting services every feature may touch: in-app notifications (`MatterFlow.Notifications`), the audit trail (`MatterFlow.Audit` plus `MatterFlow.Data` interceptors) and application settings (`dbo.AppSetting`, owned by `MatterFlow.Configuration`). Use it to decide what to write when your feature changes data.
+**What this page is for.** The three cross-cutting services every feature may touch: in-app notifications (`LptHub.Notifications`), the audit trail (`LptHub.Audit` plus `LptHub.Data` interceptors) and application settings (`dbo.AppSetting`, owned by `LptHub.Configuration`). Use it to decide what to write when your feature changes data.
 
 ## Audit
 
@@ -10,7 +10,7 @@
 
 | Mechanism | How | Use it for |
 |---|---|---|
-| Field-level events | `AuditSaveChangesInterceptor` (`backend/src/MatterFlow.Data`) writes `FIELD_CHANGED` for entities marked `[Audited]`, for properties not marked `[AuditExplicit]`. JSON value columns are diffed per field key | Plain property edits; zero code in the service |
+| Field-level events | `AuditSaveChangesInterceptor` (`backend/src/LptHub.Data`) writes `FIELD_CHANGED` for entities marked `[Audited]`, for properties not marked `[AuditExplicit]`. JSON value columns are diffed per field key | Plain property edits; zero code in the service |
 | Explicit events | `IAuditWriter` (`Audit.Contracts`) called from an application service | Semantic actions: `TASK_CREATED`, `TASK_STATUS_CHANGED`, `ROLE_GRANTED`, `MATTER_SENSITIVITY_CHANGED`, `EXPORT_RUN`, and so on |
 | Audit columns | `AuditColumnsInterceptor` stamps `CreatedAt/By`, `ModifiedAt/By` on `IAuditStamped` entities | Automatic |
 
@@ -34,7 +34,7 @@
 ## Application settings
 
 - Table `dbo.AppSetting` (script 48): `SettingKey` (primary key), text value, binary value with content type and SHA-256 (256 KB limit), `RowVersion`, who and when. Denied for the report login. **No seed rows**: defaults live in code.
-- Registry: `backend/src/Modules/MatterFlow.Configuration/Domain/Settings/SettingDefinitions.cs`. Each definition names the key, the type (text or binary), the default, and the audit events for change and reset. Unknown keys in the table are ignored.
+- Registry: `backend/src/Modules/LptHub.Configuration/Domain/Settings/SettingDefinitions.cs`. Each definition names the key, the type (text or binary), the default, and the audit events for change and reset. Unknown keys in the table are ignored.
 - Services (`Configuration/Application/Settings`): `AppSettingsService` (generic store with row version), `BrandingService`, `DashboardSettingsService`, `CalendarSettingsService`, `AppSettingsCache`.
 - Admin endpoints under `/api/v1/admin/settings/*` need `Settings.Manage`; the branding read (`GET /api/v1/branding`, icon) is anonymous so the sign-in and error pages can show the name and icon.
 - Current keys: see [Settings Catalogue](../Reference/Settings-Catalogue.md). Adding one: [How to Add a Setting](../Backend/How-to-Add-a-Setting.md).

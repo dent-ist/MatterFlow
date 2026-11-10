@@ -1,7 +1,7 @@
 using System.Globalization;
-using MatterFlow.SharedKernel.Time;
+using LptHub.SharedKernel.Time;
 
-namespace MatterFlow.IntegrationTests.Fixtures;
+namespace LptHub.IntegrationTests.Fixtures;
 
 /// <summary>
 /// "Today" the way the viewer sees it. The firm's default zone is New York, so between 00:00 and 04:00 UTC the viewer's day is still the day before the UTC

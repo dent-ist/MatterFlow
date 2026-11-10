@@ -1,15 +1,15 @@
 using System.ComponentModel.DataAnnotations;
-using MatterFlow.Assets.Application;
-using MatterFlow.Assets.Contracts;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Paging;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Assets.Application;
+using LptHub.Assets.Contracts;
+using LptHub.Identity.Contracts;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Paging;
+using LptHub.SharedKernel.Results;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MatterFlow.Assets.Api;
+namespace LptHub.Assets.Api;
 
 /// <summary>Permission policy names for the Assets endpoints ("Perm:" plus the permission code, resolved by the Identity module).</summary>
 internal static class AssetPolicies

@@ -1,7 +1,7 @@
 using System.Globalization;
-using MatterFlow.SharedKernel.Results;
+using LptHub.SharedKernel.Results;
 
-namespace MatterFlow.WorkManagement.Domain;
+namespace LptHub.WorkManagement.Domain;
 
 /// <summary>Turns the due date and optional due time a user entered into a <see cref="TaskDue"/> (addendum G, M).</summary>
 public static class TaskDueParser

@@ -1,7 +1,7 @@
 using System.Xml.Linq;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Deploy;
+namespace LptHub.UnitTests.Deploy;
 
 /// <summary>deploy/web.config (epic #850, BR-06): Windows sign-in for the whole site, anonymous access for exactly the public branding path.</summary>
 public class WebConfigTests

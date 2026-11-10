@@ -1,7 +1,7 @@
 using System.Text;
 using OpenMcdf;
 
-namespace MatterFlow.UnitTests.Intake;
+namespace LptHub.UnitTests.Intake;
 
 /// <summary>
 /// Builds a minimal Outlook <c>.msg</c> (OLE compound file, MS-OXMSG) in memory so the .msg path is tested without a binary fixture.

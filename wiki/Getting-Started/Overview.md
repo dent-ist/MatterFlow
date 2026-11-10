@@ -2,13 +2,13 @@
 
 [[_TOC_]]
 
-**What this page is for.** A short explanation of what MatterFlow does and of the technology and building blocks you will meet in the code. Read this first, then [Repository Map](Repository-Map.md).
+**What this page is for.** A short explanation of what LPT Hub does and of the technology and building blocks you will meet in the code. Read this first, then [Repository Map](Repository-Map.md).
 
-## What MatterFlow is
+## What LPT Hub is
 
-MatterFlow is an internal law-firm **eDiscovery Matter and Task tracker**. People in the eDiscovery department create **Tasks** (for example "Production" or "Analytics / TAR Setup") against **Matters** (client cases). Each Task type can have a **Workflow** (a list of Steps) that technicians complete. Leads and directors watch the work on a **Dashboard**; Project Managers follow their own matters in **My Matters**.
+LPT Hub is an internal law-firm **eDiscovery Matter and Task tracker**. People in the eDiscovery department create **Tasks** (for example "Production" or "Analytics / TAR Setup") against **Matters** (client cases). Each Task type can have a **Workflow** (a list of Steps) that technicians complete. Leads and directors watch the work on a **Dashboard**; Project Managers follow their own matters in **My Matters**.
 
-Status (from `CLAUDE.md`, owner, 2026-10-24): MatterFlow has not been deployed and nobody is using it. All data is demo or test data. The repository will later be made private and moved to the corporate network.
+Status (from `CLAUDE.md`, owner, 2026-10-24): LPT Hub has not been deployed and nobody is using it. All data is demo or test data. The repository will later be made private and moved to the corporate network.
 
 ## Technology
 
@@ -28,17 +28,17 @@ flowchart TB
   subgraph Browser
     FE["Angular app: features, shared, core"]
   end
-  subgraph Host["MatterFlow.Api (host)"]
+  subgraph Host["LptHub.Api (host)"]
     MW["Middleware, auth, filters"]
     MOD["Modules: Identity, Audit, Configuration, Organization, Assets, WorkflowEngine, WorkManagement, WorkViews, Search, Intake, Notifications, Reports, Productions, Notes"]
-    DATA["MatterFlow.Data: DbContext, interceptors, schema runner"]
+    DATA["LptHub.Data: DbContext, interceptors, schema runner"]
   end
   DB[("SQL Server: dbo schema")]
   FE -->|"/api/v1"| MW --> MOD --> DATA --> DB
 :::
 
 - **Modules** own their tables, services and controllers. They talk to each other only through `.Contracts` projects. See [Backend Modules](../Architecture/Backend-Modules.md).
-- **The host** (`MatterFlow.Api`) wires everything: middleware, authentication, error format, OpenAPI, startup migration and seeds. See [Request Lifecycle](../Architecture/Request-Lifecycle.md).
+- **The host** (`LptHub.Api`) wires everything: middleware, authentication, error format, OpenAPI, startup migration and seeds. See [Request Lifecycle](../Architecture/Request-Lifecycle.md).
 - **The schema** is built at startup from `db/scripts/00-baseline.sql` and the numbered scripts after it. See [Database Overview](../Database/Overview.md).
 - **The frontend** is lazy-loaded feature folders on top of shared UI components and a generated API client. See [Frontend Architecture](../Architecture/Frontend-Architecture.md).
 

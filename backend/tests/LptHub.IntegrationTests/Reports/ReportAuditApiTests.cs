@@ -1,14 +1,14 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.Reports.Infrastructure;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.Reports.Infrastructure;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Reports;
+namespace LptHub.IntegrationTests.Reports;
 
 /// <summary>The run log, its audit events, the definition-change events and the retention (epic #671, issue #707).</summary>
 [Collection(SqlServerCollection.Name)]

@@ -21,7 +21,7 @@ Source: `architecture.md` section 6 (catalog 6.3, pipeline 6.1, policies 6.5, CS
 | PM-X-04 | IT | Permission removed mid-session, no re-login | Next request denied (cache invalidated); with a second node simulated (cache not invalidated) worst case 60 s documented (FND-19) |
 | PM-X-05 | IT | Role added mid-session | Allowed on next request |
 | PM-X-06 | IT | User with multiple roles | Permissions additive; removing one role removes only its exclusive permissions |
-| PM-X-07 | IT | Mutating call missing `X-MatterFlow-Client`, wrong content-type, `Sec-Fetch-Site: cross-site` | 400 / 403 before permission logic; no state change |
+| PM-X-07 | IT | Mutating call missing `X-LptHub-Client`, wrong content-type, `Sec-Fetch-Site: cross-site` | 400 / 403 before permission logic; no state change |
 | PM-X-08 | IT | Search/lists with partial view permissions | Search groups only for types the user may view; counts/totals do not leak hidden types |
 | PM-X-09 | IT | Multi-permission endpoints (see section 3 flagged rows) | Each sub-permission checked; denial of one sub-permission rejects the **whole** request, no partial update |
 | PM-X-10 | UT (arch) | Every controller action has a permission policy or `[AllowAuthenticated]`; only `/me` is the latter | Pass |

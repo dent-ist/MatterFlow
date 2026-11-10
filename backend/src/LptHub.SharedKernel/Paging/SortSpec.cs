@@ -1,6 +1,6 @@
-using MatterFlow.SharedKernel.Results;
+using LptHub.SharedKernel.Results;
 
-namespace MatterFlow.SharedKernel.Paging;
+namespace LptHub.SharedKernel.Paging;
 
 /// <summary>One sort key: a whitelisted field name and a direction.</summary>
 public sealed record SortField(string Field, bool Descending);

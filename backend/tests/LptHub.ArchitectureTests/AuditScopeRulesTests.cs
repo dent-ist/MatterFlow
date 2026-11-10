@@ -1,9 +1,9 @@
 using System.Reflection;
 using System.Text.RegularExpressions;
-using MatterFlow.SharedKernel.Audit;
+using LptHub.SharedKernel.Audit;
 using Shouldly;
 
-namespace MatterFlow.ArchitectureTests;
+namespace LptHub.ArchitectureTests;
 
 /// <summary>
 /// Sensitive-matter epic #788 (SM-13, README 12.3 c): the audit trail is filtered by the <c>MatterId</c> and <c>TaskId</c> columns of each event, so an event about a
@@ -15,12 +15,12 @@ public class AuditScopeRulesTests
     {
         Assembly[] assemblies =
         [
-            typeof(MatterFlow.Organization.Domain.Matter).Assembly,
-            typeof(MatterFlow.Assets.Domain.Asset).Assembly,
-            typeof(MatterFlow.WorkManagement.Domain.WorkTask).Assembly,
-            typeof(MatterFlow.Configuration.Domain.Priority).Assembly,
-            typeof(MatterFlow.Identity.Domain.AppUser).Assembly,
-            typeof(MatterFlow.WorkflowEngine.Domain.StepDefinition).Assembly,
+            typeof(LptHub.Organization.Domain.Matter).Assembly,
+            typeof(LptHub.Assets.Domain.Asset).Assembly,
+            typeof(LptHub.WorkManagement.Domain.WorkTask).Assembly,
+            typeof(LptHub.Configuration.Domain.Priority).Assembly,
+            typeof(LptHub.Identity.Domain.AppUser).Assembly,
+            typeof(LptHub.WorkflowEngine.Domain.StepDefinition).Assembly,
         ];
         return assemblies.SelectMany(a => a.GetTypes());
     }

@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace MatterFlow.Configuration.Domain.Forms.Rules;
+namespace LptHub.Configuration.Domain.Forms.Rules;
 
 internal enum RuleOperator
 {

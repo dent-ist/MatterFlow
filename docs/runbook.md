@@ -17,12 +17,12 @@ and Active Directory parts have **not** been run on a real Windows Server yet: s
 - **Windows Authentication ON, Anonymous Authentication OFF** on the IIS site, HTTPS only. Add the site to the browsers' **Intranet zone** so
   Edge/Chrome sign in silently (Kerberos/Negotiate).
 - SQL Server access uses the app-pool identity (a gMSA is recommended) with integrated security (`Trusted_Connection`), as a member of the database
-  role `mf_app`. A different login (the DBA or a `mf_migrator` member) applies schema changes.
+  role `lpt_app`. A different login (the DBA or a `lpt_migrator` member) applies schema changes.
 - The API sets HSTS, `Content-Security-Policy`, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` and
   `Cross-Origin-Opener-Policy` on every response, static files included (the app policy allows `'self'` plus inline styles, no inline scripts, no `eval`).
   IIS must not add, replace or strip them.
 
-The hosting pieces live in `backend/src/MatterFlow.Api/Hosting/`; packaging in `deploy/`.
+The hosting pieces live in `backend/src/LptHub.Api/Hosting/`; packaging in `deploy/`.
 
 ## 2. Configuration
 
@@ -32,9 +32,9 @@ password in any setting.
 
 | Key | Purpose |
 |---|---|
-| `ConnectionStrings:MatterFlow` | Application connection, run as the app-pool identity in role `mf_app` (DML + EXEC, no DDL; audit table INSERT/SELECT only). Example: `Server=SQLHOST;Database=MatterFlow;Trusted_Connection=True;Encrypt=True;TrustServerCertificate=False`. Install a certificate on SQL Server that the web server trusts; `TrustServerCertificate=True` disables validation of the SQL link and is for development only. |
-| `ConnectionStrings:Migrations` | Used by the schema runner only (`--migrate-only`, or startup when `Migrations:Enabled=true`). Needs DDL (DBA or `mf_migrator`). With `Trusted_Connection=True` it means the Windows account that runs the command. Must differ from the application login (architecture section 9, SEC-04). Falls back to `ConnectionStrings:Default` with a warning. |
-| `AllowedHosts` | **The site's real host name(s)**, for example `matterflow.firm.local` (semicolon separated, no scheme or port). The shipped default allows only `localhost`, `127.0.0.1` and `[::1]`, so an unset value makes every request fail with 400 (host-header attacks and DNS rebinding are refused by design; SEC-19). Add every alias users type, including a short name if there is one. |
+| `ConnectionStrings:LptHub` | Application connection, run as the app-pool identity in role `lpt_app` (DML + EXEC, no DDL; audit table INSERT/SELECT only). Example: `Server=SQLHOST;Database=LptHub;Trusted_Connection=True;Encrypt=True;TrustServerCertificate=False`. Install a certificate on SQL Server that the web server trusts; `TrustServerCertificate=True` disables validation of the SQL link and is for development only. |
+| `ConnectionStrings:Migrations` | Used by the schema runner only (`--migrate-only`, or startup when `Migrations:Enabled=true`). Needs DDL (DBA or `lpt_migrator`). With `Trusted_Connection=True` it means the Windows account that runs the command. Must differ from the application login (architecture section 9, SEC-04). Falls back to `ConnectionStrings:Default` with a warning. |
+| `AllowedHosts` | **The site's real host name(s)**, for example `lpt-hub.firm.local` (semicolon separated, no scheme or port). The shipped default allows only `localhost`, `127.0.0.1` and `[::1]`, so an unset value makes every request fail with 400 (host-header attacks and DNS rebinding are refused by design; SEC-19). Add every alias users type, including a short name if there is one. |
 | `Auth:Provider` | Leave as `Windows` in Production. `Dev` is rejected at startup unless `ASPNETCORE_ENVIRONMENT` is `Development` or `Test` (so also in Staging/UAT). |
 | `Bootstrap:SystemAdmins` | Accounts that become System Admin at their first sign-in. `["ke\\kekim"]` (domain `KE`, SAM `kekim`; case-insensitive). As an environment variable: `Bootstrap__SystemAdmins__0=ke\kekim`. |
 | `Firm:TimeZoneId` | Default time zone, `America/New_York` (Eastern), used when a browser does not send a valid `X-Time-Zone` header. Timestamps are stored in UTC; users see their own local time (addendum M). Windows Server resolves IANA ids through ICU; if the server logs a time zone error use `Eastern Standard Time`. |
@@ -57,14 +57,14 @@ password in any setting.
 - The scripts `db/scripts/*.sql` (the baseline `00-baseline.sql` and the numbered scripts from 67) are embedded in the API; the old chain 01 to 66 in `db/scripts/archive/` is not. The runner takes an application lock, applies pending scripts in order (each in one
   transaction), verifies the checksums of applied scripts and records them in `dbo.SchemaMigration`. It runs **either** at startup before the host
   listens (`Migrations:Enabled=true`, any failure aborts the start) **or** as the separate `--migrate-only` command (section 7). Details: architecture 4.3.
-- The database itself must exist and be empty or already managed by this runner: `CREATE DATABASE MatterFlow;`.
-- The baseline (formerly script `13-security-hardening.sql`) creates the database roles `mf_app` (DML + EXECUTE, no DDL, `DENY UPDATE, DELETE, ALTER` on `dbo.AuditEvent`)
-  and `mf_migrator` (DDL + DML, audit rows still append-only). Because the roles only exist after the first migration, a fresh install is
+- The database itself must exist and be empty or already managed by this runner: `CREATE DATABASE LptHub;`.
+- The baseline (formerly script `13-security-hardening.sql`) creates the database roles `lpt_app` (DML + EXECUTE, no DDL, `DENY UPDATE, DELETE, ALTER` on `dbo.AuditEvent`)
+  and `lpt_migrator` (DDL + DML, audit rows still append-only). Because the roles only exist after the first migration, a fresh install is
   ordered: create database, **migrate-only**, map logins to roles (section 5, steps 2 to 4).
 - Audit protection in layers: the DENYs above; an INSTEAD OF trigger against UPDATE/DELETE; a permanently empty `dbo.AuditEventGuard` table whose
   foreign key makes `TRUNCATE TABLE` impossible even for sysadmin; a database DDL trigger against DROP/ALTER of the audit objects. A sysadmin can still
   disable triggers deliberately; monitor `sys.triggers` (`is_disabled`) and `sys.database_permissions` on the audit table in the periodic access review.
-- Recommended, once, as a DBA (cannot run inside a migration transaction): `ALTER DATABASE MatterFlow SET READ_COMMITTED_SNAPSHOT ON WITH ROLLBACK IMMEDIATE;`
+- Recommended, once, as a DBA (cannot run inside a migration transaction): `ALTER DATABASE LptHub SET READ_COMMITTED_SNAPSHOT ON WITH ROLLBACK IMMEDIATE;`
   (SEC-17; fewer reader/writer deadlocks).
 - Sizing for 300 users (memory, cores, `max server memory`, MAXDOP, file sizes) and what to watch: `docs/qa/performance-round-1.md`, section "Recommendations".
 - Applied scripts, the baseline included after the first deployment, are immutable (checksum guard); fix forward with a new script (67 and up). A `Success=0` row in `dbo.SchemaMigration` blocks startup and
@@ -85,10 +85,10 @@ The 63 old scripts (01 to 66) were squashed into `db/scripts/00-baseline.sql` be
 lists the old scripts (for example `01-init.sql`) but not `00-baseline.sql` is **not migrated**: the API (and `--migrate-only`) stop at start with
 "This database was created by the old schema script chain ... Rebuild the database". All data in such a database is demo or test data.
 
-- **Local Docker database (`matterflow-sql`):** `npm run db:reset` (deletes the volume, creates an empty `MatterFlow`, the API applies the baseline at
+- **Local Docker database (`lpt-hub-sql`):** `npm run db:reset` (deletes the volume, creates an empty `LptHub`, the API applies the baseline at
   its next start, the report login is provisioned again). Then `npm run seed:demo` to refill it.
 - **Any other test or demo database:** drop it and create it empty (`DROP DATABASE x; CREATE DATABASE x;`, after closing connections), then start the
-  API or run `--migrate-only`. If a report login `mf_reports` exists at server level, run `tools/db/provision-report-login.sql` again afterwards.
+  API or run `--migrate-only`. If a report login `lpt_reports` exists at server level, run `tools/db/provision-report-login.sql` again afterwards.
 - **A new corporate database** is simply empty before the first start: the baseline is the first (and until script 67 exists, the only) script. Nothing
   here changes the install steps of section 5.
 - After the first real deployment the baseline is immutable like every applied script; schema changes are numbered scripts from 67.
@@ -104,7 +104,7 @@ lists the old scripts (for example `01-init.sql`) but not `00-baseline.sql` is *
 
 ## 5. Install on a domain-joined Windows Server with IIS
 
-Assumptions: server `WEB01` and SQL Server `SQL01` in domain `KE`, site name `matterflow.firm.local`, service account (gMSA) `KE\svc-matterflow$`.
+Assumptions: server `WEB01` and SQL Server `SQL01` in domain `KE`, site name `lpt-hub.firm.local`, service account (gMSA) `KE\svc-lpt-hub$`.
 
 ### 5.1 Prerequisites
 
@@ -113,51 +113,51 @@ Assumptions: server `WEB01` and SQL Server `SQL01` in domain `KE`, site name `ma
 - **ASP.NET Core Hosting Bundle for .NET 10** (installs the .NET runtime and ASP.NET Core Module V2). Install after IIS, then `iisreset`.
   Check: `dotnet --list-runtimes` shows `Microsoft.AspNetCore.App 10.*`.
 - A certificate for the site's host name (internal CA, trusted by clients) in the machine store, and DNS for the name.
-- A gMSA for the app pool (recommended): `New-ADServiceAccount svc-matterflow -DNSHostName svc-matterflow.firm.local -PrincipalsAllowedToRetrieveManagedPassword WEB01$`,
-  then `Install-ADServiceAccount svc-matterflow` on the server. Kerberos with a custom identity needs an SPN so browsers can do Negotiate:
-  `setspn -S HTTP/matterflow.firm.local KE\svc-matterflow$` (and the short name if used). Without the SPN, clients fall back to NTLM.
+- A gMSA for the app pool (recommended): `New-ADServiceAccount svc-lpt-hub -DNSHostName svc-lpt-hub.firm.local -PrincipalsAllowedToRetrieveManagedPassword WEB01$`,
+  then `Install-ADServiceAccount svc-lpt-hub` on the server. Kerberos with a custom identity needs an SPN so browsers can do Negotiate:
+  `setspn -S HTTP/lpt-hub.firm.local KE\svc-lpt-hub$` (and the short name if used). Without the SPN, clients fall back to NTLM.
 - A trusted TLS certificate on SQL01 (`Encrypt=True` is the default in the connection string template).
 
 ### 5.2 SQL Server (DBA)
 
 1. Create the database (collation as per firm standard) and the logins:
    ```sql
-   CREATE DATABASE MatterFlow;
-   CREATE LOGIN [KE\svc-matterflow$] FROM WINDOWS;       -- the app pool identity
-   -- the person or account that will run migrate-only needs DDL on MatterFlow: a DBA already has it, otherwise:
+   CREATE DATABASE LptHub;
+   CREATE LOGIN [KE\svc-lpt-hub$] FROM WINDOWS;       -- the app pool identity
+   -- the person or account that will run migrate-only needs DDL on LPT Hub: a DBA already has it, otherwise:
    -- CREATE LOGIN [KE\dba-deploy] FROM WINDOWS;
    ```
 2. Apply the schema once, before the site exists: on WEB01 or any machine with the package and the .NET 10 runtime, as the DBA account, follow section 7
-   step 3 (`dotnet MatterFlow.Api.dll --migrate-only`). This creates all tables, the roles `mf_app` and `mf_migrator` and the audit DENYs.
+   step 3 (`dotnet LptHub.Api.dll --migrate-only`). This creates all tables, the roles `lpt_app` and `lpt_migrator` and the audit DENYs.
 3. Map the app identity to the least-privilege role (never `db_owner`, never `sysadmin`):
    ```sql
-   USE MatterFlow;
-   CREATE USER [KE\svc-matterflow$] FOR LOGIN [KE\svc-matterflow$];
-   ALTER ROLE mf_app ADD MEMBER [KE\svc-matterflow$];
-   -- optional, for a non-DBA deployer:  CREATE USER [KE\dba-deploy] FOR LOGIN [KE\dba-deploy]; ALTER ROLE mf_migrator ADD MEMBER [KE\dba-deploy];
+   USE LptHub;
+   CREATE USER [KE\svc-lpt-hub$] FOR LOGIN [KE\svc-lpt-hub$];
+   ALTER ROLE lpt_app ADD MEMBER [KE\svc-lpt-hub$];
+   -- optional, for a non-DBA deployer:  CREATE USER [KE\dba-deploy] FOR LOGIN [KE\dba-deploy]; ALTER ROLE lpt_migrator ADD MEMBER [KE\dba-deploy];
    ```
 4. Verify the audit trail is protected for the app login (all three must return 0):
    ```sql
-   EXECUTE AS LOGIN = 'KE\svc-matterflow$';
+   EXECUTE AS LOGIN = 'KE\svc-lpt-hub$';
    SELECT HAS_PERMS_BY_NAME('dbo.AuditEvent','OBJECT','UPDATE') AS can_update,
           HAS_PERMS_BY_NAME('dbo.AuditEvent','OBJECT','DELETE') AS can_delete,
           HAS_PERMS_BY_NAME('dbo.AuditEvent','OBJECT','ALTER')  AS can_alter;
    REVERT;
    ```
    The API runs the same check at startup and **refuses to start in Production** when any is 1 (`AuditStoreGuard`).
-5. Optional: `ALTER DATABASE MatterFlow SET READ_COMMITTED_SNAPSHOT ON WITH ROLLBACK IMMEDIATE;` and set the backup plan (section 8).
+5. Optional: `ALTER DATABASE LptHub SET READ_COMMITTED_SNAPSHOT ON WITH ROLLBACK IMMEDIATE;` and set the backup plan (section 8).
 
 ### 5.3 The package
 
 Build it where Node 22 and the .NET 10 SDK are available (a developer machine or the `publish` GitHub Actions workflow, which uploads the folder as the
-artifact `matterflow-publish-<sha>`):
+artifact `lpt-hub-publish-<sha>`):
 
 ```powershell
-deploy\publish.ps1 -Output C:\build\matterflow      # or: deploy/publish.sh /path/out win-x64
+deploy\publish.ps1 -Output C:\build\lpt-hub      # or: deploy/publish.sh /path/out win-x64
 ```
 
-The folder contains `MatterFlow.Api.dll` and its dependencies, `wwwroot/` (the Angular build), `web.config` (from `deploy/web.config`) and
-`appsettings.Production.template.json`. Copy it to `C:\inetpub\matterflow` on WEB01.
+The folder contains `LptHub.Api.dll` and its dependencies, `wwwroot/` (the Angular build), `web.config` (from `deploy/web.config`) and
+`appsettings.Production.template.json`. Copy it to `C:\inetpub\lpt-hub` on WEB01.
 
 ### 5.4 Settings
 
@@ -168,10 +168,10 @@ The folder contains `MatterFlow.Api.dll` and its dependencies, `wwwroot/` (the A
 
 ### 5.5 IIS site
 
-1. App pool `MatterFlow`: **.NET CLR version: No Managed Code**, pipeline Integrated, identity **Custom account** `KE\svc-matterflow$` (leave the password empty for a gMSA),
+1. App pool `LptHub`: **.NET CLR version: No Managed Code**, pipeline Integrated, identity **Custom account** `KE\svc-lpt-hub$` (leave the password empty for a gMSA),
    Start mode `AlwaysRunning`, Idle time-out `0` (the first request otherwise waits for the app to start, and the notification scheduler, section 6.1, would stop with the idle pool).
-   `configure-iis.ps1`, shipped in every win-x64 package, sets both and the site's `preloadEnabled` idempotently (`.\configure-iis.ps1 -SiteName MatterFlow -AppPoolName MatterFlow`).
-2. Site `MatterFlow`: physical path `C:\inetpub\matterflow`, application pool `MatterFlow`, HTTPS binding on 443 with the certificate and host name `matterflow.firm.local`.
+   `configure-iis.ps1`, shipped in every win-x64 package, sets both and the site's `preloadEnabled` idempotently (`.\configure-iis.ps1 -SiteName LptHub -AppPoolName LptHub`).
+2. Site `LptHub`: physical path `C:\inetpub\lpt-hub`, application pool `LptHub`, HTTPS binding on 443 with the certificate and host name `lpt-hub.firm.local`.
    Remove the HTTP binding, or keep it only to redirect (section 5.5 step 4).
 3. **Authentication** (site level): *Windows Authentication* Enabled, *Anonymous Authentication* Disabled. These switches are locked at server level
    by default; set them in IIS Manager (writes `applicationHost.config`) or unlock the section once; `web.config` carries the same intent.
@@ -181,12 +181,12 @@ The folder contains `MatterFlow.Api.dll` and its dependencies, `wwwroot/` (the A
 5. Leave IIS compression alone: `web.config` turns static and dynamic compression off because the API compresses its text assets.
 6. Request limits: `maxAllowedContentLength` is 12582912 bytes (12 MB, the email upload ceiling) in `web.config`; the API caps every other request body at 2 MB itself.
    Do not raise it without raising the application limits (`IntakeRequestLimitsAttribute`).
-7. Add `https://matterflow.firm.local` to the **Local intranet zone** of client browsers by Group Policy (Site to Zone Assignment List), so Edge/Chrome send Kerberos tickets silently.
+7. Add `https://lpt-hub.firm.local` to the **Local intranet zone** of client browsers by Group Policy (Site to Zone Assignment List), so Edge/Chrome send Kerberos tickets silently.
 
 ### 5.6 First start and verification
 
-1. Browse to the site on WEB01 (or `Start-Process https://matterflow.firm.local/health/live`). With Anonymous off, tools without Windows credentials get 401; use
-   `curl.exe --negotiate -u : https://matterflow.firm.local/health/ready` or a browser. Expected `/health/live`: `Healthy`; `/health/ready`: `{"status":"ready"}`.
+1. Browse to the site on WEB01 (or `Start-Process https://lpt-hub.firm.local/health/live`). With Anonymous off, tools without Windows credentials get 401; use
+   `curl.exe --negotiate -u : https://lpt-hub.firm.local/health/ready` or a browser. Expected `/health/live`: `Healthy`; `/health/ready`: `{"status":"ready"}`.
 2. If `/health/ready` answers 503, the `reason` says why (section 6).
 3. Sign in as `ke\kekim`: you are provisioned and made System Admin once (section 4); **Administration** is visible. Create roles and grant access to staff.
 4. Open the browser developer console: no CSP violations (section 9).
@@ -227,25 +227,25 @@ clean-up of old notifications are made by a background timer inside the web appl
 
 ### 7.1 `--migrate-only`
 
-`dotnet MatterFlow.Api.dll --migrate-only` (or environment variable `MATTERFLOW_MIGRATE_ONLY=true`) applies the pending scripts with the
+`dotnet LptHub.Api.dll --migrate-only` (or environment variable `LPTHUB_MIGRATE_ONLY=true`) applies the pending scripts with the
 `ConnectionStrings:Migrations` login, writes progress to the console, and exits **0** when the schema is up to date or **1** on any failure. It does not start the web
 host, run seeds or the audit guard, and it ignores `Migrations:Enabled=false`. It reads `appsettings.json` and `appsettings.<Environment>.json` from the folder of the binaries (set
 `ASPNETCORE_ENVIRONMENT=Production`), environment variables and extra command-line settings, for example
-`--ConnectionStrings:Migrations="Server=SQL01;Database=MatterFlow;Trusted_Connection=True;Encrypt=True"`. Concurrent runs are serialized by the application lock.
+`--ConnectionStrings:Migrations="Server=SQL01;Database=LptHub;Trusted_Connection=True;Encrypt=True"`. Concurrent runs are serialized by the application lock.
 
 ### 7.2 Upgrade procedure
 
-1. Announce a short window. Take a **full backup** of `MatterFlow` first (`BACKUP DATABASE MatterFlow TO DISK = '...' WITH COMPRESSION, CHECKSUM;`): it is the rollback point.
-2. Build or download the new package. Unzip it to a staging folder next to the live one, for example `C:\inetpub\matterflow-new`, and copy the live `appsettings.Production.json` into it.
+1. Announce a short window. Take a **full backup** of `LptHub` first (`BACKUP DATABASE LptHub TO DISK = '...' WITH COMPRESSION, CHECKSUM;`): it is the rollback point.
+2. Build or download the new package. Unzip it to a staging folder next to the live one, for example `C:\inetpub\lpt-hub-new`, and copy the live `appsettings.Production.json` into it.
 3. As the DBA/migrator account, from the staging folder:
    ```powershell
    $env:ASPNETCORE_ENVIRONMENT = 'Production'
-   dotnet .\MatterFlow.Api.dll --migrate-only
+   dotnet .\LptHub.Api.dll --migrate-only
    if ($LASTEXITCODE -ne 0) { throw "Migration failed: do not switch binaries" }
    ```
    The old site can keep running during this step only if the release notes say the new scripts are backward compatible (additive); otherwise stop the site before step 3.
-4. Stop the site (`Stop-WebSite MatterFlow`; the app pool recycles), swap the folders (rename the live folder to `matterflow-previous`, the staging folder to `matterflow`; or `robocopy
-   C:\build\matterflow C:\inetpub\matterflow /MIR /XF appsettings.Production.json web.config /XD logs` when `web.config` has local edits), then `Start-WebSite MatterFlow`.
+4. Stop the site (`Stop-WebSite LptHub`; the app pool recycles), swap the folders (rename the live folder to `lpt-hub-previous`, the staging folder to `lpt-hub`; or `robocopy
+   C:\build\lpt-hub C:\inetpub\lpt-hub /MIR /XF appsettings.Production.json web.config /XD logs` when `web.config` has local edits), then `Start-WebSite LptHub`.
    Keep `appsettings.Production.json`: it is not in the package.
 5. Verify `/health/ready` is `ready`, sign in, open the dashboard and one task. Keep the previous folder and the backup for at least a week.
 
@@ -261,9 +261,9 @@ The baseline contains the automatic numbering of assets (formerly script 63). It
 
 ### 7.3 Rollback
 
-- **No schema change in the release** (`SELECT MAX(Prefix) FROM dbo.SchemaMigration` is the same as before): swap back to `matterflow-previous`.
+- **No schema change in the release** (`SELECT MAX(Prefix) FROM dbo.SchemaMigration` is the same as before): swap back to `lpt-hub-previous`.
 - **Schema scripts were applied:** the old binaries refuse to start (they find applied scripts they do not contain, by design). Either **fix forward** with a corrected release (preferred), or
-  restore the pre-upgrade full backup (`RESTORE DATABASE MatterFlow FROM DISK = '...' WITH REPLACE, RECOVERY;`, site stopped), losing everything entered since, and swap back the binaries.
+  restore the pre-upgrade full backup (`RESTORE DATABASE LptHub FROM DISK = '...' WITH REPLACE, RECOVERY;`, site stopped), losing everything entered since, and swap back the binaries.
   If the incident is in the app only and data entered since must be kept, restore to a side database, export what is needed, and fix forward.
 - Never edit or delete rows of `dbo.SchemaMigration` to make an old build start, except to clear a `Success=0` row after repairing the database by hand.
 
@@ -276,8 +276,8 @@ The firm has not specified a backup policy yet. **Proposal for approval:**
   at rest (backup encryption or storage-level), because the database holds matter data and the audit trail.
 - Back up the site's `appsettings.Production.json` and `web.config` with the server image or configuration management. They contain no secrets.
 - Restore drill at least quarterly into a side database: `RESTORE DATABASE ... WITH NORECOVERY` (full), then the log chain `WITH STOPAT`, then `RECOVERY`; start a copy of the app against it and check `/health/ready`.
-- Restore in place: stop the site, restore, start the site. Logins and role membership are inside the database, so a restore to the same domain keeps `mf_app`; on a **new** SQL Server instance create
-  the Windows login for the app identity first (`CREATE LOGIN ... FROM WINDOWS`), then `ALTER USER [KE\svc-matterflow$] WITH LOGIN = [KE\svc-matterflow$]` if the user is orphaned.
+- Restore in place: stop the site, restore, start the site. Logins and role membership are inside the database, so a restore to the same domain keeps `lpt_app`; on a **new** SQL Server instance create
+  the Windows login for the app identity first (`CREATE LOGIN ... FROM WINDOWS`), then `ALTER USER [KE\svc-lpt-hub$] WITH LOGIN = [KE\svc-lpt-hub$]` if the user is orphaned.
 - The audit table is part of the same database; no separate backup is needed, but never restore a partial or older backup over it without recording the reason.
 
 ## 9. What the product owner must verify on the real server
@@ -291,7 +291,7 @@ Not exercised yet outside Linux. Tick each on the production-like server and rep
 - [ ] **Branding path only (section 16):** without credentials `curl.exe -i https://<host>/api/v1/branding` returns 200 with `Cache-Control: public, max-age=60, must-revalidate` and an `ETag`; `curl.exe -i https://<host>/api/v1/branding/icon` returns 404 until an icon is set; `curl.exe -i https://<host>/api/v1/admin/settings/branding` and `/api/v1/me` return 401. If the first is 401, the `<location path="api/v1/branding">` block of `web.config` was not applied (locked section, or an edited `web.config` that was not merged): the application still works, only the browser tab icon and the name on the error pages fall back to the built-in ones.
 - [ ] **First admin:** `ke\kekim` becomes System Admin at the first sign-in and sees Administration; a second account lands on Access Pending.
 - [ ] **AllowedHosts:** the site answers on its real name; an unlisted name (IP address, alias) answers 400.
-- [ ] **Audit protection:** the app starts with the `mf_app` login; temporarily running it as a `db_owner` login makes startup fail with the audit message (then restore).
+- [ ] **Audit protection:** the app starts with the `lpt_app` login; temporarily running it as a `db_owner` login makes startup fail with the audit message (then restore).
 - [ ] **AD lookup (optional):** with `ActiveDirectory:LookupEnabled=true`, a new user's display name and email are filled from AD using the app pool identity; if not, leave it off.
 - [ ] **Time zone:** after a hard refresh, a task due today shows the due time in the user's local time zone, and the overdue flag flips at the right local moment; check one user in another zone if any.
 - [ ] **CSP in the browser:** with the developer tools console open, load the dashboard, a task, an admin screen and a form: no `Content-Security-Policy` violations or blocked scripts/styles; the response
@@ -324,13 +324,13 @@ Every report runs on its **own SQL login** that can read business data and nothi
 
 ### 11.1 What the baseline already did
 
-The baseline (`00-baseline.sql`, run by the app at startup like every script; formerly script `30-reports.sql`) created the database role **`mf_report_reader`**: `SELECT` on the tables listed as `allow` in `db/report-access.json`, an explicit `DENY` on audit, sign-in identities, seed/migration bookkeeping, notifications, permissions and the Reports tables, and a `DENY` on every write, `EXECUTE` and `ALTER` right in `dbo`. The role is **not** a member of `db_datareader`. A test in the build fails when a table is added without a decision in `db/report-access.json`, so the list cannot drift silently.
+The baseline (`00-baseline.sql`, run by the app at startup like every script; formerly script `30-reports.sql`) created the database role **`lpt_report_reader`**: `SELECT` on the tables listed as `allow` in `db/report-access.json`, an explicit `DENY` on audit, sign-in identities, seed/migration bookkeeping, notifications, permissions and the Reports tables, and a `DENY` on every write, `EXECUTE` and `ALTER` right in `dbo`. The role is **not** a member of `db_datareader`. A test in the build fails when a table is added without a decision in `db/report-access.json`, so the list cannot drift silently.
 
 ### 11.2 What the DBA does once (production)
 
 1. Create the login on the SQL Server. SQL authentication with a long random password kept in the IIS/secret store, or a dedicated Windows/Entra account if policy prefers. **Not** the app-pool gMSA (the report identity must never be able to write):
-   `CREATE LOGIN [mf_reports] WITH PASSWORD = N'<generated>', CHECK_POLICY = ON;`
-2. In the MatterFlow database: `CREATE USER [mf_reports] FOR LOGIN [mf_reports]; ALTER ROLE mf_report_reader ADD MEMBER [mf_reports];`
+   `CREATE LOGIN [lpt_reports] WITH PASSWORD = N'<generated>', CHECK_POLICY = ON;`
+2. In the LPT Hub database: `CREATE USER [lpt_reports] FOR LOGIN [lpt_reports]; ALTER ROLE lpt_report_reader ADD MEMBER [lpt_reports];`
 3. **Close the extended procedures of `master` (one-time server step, issue #1292).** SQL Server grants a few extended stored procedures in `master` to `PUBLIC`, so every login can run them: `xp_dirtree` (lists directories and files of the server disk or of a UNC path), `xp_fileexist`, `xp_fixeddrives` (drives and free space), `xp_msver` (version and host facts), `xp_getnetname` (host name), `xp_regread` and `xp_instance_regread` (registry). The application cannot reach them (a report is one validated `SELECT`; `EXEC` and `xp_` names are refused), but the report login must not hold them either: someone who has its password could probe the server's file system, and on Windows `xp_dirtree` on a UNC path makes the SQL Server service account send its credentials to another machine. The database role cannot take away a right that `PUBLIC` holds in `master`, so the login needs a **user in `master` with a `DENY EXECUTE`**.
    **Who:** the DBA, connected as a member of `sysadmin` (SQL Server ignores a `DENY` that a login gives to itself, so it cannot be done by the report login or by the application). **When:** once, after step 1, in any order with step 2; repeat it after a SQL Server upgrade (cheap, safe to run again). **Where:** the SQL Server instance, any database context (the block switches to `master` by itself). For a Windows or Entra login put its name in `@login` (`N'DOMAIN\account'`); a Windows group login works the same way.
    ```sql
@@ -352,15 +352,15 @@ The baseline (`00-baseline.sql`, run by the app at startup like every script; fo
                      WHERE p.class = 1 AND p.major_id = o.object_id AND p.permission_name = N''EXECUTE'' AND p.state IN (''G'', ''W'')
                        AND p.grantee_principal_id = DATABASE_PRINCIPAL_ID(N''public''));
        IF @sql <> N'''' EXEC (@sql);
-   END;', N'@login sysname', @login = N'mf_reports';
+   END;', N'@login sysname', @login = N'lpt_reports';
    ```
-   The block creates the user in `master` when it is missing (it gets no right except the denials below and the implicit `CONNECT`) and denies every `xp_` procedure that `PUBLIC` may execute, on Windows and on Linux, except four that only format strings or serve replication (`xp_sprintf`, `xp_sscanf`, `xp_qv`, `xp_replposteor`). It touches nothing in the MatterFlow database, and client libraries need none of the denied procedures. It is the same block as in `tools/db/provision-report-login.sql`, which the demo runs automatically.
-   **Verify** (as the DBA): `SELECT o.name FROM master.sys.database_permissions p JOIN master.sys.database_principals u ON u.principal_id = p.grantee_principal_id JOIN master.sys.all_objects o ON o.object_id = p.major_id WHERE u.name = N'mf_reports' AND p.state = 'D' ORDER BY o.name;` lists the denied procedures (on a standard SQL Server 2022: `xp_dirtree`, `xp_fileexist`, `xp_fixeddrives`, `xp_getnetname`, `xp_instance_regread`, `xp_msver`, `xp_regread`). Then press "Check again" (step 8): the panel must show **Server File and Registry Procedures: Denied** and no warning. If the step was missed, the panel keeps reports **running** but shows a warning ("the login can still run N extended procedure(s) in master") and the API log has the same warning once; fix it with this step and press "Check again".
-4. Do **not** add the login to `sysadmin`, `db_owner`, `db_datareader`, `db_datawriter`, `db_ddladmin`, `mf_app` or `mf_migrator`, and grant no `IMPERSONATE`, no `EXECUTE`, no extra `SELECT`.
+   The block creates the user in `master` when it is missing (it gets no right except the denials below and the implicit `CONNECT`) and denies every `xp_` procedure that `PUBLIC` may execute, on Windows and on Linux, except four that only format strings or serve replication (`xp_sprintf`, `xp_sscanf`, `xp_qv`, `xp_replposteor`). It touches nothing in the LPT Hub database, and client libraries need none of the denied procedures. It is the same block as in `tools/db/provision-report-login.sql`, which the demo runs automatically.
+   **Verify** (as the DBA): `SELECT o.name FROM master.sys.database_permissions p JOIN master.sys.database_principals u ON u.principal_id = p.grantee_principal_id JOIN master.sys.all_objects o ON o.object_id = p.major_id WHERE u.name = N'lpt_reports' AND p.state = 'D' ORDER BY o.name;` lists the denied procedures (on a standard SQL Server 2022: `xp_dirtree`, `xp_fileexist`, `xp_fixeddrives`, `xp_getnetname`, `xp_instance_regread`, `xp_msver`, `xp_regread`). Then press "Check again" (step 8): the panel must show **Server File and Registry Procedures: Denied** and no warning. If the step was missed, the panel keeps reports **running** but shows a warning ("the login can still run N extended procedure(s) in master") and the API log has the same warning once; fix it with this step and press "Check again".
+4. Do **not** add the login to `sysadmin`, `db_owner`, `db_datareader`, `db_datawriter`, `db_ddladmin`, `lpt_app` or `lpt_migrator`, and grant no `IMPERSONATE`, no `EXECUTE`, no extra `SELECT`.
 5. Put the connection string in the secret store / environment as `ConnectionStrings__ReportsReadOnly`, for example
-   `Server=<sql>;Database=MatterFlow;User Id=mf_reports;Password=<secret>;Encrypt=True;TrustServerCertificate=False;Application Name=MatterFlow.Reports;ApplicationIntent=ReadOnly`.
-   It must name a **different login** than the application's (`ConnectionStrings:MatterFlow`/`Default`/`Migrations`); the same login is refused. The app forces a small pool (8), a 10 s connect timeout and read intent.
-6. Database compatibility level must be **130 or higher** (reports use `OPENJSON`). `SELECT compatibility_level FROM sys.databases WHERE name = 'MatterFlow'`.
+   `Server=<sql>;Database=LptHub;User Id=lpt_reports;Password=<secret>;Encrypt=True;TrustServerCertificate=False;Application Name=LptHub.Reports;ApplicationIntent=ReadOnly`.
+   It must name a **different login** than the application's (`ConnectionStrings:LptHub`/`Default`/`Migrations`); the same login is refused. The app forces a small pool (8), a 10 s connect timeout and read intent.
+6. Database compatibility level must be **130 or higher** (reports use `OPENJSON`). `SELECT compatibility_level FROM sys.databases WHERE name = 'LptHub'`.
 7. Optional: a Resource Governor workload group for the login (`MAX_DOP 2`, `REQUEST_MAX_MEMORY_GRANT_PERCENT 10`).
 8. Restart the site (or press "Check again" on Administration > Report Setup > Settings). The health panel must show the login name, **writes denied**, **audit tables denied**, **Server File and Registry Procedures: Denied** (step 3) and "can read N tables".
 9. Review the list of readable tables quarterly (schema browser) and rotate the password like any service account.
@@ -374,7 +374,7 @@ At startup (and on "Check again", `POST /api/v1/report-admin/status/check`) the 
 | `NotConfigured` | `ConnectionStrings:ReportsReadOnly` is missing or invalid | Section 11.2 step 5 |
 | `SharedWithApplication` | the report string is the application's own login | Create the separate login |
 | `LoginFailed` | cannot connect (SQL error number is shown, never the server text) | Password, login, database user, network |
-| `RoleMissing` | connects, but is not in `mf_report_reader` | Step 2 |
+| `RoleMissing` | connects, but is not in `lpt_report_reader` | Step 2 |
 | `TooPrivileged` | sysadmin, db_owner, a broad role, can write/execute/create, or can read a denied table | Remove the extra rights (step 4) |
 | `CompatibilityTooLow` | compatibility level below 130 | Raise it, or ask for the table-valued-parameter fallback |
 | `Ready` with a **warning** | the login can still run extended procedures of `master` (`xp_dirtree`, `xp_fileexist` and others, step 3); the page shows "Not denied" and a warning-coloured chip, the API log has one warning | Run the `master` step (11.2 step 3). Reports keep running meanwhile: no report text can reach these procedures, so this is a warning, not a stop |
@@ -405,7 +405,7 @@ Which starters show matter names, so an author can see it: **Tasks per matter** 
 
 ### 11.5 Demo / development
 
-`npm start` provisions the demo login automatically: `tools/db/provision-report-login.sql` creates `mf_reports` (public dev password, loopback-bound database), gives it a user in `master` with the `DENY EXECUTE` of step 3 of section 11.2 (it runs as `sa`) and adds it to `mf_report_reader` once the API has applied the schema; `appsettings.Development.json` carries the matching `ConnectionStrings:ReportsReadOnly`. `npm run db:report-login` repeats the step on its own (it waits up to four minutes for the role). **Never run that script on a corporate server.** The API creates the starter reports at startup in Development; `npm run seed:demo` then creates the demo role `Report Runner (demo)` (only `Report.Run`), assigns the starters to it and to the System Admin role and gives the role to Test User 02 (Director). The two Project Manager starters are already assigned to the Project Manager role by the starter seed.
+`npm start` provisions the demo login automatically: `tools/db/provision-report-login.sql` creates `lpt_reports` (public dev password, loopback-bound database), gives it a user in `master` with the `DENY EXECUTE` of step 3 of section 11.2 (it runs as `sa`) and adds it to `lpt_report_reader` once the API has applied the schema; `appsettings.Development.json` carries the matching `ConnectionStrings:ReportsReadOnly`. `npm run db:report-login` repeats the step on its own (it waits up to four minutes for the role). **Never run that script on a corporate server.** The API creates the starter reports at startup in Development; `npm run seed:demo` then creates the demo role `Report Runner (demo)` (only `Report.Run`), assigns the starters to it and to the System Admin role and gives the role to Test User 02 (Director). The two Project Manager starters are already assigned to the Project Manager role by the starter seed.
 
 ## 12. Sensitive matters: switching on the access rule (epic #788)
 
@@ -426,7 +426,7 @@ Everyone else sees nothing: not in lists, counts, search and suggestions, the Da
 The rule hides every matter that is **already** flagged Sensitive the moment the switch is on, and a sensitive matter with no manager is then visible to the `Matter.ViewSensitive` holders and its assignees only. Run the read-only report first and give it to the owner:
 
 ```powershell
-sqlcmd -S SQLHOST -d MatterFlow -E -C -W -w 300 -s "|" -i tools\db\sensitive-matters-report.sql
+sqlcmd -S SQLHOST -d LptHub -E -C -W -w 300 -s "|" -i tools\db\sensitive-matters-report.sql
 ```
 
 `tools/db/sensitive-matters-report.sql` only reads (no write, no object created). Its five result sets: (1) one row per sensitive matter with its managers, open and all tasks, how many people are assigned a task, and an **Attention** column (`NO MANAGER`, `MANAGER INACTIVE`); (2) the totals; (3) who sees all sensitive matters; (4) who will see only their own assigned tasks; (5) how many active people with `Matter.View` will no longer see any sensitive matter. Run it as the DBA or the application login: the report login is denied on these tables by design.
@@ -436,7 +436,7 @@ The owner decides, matter by matter, who becomes the project manager of the ones
 ### 12.3 Switching on
 
 1. Take the backup of section 7.2 step 1 (the switch changes no data; the backup is the usual rollback point of the upgrade that delivers it).
-2. In `appsettings.Production.json` add `"Features": { "SensitiveMatterAccess": true }` (or set `Features__SensitiveMatterAccess=true` for the app pool) and recycle the app pool (`Restart-WebAppPool MatterFlow`). The switch is read once at start.
+2. In `appsettings.Production.json` add `"Features": { "SensitiveMatterAccess": true }` (or set `Features__SensitiveMatterAccess=true` for the app pool) and recycle the app pool (`Restart-WebAppPool LptHub`). The switch is read once at start.
 3. Verify with three accounts (an account of the owner's choice for each): a **project manager** of a sensitive matter sees it in Matters, My Matters and search; an **unrelated person** sees neither the matter, nor its tasks in the Task Queue, nor a notification about it, and `https://<host>/matters/<its id>` shows "We couldn't find that matter."; a person **assigned a task** on it sees that task (header only, the matter reference is not a link). The System Administrator and Director see everything. `GET /health/ready` stays `ready`.
 4. Send the release note below.
 
@@ -507,9 +507,9 @@ What changed for a Project Manager and where it lives. Design `docs/ux/pm-v2-rev
 
 What the person who runs the system should know. Design `docs/ux/app-settings/README.md`, decisions `docs/requirements/decisions-addendum.md` section AM, tests `frontend/e2e/tests/app-settings.spec.ts` and `BrandingApiTests`.
 
-**Where to change it.** Administration > Settings > Branding (`/admin/settings`), for System Administrators and for any role that holds the permission `Settings.Manage` (assign it on the Roles screen). The page changes the **application name** (1 to 40 characters, no `<` or `>`; `&` is allowed) and the **application icon** (PNG, SVG or ICO, square, at least 64 x 64 pixels for PNG and ICO, at most 256 KB; the type is decided by the file's content, not its name). "Reset to default" goes back to `MatterFlow` and the built-in icon. Nothing changes until Save. An SVG that contains scripts, links, embedded images, styles or anything else outside a short list of drawing elements is **refused, never cleaned up**; export a plain SVG instead.
+**Where to change it.** Administration > Settings > Branding (`/admin/settings`), for System Administrators and for any role that holds the permission `Settings.Manage` (assign it on the Roles screen). The page changes the **application name** (1 to 40 characters, no `<` or `>`; `&` is allowed) and the **application icon** (PNG, SVG or ICO, square, at least 64 x 64 pixels for PNG and ICO, at most 256 KB; the type is decided by the file's content, not its name). "Reset to default" goes back to `LPT Hub` and the built-in icon. Nothing changes until Save. An SVG that contains scripts, links, embedded images, styles or anything else outside a short list of drawing elements is **refused, never cleaned up**; export a plain SVG instead.
 
-**What it changes.** The name shows in the header (next to the icon), the browser tab title (`<Page>: <Tab> - <name>`), the sign-in-failed, 403, 404 and error pages, the Access Pending page, the search boxes and the time zone help text. The icon is the header mark and the tab icon; an `apple-touch-icon` is set only for a PNG. Not changed on purpose: technical names (the `X-MatterFlow-Client` header, database and namespace names), the browser-tab colour (`theme-color`) and the e-mail, export and report outputs (there are none that print the name today; **any future output that prints the application name must read it from the settings service, `BrandingService`, never from a constant**).
+**What it changes.** The name shows in the header (next to the icon), the browser tab title (`<Page>: <Tab> - <name>`), the sign-in-failed, 403, 404 and error pages, the Access Pending page, the search boxes and the time zone help text. The icon is the header mark and the tab icon; an `apple-touch-icon` is set only for a PNG. Not changed on purpose: technical names (the `X-LptHub-Client` header, database and namespace names), the browser-tab colour (`theme-color`) and the e-mail, export and report outputs (there are none that print the name today; **any future output that prints the application name must read it from the settings service, `BrandingService`, never from a constant**).
 
 **How long until people see it.** The page asks the server for the name and the icon on every page load and always revalidates with the `ETag` (a small `304` while nothing changed), so the browser's own 60 second copy is not used by the app (it still serves other clients and proxies). The server keeps a 30 second copy of the settings: the web node that saved shows the change **at once**, other nodes **within 30 seconds**. So everybody has the new name and icon on their next page load, **within about 30 seconds**; a page that is already open keeps the old name until it is reloaded (no push). The icon address carries the version (`?v=...`), so a changed icon is a new address and is fetched at once, but a browser keeps its **tab icon** (favicon) on its own schedule: if the tab still shows the old icon, hard reload (Ctrl+F5) or close and reopen the tab; in the worst case some browsers keep it for a day.
 

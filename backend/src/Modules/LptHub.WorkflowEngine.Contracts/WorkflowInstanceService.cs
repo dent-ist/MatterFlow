@@ -1,8 +1,8 @@
 using System.Text.Json;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Tasks;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Tasks;
 
-namespace MatterFlow.WorkflowEngine.Contracts;
+namespace LptHub.WorkflowEngine.Contracts;
 
 /// <summary>Domain effect a permitted step action has on the Task (architecture 8.3 rule 5); the caller applies it.</summary>
 public enum TaskEffect

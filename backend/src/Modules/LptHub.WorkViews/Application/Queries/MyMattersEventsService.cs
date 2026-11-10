@@ -1,9 +1,9 @@
-using MatterFlow.Organization.Application;
-using MatterFlow.SharedKernel.Paging;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Organization.Application;
+using LptHub.SharedKernel.Paging;
+using LptHub.SharedKernel.Results;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>The upcoming events of a My Matters scope.</summary>
 public sealed record MyMattersUpcomingEvents(

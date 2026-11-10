@@ -1,7 +1,7 @@
-using MatterFlow.SharedKernel.Availability;
+using LptHub.SharedKernel.Availability;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.SharedKernel;
+namespace LptHub.UnitTests.SharedKernel;
 
 public class UserAvailabilityEvaluatorTests
 {

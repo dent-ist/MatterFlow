@@ -1,4 +1,4 @@
-namespace MatterFlow.Notifications.Contracts;
+namespace LptHub.Notifications.Contracts;
 
 /// <summary>
 /// The notification event types (docs/ux/notifications-review/README.md section 3). The numeric value is the priority: when two rules hit the same

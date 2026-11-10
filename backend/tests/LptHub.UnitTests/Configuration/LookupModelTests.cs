@@ -1,19 +1,19 @@
-using MatterFlow.Configuration.Contracts;
-using MatterFlow.Configuration.Domain;
-using MatterFlow.Data;
+using LptHub.Configuration.Contracts;
+using LptHub.Configuration.Domain;
+using LptHub.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Configuration;
+namespace LptHub.UnitTests.Configuration;
 
 public class LookupModelTests
 {
     private static IModel BuildModel()
     {
-        var options = new DbContextOptionsBuilder<MatterFlowDbContext>().UseSqlServer("Server=localhost;Database=unused;").Options;
-        using var db = new MatterFlowDbContext(options);
+        var options = new DbContextOptionsBuilder<LptHubDbContext>().UseSqlServer("Server=localhost;Database=unused;").Options;
+        using var db = new LptHubDbContext(options);
         return db.GetService<IDesignTimeModel>().Model;
     }
 

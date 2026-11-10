@@ -1,12 +1,12 @@
 using System.Diagnostics;
 using System.Text;
-using MatterFlow.SharedKernel.Results;
+using LptHub.SharedKernel.Results;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
-namespace MatterFlow.Api.Http;
+namespace LptHub.Api.Http;
 
-/// <summary>Builds RFC 9457 <c>application/problem+json</c> responses with the stable MatterFlow extensions (architecture section 11).</summary>
+/// <summary>Builds RFC 9457 <c>application/problem+json</c> responses with the stable LPT Hub extensions (architecture section 11).</summary>
 public static class Problems
 {
     public const string ContentType = "application/problem+json";
@@ -87,7 +87,7 @@ public static class Problems
         problem.Extensions["traceId"] = Activity.Current?.Id ?? http.TraceIdentifier;
     }
 
-    public static string TypeUri(string code) => "urn:matterflow:error:" + code.ToLowerInvariant().Replace('_', '-');
+    public static string TypeUri(string code) => "urn:lpt-hub:error:" + code.ToLowerInvariant().Replace('_', '-');
 
     public static string Humanize(string code)
     {

@@ -464,12 +464,12 @@ describe('TaskQueuePage', () => {
 
   it('names the pressed view in the title, the caption and one live message (TQ36)', async () => {
     const el = await open('/tasks', { total: 101 });
-    expect(document.title).toBe('Task Queue - MatterFlow');
+    expect(document.title).toBe('Task Queue - LPT Hub');
     expect(el.querySelector('caption')!.textContent!.trim()).toBe('Task Queue');
 
     el.querySelector<HTMLButtonElement>('[data-view="overdue"]')!.click();
     await settle();
-    expect(document.title).toBe('Task Queue: Overdue - MatterFlow');
+    expect(document.title).toBe('Task Queue: Overdue - LPT Hub');
     expect(el.querySelector('caption')!.textContent!.trim()).toBe('Task Queue: Overdue');
     // Exactly one results message: the bar's own live region stays silent for work lists.
     expect(el.querySelector('[data-filter-live]')!.textContent!.trim()).toBe('');
@@ -649,7 +649,7 @@ describe('TaskQueuePage', () => {
     expect(view().getAttribute('aria-pressed')).toBe('true');
     expect(chips(el)).toEqual([]);
     expect(el.querySelector('mf-filters-toggle')!.textContent).not.toMatch(/\(\d\)/);
-    expect(document.title).toBe('Task Queue: Due Soon - MatterFlow');
+    expect(document.title).toBe('Task Queue: Due Soon - LPT Hub');
 
     TestBed.resetTestingModule();
     el = await open(`/tasks${dueSoon}&dueTo=2026-10-16&priority=1`);

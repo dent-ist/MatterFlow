@@ -1,9 +1,9 @@
-using MatterFlow.SharedKernel.Entities;
-using MatterFlow.SharedKernel.Results;
+using LptHub.SharedKernel.Entities;
+using LptHub.SharedKernel.Results;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Configuration.Application.Lookups;
+namespace LptHub.Configuration.Application.Lookups;
 
 /// <summary>Stable codes specific to the configuration lookups (also listed in <see cref="ErrorCodes"/> for the API contract).</summary>
 internal static class LookupErrors

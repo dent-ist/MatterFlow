@@ -1,4 +1,4 @@
-namespace MatterFlow.WorkManagement.Domain;
+namespace LptHub.WorkManagement.Domain;
 
 /// <summary>Why a comment exists. CANCEL and ON_HOLD comments are the stored reason for a status change.</summary>
 public enum TaskCommentPurpose

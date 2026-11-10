@@ -1,9 +1,9 @@
-using MatterFlow.Data.SchemaMigrations;
+using LptHub.Data.SchemaMigrations;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 
-namespace MatterFlow.SchemaTests;
+namespace LptHub.SchemaTests;
 
 /// <summary>Constraints, indexes and grants of the baseline (archived 29-notifications.sql) (epic #753, issue #729).</summary>
 [Collection(SqlServerCollection.Name)]
@@ -91,15 +91,15 @@ public class NotificationsSchemaTests(SqlServerFixture sql)
         var cs = await MigratedAsync();
         await ExecAsync(cs, Insert + "(1, 'TaskAssigned', 'Task', 5, N'hello', 'k1');");
         await ExecAsync(cs, "INSERT dbo.NotificationPreference (UserId, EventType, Enabled) VALUES (1, 'TaskDue', 0);");
-        await ExecAsync(cs, "CREATE USER nt_app WITHOUT LOGIN; ALTER ROLE mf_app ADD MEMBER nt_app;");
+        await ExecAsync(cs, "CREATE USER nt_app WITHOUT LOGIN; ALTER ROLE lpt_app ADD MEMBER nt_app;");
 
-        // Allowed as mf_app: read, insert, mark read, delete.
+        // Allowed as lpt_app: read, insert, mark read, delete.
         await ExecAsync(cs, "EXECUTE AS USER = 'nt_app'; SELECT COUNT(*) FROM dbo.Notification; REVERT;");
         await ExecAsync(cs, "EXECUTE AS USER = 'nt_app'; UPDATE dbo.Notification SET ReadUtc = SYSUTCDATETIME() WHERE Id = 1; REVERT;");
         await ExecAsync(cs, "EXECUTE AS USER = 'nt_app'; UPDATE dbo.NotificationPreference SET Enabled = 1 WHERE UserId = 1; REVERT;");
         await ExecAsync(cs, "EXECUTE AS USER = 'nt_app'; DELETE dbo.Notification WHERE Id = 1; REVERT;");
 
-        // Refused as mf_app: rewriting the text, the recipient, the key of a preference, altering the table.
+        // Refused as lpt_app: rewriting the text, the recipient, the key of a preference, altering the table.
         await ExecAsync(cs, Insert + "(1, 'TaskAssigned', 'Task', 5, N'hello', 'k2');");
         await ShouldRejectAsync(cs, "EXECUTE AS USER = 'nt_app'; UPDATE dbo.Notification SET Message = N'rewritten'; REVERT;", "permission was denied");
         await ShouldRejectAsync(cs, "EXECUTE AS USER = 'nt_app'; UPDATE dbo.Notification SET RecipientUserId = 2; REVERT;", "permission was denied");

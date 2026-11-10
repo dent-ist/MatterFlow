@@ -1,12 +1,12 @@
 using System.Diagnostics;
-using MatterFlow.SharedKernel.Results;
+using LptHub.SharedKernel.Results;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MatterFlow.Productions.Api;
+namespace LptHub.Productions.Api;
 
 /// <summary>
-/// Turns <see cref="Result"/> values into RFC 9457 <c>application/problem+json</c> responses with the stable MatterFlow extensions
+/// Turns <see cref="Result"/> values into RFC 9457 <c>application/problem+json</c> responses with the stable LPT Hub extensions
 /// (<c>code</c>, <c>traceId</c>, <c>errors</c>, <c>meta</c>; architecture section 11). Modules cannot reference the host's
 /// <c>Problems</c> helper (dependency rules), so this mirrors its output for module controllers.
 /// </summary>
@@ -19,7 +19,7 @@ internal static class ControllerResults
         var status = StatusFor(error.Type);
         var problem = new ProblemDetails
         {
-            Type = "urn:matterflow:error:" + error.Code.ToLowerInvariant().Replace('_', '-'),
+            Type = "urn:lpt-hub:error:" + error.Code.ToLowerInvariant().Replace('_', '-'),
             Title = Humanize(error.Code),
             Status = status,
             Detail = error.Message,

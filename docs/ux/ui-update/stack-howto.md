@@ -7,8 +7,8 @@ Written by Agent U on 2026-11-04. The stack below was started from a worktree of
 | Part | How it runs | Port | Logs / pid |
 | --- | --- | --- | --- |
 | Docker daemon | `nohup dockerd >/tmp/dockerd.log 2>&1 &` | | `/tmp/dockerd.log` |
-| SQL Server 2022 | container `matterflow-sql` from `docker-compose.dev.yml` (volume `matterflow-sql-data`) | 127.0.0.1:1433 | `docker logs matterflow-sql` |
-| API | `dotnet run --no-build --project backend/src/MatterFlow.Api` (Development, Dev auth) | 5080 | `/home/user/ud-run/api.log`, `api.pid` |
+| SQL Server 2022 | container `lpt-hub-sql` from `docker-compose.dev.yml` (volume `lpt-hub-sql-data`) | 127.0.0.1:1433 | `docker logs lpt-hub-sql` |
+| API | `dotnet run --no-build --project backend/src/LptHub.Api` (Development, Dev auth) | 5080 | `/home/user/ud-run/api.log`, `api.pid` |
 | Web | `npm run start:api` in `frontend/` (`ng serve --configuration api`, proxies `/api` to 5080) | 4200 | `/home/user/ud-run/web.log`, `web.pid` |
 
 `frontend/node_modules` in the worktree is a hard-link copy (`cp -al`) of `/home/user/wt/mdetail/frontend/node_modules` (no extra disk). `frontend/dist/form-engine` was built once with `npm run ng -- build form-engine`.
@@ -20,7 +20,7 @@ nohup dockerd >/tmp/dockerd.log 2>&1 &          # wait about 12 s
 cd <worktree of origin/ui-update-2>
 cp -al /home/user/wt/mdetail/frontend/node_modules frontend/node_modules      # once
 cd frontend && /home/user/.mf-heavy/heavy.sh timeout 900 npm run ng -- build form-engine && cd ..   # once
-/home/user/.mf-heavy/heavy.sh timeout 1200 dotnet build backend/src/MatterFlow.Api -c Debug          # after code changes
+/home/user/.mf-heavy/heavy.sh timeout 1200 dotnet build backend/src/LptHub.Api -c Debug          # after code changes
 docker compose -f docker-compose.dev.yml up -d --wait sqlserver
 docker compose -f docker-compose.dev.yml run --rm --no-deps sqlserver-init                          # creates the empty database
 docs/ux/ui-update/stack-start.sh                 # API :5080 and web :4200, as KE\kekim (pass another account as first argument)
@@ -37,7 +37,7 @@ docs/ux/ui-update/stack-start.sh                                          # star
 docker compose -f docker-compose.dev.yml down        # stop SQL Server (add -v to delete the data; then run the init and the seed again)
 ```
 
-If `kill` leaves a child behind, find it with `ps aux | grep -E "MatterFlow.Api|ng serve"` and kill that pid only.
+If `kill` leaves a child behind, find it with `ps aux | grep -E "LptHub.Api|ng serve"` and kill that pid only.
 
 ## Personas (Dev auth)
 
@@ -70,4 +70,4 @@ Everything in memory is gone but the worktree, the Docker volume (SQL data) and 
 
 ## Review 1 (2026-11-05)
 
-After another container restart the stack was started from `origin/ui-update-2` tip 1f95bb7 (the dev server compiles the branch code; no new seed). Review scripts: `crawl/crawl.js` to `crawl5.js` and `/home/user/ud-run/axe.js` (axe-core from `frontend/node_modules`). Extra demo data created: none new (the priority "UI sample" from the first crawl remains). The stack is left running: API 5080, web 4200, SQL container `matterflow-sql`.
+After another container restart the stack was started from `origin/ui-update-2` tip 1f95bb7 (the dev server compiles the branch code; no new seed). Review scripts: `crawl/crawl.js` to `crawl5.js` and `/home/user/ud-run/axe.js` (axe-core from `frontend/node_modules`). Extra demo data created: none new (the priority "UI sample" from the first crawl remains). The stack is left running: API 5080, web 4200, SQL container `lpt-hub-sql`.

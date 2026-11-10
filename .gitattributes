@@ -11,6 +11,6 @@
 *.woff2 binary
 *.zip binary
 
-backend/src/MatterFlow.Api/web.config text eol=lf
+backend/src/LptHub.Api/web.config text eol=lf
 contracts/openapi/v1.json linguist-generated=true
 frontend/src/app/api/generated/** linguist-generated=true

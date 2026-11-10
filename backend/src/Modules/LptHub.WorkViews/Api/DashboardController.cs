@@ -1,12 +1,12 @@
-using MatterFlow.Identity.Contracts;
-using MatterFlow.SharedKernel.Paging;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.WorkViews.Application.Queries;
+using LptHub.Identity.Contracts;
+using LptHub.SharedKernel.Paging;
+using LptHub.SharedKernel.Results;
+using LptHub.WorkViews.Application.Queries;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MatterFlow.WorkViews.Api;
+namespace LptHub.WorkViews.Api;
 
 /// <summary>
 /// The operational Dashboard: department-wide counts (Phase 1 has no per-record visibility, addendum E), breakdowns of open Tasks, aging and trend.
@@ -16,7 +16,7 @@ namespace MatterFlow.WorkViews.Api;
 /// </summary>
 [ApiController]
 [Route("api/v1/dashboard")]
-[MatterFlow.SharedKernel.Visibility.PreparesViewer(Stamp = true)]
+[LptHub.SharedKernel.Visibility.PreparesViewer(Stamp = true)]
 public class DashboardController(DashboardService dashboard, DashboardTrendService trend) : ControllerBase
 {
     /// <summary>Gets the Dashboard for a period (<c>period</c>, default 30 days) that drives the "completed" and "created" counts, for the Tasks of the <c>podScope</c> (<c>all</c> by default).</summary>
@@ -65,7 +65,7 @@ public class DashboardController(DashboardService dashboard, DashboardTrendServi
 /// </summary>
 [ApiController]
 [Route("api/v1/dashboard")]
-[MatterFlow.SharedKernel.Visibility.PreparesViewer]
+[LptHub.SharedKernel.Visibility.PreparesViewer]
 public class DashboardBoardController(SwimlaneService swimlane, WorkloadService workload, CoverageService coverage, CapacityService capacity, UserHistoryService history, SkillsService skills) : ControllerBase
 {
     /// <summary>

@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
 using Shouldly;
 
-namespace MatterFlow.ArchitectureTests;
+namespace LptHub.ArchitectureTests;
 
 /// <summary>
 /// Sensitive-matter epic #788 (SM-16, README 12.3 a, b, d): a read path that touches the matter, task, project or asset tables, or the audit and notification tables, must go

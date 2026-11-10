@@ -2,7 +2,7 @@ using System.Xml.Linq;
 using NetArchTest.Rules;
 using Shouldly;
 
-namespace MatterFlow.ArchitectureTests;
+namespace LptHub.ArchitectureTests;
 
 /// <summary>
 /// Enforces the module dependency rules of docs/architecture.md section 5.2:
@@ -13,7 +13,7 @@ namespace MatterFlow.ArchitectureTests;
 /// </summary>
 public class ModuleDependencyRulesTests
 {
-    private const string SharedKernel = "MatterFlow.SharedKernel";
+    private const string SharedKernel = "LptHub.SharedKernel";
 
     /// <summary>Allowed Contracts dependencies per module (the arrows in the section 5.2 diagram).</summary>
     private static readonly Dictionary<string, string[]> AllowedContracts = new()
@@ -43,17 +43,17 @@ public class ModuleDependencyRulesTests
     [MemberData(nameof(ModuleNames))]
     public void Module_project_references_only_allowed_projects(string module)
     {
-        var refs = ProjectReferences($"src/Modules/MatterFlow.{module}/MatterFlow.{module}.csproj");
-        var allowed = new HashSet<string> { SharedKernel, $"MatterFlow.{module}.Contracts" };
+        var refs = ProjectReferences($"src/Modules/LptHub.{module}/LptHub.{module}.csproj");
+        var allowed = new HashSet<string> { SharedKernel, $"LptHub.{module}.Contracts" };
         foreach (var dep in AllowedContracts[module])
         {
-            allowed.Add($"MatterFlow.{dep}.Contracts");
+            allowed.Add($"LptHub.{dep}.Contracts");
             if (QuerySide.Contains(module))
-                allowed.Add($"MatterFlow.{dep}");
+                allowed.Add($"LptHub.{dep}");
         }
 
         if (QuerySide.Contains(module))
-            allowed.Add("MatterFlow.Data");
+            allowed.Add("LptHub.Data");
 
         refs.ShouldBeSubsetOf(allowed, $"{module} references a project it must not depend on (architecture 5.2)");
     }
@@ -62,7 +62,7 @@ public class ModuleDependencyRulesTests
     [MemberData(nameof(ModuleNames))]
     public void Contracts_project_references_only_shared_kernel(string module)
     {
-        var path = $"src/Modules/MatterFlow.{module}.Contracts/MatterFlow.{module}.Contracts.csproj";
+        var path = $"src/Modules/LptHub.{module}.Contracts/LptHub.{module}.Contracts.csproj";
         if (!File.Exists(Path.Combine(RepoBackendRoot(), path)))
             return; // leaf modules (WorkViews, Search, Intake) have no Contracts project
 
@@ -70,9 +70,9 @@ public class ModuleDependencyRulesTests
     }
 
     [Fact]
-    public void Shared_kernel_references_no_other_matterflow_project()
+    public void Shared_kernel_references_no_other_lpt_hub_project()
     {
-        ProjectReferences("src/MatterFlow.SharedKernel/MatterFlow.SharedKernel.csproj").ShouldBeEmpty();
+        ProjectReferences("src/LptHub.SharedKernel/LptHub.SharedKernel.csproj").ShouldBeEmpty();
     }
 
     [Fact]
@@ -103,13 +103,13 @@ public class ModuleDependencyRulesTests
         foreach (var file in projects)
         {
             var name = Path.GetFileNameWithoutExtension(file);
-            var module = name.Replace("MatterFlow.", "");
-            if (name is "MatterFlow.Api" or "MatterFlow.Data" || QuerySide.Contains(module))
+            var module = name.Replace("LptHub.", "");
+            if (name is "LptHub.Api" or "LptHub.Data" || QuerySide.Contains(module))
                 continue;
 
             foreach (var r in ReferencesOf(file))
             {
-                var isInternal = AllowedContracts.Keys.Any(m => r == $"MatterFlow.{m}" && r != name);
+                var isInternal = AllowedContracts.Keys.Any(m => r == $"LptHub.{m}" && r != name);
                 isInternal.ShouldBeFalse($"{name} references the internals of {r}; use {r}.Contracts");
             }
         }
@@ -120,12 +120,12 @@ public class ModuleDependencyRulesTests
     {
         foreach (var module in AllowedContracts.Keys.Where(m => !QuerySide.Contains(m) && m != "Intake"))
         {
-            var contractsAssembly = Type.GetType($"MatterFlow.{module}.Contracts.{module}ContractsMarker, MatterFlow.{module}.Contracts");
+            var contractsAssembly = Type.GetType($"LptHub.{module}.Contracts.{module}ContractsMarker, LptHub.{module}.Contracts");
             contractsAssembly.ShouldNotBeNull();
 
             var result = Types.InAssembly(contractsAssembly.Assembly)
-                .That().ResideInNamespace($"MatterFlow.{module}.Contracts")
-                .ShouldNot().HaveDependencyOnAny($"MatterFlow.{module}.Domain", $"MatterFlow.{module}.Infrastructure", "Microsoft.EntityFrameworkCore")
+                .That().ResideInNamespace($"LptHub.{module}.Contracts")
+                .ShouldNot().HaveDependencyOnAny($"LptHub.{module}.Domain", $"LptHub.{module}.Infrastructure", "Microsoft.EntityFrameworkCore")
                 .GetResult();
 
             result.IsSuccessful.ShouldBeTrue($"{module}.Contracts must not expose internals or EF types");
@@ -137,11 +137,11 @@ public class ModuleDependencyRulesTests
     {
         foreach (var module in AllowedContracts.Keys)
         {
-            var type = Type.GetType($"MatterFlow.{module}.{module}Module, MatterFlow.{module}");
+            var type = Type.GetType($"LptHub.{module}.{module}Module, LptHub.{module}");
             type.ShouldNotBeNull();
 
             var result = Types.InAssembly(type.Assembly)
-                .That().ResideInNamespaceStartingWith($"MatterFlow.{module}.Domain")
+                .That().ResideInNamespaceStartingWith($"LptHub.{module}.Domain")
                 .ShouldNot().HaveDependencyOn("Microsoft.EntityFrameworkCore")
                 .GetResult();
 
@@ -161,8 +161,8 @@ public class ModuleDependencyRulesTests
     private static string RepoBackendRoot()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "MatterFlow.sln")))
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "LptHub.sln")))
             dir = dir.Parent;
-        return dir?.FullName ?? throw new InvalidOperationException("backend/MatterFlow.sln not found above test output");
+        return dir?.FullName ?? throw new InvalidOperationException("backend/LptHub.sln not found above test output");
     }
 }

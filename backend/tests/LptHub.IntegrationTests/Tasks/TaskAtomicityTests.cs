@@ -1,10 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Tasks;
+namespace LptHub.IntegrationTests.Tasks;
 
 /// <summary>
 /// Failure injection: a database trigger makes the LAST write of a command fail, after the workflow engine and the other writes of the same

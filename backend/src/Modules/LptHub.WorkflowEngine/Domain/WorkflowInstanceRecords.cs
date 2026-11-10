@@ -1,6 +1,6 @@
-using MatterFlow.SharedKernel.Entities;
+using LptHub.SharedKernel.Entities;
 
-namespace MatterFlow.WorkflowEngine.Domain;
+namespace LptHub.WorkflowEngine.Domain;
 
 /// <summary>
 /// Persisted workflow instance (table <c>WorkflowInstance</c>, script 11). Pinned to the published version it was created from. Not

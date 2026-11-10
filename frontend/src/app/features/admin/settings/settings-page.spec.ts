@@ -19,8 +19,8 @@ import {
 } from './settings-page';
 
 const view = (patch: Partial<BrandingAdminView> = {}): BrandingAdminView => ({
-  appName: 'MatterFlow',
-  defaultAppName: 'MatterFlow',
+  appName: 'LPT Hub',
+  defaultAppName: 'LPT Hub',
   appNameIsCustom: false,
   appNameRowVersion: '',
   iconUrl: undefined,
@@ -153,7 +153,7 @@ describe('SettingsPage: Administration > Settings > Branding (epic #850, BR-05)'
     expect(el().querySelector('[role="tab"][aria-selected="true"]')?.textContent?.trim()).toBe(
       'Branding',
     );
-    expect(q<HTMLInputElement>('#st-name')!.value).toBe('MatterFlow');
+    expect(q<HTMLInputElement>('#st-name')!.value).toBe('LPT Hub');
     expect(text('#st-name-count')).toBe('10 / 40');
     expect(q('#st-name')!.getAttribute('maxlength')).toBe('40');
     expect(text('[data-icon-help]')).toContain('up to 256 KB');
@@ -207,7 +207,7 @@ describe('SettingsPage: Administration > Settings > Branding (epic #850, BR-05)'
     expect(text('[data-preview-text]')).toBe('Header will read: Smith & Co');
     expect(q('[data-save] button, button[data-save]')?.hasAttribute('disabled')).toBe(false);
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
-    await typeName('MatterFlow');
+    await typeName('LPT Hub');
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
   });
 
@@ -246,7 +246,7 @@ describe('SettingsPage: Administration > Settings > Branding (epic #850, BR-05)'
 
   it('keeps the document title in step when the name is saved', async () => {
     await open();
-    TestBed.inject(Title).setTitle('Settings: Branding - MatterFlow');
+    TestBed.inject(Title).setTitle('Settings: Branding - LPT Hub');
     api['setBrandingName'].mockReturnValue(
       of(view({ appName: 'Acme', appNameIsCustom: true, appNameRowVersion: 'r' })),
     );
@@ -281,7 +281,7 @@ describe('SettingsPage: Administration > Settings > Branding (epic #850, BR-05)'
     expect(text('#st-name-error')).toContain('The name cannot contain < or >.');
     expect(text('[data-summary]')).toContain('The name cannot contain < or >.');
     expect(toasts).toEqual([]);
-    expect(currentBranding().appName).toBe('MatterFlow');
+    expect(currentBranding().appName).toBe('LPT Hub');
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
   });
 
@@ -290,14 +290,14 @@ describe('SettingsPage: Administration > Settings > Branding (epic #850, BR-05)'
     api['resetBrandingName'].mockReturnValue(of(view()));
     await click('[data-reset-name]');
     expect(api['resetBrandingName']).not.toHaveBeenCalled();
-    expect(q<HTMLInputElement>('#st-name')!.value).toBe('MatterFlow');
-    expect(text('[data-preview-header]')).toBe('MatterFlow');
+    expect(q<HTMLInputElement>('#st-name')!.value).toBe('LPT Hub');
+    expect(text('[data-preview-header]')).toBe('LPT Hub');
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
     await submit();
     expect(api['resetBrandingName']).toHaveBeenCalledWith('rv-9');
     expect(api['setBrandingName']).not.toHaveBeenCalled();
     expect(toasts).toEqual([BRANDING_SAVED_TITLE]);
-    expect(currentBranding().appName).toBe('MatterFlow');
+    expect(currentBranding().appName).toBe('LPT Hub');
   });
 
   it('turns Reset to default off for a name that already is the default', async () => {
@@ -436,7 +436,7 @@ describe('SettingsPage: Administration > Settings > Branding (epic #850, BR-05)'
     await typeName('Changed');
     await chooseFile(new File(['x'], 'a.png', { type: 'image/png' }));
     await click('[data-cancel]');
-    expect(q<HTMLInputElement>('#st-name')!.value).toBe('MatterFlow');
+    expect(q<HTMLInputElement>('#st-name')!.value).toBe('LPT Hub');
     expect(text('[data-icon-file]')).toBe('Built-in icon.');
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
   });
@@ -476,7 +476,7 @@ describe('helpers', () => {
       version: 'aaaaaaaaaaaa',
     });
     expect(brandingOf(view())).toEqual({
-      appName: 'MatterFlow',
+      appName: 'LPT Hub',
       iconUrl: null,
       iconKind: null,
       version: 'aaaaaaaaaaaa',

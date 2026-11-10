@@ -1,11 +1,11 @@
-# MatterFlow
+# LPT Hub
 
 Internal law-firm eDiscovery Matter and Task tracker. ASP.NET Core (.NET 10) modular monolith + SQL Server 2022 + Angular 21 (PrimeNG).
 `README.md` has the full setup, run and CI details; `docs/architecture.md` is the source of truth for design decisions.
 
 ## Layout
 
-- `backend/` .NET solution `MatterFlow.sln`: `src/MatterFlow.Api` (host), `SharedKernel`, `Data`, `src/Modules/*`, `tests/*`
+- `backend/` .NET solution `LptHub.sln`: `src/LptHub.Api` (host), `SharedKernel`, `Data`, `src/Modules/*`, `tests/*`
 - `frontend/` Angular workspace (`src/` app, `projects/form-engine` library, `e2e/` Playwright)
 - `contracts/` cross-stack contracts (OpenAPI, form-rule schema/vectors, permission catalog); `validate-contracts.mjs` checks them
 - `db/scripts/` `00-baseline.sql` (the whole schema) plus numbered scripts from 67 (the old 01 to 66 are in `db/scripts/archive/`); `deploy/` IIS publish scripts; `tools/` seed-demo, perf, icons; `docs/` design, QA, runbook
@@ -14,7 +14,7 @@ Internal law-firm eDiscovery Matter and Task tracker. ASP.NET Core (.NET 10) mod
 ## Commands
 
 - Whole stack: `npm install && npm run setup && npm start` (needs Docker; API :5080, web :4200)
-- Backend (in `backend/`): `dotnet build -warnaserror`, `dotnet test tests/MatterFlow.UnitTests` (fast), `dotnet test` (needs Docker), `dotnet format --verify-no-changes`
+- Backend (in `backend/`): `dotnet build -warnaserror`, `dotnet test tests/LptHub.UnitTests` (fast), `dotnet test` (needs Docker), `dotnet format --verify-no-changes`
 - Frontend (in `frontend/`): `npm ci`, `npm test`, `npm run lint`, `npm run format:check`, `npm run build`, `npm run e2e`
 - Use the repo-local Angular CLI (`npm run ng -- ...`); the global/latest CLI is incompatible with the Node version.
 - Testing and QA: `README.md` section "Testing and QA" has four levels (quick check, unit, integration, full QA). Pick the one that fits the change and say in your report which tests you did NOT run. Details: `docs/qa/e2e.md` (Playwright suite), `docs/ux/ui-update/stack-howto.md` (real-stack browser check).
@@ -22,13 +22,13 @@ Internal law-firm eDiscovery Matter and Task tracker. ASP.NET Core (.NET 10) mod
 
 ## Rules to respect
 
-- **Module boundaries**: a module (`Domain/`, `Application/`, `Infrastructure/`, `Api/`) may reference only `SharedKernel` and other modules' `.Contracts` projects. `MatterFlow.ArchitectureTests` enforces this. Register new modules in `backend/src/MatterFlow.Api/ModuleComposition.cs`.
+- **Module boundaries**: a module (`Domain/`, `Application/`, `Infrastructure/`, `Api/`) may reference only `SharedKernel` and other modules' `.Contracts` projects. `LptHub.ArchitectureTests` enforces this. Register new modules in `backend/src/LptHub.Api/ModuleComposition.cs`.
 - **Schema**: the schema is `db/scripts/00-baseline.sql` (squashed from the old scripts 01 to 66, issue #1307) plus later numbered scripts (67 and up). Scripts after the baseline are immutable once merged; fix forward with a new numbered script. The baseline itself becomes immutable at the first real deployment; until then it is edited only together with a rebuild of every demo and test database (`npm run db:reset`). Never add anything to `db/scripts/archive/`. No EF migrations.
 - **NuGet versions** live in `backend/Directory.Packages.props` only.
 - **API changes** must keep the OpenAPI contract in `contracts/openapi` and the generated frontend client (nswag) in sync; CI fails on drift.
 - **Permissions** come from `contracts/permissions.json`; keep backend and frontend in step.
 - **Shortcuts**: add new keyboard shortcuts in `frontend/src/app/shared/layout/shortcut-registry.ts` together with the handler. No new or changed shortcuts in the current phase (owner decision; Phase 2 backlog, issue #420).
-- **Status (owner, 2026-10-24)**: MatterFlow has not been deployed and nobody is using it. All data is demo/test data. That is why a data backfill for old rows is rarely needed, and why the old scripts were squashed into one baseline; numbered scripts after the baseline stay immutable once merged (fix forward) so the deployed history stays clean and replayable. The repo will later be made private and moved to the corporate network.
+- **Status (owner, 2026-10-24)**: LPT Hub has not been deployed and nobody is using it. All data is demo/test data. That is why a data backfill for old rows is rarely needed, and why the old scripts were squashed into one baseline; numbered scripts after the baseline stay immutable once merged (fix forward) so the deployed history stays clean and replayable. The repo will later be made private and moved to the corporate network.
 - **Auth**: `Dev` provider is for Development/Test only; production uses Windows auth. Never weaken that guard.
 - CI treats warnings as errors and checks formatting (`.editorconfig`, Prettier); run the checks before committing.
 - Main integration branch is `dev`.

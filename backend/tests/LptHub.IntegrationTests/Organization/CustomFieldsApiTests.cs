@@ -2,10 +2,10 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Organization;
+namespace LptHub.IntegrationTests.Organization;
 
 /// <summary>
 /// Custom fields of Clients, Matters and Projects (ticket 59) against a real SQL Server: values are validated under the published form,
@@ -23,7 +23,7 @@ public sealed class CustomFieldsApiTests(SqlServerFixture sql) : IAsyncLifetime
     private HttpClient Admin()
     {
         var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        client.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         client.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
         return client;
     }

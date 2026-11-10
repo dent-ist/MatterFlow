@@ -1,6 +1,6 @@
-using MatterFlow.SharedKernel.Time;
+using LptHub.SharedKernel.Time;
 
-namespace MatterFlow.Api.Http;
+namespace LptHub.Api.Http;
 
 /// <summary>Request-scoped resolution of <see cref="IUserTimeZone"/> from the <c>X-Time-Zone</c> header (addendum M).</summary>
 public static class UserTimeZoneAccessor

@@ -36,7 +36,7 @@ Permissions: `TaskType.Manage` for types and request forms, `Workflow.Manage` fo
 ## Starter configuration (first deployment)
 
 - `docs/sme/seed-configuration.md` and `docs/sme/seed-configuration.json` hold the SME's proposal: 15 task types, 10 step definitions, 8 workflows, 7 asset types and 9 roles plus System Admin, with the workflow map.
-- The JSON is embedded in the API (`backend/src/MatterFlow.Api/MatterFlow.Api.csproj`) and applied by `StarterConfigurationSeeder` (`backend/src/MatterFlow.Api/Seeding`) when `Seed:StarterConfiguration:Enabled` is true (default on in Development, off elsewhere). It is idempotent and never overwrites admin edits; `DryRun` only logs. To add a new starter task type for fresh installs, edit the JSON (the record types that read it are in `StarterSeedData.cs`) and check the test `IntegrationTests/Tasks/TaskStarterConfigurationTests`.
+- The JSON is embedded in the API (`backend/src/LptHub.Api/LptHub.Api.csproj`) and applied by `StarterConfigurationSeeder` (`backend/src/LptHub.Api/Seeding`) when `Seed:StarterConfiguration:Enabled` is true (default on in Development, off elsewhere). It is idempotent and never overwrites admin edits; `DryRun` only logs. To add a new starter task type for fresh installs, edit the JSON (the record types that read it are in `StarterSeedData.cs`) and check the test `IntegrationTests/Tasks/TaskStarterConfigurationTests`.
 
 ## Developer notes
 

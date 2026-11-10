@@ -1,9 +1,9 @@
-using MatterFlow.Notes.Application;
-using MatterFlow.Notes.Domain;
-using MatterFlow.SharedKernel.Text;
+using LptHub.Notes.Application;
+using LptHub.Notes.Domain;
+using LptHub.SharedKernel.Text;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Notes;
+namespace LptHub.UnitTests.Notes;
 
 /// <summary>The body rules of a note (MD-12): the sanitiser profile, the title (first line), the snippet and the references.</summary>
 public sealed class NoteContentTests

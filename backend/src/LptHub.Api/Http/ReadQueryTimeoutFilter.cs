@@ -1,9 +1,9 @@
-using MatterFlow.SharedKernel.Paging;
+using LptHub.SharedKernel.Paging;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
-namespace MatterFlow.Api.Http;
+namespace LptHub.Api.Http;
 
 /// <summary>
 /// Sets a shorter SQL command timeout (<see cref="ReadQueryOptions.ReadCommandTimeoutSeconds"/>, 15 s) on the request's database context for the

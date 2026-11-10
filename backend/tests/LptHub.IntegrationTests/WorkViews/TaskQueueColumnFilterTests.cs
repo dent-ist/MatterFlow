@@ -1,9 +1,9 @@
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
-using static MatterFlow.IntegrationTests.WorkViews.QueueData;
+using static LptHub.IntegrationTests.WorkViews.QueueData;
 
-namespace MatterFlow.IntegrationTests.WorkViews;
+namespace LptHub.IntegrationTests.WorkViews;
 
 /// <summary>
 /// The column filters of the work lists (epic "inline column filters", batch 3): Matter, Client and Project text, and the Updated range on the Task Queue,

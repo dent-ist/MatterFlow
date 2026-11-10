@@ -1,9 +1,9 @@
 using System.Linq.Expressions;
-using MatterFlow.SharedKernel.Tasks;
-using MatterFlow.SharedKernel.Time;
-using MatterFlow.WorkManagement.Domain;
+using LptHub.SharedKernel.Tasks;
+using LptHub.SharedKernel.Time;
+using LptHub.WorkManagement.Domain;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>
 /// "Now" as the requesting user sees it (addendum M): the instant, the local calendar date and the conversion of a local date to its UTC start.

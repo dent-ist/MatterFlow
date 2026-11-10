@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace MatterFlow.Api.Http;
+namespace LptHub.Api.Http;
 
 /// <summary>
 /// Documented shape of every error response (<c>application/problem+json</c>). Used only for OpenAPI/client generation;
@@ -8,7 +8,7 @@ namespace MatterFlow.Api.Http;
 /// </summary>
 public sealed class ApiProblemDetails
 {
-    /// <summary>URI reference identifying the error type, e.g. <c>urn:matterflow:error:validation-failed</c>.</summary>
+    /// <summary>URI reference identifying the error type, e.g. <c>urn:lpt-hub:error:validation-failed</c>.</summary>
     public string? Type { get; init; }
 
     public string? Title { get; init; }

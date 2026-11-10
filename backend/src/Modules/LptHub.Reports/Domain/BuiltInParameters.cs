@@ -1,4 +1,4 @@
-namespace MatterFlow.Reports.Domain;
+namespace LptHub.Reports.Domain;
 
 /// <summary>
 /// Values the server supplies to every run (spec 5.3). Their names are reserved: an admin cannot define a parameter with one of them and a

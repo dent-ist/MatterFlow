@@ -3,7 +3,7 @@ using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
 
-namespace MatterFlow.Api.Http;
+namespace LptHub.Api.Http;
 
 /// <summary>Per-user request budgets per minute for the JSON API (security review 2, SEC2-03). A value of 0 or less turns that budget off.</summary>
 public sealed class ApiRateLimitOptions

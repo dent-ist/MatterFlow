@@ -1,10 +1,10 @@
-using MatterFlow.Identity.Authorization;
-using MatterFlow.Identity.Contracts;
+using LptHub.Identity.Authorization;
+using LptHub.Identity.Contracts;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.IntegrationTests.Fixtures;
+namespace LptHub.IntegrationTests.Fixtures;
 
 /// <summary>Test-only endpoints standing in for the real feature controllers (not part of the API assembly or OpenAPI contract).</summary>
 [ApiController]

@@ -1,8 +1,8 @@
 using System.Data;
-using MatterFlow.Reports.Application;
+using LptHub.Reports.Application;
 using Microsoft.Data.SqlClient;
 
-namespace MatterFlow.Reports.Infrastructure;
+namespace LptHub.Reports.Infrastructure;
 
 /// <summary>Writes report events to the append-only <c>dbo.AuditEvent</c> with the application connection, inside the caller's transaction so the change and its audit row stand or fall together.</summary>
 internal static class ReportAuditSql

@@ -1,9 +1,9 @@
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Notifications.Contracts;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Visibility;
+using LptHub.Identity.Contracts;
+using LptHub.Notifications.Contracts;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Visibility;
 
-namespace MatterFlow.Organization.Application;
+namespace LptHub.Organization.Application;
 
 /// <summary>Which Matters the caller may view, for the notification reads: the <c>Matter.View</c> permission and the sensitive-matter rule (epic #788, mode M), as on the Matter endpoints.</summary>
 internal sealed class MatterObjectVisibility(IMatterVisibility visibility, IPermissionChecker permissions) : IObjectVisibility

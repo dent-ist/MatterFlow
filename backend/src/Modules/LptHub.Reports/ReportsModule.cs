@@ -1,12 +1,12 @@
-using MatterFlow.Reports.Application;
-using MatterFlow.Reports.Application.Results;
-using MatterFlow.Reports.Application.Starters;
-using MatterFlow.Reports.Infrastructure;
+using LptHub.Reports.Application;
+using LptHub.Reports.Application.Results;
+using LptHub.Reports.Application.Starters;
+using LptHub.Reports.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-namespace MatterFlow.Reports;
+namespace LptHub.Reports;
 
 /// <summary>Composition entry point of the Reports module (epic #671; docs/ux/reports-review/README.md).</summary>
 public static class ReportsModule

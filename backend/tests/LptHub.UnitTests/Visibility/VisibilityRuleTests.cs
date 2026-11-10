@@ -1,12 +1,12 @@
-using MatterFlow.Identity.Access;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Visibility;
+using LptHub.Identity.Access;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Visibility;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Visibility;
+namespace LptHub.UnitTests.Visibility;
 
 /// <summary>The full truth table of the sensitive-matter rule (epic #788, README section 1) over in-memory rows, and the switch behaviour of the port.</summary>
 public class VisibilityRuleTests

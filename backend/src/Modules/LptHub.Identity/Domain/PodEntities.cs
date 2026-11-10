@@ -1,7 +1,7 @@
-using MatterFlow.SharedKernel.Audit;
-using MatterFlow.SharedKernel.Entities;
+using LptHub.SharedKernel.Audit;
+using LptHub.SharedKernel.Entities;
 
-namespace MatterFlow.Identity.Domain;
+namespace LptHub.Identity.Domain;
 
 /// <summary>
 /// A working group of users. Pods are deactivated, never deleted. There is no lead flag: Pod Lead is a role (addendum E), and

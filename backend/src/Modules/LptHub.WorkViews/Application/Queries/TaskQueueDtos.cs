@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
-using MatterFlow.Identity.Contracts;
+using LptHub.Identity.Contracts;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>A Priority on a queue row. Users see the label; <c>SortOrder</c> only drives the level-bar glyph (lower is more urgent).</summary>
 public sealed record QueuePriority([property: Required] int PriorityId, [property: Required] string Label, [property: Required] string Color, [property: Required] int SortOrder);

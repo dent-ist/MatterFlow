@@ -2,7 +2,7 @@
 
 [[_TOC_]]
 
-**What this page is for.** A map of `docs/runbook.md` (the operations guide, about 470 lines) so you can jump to the right section. The runbook is the source of truth for install, upgrade, backup and support; this page only summarises and points. MatterFlow has not been deployed yet; the rehearsal on a domain-joined IIS server is still open (runbook section 9).
+**What this page is for.** A map of `docs/runbook.md` (the operations guide, about 470 lines) so you can jump to the right section. The runbook is the source of truth for install, upgrade, backup and support; this page only summarises and points. LPT Hub has not been deployed yet; the rehearsal on a domain-joined IIS server is still open (runbook section 9).
 
 | Section of `docs/runbook.md` | What it covers | Wiki page |
 |---|---|---|

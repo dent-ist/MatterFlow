@@ -1,7 +1,7 @@
 using System.Text.Json;
-using MatterFlow.SharedKernel.Results;
+using LptHub.SharedKernel.Results;
 
-namespace MatterFlow.Configuration.Contracts.Forms;
+namespace LptHub.Configuration.Contracts.Forms;
 
 /// <summary>Options of <see cref="IFormSubmissionValidator.ValidateAsync"/>.</summary>
 public sealed record FormSubmissionOptions

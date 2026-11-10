@@ -1,8 +1,8 @@
-using MatterFlow.Configuration.Application.Settings;
-using MatterFlow.Configuration.Contracts;
+using LptHub.Configuration.Application.Settings;
+using LptHub.Configuration.Contracts;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Configuration.Settings;
+namespace LptHub.UnitTests.Configuration.Settings;
 
 /// <summary>Decision AV (issue #1103): the capacity battery setting defaults to counting people outside work hours.</summary>
 public class DashboardCapacitySettingsTests

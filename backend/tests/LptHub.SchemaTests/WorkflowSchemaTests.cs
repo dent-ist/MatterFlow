@@ -1,9 +1,9 @@
-using MatterFlow.Data.SchemaMigrations;
+using LptHub.Data.SchemaMigrations;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 
-namespace MatterFlow.SchemaTests;
+namespace LptHub.SchemaTests;
 
 /// <summary>Constraints, indexes and triggers of the baseline (archived 09-workflow-config.sql) (docs/erd.md section 7).</summary>
 [Collection(SqlServerCollection.Name)]

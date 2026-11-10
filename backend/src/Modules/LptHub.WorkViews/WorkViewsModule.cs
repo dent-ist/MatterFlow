@@ -1,11 +1,11 @@
-using MatterFlow.Organization.Contracts;
-using MatterFlow.SharedKernel.Tasks;
-using MatterFlow.WorkViews.Application.Queries;
+using LptHub.Organization.Contracts;
+using LptHub.SharedKernel.Tasks;
+using LptHub.WorkViews.Application.Queries;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-namespace MatterFlow.WorkViews;
+namespace LptHub.WorkViews;
 
 /// <summary>Composition entry point of the WorkViews module.</summary>
 public static class WorkViewsModule

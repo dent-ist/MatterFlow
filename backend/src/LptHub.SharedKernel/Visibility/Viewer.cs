@@ -1,4 +1,4 @@
-namespace MatterFlow.SharedKernel.Visibility;
+namespace LptHub.SharedKernel.Visibility;
 
 /// <summary>
 /// Whose eyes a read is for (sensitive-matter rule, docs/ux/sensitive-matters/README.md section 4). <see cref="UserId"/> is null for a system or

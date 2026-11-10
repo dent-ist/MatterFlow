@@ -1,15 +1,15 @@
-using MatterFlow.Assets.Domain;
-using MatterFlow.Configuration.Contracts;
-using MatterFlow.Configuration.Contracts.Forms;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Organization.Contracts;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Paging;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Visibility;
+using LptHub.Assets.Domain;
+using LptHub.Configuration.Contracts;
+using LptHub.Configuration.Contracts.Forms;
+using LptHub.Identity.Contracts;
+using LptHub.Organization.Contracts;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Paging;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Visibility;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Assets.Application;
+namespace LptHub.Assets.Application;
 
 /// <summary>Asset Type administration. Creating a type also creates its (empty, unpublished) field form definition.</summary>
 public sealed class AssetTypeService(

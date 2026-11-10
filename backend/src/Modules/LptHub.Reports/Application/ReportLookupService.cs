@@ -1,8 +1,8 @@
-using MatterFlow.Reports.Domain.Parameters;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Reports.Domain.Parameters;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Results;
 
-namespace MatterFlow.Reports.Application;
+namespace LptHub.Reports.Application;
 
 /// <summary>One record a person may choose for a lookup parameter: the id the report takes and the words the form shows. Nothing else, by design.</summary>
 public sealed record ReportLookupItem(int Id, string Label);

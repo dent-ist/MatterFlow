@@ -1,14 +1,14 @@
 using System.Globalization;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.IntegrationTests.Tasks;
-using MatterFlow.Reports.Application;
-using MatterFlow.Reports.Domain;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Tasks;
+using LptHub.Reports.Application;
+using LptHub.Reports.Domain;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace MatterFlow.IntegrationTests.Reports;
+namespace LptHub.IntegrationTests.Reports;
 
 /// <summary>
 /// A real API with the report login configured and Ready, plus helpers that insert reports straight into the Reports tables the way the admin
@@ -35,7 +35,7 @@ internal sealed class ReportTestHarness : IAsyncDisposable
     public ReportLogin Login { get; }
 
     /// <summary>
-    /// Starts the API on a fresh database with a provisioned report login (role mf_report_reader) and waits until Reports are Ready.
+    /// Starts the API on a fresh database with a provisioned report login (role lpt_report_reader) and waits until Reports are Ready.
     /// <paramref name="withLogin"/> false leaves the report connection unconfigured (Reports stay off).
     /// </summary>
     public static async Task<ReportTestHarness> StartAsync(SqlServerFixture sql, bool withLogin = true, params (string Key, string Value)[] settings)
@@ -49,7 +49,7 @@ internal sealed class ReportTestHarness : IAsyncDisposable
         await tasks.Admin.GetAsync("/api/v1/me");
         if (withLogin)
         {
-            await SqlServerFixture.CreateDatabaseUserAsync(appConnection, login.Name, "mf_report_reader");
+            await SqlServerFixture.CreateDatabaseUserAsync(appConnection, login.Name, "lpt_report_reader");
             var status = await factory.Services.GetRequiredService<IReportsAvailability>().CheckAsync(CancellationToken.None);
             if (!status.Enabled)
                 throw new InvalidOperationException("Reports are not ready in the test: " + status.Message);

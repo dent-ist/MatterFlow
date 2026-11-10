@@ -1,4 +1,4 @@
-namespace MatterFlow.Identity.Domain;
+namespace LptHub.Identity.Domain;
 
 /// <summary>
 /// A person's remembered screen state (<see cref="Name"/> null: one row per person and surface) or a named saved view (script 41). Personal

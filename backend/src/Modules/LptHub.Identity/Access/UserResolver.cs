@@ -1,15 +1,15 @@
 using System.Security.Claims;
-using MatterFlow.Audit.Contracts;
-using MatterFlow.Identity.Authentication;
-using MatterFlow.Identity.DirectoryLookup;
-using MatterFlow.Identity.Domain;
-using MatterFlow.SharedKernel.Time;
+using LptHub.Audit.Contracts;
+using LptHub.Identity.Authentication;
+using LptHub.Identity.DirectoryLookup;
+using LptHub.Identity.Domain;
+using LptHub.SharedKernel.Time;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace MatterFlow.Identity.Access;
+namespace LptHub.Identity.Access;
 
 /// <summary>Settings of the controlled first-admin procedure (<c>Bootstrap:*</c>, architecture 6.4).</summary>
 public sealed class BootstrapOptions

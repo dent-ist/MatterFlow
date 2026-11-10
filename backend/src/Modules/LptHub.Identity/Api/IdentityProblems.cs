@@ -1,9 +1,9 @@
 using System.Diagnostics;
-using MatterFlow.SharedKernel.Results;
+using LptHub.SharedKernel.Results;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MatterFlow.Identity.Api;
+namespace LptHub.Identity.Api;
 
 /// <summary>
 /// Turns a failed <see cref="Result"/> into the standard <c>application/problem+json</c> body (same shape as the API project's
@@ -27,7 +27,7 @@ internal static class IdentityProblems
         var lower = error.Code.ToLowerInvariant().Replace('_', ' ');
         var problem = new ProblemDetails
         {
-            Type = "urn:matterflow:error:" + error.Code.ToLowerInvariant().Replace('_', '-'),
+            Type = "urn:lpt-hub:error:" + error.Code.ToLowerInvariant().Replace('_', '-'),
             Title = char.ToUpperInvariant(lower[0]) + lower[1..],
             Status = status,
             Detail = error.Message,

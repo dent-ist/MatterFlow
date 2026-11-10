@@ -1,6 +1,6 @@
 using Shouldly;
 
-namespace MatterFlow.UnitTests;
+namespace LptHub.UnitTests;
 
 public class SmokeTests
 {

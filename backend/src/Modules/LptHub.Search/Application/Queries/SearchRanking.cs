@@ -1,7 +1,7 @@
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Search.Application.Queries;
+namespace LptHub.Search.Application.Queries;
 
 /// <summary>
 /// The relevance tiers of a match, best first: the whole value (or exact number), the start of the value (or a number prefix), the start of a

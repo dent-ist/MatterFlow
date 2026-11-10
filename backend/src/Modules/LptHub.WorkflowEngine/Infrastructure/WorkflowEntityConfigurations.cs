@@ -1,10 +1,10 @@
-using MatterFlow.WorkflowEngine.Contracts;
-using MatterFlow.WorkflowEngine.Domain;
+using LptHub.WorkflowEngine.Contracts;
+using LptHub.WorkflowEngine.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
-namespace MatterFlow.WorkflowEngine.Infrastructure;
+namespace LptHub.WorkflowEngine.Infrastructure;
 
 /// <summary>Names of the unique indexes in <c>00-baseline.sql</c>, used to map duplicate-key errors to friendly conflicts.</summary>
 internal static class WorkflowConstraints

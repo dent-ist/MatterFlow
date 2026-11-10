@@ -1,9 +1,9 @@
 using System.Text.Json;
-using MatterFlow.Reports.Application;
-using MatterFlow.Reports.Domain.Parameters;
+using LptHub.Reports.Application;
+using LptHub.Reports.Domain.Parameters;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Reports;
+namespace LptHub.UnitTests.Reports;
 
 /// <summary>Sample values for a preview, per type (spec 6.6; issue #709).</summary>
 public class ReportSamplesTests

@@ -1,12 +1,12 @@
 using System.Data;
 using System.Text.Json;
-using MatterFlow.Audit.Contracts;
-using MatterFlow.Reports.Application;
-using MatterFlow.Reports.Domain;
-using MatterFlow.Reports.Domain.Parameters;
+using LptHub.Audit.Contracts;
+using LptHub.Reports.Application;
+using LptHub.Reports.Domain;
+using LptHub.Reports.Domain.Parameters;
 using Microsoft.Data.SqlClient;
 
-namespace MatterFlow.Reports.Infrastructure;
+namespace LptHub.Reports.Infrastructure;
 
 /// <summary>Authoring reads and writes of <c>dbo.ReportDefinition</c> / <c>dbo.ReportVersion</c> with the application connection.</summary>
 internal sealed class ReportDefinitionStore(ReportAppConnection app, IAuditCorrelation correlation) : IReportDefinitionStore

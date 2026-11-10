@@ -1,10 +1,10 @@
 using System.Net;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Assets;
+namespace LptHub.IntegrationTests.Assets;
 
 /// <summary>
 /// <c>GET /assets?matterManagedByMe=true&amp;role=</c> (epic #758, PX-03, #761): the Assets of the matters the caller manages, on the data of <see cref="PmScopeFixture"/>.

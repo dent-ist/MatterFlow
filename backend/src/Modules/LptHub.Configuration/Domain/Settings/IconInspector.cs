@@ -1,7 +1,7 @@
 using System.Buffers.Binary;
-using MatterFlow.SharedKernel.Results;
+using LptHub.SharedKernel.Results;
 
-namespace MatterFlow.Configuration.Domain.Settings;
+namespace LptHub.Configuration.Domain.Settings;
 
 /// <summary>The kinds of application icon that are accepted.</summary>
 public enum IconKind

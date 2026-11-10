@@ -1,12 +1,12 @@
 using System.Text.Json;
-using MatterFlow.Identity.Domain;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Time;
+using LptHub.Identity.Domain;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Time;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Identity.LandingPages;
+namespace LptHub.Identity.LandingPages;
 
 /// <summary>
 /// Landing pages (epic #1330): a role's default page, the signed-in person's own choice and the page the fallback chain picks. Permissions are always

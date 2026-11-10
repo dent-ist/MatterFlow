@@ -1,4 +1,4 @@
-namespace MatterFlow.Audit.Contracts;
+namespace LptHub.Audit.Contracts;
 
 /// <summary>An audited object as the audit browser refers to it: the stored <c>ObjectType</c> and <c>ObjectId</c>.</summary>
 public readonly record struct AuditObjectRef(string ObjectType, string ObjectId);

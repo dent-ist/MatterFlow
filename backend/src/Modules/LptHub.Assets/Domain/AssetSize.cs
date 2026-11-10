@@ -1,4 +1,4 @@
-namespace MatterFlow.Assets.Domain;
+namespace LptHub.Assets.Domain;
 
 /// <summary>
 /// The units an asset type's size field can be measured in (epic #851, docs/ux/pm-v2-review section 9.2). B to TB are the size family: they add up after

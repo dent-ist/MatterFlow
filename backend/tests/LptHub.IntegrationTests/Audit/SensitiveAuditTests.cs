@@ -1,11 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Audit;
+namespace LptHub.IntegrationTests.Audit;
 
 /// <summary>
 /// The audit trail under the sensitive-matter rule (epic #788, SM-13, inventory R53 to R57): events, search, facets and the task activity show only events of matters

@@ -8,11 +8,11 @@
 
 | # | File | What it is |
 |---|---|---|
-| 00 | `00-baseline.sql` | The whole schema as of the squash (issue #1307): every table with columns, defaults and keys, all indexes, the sequence, the functions, procedure and triggers (including the DDL trigger that protects the audit tables), the seed rows (System Admin role, 25 permission rows, 5 task status labels), the roles `mf_app`, `mf_migrator`, `mf_report_reader` and all GRANT / DENY lines. Prefix 0, so it always runs first. |
+| 00 | `00-baseline.sql` | The whole schema as of the squash (issue #1307): every table with columns, defaults and keys, all indexes, the sequence, the functions, procedure and triggers (including the DDL trigger that protects the audit tables), the seed rows (System Admin role, 25 permission rows, 5 task status labels), the roles `lpt_app`, `lpt_migrator`, `lpt_report_reader` and all GRANT / DENY lines. Prefix 0, so it always runs first. |
 
 | 67 | `67-role-landing-page.sql` | Landing page per role (epic #1330, issue #1332): `dbo.Role.LandingPage` (nullable stable page key, 40 characters, check constraint on the shape) and the starter defaults for a database that already holds the starter roles (Director: `dashboard`, Project Manager: `my-matters`, only while the role still has the starter description and no landing page). A person's own choice needs no column: it is the remembered state of the surface `landing-page` in `dbo.UserView`. |
 
-Add each new script to this table when you add it. Why prefix 0: the runner sorts by number and refuses a pending script that is lower than the highest applied one, so the baseline must be lower than everything that follows; 1 to 66 stay with the archive and are never reused. `SchemaTests/BaselineEquivalenceTests` proves the baseline builds the same database as the archived chain (tables, columns, constraints, indexes, triggers, permissions, seed rows). A database built by the old chain is refused at startup with the instruction to run `npm run db:reset`; nothing is migrated (MatterFlow was not deployed).
+Add each new script to this table when you add it. Why prefix 0: the runner sorts by number and refuses a pending script that is lower than the highest applied one, so the baseline must be lower than everything that follows; 1 to 66 stay with the archive and are never reused. `SchemaTests/BaselineEquivalenceTests` proves the baseline builds the same database as the archived chain (tables, columns, constraints, indexes, triggers, permissions, seed rows). A database built by the old chain is refused at startup with the instruction to run `npm run db:reset`; nothing is migrated (LPT Hub was not deployed).
 
 ## The archived chain (01 to 66)
 
@@ -32,7 +32,7 @@ The files are in `db/scripts/archive/` (moved with `git mv`, content unchanged).
 | 10 | `10-assets.sql` | Asset types and matter-owned assets (guard trigger), and the foreign key from form definitions to asset types. | `Asset`, `AssetType` | `FormDefinition` |
 | 11 | `11-workflow-instances.sql` | Workflow execution state: workflow instances and step instances. | `StepInstance`, `WorkflowInstance` | - |
 | 12 | `12-tasks.sql` | The task core: tasks (no delete, immutable fields by trigger) and comments. | `Task`, `TaskComment` | - |
-| 13 | `13-security-hardening.sql` | Security hardening: database roles `mf_app` and `mf_migrator`, audit table permissions, the empty guard table that blocks `TRUNCATE`, a DDL trigger protecting the audit objects, the `SeedMarker` table, and moves last sign-in bookkeeping from `AppUser` to `UserIdentity`. | `AuditEventGuard`, `SeedMarker` | `UserIdentity` |
+| 13 | `13-security-hardening.sql` | Security hardening: database roles `lpt_app` and `lpt_migrator`, audit table permissions, the empty guard table that blocks `TRUNCATE`, a DDL trigger protecting the audit objects, the `SeedMarker` table, and moves last sign-in bookkeeping from `AppUser` to `UserIdentity`. | `AuditEventGuard`, `SeedMarker` | `UserIdentity` |
 | 14 | `14-task-links.sql` | Task to asset links with roles, and the edit history of task comments. | `TaskAsset`, `TaskCommentRevision` | - |
 | 15 | `15-dashboard-indexes.sql` | Indexes for the Dashboard aggregates (created and completed in a period). | - | `Task` |
 | 17 | `17-audit-indexes.sql` | Index for the admin audit browser (`IX_Audit_EventType`). | - | `AuditEvent` |
@@ -48,7 +48,7 @@ The files are in `db/scripts/archive/` (moved with `git mv`, content unchanged).
 | 27 | `27-dashboard-unassigned.sql` | Permission `Dashboard.ViewUnassigned` (Summary tab with only the unassigned queue). | - | - |
 | 28 | `28-matter-managers.sql` | Project Manager epic: `Matter.PrimaryManagerId` and `SecondaryManagerId`, permissions `Matter.BeManager` and `Matter.AssignManagers`, grants. | - | `Matter` |
 | 29 | `29-notifications.sql` | In-app notifications and per-user preference switches. | `Notification`, `NotificationPreference` | - |
-| 30 | `30-reports.sql` | Reports: all report tables, the read-only role `mf_report_reader` with GRANT and DENY lines from `db/report-access.json`, two procedures, append-only triggers. | `ReportCategory`, `ReportDefinition`, `ReportFavourite`, `ReportParameter`, `ReportRecent`, `ReportRun`, `ReportVersion`, `RoleReport`, `SavedReportView` | - |
+| 30 | `30-reports.sql` | Reports: all report tables, the read-only role `lpt_report_reader` with GRANT and DENY lines from `db/report-access.json`, two procedures, append-only triggers. | `ReportCategory`, `ReportDefinition`, `ReportFavourite`, `ReportParameter`, `ReportRecent`, `ReportRun`, `ReportVersion`, `RoleReport`, `SavedReportView` | - |
 | 31 | `31-my-matters-activity-seen.sql` | `UserMatterActivitySeen`: how far a person has read My Matters recent activity. | `UserMatterActivitySeen` | - |
 | 32 | `32-report-access-activity-seen.sql` | Classifies the table of script 31 as denied for the report role (forgotten in 31). | - | - |
 | 33 | `33-my-matters-indexes.sql` | Re-creates `IX_Task_Matter` and `IX_StepInstance_Workflow` with more included columns so My Matters reads are seeks. | - | `StepInstance`, `Task` |

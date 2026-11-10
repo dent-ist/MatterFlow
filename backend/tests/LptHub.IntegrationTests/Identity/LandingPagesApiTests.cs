@@ -1,13 +1,13 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.Audit.Domain;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.Audit.Domain;
+using LptHub.Identity.Contracts;
+using LptHub.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Identity;
+namespace LptHub.IntegrationTests.Identity;
 
 /// <summary>
 /// Landing pages (epic #1330, issue #1332): a role's default page (Role.Manage, audited), the person's own choice (own record only, any signed-in person who
@@ -28,7 +28,7 @@ public sealed class LandingPagesApiTests(SqlServerFixture sql) : IAsyncLifetime
     private HttpClient As(string user = DatabaseApiFactory.AdminAccount)
     {
         var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        client.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         client.DefaultRequestHeaders.Add("X-Dev-User", user);
         return client;
     }
@@ -281,7 +281,7 @@ public sealed class LandingPagesApiTests(SqlServerFixture sql) : IAsyncLifetime
     public async Task A_stored_key_that_is_not_a_page_any_more_is_treated_as_not_set()
     {
         var ann = await UserWithAsync(Ann, "Task worker", Permissions.Task.View);
-        var userId = await _factory.WithDbAsync(db => db.Set<MatterFlow.Identity.Domain.UserIdentity>().Where(i => i.Username == Ann).Select(i => i.UserId).SingleAsync());
+        var userId = await _factory.WithDbAsync(db => db.Set<LptHub.Identity.Domain.UserIdentity>().Where(i => i.Username == Ann).Select(i => i.UserId).SingleAsync());
         await _factory.WithDbAsync(db => db.Database.ExecuteSqlInterpolatedAsync(
             $"INSERT dbo.UserView (UserId, Surface, Name, IsDefault, StateJson) VALUES ({userId}, 'landing-page', NULL, 0, '{{\"page\":\"renamed-page\"}}')"));
 

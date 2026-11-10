@@ -1,4 +1,4 @@
-namespace MatterFlow.WorkflowEngine.Domain;
+namespace LptHub.WorkflowEngine.Domain;
 
 /// <summary>How a library step's input form stands at publish time.</summary>
 public enum StepFormReadiness

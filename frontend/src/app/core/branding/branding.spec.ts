@@ -30,7 +30,7 @@ function resetHead(): void {
     '<link rel="apple-touch-icon" href="apple-touch-icon.png" />',
   ])
     document.head.insertAdjacentHTML('beforeend', html);
-  document.title = 'MatterFlow';
+  document.title = 'LPT Hub';
 }
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -60,12 +60,12 @@ describe('branding (epic #850, BR-04)', () => {
       expect(parseBranding(CUSTOM)).toEqual(CUSTOM);
       expect(
         parseBranding({
-          appName: 'MatterFlow',
+          appName: 'LPT Hub',
           iconUrl: null,
           iconKind: null,
           version: 'abcdef012345',
         }),
-      ).toEqual({ appName: 'MatterFlow', iconUrl: null, iconKind: null, version: 'abcdef012345' });
+      ).toEqual({ appName: 'LPT Hub', iconUrl: null, iconKind: null, version: 'abcdef012345' });
       expect(parseBranding({ ...CUSTOM, appName: '  Trim me ' })?.appName).toBe('Trim me');
     });
 
@@ -103,7 +103,7 @@ describe('branding (epic #850, BR-04)', () => {
     });
 
     it('reads the branding in force when no name is passed', () => {
-      expect(documentTitle('Clients')).toBe('Clients - MatterFlow');
+      expect(documentTitle('Clients')).toBe('Clients - LPT Hub');
       applyBranding({ ...CUSTOM, iconUrl: null, iconKind: null });
       expect(appName()).toBe('Smith & Co');
       expect(documentTitle('Clients')).toBe('Clients - Smith & Co');
@@ -113,11 +113,11 @@ describe('branding (epic #850, BR-04)', () => {
 
   describe('applying a branding to the page', () => {
     it('swaps the name in a title the router already wrote', () => {
-      document.title = 'Clients - MatterFlow';
+      document.title = 'Clients - LPT Hub';
       applyBranding({ ...CUSTOM, iconUrl: null, iconKind: null });
       expect(document.title).toBe('Clients - Smith & Co');
       applyBranding(DEFAULT_BRANDING);
-      expect(document.title).toBe('Clients - MatterFlow');
+      expect(document.title).toBe('Clients - LPT Hub');
     });
 
     it('sets the bare title and leaves a title of another page alone', () => {
@@ -205,7 +205,7 @@ describe('branding (epic #850, BR-04)', () => {
     it('keeps the default when the API is down', async () => {
       vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
       await expect(loadBranding()).resolves.toEqual(DEFAULT_BRANDING);
-      expect(document.title).toBe('MatterFlow');
+      expect(document.title).toBe('LPT Hub');
     });
 
     it('keeps the remembered copy when the API is down', async () => {

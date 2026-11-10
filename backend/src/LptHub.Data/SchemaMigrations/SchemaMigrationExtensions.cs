@@ -2,7 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace MatterFlow.Data.SchemaMigrations;
+namespace LptHub.Data.SchemaMigrations;
 
 public static class SchemaMigrationExtensions
 {
@@ -49,16 +49,16 @@ public static class SchemaMigrationExtensions
         var loggerFactory = services.GetRequiredService<ILoggerFactory>();
         if (!options.Enabled)
         {
-            loggerFactory.CreateLogger("MatterFlow.SchemaMigrations").LogInformation("Schema migrations are disabled (Migrations:Enabled=false).");
+            loggerFactory.CreateLogger("LptHub.SchemaMigrations").LogInformation("Schema migrations are disabled (Migrations:Enabled=false).");
             return;
         }
 
         var configuration = services.GetRequiredService<IConfiguration>();
         if (configuration.GetConnectionString(options.ConnectionStringName) is null)
         {
-            loggerFactory.CreateLogger("MatterFlow.SchemaMigrations").LogWarning(
+            loggerFactory.CreateLogger("LptHub.SchemaMigrations").LogWarning(
                 "ConnectionStrings:{Name} is not set, so schema scripts run with the application's own connection, which then needs DDL rights. "
-                + "Use a separate migration login (member of mf_migrator) in production so the application identity stays DML-only (docs/runbook.md section 3).",
+                + "Use a separate migration login (member of lpt_migrator) in production so the application identity stays DML-only (docs/runbook.md section 3).",
                 options.ConnectionStringName);
         }
 

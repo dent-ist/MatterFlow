@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.OpenApi;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi;
 
-namespace MatterFlow.Intake.Api;
+namespace LptHub.Intake.Api;
 
 /// <summary>
 /// Describes the multipart body of <c>parse-email</c> as one inline binary field named <c>file</c> (the form model's <c>IFormFile</c>

@@ -1,12 +1,12 @@
-using MatterFlow.Audit.Contracts;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Notes.Domain;
-using MatterFlow.Organization.Contracts;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Audit.Contracts;
+using LptHub.Identity.Contracts;
+using LptHub.Notes.Domain;
+using LptHub.Organization.Contracts;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Results;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Notes.Application;
+namespace LptHub.Notes.Application;
 
 /// <summary>
 /// Note templates: a starting text for a note at System Level (every matter; created and changed by administrators only), Client Level (every matter of one client; Client.Edit holders who see one of its matters) or Matter Level (one matter; anyone with Matter Note Edit who sees the matter). Using a template

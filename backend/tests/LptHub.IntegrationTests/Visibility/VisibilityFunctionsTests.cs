@@ -1,16 +1,16 @@
 using System.Text.RegularExpressions;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.IntegrationTests.Tasks;
-using MatterFlow.SharedKernel.Tasks;
-using MatterFlow.SharedKernel.Visibility;
-using MatterFlow.WorkManagement.Domain;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Tasks;
+using LptHub.SharedKernel.Tasks;
+using LptHub.SharedKernel.Visibility;
+using LptHub.WorkManagement.Domain;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 using Xunit.Abstractions;
 
-namespace MatterFlow.IntegrationTests.Visibility;
+namespace LptHub.IntegrationTests.Visibility;
 
 /// <summary>
 /// The SQL twin of the visibility rule (epic #788, SM-03): <c>dbo.fnMatterVisible</c>, <c>fnTaskVisible</c> and <c>fnAssetVisible</c> give exactly the rows the
@@ -328,7 +328,7 @@ public sealed class VisibilityFunctionsTests(SqlServerFixture sql, ITestOutputHe
         foreach (var function in new[] { "fnMatterVisible", "fnTaskVisible", "fnAssetVisible" })
         {
             var denied = await ReadLongsAsync(
-                "SELECT COUNT(*) FROM sys.database_permissions p WHERE p.class = 1 AND p.major_id = OBJECT_ID(@f) AND p.state = 'D' AND p.permission_name = 'SELECT' AND USER_NAME(p.grantee_principal_id) = 'mf_report_reader'",
+                "SELECT COUNT(*) FROM sys.database_permissions p WHERE p.class = 1 AND p.major_id = OBJECT_ID(@f) AND p.state = 'D' AND p.permission_name = 'SELECT' AND USER_NAME(p.grantee_principal_id) = 'lpt_report_reader'",
                 ("@f", "dbo." + function));
             denied.ShouldBe([1L], function);
         }

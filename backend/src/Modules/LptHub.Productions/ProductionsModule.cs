@@ -1,7 +1,7 @@
-using MatterFlow.Productions.Application;
+using LptHub.Productions.Application;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace MatterFlow.Productions;
+namespace LptHub.Productions;
 
 /// <summary>Composition entry point of the Productions module (productions, their comments and production specs of a matter).</summary>
 public static class ProductionsModule
@@ -14,7 +14,7 @@ public static class ProductionsModule
         services.AddScoped<ProductionAccess>();
         services.AddScoped<ProductionSpecService>();
         services.AddScoped<ProductionService>();
-        services.AddScoped<MatterFlow.Productions.Contracts.IProductionLabels, ProductionLabels>();
+        services.AddScoped<LptHub.Productions.Contracts.IProductionLabels, ProductionLabels>();
         return services;
     }
 }

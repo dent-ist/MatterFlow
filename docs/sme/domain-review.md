@@ -1,4 +1,4 @@
-# MatterFlow Domain Review (eDiscovery Operations SME)
+# LPT Hub Domain Review (eDiscovery Operations SME)
 
 **Reviewer role:** eDiscovery operations SME (EDRM, Relativity, Harvey, processing/production, PM and technician practice, privilege and confidentiality).
 **Inputs:** `requirements/baseline-v1.1.md`, `requirements/decisions-addendum.md` (overrides baseline), `architecture.md` sections 6.3, 7, 8, 19, `ux/ux-spec.md` (skimmed).
@@ -134,7 +134,7 @@ Offboarding is manual and one-by-one (decided). Real departures and vacations ar
 
 ### 2.12 Retention, data protection and the product's own data
 
-- Audit is kept forever (A-14) and contains form values. Clients' OCGs may require destruction of client information at matter end. **MUST-FIX (decision, not code):** the firm decides before go-live whether MatterFlow data (task text, audit, comments) counts as client data under the OCG and who may request deletion. If yes, a purge procedure (by Matter, run by DBA, scripted) is needed within months of the first matter closing. Capture the decision in the project risk log. **LATER:** admin "Purge Matter" tool.
+- Audit is kept forever (A-14) and contains form values. Clients' OCGs may require destruction of client information at matter end. **MUST-FIX (decision, not code):** the firm decides before go-live whether LPT Hub data (task text, audit, comments) counts as client data under the OCG and who may request deletion. If yes, a purge procedure (by Matter, run by DBA, scripted) is needed within months of the first matter closing. Capture the decision in the project risk log. **LATER:** admin "Purge Matter" tool.
 - Backups also hold this data; align backup retention with the same decision (architecture open question 5).
 - Windows Auth, TLS, SQL encryption at rest: assume per firm standards; verify.
 
@@ -169,7 +169,7 @@ Reports/exports are dropped (decided), so volumes recorded in step inputs (docs 
 | MF-11 | Confirmation for bulk Complete names the steps; critical checks configured as required inputs | S | 2.8.3 |
 | MF-12 | Matter deactivation warns about assets not in a final status; user admin shows open-task count per user with link | S | 2.9, 2.11 |
 | MF-13 | Logs/error pages free of form content (verify) | S | 2.4 P3 |
-| MF-14 | Decision on retention/purge of MatterFlow data under client OCGs, before first matter close | Decision | 2.12 |
+| MF-14 | Decision on retention/purge of LPT Hub data under client OCGs, before first matter close | Decision | 2.12 |
 | MF-15 | Seed configuration loaded on first deployment (this package) | Config | seed doc |
 
 ### 3.2 LATER
@@ -204,7 +204,7 @@ Reports/exports are dropped (decided), so volumes recorded in step inputs (docs 
 
 1. Will the firm accept open visibility within the department (MF-2) in writing, and which matters need code names?
 2. Who may create Clients and Matters (recommend PMs and Pod Leads only)?
-3. Does any client's OCG require deletion of MatterFlow data at matter end (MF-14)?
+3. Does any client's OCG require deletion of LPT Hub data at matter end (MF-14)?
 4. Is Harvey use gated by a per-client permission process the form should reflect (P5)?
 5. Do you want a second contact on Task ("on behalf of attorney") in Phase 1, or is the Matter's `responsible_attorney` enough?
 6. Should On Hold require a comment (MF-9) or only prompt?

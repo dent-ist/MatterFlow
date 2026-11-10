@@ -1,11 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.IntegrationTests.Tasks;
-using MatterFlow.Reports.Api;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Tasks;
+using LptHub.Reports.Api;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Reports;
+namespace LptHub.IntegrationTests.Reports;
 
 /// <summary>POST /api/v1/report-admin/analyze: placeholders with positions, permission variants (issue #687).</summary>
 [Collection(SqlServerCollection.Name)]
@@ -57,7 +57,7 @@ public sealed class ReportAnalyzeApiTests(SqlServerFixture sql) : IAsyncLifetime
         var refused = (await (await manager.PostAsJsonAsync(Analyze, new AnalyzeRequest(bad))).Content.ReadFromJsonAsync<AnalyzeResponse>())!;
 
         good.Validation.IsValid.ShouldBeTrue();
-        good.Validation.SqlHash.ShouldBe(Convert.ToHexString(MatterFlow.Reports.Domain.SqlValidator.Hash(ok)));
+        good.Validation.SqlHash.ShouldBe(Convert.ToHexString(LptHub.Reports.Domain.SqlValidator.Hash(ok)));
         refused.Validation.IsValid.ShouldBeFalse();
         var error = refused.Validation.Errors.ShouldHaveSingleItem();
         error.Code.ShouldBe("MULTIPLE_STATEMENTS");

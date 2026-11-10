@@ -122,7 +122,7 @@ test.describe('Task Types administration: not found, no access, failure (#353)',
       const crumbs = page.getByRole('navigation', { name: 'Breadcrumb' }).getByRole('listitem');
       await expect(crumbs).toHaveText(r.crumbs);
       await expect(page).toHaveTitle(
-        `${r.title.replace(/ [A-Z]/g, (m) => m.toLowerCase())} not found - MatterFlow`,
+        `${r.title.replace(/ [A-Z]/g, (m) => m.toLowerCase())} not found - LPT Hub`,
       );
       await expect(heading(page)).toBeFocused();
       await noToast(page);
@@ -153,7 +153,7 @@ test.describe('Task Types administration: not found, no access, failure (#353)',
       );
       await page.goto(r.url);
       await expect(heading(page)).toHaveText(`You don't have access to this ${r.noun}.`);
-      await expect(page).toHaveTitle(`No access to this ${r.noun} - MatterFlow`);
+      await expect(page).toHaveTitle(`No access to this ${r.noun} - LPT Hub`);
       await expect(page.getByRole('button', { name: 'Retry' })).toHaveCount(0);
       await noToast(page);
       await atEverySize(page, `${r.key}-forbidden`);
@@ -162,7 +162,7 @@ test.describe('Task Types administration: not found, no access, failure (#353)',
       await page.goto(r.url);
       await expect(heading(page)).toHaveText(`Couldn't load this ${r.noun}.`);
       await expect(page).toHaveTitle(
-        `${r.title.replace(/ [A-Z]/g, (m) => m.toLowerCase())} could not be loaded - MatterFlow`,
+        `${r.title.replace(/ [A-Z]/g, (m) => m.toLowerCase())} could not be loaded - LPT Hub`,
       );
       await expect(page.locator('[data-error-reference]')).toContainText(reference);
       await expect(page.locator('[data-toast]')).toHaveCount(0);

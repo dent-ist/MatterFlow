@@ -1,10 +1,10 @@
 using System.Data;
 using System.Globalization;
-using MatterFlow.Audit.Contracts;
-using MatterFlow.Reports.Application;
+using LptHub.Audit.Contracts;
+using LptHub.Reports.Application;
 using Microsoft.Data.SqlClient;
 
-namespace MatterFlow.Reports.Infrastructure;
+namespace LptHub.Reports.Infrastructure;
 
 /// <summary>The admin reads and writes of the Reports tables with the application connection (categories, list, create, versions, assignment).</summary>
 internal sealed class ReportAdminStore(ReportAppConnection app, IAuditCorrelation correlation) : IReportAdminStore

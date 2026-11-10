@@ -1,6 +1,6 @@
-using MatterFlow.SharedKernel.Text;
+using LptHub.SharedKernel.Text;
 
-namespace MatterFlow.WorkManagement.Domain;
+namespace LptHub.WorkManagement.Domain;
 
 /// <summary>
 /// Task comment bodies (decision D, relaxed for tables by decision R): the comment limits applied to the shared sanitizer

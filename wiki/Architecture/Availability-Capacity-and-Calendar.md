@@ -2,7 +2,7 @@
 
 [[_TOC_]]
 
-**What this page is for.** How MatterFlow decides whether a person is available, how the Dashboard counts capacity and unassigned work, and how the Dashboard Calendar works. If you touch Out of office, holidays, the capacity battery, the unassigned gauge or the Calendar tab, read this first. Design text: `docs/architecture.md` section 6.7 and the decisions addendum sections AS, AT and AV (see [Decision Index](../Reference/Decision-Index.md)).
+**What this page is for.** How LPT Hub decides whether a person is available, how the Dashboard counts capacity and unassigned work, and how the Dashboard Calendar works. If you touch Out of office, holidays, the capacity battery, the unassigned gauge or the Calendar tab, read this first. Design text: `docs/architecture.md` section 6.7 and the decisions addendum sections AS, AT and AV (see [Decision Index](../Reference/Decision-Index.md)).
 
 ## Principle
 
@@ -12,7 +12,7 @@ Availability and load are **operational capacity information**. The product neve
 
 | Piece | Where | Role |
 |---|---|---|
-| `UserAvailabilityEvaluator` | `backend/src/MatterFlow.SharedKernel/Availability/UserAvailability.cs` | Pure function: profile plus a time gives `AVAILABLE`, `OUT_OF_OFFICE` or `OFF_HOURS` (soft state: outside work hours or a holiday). `EvaluateDay` gives the state of one calendar day. Unit tested for DST, zones and midnight |
+| `UserAvailabilityEvaluator` | `backend/src/LptHub.SharedKernel/Availability/UserAvailability.cs` | Pure function: profile plus a time gives `AVAILABLE`, `OUT_OF_OFFICE` or `OFF_HOURS` (soft state: outside work hours or a holiday). `EvaluateDay` gives the state of one calendar day. Unit tested for DST, zones and midnight |
 | `HolidayRulesEngine` and rule kinds | `SharedKernel/Availability/HolidayRules.cs` | Expands holiday rules (`FIXED`, `NTH_WEEKDAY`, `EASTER_OFFSET`, `ONCE`, `RANGE`; weekend rule `NONE`, `US`, `UK`) for any year |
 | `CalendarCoverage` | `SharedKernel/Availability/CalendarCoverage.cs` | Coverage levels of a day and a pod: `CRITICAL`, `LOW`, `WATCH`, `GOOD`, `CLOSED`, `NON_WORKING` |
 | `CapacityRules` | `SharedKernel/Tasks/CapacityRules.cs` | The capacity states of a person and the slot arithmetic, shared by the battery, the People list and the assignee picker |
@@ -68,7 +68,7 @@ flowchart TD
 
 | Change | Start in |
 |---|---|
-| A new availability rule | `UserAvailabilityEvaluator` and its unit tests in `backend/tests/MatterFlow.UnitTests` |
+| A new availability rule | `UserAvailabilityEvaluator` and its unit tests in `backend/tests/LptHub.UnitTests` |
 | A new holiday rule kind | `HolidayRules.cs`, script for the column, `HolidayCalendarService` |
 | Capacity states or slots | `CapacityRules.cs`, `CapacityService.cs`, Users tab in `frontend/src/app/features/dashboard` |
 | A new gauge or capacity setting | [How to Add a Setting](../Backend/How-to-Add-a-Setting.md) |

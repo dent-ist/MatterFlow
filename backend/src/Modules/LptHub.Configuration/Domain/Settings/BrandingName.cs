@@ -1,8 +1,8 @@
 using System.Globalization;
 using System.Text;
-using MatterFlow.SharedKernel.Results;
+using LptHub.SharedKernel.Results;
 
-namespace MatterFlow.Configuration.Domain.Settings;
+namespace LptHub.Configuration.Domain.Settings;
 
 /// <summary>
 /// Rules for the application name (design section 6, decision AM.3): trimmed, runs of spaces collapsed, 1 to 40 characters, no markup
@@ -11,7 +11,7 @@ namespace MatterFlow.Configuration.Domain.Settings;
 /// </summary>
 public static class BrandingName
 {
-    public const string Default = "MatterFlow";
+    public const string Default = "LPT Hub";
 
     public const int MaxLength = 40;
 

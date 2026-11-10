@@ -1,11 +1,11 @@
 using System.Diagnostics;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.IntegrationTests.Tasks;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Tasks;
 using Shouldly;
 using Xunit.Abstractions;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.WorkViews;
+namespace LptHub.IntegrationTests.WorkViews;
 
 /// <summary>
 /// The Trends endpoint (daily and weekly, with the Open series) against 50,000 Tasks seeded with set-based SQL: the budget of the Open at end of day
@@ -44,7 +44,7 @@ public sealed class DashboardTrendLargePerformanceTests(SqlServerFixture sql, IT
     public async Task The_trend_with_the_open_series_stays_within_budget_at_50000_tasks(string period, string granularity, int points, int budgetMs)
     {
         var http = _factory.CreateClient();
-        http.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        http.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         http.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
         var ids = string.Join('&', _typeIds.Select(id => "taskTypeIds=" + id));
         var url = $"/api/v1/dashboard/trend?{period}&fresh=true&{ids}";

@@ -1,8 +1,8 @@
-using MatterFlow.Configuration.Contracts;
-using MatterFlow.SharedKernel.Audit;
-using MatterFlow.SharedKernel.Entities;
+using LptHub.Configuration.Contracts;
+using LptHub.SharedKernel.Audit;
+using LptHub.SharedKernel.Entities;
 
-namespace MatterFlow.Configuration.Domain;
+namespace LptHub.Configuration.Domain;
 
 /// <summary>
 /// A kind of request (Data Processing, Collection, ...). Never deleted: deactivating hides it from new Tasks while historical Tasks keep it.

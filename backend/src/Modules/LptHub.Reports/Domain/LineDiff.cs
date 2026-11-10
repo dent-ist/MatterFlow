@@ -1,4 +1,4 @@
-namespace MatterFlow.Reports.Domain;
+namespace LptHub.Reports.Domain;
 
 /// <summary>Whether a line is in both texts, only in the new one or only in the old one.</summary>
 public enum DiffKind

@@ -172,7 +172,7 @@ describe('ReportRunPage (#719, #720)', () => {
 
     it('names the browser tab after the report and its section', async () => {
       await create();
-      expect(TestBed.inject(Title).getTitle()).toBe('Overdue tasks: Reports - MatterFlow');
+      expect(TestBed.inject(Title).getTitle()).toBe('Overdue tasks: Reports - LPT Hub');
     });
 
     it('shows no run, no grid and no banner before the first run: Run the report to see results.', async () => {

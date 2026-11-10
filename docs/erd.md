@@ -1,4 +1,4 @@
-# MatterFlow - Logical ERD
+# LPT Hub - Logical ERD
 
 **Status:** v1.0 · **Date:** 2026-10-14 · **Companion to:** `docs/architecture.md`
 **Inputs:** `docs/requirements/baseline-v1.1.md`, `docs/requirements/decisions-addendum.md` (overrides the baseline).
@@ -30,7 +30,7 @@
 - Constraint names: `PK_`, `FK_`, `UQ_`, `CK_`, `IX_`, `DF_`, `TR_`. Cascade deletes are avoided (`NO ACTION`); records are deactivated, not deleted. Child rows that are pure parts of an aggregate (`FormField` of a DRAFT version, `PodMember`) may delete explicitly through the app.
 - JSON columns are `nvarchar(max)` with `CHECK (ISJSON(col) = 1)`.
 - Diagram legend: `PK`, `FK`, `UK`. Type names like `char(5)` are logical; comma-containing types are written with underscores.
-- Cross-module FKs are configured in `MatterFlow.Data`; there are no cross-module navigations in code (architecture 5.2).
+- Cross-module FKs are configured in `LptHub.Data`; there are no cross-module navigations in code (architecture 5.2).
 
 ---
 
@@ -725,7 +725,7 @@ erDiagram
 | CorrelationId | uniqueidentifier | no | one per request/SaveChanges |
 
 Indexes: `IX_Audit_Task (TaskId, AuditEventId)`, `IX_Audit_Matter (MatterId, AuditEventId)`, `IX_Audit_Object (ObjectType, ObjectId, AuditEventId)`, `IX_Audit_Time (OccurredAtUtc)`, `IX_Audit_Actor (ActorUserId, AuditEventId)`.
-Permissions (`13-security-hardening.sql`, security review SEC-04): the database roles `mf_app` and `mf_migrator` have `INSERT, SELECT` only, with `DENY UPDATE, DELETE` (and `DENY ALTER` for `mf_app`, which also denies TRUNCATE and trigger changes); the INSTEAD OF trigger rejects UPDATE/DELETE for everybody; the empty `dbo.AuditEventGuard` table references the table so `TRUNCATE TABLE` is impossible even for sysadmin; a database DDL trigger refuses DROP TABLE of the audit tables and DROP/ALTER of the append-only trigger. Written in the same transaction as the audited change. Column text is clipped to the column widths before saving (SEC-20). `dbo.SeedMarker (Name, AppliedAt)` records one-time startup seeds (starter roles, SEC-18). Retention/purge policy open. Comments and cancel comments are in `TaskComment` (section 5); comment edits also emit `COMMENT_EDITED` audit events. Read-access logging is not implemented (addendum F).
+Permissions (`13-security-hardening.sql`, security review SEC-04): the database roles `lpt_app` and `lpt_migrator` have `INSERT, SELECT` only, with `DENY UPDATE, DELETE` (and `DENY ALTER` for `lpt_app`, which also denies TRUNCATE and trigger changes); the INSTEAD OF trigger rejects UPDATE/DELETE for everybody; the empty `dbo.AuditEventGuard` table references the table so `TRUNCATE TABLE` is impossible even for sysadmin; a database DDL trigger refuses DROP TABLE of the audit tables and DROP/ALTER of the append-only trigger. Written in the same transaction as the audited change. Column text is clipped to the column widths before saving (SEC-20). `dbo.SeedMarker (Name, AppliedAt)` records one-time startup seeds (starter roles, SEC-18). Retention/purge policy open. Comments and cancel comments are in `TaskComment` (section 5); comment edits also emit `COMMENT_EDITED` audit events. Read-access logging is not implemented (addendum F).
 
 ---
 
@@ -760,7 +760,7 @@ Permissions (`13-security-hardening.sql`, security review SEC-04): the database 
 
 | Entity | Notes |
 |---|---|
-| AppSetting | PK `SettingKey` (VARCHAR(100), `Branding.AppName`, `Branding.Icon`); `ValueText` NVARCHAR(1000) NULL; `ValueBinary` VARBINARY(MAX) NULL with CHECK `DATALENGTH <= 262144`; `ContentType` VARCHAR(100) and `ContentSha256` BINARY(32) (set together with the binary value, CHECK `CK_AppSetting_Binary`); `UpdatedAtUtc` DATETIME2(3); `UpdatedByUserId` FK `AppUser`; `RowVersion`. No seed row: a missing row means "the default in code". Denied for `mf_report_reader`; `mf_app` may read, insert, update and delete (Reset deletes the row). Audited by explicit events `SETTINGS_BRANDING_*` (never the bytes). |
+| AppSetting | PK `SettingKey` (VARCHAR(100), `Branding.AppName`, `Branding.Icon`); `ValueText` NVARCHAR(1000) NULL; `ValueBinary` VARBINARY(MAX) NULL with CHECK `DATALENGTH <= 262144`; `ContentType` VARCHAR(100) and `ContentSha256` BINARY(32) (set together with the binary value, CHECK `CK_AppSetting_Binary`); `UpdatedAtUtc` DATETIME2(3); `UpdatedByUserId` FK `AppUser`; `RowVersion`. No seed row: a missing row means "the default in code". Denied for `lpt_report_reader`; `lpt_app` may read, insert, update and delete (Reset deletes the row). Audited by explicit events `SETTINGS_BRANDING_*` (never the bytes). |
 
 ## 10. Index summary and query patterns
 

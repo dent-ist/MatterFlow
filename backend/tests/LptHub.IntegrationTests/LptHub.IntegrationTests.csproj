@@ -14,24 +14,24 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Security corpora of the Reports suite (issue #725), linked from the unit tests and never forked. -->
-    <None Include="..\MatterFlow.UnitTests\Reports\Corpus\*.json" Link="Reports\Corpus\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\LptHub.UnitTests\Reports\Corpus\*.json" Link="Reports\Corpus\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
     <!-- Email fixtures of the Outlook drag-and-drop spike, linked and never forked. -->
     <None Include="..\..\..\tools\spike-outlook-dnd\samples\*.eml" Link="Intake\samples\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\MatterFlow.Api\MatterFlow.Api.csproj" />
-    <ProjectReference Include="..\..\src\MatterFlow.Data\MatterFlow.Data.csproj" />
-    <ProjectReference Include="..\..\src\Modules\MatterFlow.Configuration\MatterFlow.Configuration.csproj" />
-    <ProjectReference Include="..\..\src\Modules\MatterFlow.Configuration.Contracts\MatterFlow.Configuration.Contracts.csproj" />
-    <ProjectReference Include="..\..\src\Modules\MatterFlow.Identity\MatterFlow.Identity.csproj" />
-    <ProjectReference Include="..\..\src\Modules\MatterFlow.Identity.Contracts\MatterFlow.Identity.Contracts.csproj" />
-    <ProjectReference Include="..\..\src\Modules\MatterFlow.Organization.Contracts\MatterFlow.Organization.Contracts.csproj" />
-    <ProjectReference Include="..\..\src\Modules\MatterFlow.Notifications.Contracts\MatterFlow.Notifications.Contracts.csproj" />
-    <ProjectReference Include="..\..\src\Modules\MatterFlow.Reports.Contracts\MatterFlow.Reports.Contracts.csproj" />
-    <ProjectReference Include="..\..\src\Modules\MatterFlow.WorkManagement\MatterFlow.WorkManagement.csproj" />
-    <ProjectReference Include="..\..\src\Modules\MatterFlow.WorkManagement.Contracts\MatterFlow.WorkManagement.Contracts.csproj" />
-    <ProjectReference Include="..\..\src\Modules\MatterFlow.WorkflowEngine.Contracts\MatterFlow.WorkflowEngine.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\LptHub.Api\LptHub.Api.csproj" />
+    <ProjectReference Include="..\..\src\LptHub.Data\LptHub.Data.csproj" />
+    <ProjectReference Include="..\..\src\Modules\LptHub.Configuration\LptHub.Configuration.csproj" />
+    <ProjectReference Include="..\..\src\Modules\LptHub.Configuration.Contracts\LptHub.Configuration.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\LptHub.Identity\LptHub.Identity.csproj" />
+    <ProjectReference Include="..\..\src\Modules\LptHub.Identity.Contracts\LptHub.Identity.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\LptHub.Organization.Contracts\LptHub.Organization.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\LptHub.Notifications.Contracts\LptHub.Notifications.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\LptHub.Reports.Contracts\LptHub.Reports.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\LptHub.WorkManagement\LptHub.WorkManagement.csproj" />
+    <ProjectReference Include="..\..\src\Modules\LptHub.WorkManagement.Contracts\LptHub.WorkManagement.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\LptHub.WorkflowEngine.Contracts\LptHub.WorkflowEngine.Contracts.csproj" />
   </ItemGroup>
 </Project>

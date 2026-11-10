@@ -1,7 +1,7 @@
-using MatterFlow.Reports.Application.Results;
+using LptHub.Reports.Application.Results;
 using Microsoft.Extensions.Hosting;
 
-namespace MatterFlow.Reports.Infrastructure;
+namespace LptHub.Reports.Infrastructure;
 
 /// <summary>Frees the memory of expired results once a minute (results are also dropped when somebody asks for them after they expired).</summary>
 internal sealed class ReportResultSweeper(ReportResultStore store) : BackgroundService

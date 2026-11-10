@@ -1,15 +1,15 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Cryptography;
 using System.Text;
-using MatterFlow.Configuration.Application.Lookups;
-using MatterFlow.Configuration.Domain.Settings;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Configuration.Application.Lookups;
+using LptHub.Configuration.Domain.Settings;
+using LptHub.Identity.Contracts;
+using LptHub.SharedKernel.Results;
 
-namespace MatterFlow.Configuration.Application.Settings;
+namespace LptHub.Configuration.Application.Settings;
 
 /// <summary>What everyone (signed in or not) gets: the name and where to find the icon.</summary>
-/// <param name="AppName">Application name (the default <c>MatterFlow</c> when none is set).</param>
+/// <param name="AppName">Application name (the default <c>LPT Hub</c> when none is set).</param>
 /// <param name="IconUrl">Relative URL of the custom icon with the version as cache buster, or null when the built-in icons stay in use.</param>
 /// <param name="IconKind"><c>png</c>, <c>svg</c> or <c>ico</c> when there is a custom icon, else null.</param>
 /// <param name="Version">First 12 hex digits of a SHA-256 over the name and the icon hash; also the ETag.</param>

@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>A column of an asset report result. The first column is always the number of assets; the others are the measure per unit.</summary>
 /// <param name="Key"><c>count</c>, <c>sum:&lt;unit&gt;</c> or <c>average:&lt;unit&gt;</c>.</param>

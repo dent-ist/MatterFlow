@@ -1,10 +1,10 @@
 using System.Text.Json;
-using MatterFlow.Data.SchemaMigrations;
+using LptHub.Data.SchemaMigrations;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
-namespace MatterFlow.Api.Hosting;
+namespace LptHub.Api.Hosting;
 
 /// <summary>
 /// <c>/health/ready</c>: healthy when the database is reachable with the application's own connection and <c>dbo.SchemaMigration</c> lists every
@@ -25,7 +25,7 @@ public sealed class ReadinessHealthCheck(IConfiguration configuration, Migration
 
     public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
     {
-        var connectionString = configuration.GetConnectionString("MatterFlow") ?? configuration.GetConnectionString("Default");
+        var connectionString = configuration.GetConnectionString("LptHub") ?? configuration.GetConnectionString("Default");
         if (string.IsNullOrWhiteSpace(connectionString))
             return NotReady(NotConfigured);
 

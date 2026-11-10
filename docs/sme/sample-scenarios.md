@@ -1,6 +1,6 @@
-# MatterFlow Sample Scenarios (a day in the life)
+# LPT Hub Sample Scenarios (a day in the life)
 
-**Purpose:** ten end-to-end narratives a user agent (or a human tester) can follow to exercise MatterFlow. Each lists personas, preconditions, steps and expected outcomes, including the negative checks that matter.
+**Purpose:** ten end-to-end narratives a user agent (or a human tester) can follow to exercise LPT Hub. Each lists personas, preconditions, steps and expected outcomes, including the negative checks that matter.
 **Data:** assumes the seed from `seed-configuration.md` / `.json` is loaded. Task Type, Step and Workflow names are from that seed. Today in the narratives is a firm working day; times are firm time.
 **Conventions:** "Expect" lines are assertions. Rules referenced come from `requirements/decisions-addendum.md` (letters A to K) and `architecture.md` section 8.
 
@@ -199,7 +199,7 @@
 **Personas:** Sam Idris (new), Alex Admin (System Admin), Marcus Ellery, Dana Whitfield.
 
 **Steps**
-1. Sam opens MatterFlow for the first time. Expect: Windows identity resolved (or Dev provider in test); a user record created with zero roles; Sam sees only "Access Pending." Direct API calls to list Tasks, Clients, Users return 403.
+1. Sam opens LPT Hub for the first time. Expect: Windows identity resolved (or Dev provider in test); a user record created with zero roles; Sam sees only "Access Pending." Direct API calls to list Tasks, Clients, Users return 403.
 2. Sam signs in again. Expect: no duplicate user.
 3. Alex opens the User Access queue, sees Sam, grants role **Data Technician** and adds him to the Processing Pod. Expect: audit records the grant. Sam refreshes; Task Queue now visible; Admin menu hidden; `GET /task-types` management endpoints return 403.
 4. Marcus (Pod Lead) tries to open Administration > Task Types. Expect: not permitted (config is System Admin only by default).

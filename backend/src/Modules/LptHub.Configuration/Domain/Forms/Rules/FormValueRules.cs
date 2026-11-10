@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-namespace MatterFlow.Configuration.Domain.Forms.Rules;
+namespace LptHub.Configuration.Domain.Forms.Rules;
 
 /// <summary>Emptiness, type and comparison primitives of contracts/form-rules.md section 2. No coercion anywhere.</summary>
 internal static partial class FormValueRules

@@ -1,7 +1,7 @@
-using MatterFlow.Intake.Application;
+using LptHub.Intake.Application;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Intake;
+namespace LptHub.UnitTests.Intake;
 
 public class HtmlToTextTests
 {

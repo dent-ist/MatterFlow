@@ -18,11 +18,11 @@
 ## Checklist for a new table
 
 1. **Write the script.** Use the `CREATE TABLE` blocks of the baseline (for example `Production`, `Note`) as a model. Include the standard columns when the table is edited by users: `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion rowversion`, with foreign keys to `AppUser`.
-2. **Report login.** Add the table to `db/report-access.json` (`allow` or `deny` with a reason) and the matching `GRANT SELECT` or `DENY` line for `mf_report_reader` in the same script. `ReportAccessCatalogueTests` fails otherwise (the archived script 32 exists because script 31 forgot it). Tables with personal, audit, identity or notification data are `deny`.
+2. **Report login.** Add the table to `db/report-access.json` (`allow` or `deny` with a reason) and the matching `GRANT SELECT` or `DENY` line for `lpt_report_reader` in the same script. `ReportAccessCatalogueTests` fails otherwise (the archived script 32 exists because script 31 forgot it). Tables with personal, audit, identity or notification data are `deny`.
 3. **Entity and mapping.** Add the entity in the owning module's `Domain/`, its `IEntityTypeConfiguration` in `Infrastructure/` (explicit `ToTable`, column names and `HasConstraintName` where tests inspect them), and mark audited entities `[Audited]`. `SchemaTests` check that every mapped property exists with a compatible type. If the table belongs to a matter, set the audit scope (architecture test `AuditScopeRulesTests`) and apply the Sensitive matter rule ([Sensitive Matter Visibility](../Architecture/Sensitive-Matter-Visibility.md)).
 4. **Cross-module keys.** The foreign key exists in SQL; the entities use scalar ids and no navigation across modules.
 5. **Docs.** Update the wiki: add the table to [ER Diagrams](ER-Diagrams.md) and [Table Reference](Table-Reference.md), add a line to [Schema Script History](Schema-Script-History.md), update [Module Guide](../Backend/Module-Guide.md) if the module owns a new table, and add a [Documentation Map](../Reference/Documentation-Map.md) entry only if you add a doc. Run `node wiki/tools/check-db-docs.mjs`.
-6. **Tests.** Run the Docker-based tests: `dotnet test tests/MatterFlow.SchemaTests` and the integration tests of the module.
+6. **Tests.** Run the Docker-based tests: `dotnet test tests/LptHub.SchemaTests` and the integration tests of the module.
 
 ## Checklist for a new column
 
@@ -45,10 +45,10 @@ Only with the owner's agreement, and rarely (a new script is the normal way). Ed
 
 ```
 npm run db:reset        # fresh database; the API applies the baseline and all later scripts at next start
-npm start               # or: dotnet run --project backend/src/MatterFlow.Api
+npm start               # or: dotnet run --project backend/src/LptHub.Api
 ```
 
-To check only the schema without starting the web host: `dotnet run --project backend/src/MatterFlow.Api -- --migrate-only` with `ConnectionStrings__Migrations` set.
+To check only the schema without starting the web host: `dotnet run --project backend/src/LptHub.Api -- --migrate-only` with `ConnectionStrings__Migrations` set.
 
 ## Common mistakes
 

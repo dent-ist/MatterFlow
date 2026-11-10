@@ -1,11 +1,11 @@
-using MatterFlow.Identity.Contracts;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.WorkManagement.Domain;
-using MatterFlow.WorkViews.Application.Queries;
+using LptHub.Identity.Contracts;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Results;
+using LptHub.WorkManagement.Domain;
+using LptHub.WorkViews.Application.Queries;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.WorkViews;
+namespace LptHub.UnitTests.WorkViews;
 
 /// <summary>The page-wide Dashboard scope (P1, #89): how "all", "mine" and a pod id resolve for a caller, the cache key, the drill-through query and the validation.</summary>
 public class DashboardScopeTests

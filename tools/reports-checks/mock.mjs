@@ -1,4 +1,4 @@
-// Mocked MatterFlow API for the Reports screens: a static server with SPA fallback and Playwright route handlers. Writes nothing anywhere.
+// Mocked LPT Hub API for the Reports screens: a static server with SPA fallback and Playwright route handlers. Writes nothing anywhere.
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
@@ -187,7 +187,7 @@ export async function install(page, st) {
     if (p === '/report-admin/runs' && m === 'GET')
       return json(route, { items: [{ runId: 1, reportId: 5, reportName: 'Overdue tasks', userId: 1, userName: 'Test Admin', kind: 'Run', status: 'Succeeded', startedAtUtc: '2026-11-05T10:00:00Z', durationMs: 120, rowCount: 2380, parameters: ['MAX'], versionNo: 2 }], nextBefore: undefined });
     if (p === '/report-admin/status' && m === 'GET')
-      return json(route, { enabled: true, state: 'Ready', message: 'Reports can run.', login: { name: 'mf_reports', allowedTables: 12, deniedTables: 33, grants: [], denies: [] } });
+      return json(route, { enabled: true, state: 'Ready', message: 'Reports can run.', login: { name: 'lpt_reports', allowedTables: 12, deniedTables: 33, grants: [], denies: [] } });
     if (p === '/report-admin/schema' && m === 'GET') return json(route, { items: [{ name: 'Task', description: 'Tasks', columnCount: 14 }], total: 1, page: 1, pageSize: 50 });
     if (p === '/roles' && m === 'GET') return json(route, [{ roleId: 2, name: 'Pod Lead', description: 'Runs a pod', isSystemAdmin: false, memberCount: 4, permissionCount: 6 }, { roleId: 3, name: 'Director', description: 'Directs', isSystemAdmin: false, memberCount: 2, permissionCount: 12 }]);
     if ((x = /^\/roles\/(\d+)$/.exec(p)) && m === 'GET') return json(route, { roleId: Number(x[1]), name: 'Pod Lead', description: 'Runs a pod', isSystemAdmin: false, memberCount: 4, permissionCodes: ['Report.Run', 'Matter.View'], rowVersion: 'AAAA' });

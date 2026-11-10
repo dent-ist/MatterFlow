@@ -1,8 +1,8 @@
-using MatterFlow.SharedKernel.Tasks;
-using MatterFlow.WorkViews.Application.Queries;
+using LptHub.SharedKernel.Tasks;
+using LptHub.WorkViews.Application.Queries;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.WorkViews;
+namespace LptHub.UnitTests.WorkViews;
 
 /// <summary>The At risk rule (PM v2): open, not overdue, a target on the type, and at least 80 percent of it used since creation.</summary>
 public class AtRiskRulesTests

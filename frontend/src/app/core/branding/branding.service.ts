@@ -25,7 +25,7 @@ export class BrandingService {
   /** The whole branding in force. */
   readonly branding = this.state.asReadonly();
 
-  /** The application name (the built-in `MatterFlow` until an administrator changes it). */
+  /** The application name (the built-in `LPT Hub` until an administrator changes it). */
   readonly appName = computed(() => this.state().appName);
 
   /** The header mark: the custom icon, or the built-in one when there is none or the custom one could not be loaded. */

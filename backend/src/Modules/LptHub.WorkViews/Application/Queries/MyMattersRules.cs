@@ -1,8 +1,8 @@
 using System.Linq.Expressions;
-using MatterFlow.SharedKernel.Tasks;
-using MatterFlow.WorkManagement.Domain;
+using LptHub.SharedKernel.Tasks;
+using LptHub.WorkManagement.Domain;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>
 /// The pure rules of My Matters (owner decisions, epic #667): the health flag, the hold threshold and the workflow percentage. The predicates are

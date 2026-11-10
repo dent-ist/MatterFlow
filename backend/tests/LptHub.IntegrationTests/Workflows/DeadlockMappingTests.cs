@@ -1,10 +1,10 @@
-using MatterFlow.Api.Http;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.Api.Http;
+using LptHub.IntegrationTests.Fixtures;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Data.SqlClient;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Workflows;
+namespace LptHub.IntegrationTests.Workflows;
 
 /// <summary>
 /// E2E-F3: a SQL Server deadlock victim (error 1205) must never reach the client as a 500. The test makes SQL Server pick a real victim

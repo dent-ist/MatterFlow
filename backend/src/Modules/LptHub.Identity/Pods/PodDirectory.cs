@@ -1,8 +1,8 @@
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Identity.Domain;
+using LptHub.Identity.Contracts;
+using LptHub.Identity.Domain;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Identity.Pods;
+namespace LptHub.Identity.Pods;
 
 /// <summary>Read-only Pod queries exposed to other modules through <see cref="IPodDirectory"/>.</summary>
 public sealed class PodDirectory(DbContext db) : IPodDirectory

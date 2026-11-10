@@ -1,6 +1,6 @@
 using System.Reflection;
 
-namespace MatterFlow.Data.SchemaMigrations;
+namespace LptHub.Data.SchemaMigrations;
 
 public interface IMigrationScriptSource
 {

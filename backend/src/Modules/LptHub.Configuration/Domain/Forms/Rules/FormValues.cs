@@ -2,7 +2,7 @@ using System.Collections;
 using System.Text;
 using System.Text.Json;
 
-namespace MatterFlow.Configuration.Domain.Forms.Rules;
+namespace LptHub.Configuration.Domain.Forms.Rules;
 
 /// <summary>
 /// In-memory value model for the JSON value columns (<c>FormValuesJson</c>, <c>ValuesJson</c>, <c>CustomFieldsJson</c>):

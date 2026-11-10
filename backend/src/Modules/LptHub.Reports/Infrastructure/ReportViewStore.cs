@@ -1,8 +1,8 @@
 using System.Data;
-using MatterFlow.Reports.Application;
+using LptHub.Reports.Application;
 using Microsoft.Data.SqlClient;
 
-namespace MatterFlow.Reports.Infrastructure;
+namespace LptHub.Reports.Infrastructure;
 
 /// <summary>
 /// <c>dbo.SavedReportView</c> with the application connection (the table is denied to the report login). Every statement carries the report id and the

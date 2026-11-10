@@ -1,12 +1,12 @@
 using System.Diagnostics;
 using System.Net.Http.Json;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.IntegrationTests.Tasks;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Tasks;
 using Shouldly;
 using Xunit.Abstractions;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Search;
+namespace LptHub.IntegrationTests.Search;
 
 /// <summary>
 /// Global search against the volumes of architecture 15 seeded with set-based SQL (1,000 Clients and Matters, 20,000 Tasks, 300,000 Assets): every

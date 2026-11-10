@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 
-namespace MatterFlow.Reports.Domain.Parameters;
+namespace LptHub.Reports.Domain.Parameters;
 
 /// <summary>One thing wrong with a parameter definition. <see cref="Parameter"/> is the definition's name (empty for a problem with the list as a whole).</summary>
 public sealed record DefinitionIssue(string Parameter, string Field, string Code, string Message);

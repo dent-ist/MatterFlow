@@ -1,11 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Assets.AssetTestKit;
+using static LptHub.IntegrationTests.Assets.AssetTestKit;
 
-namespace MatterFlow.IntegrationTests.Assets;
+namespace LptHub.IntegrationTests.Assets;
 
 /// <summary>The Asset Number in the asset reports (issue #1297): the group-by "assetNumber", the builder's choices, saved reports and the unchanged old ones.</summary>
 [Collection(SqlServerCollection.Name)]

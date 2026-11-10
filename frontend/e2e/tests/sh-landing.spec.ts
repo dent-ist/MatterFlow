@@ -35,7 +35,7 @@ test.describe('Landing for oversight roles (#628)', () => {
       await expect(page.locator('[data-state-actions] [data-back-link]'), c.who).toHaveText(
         `Go to ${c.name}`,
       );
-      await page.getByRole('link', { name: 'MatterFlow home' }).click();
+      await page.getByRole('link', { name: 'LPT Hub home' }).click();
       await expect(page, `${c.who} logo`).toHaveURL(c.url);
     }
     // A technician with a pod keeps My Work; one without work and without a Dashboard tab keeps Task Queue.
@@ -95,7 +95,7 @@ test.describe('Landing for oversight roles (#628)', () => {
     await nav.getByRole('link', { name: 'My Work' }).click();
     await expect(page).toHaveURL(/\/my-work/);
     // The logo and the 404 link follow the same rule.
-    await page.getByRole('link', { name: 'MatterFlow home' }).click();
+    await page.getByRole('link', { name: 'LPT Hub home' }).click();
     await expect(page).toHaveURL(/\/my-matters/);
     await page.goto('/no-such-page');
     await expect(page.locator('[data-state-actions] [data-back-link]')).toHaveText(
@@ -161,7 +161,7 @@ test.describe('Landing for oversight roles (#628)', () => {
     await expect(adminPage.locator('[data-state-actions] [data-back-link]')).toHaveText(
       'Go to Dashboard',
     );
-    await adminPage.getByRole('link', { name: 'MatterFlow home' }).click();
+    await adminPage.getByRole('link', { name: 'LPT Hub home' }).click();
     await expect(adminPage).toHaveURL(/\/dashboard/);
     // Menu item and route are unchanged: the administrator can still open My Matters from the menu.
     await adminPage

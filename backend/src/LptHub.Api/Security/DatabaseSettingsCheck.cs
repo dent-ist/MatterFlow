@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Api.Security;
+namespace LptHub.Api.Security;
 
 /// <summary>
 /// Startup check for security review SEC-17: without <c>READ_COMMITTED_SNAPSHOT</c> readers block writers, which turns concurrent
@@ -13,7 +13,7 @@ public static class DatabaseSettingsCheck
 
     public static async Task VerifyAsync(IServiceProvider services, CancellationToken cancellationToken = default)
     {
-        var logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("MatterFlow.Database");
+        var logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("LptHub.Database");
         await using var scope = services.CreateAsyncScope();
         try
         {

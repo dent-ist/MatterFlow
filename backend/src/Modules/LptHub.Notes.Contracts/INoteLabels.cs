@@ -1,4 +1,4 @@
-namespace MatterFlow.Notes.Contracts;
+namespace LptHub.Notes.Contracts;
 
 /// <summary>A note as the audit display names it (its title).</summary>
 public sealed record NoteLabel(int Id, int MatterId, string Title);

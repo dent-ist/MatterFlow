@@ -1,4 +1,4 @@
-namespace MatterFlow.Identity.Contracts;
+namespace LptHub.Identity.Contracts;
 
 /// <summary>
 /// Who may be named as the Primary or Secondary project manager of a matter (epic #667): active users who hold the marker permission

@@ -1,7 +1,7 @@
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Tasks;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Tasks;
 
-namespace MatterFlow.WorkManagement.Domain;
+namespace LptHub.WorkManagement.Domain;
 
 /// <summary>What initiated a status change.</summary>
 public enum TransitionCause

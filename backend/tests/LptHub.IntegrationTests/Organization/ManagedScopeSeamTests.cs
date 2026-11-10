@@ -1,15 +1,15 @@
 using System.Linq.Expressions;
-using MatterFlow.Identity.Access;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Visibility;
+using LptHub.Identity.Access;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Visibility;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Organization;
+namespace LptHub.IntegrationTests.Organization;
 
 /// <summary>
 /// "Matters managed by me" resolved once (epic #758, PX-02, #760): every endpoint that means it goes through <c>IManagedMatterScope</c> and so through the
@@ -117,7 +117,7 @@ public sealed class ManagedScopeSeamTests(SqlServerFixture sql)
     private static HttpClient Client(WebApplicationFactory<Program> factory, string user)
     {
         var http = factory.CreateClient();
-        http.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        http.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         http.DefaultRequestHeaders.Add("X-Dev-User", user);
         return http;
     }

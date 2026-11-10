@@ -1,8 +1,8 @@
-using MatterFlow.Identity.Application;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Identity.Application;
+using LptHub.SharedKernel.Results;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Identity;
+namespace LptHub.UnitTests.Identity;
 
 public class AdminGuardsTests
 {

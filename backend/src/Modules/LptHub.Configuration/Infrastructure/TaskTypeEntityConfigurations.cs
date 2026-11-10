@@ -1,8 +1,8 @@
-using MatterFlow.Configuration.Domain;
+using LptHub.Configuration.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace MatterFlow.Configuration.Infrastructure;
+namespace LptHub.Configuration.Infrastructure;
 
 internal sealed class TaskTypeConfiguration : IEntityTypeConfiguration<TaskType>
 {

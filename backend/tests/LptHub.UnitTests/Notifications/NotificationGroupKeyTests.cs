@@ -1,8 +1,8 @@
-using MatterFlow.Notifications.Application;
-using MatterFlow.Notifications.Contracts;
+using LptHub.Notifications.Application;
+using LptHub.Notifications.Contracts;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Notifications;
+namespace LptHub.UnitTests.Notifications;
 
 /// <summary>The grouping key of the overdue notices (PM v2, #884): display only, set for exactly two kinds of notice.</summary>
 public class NotificationGroupKeyTests

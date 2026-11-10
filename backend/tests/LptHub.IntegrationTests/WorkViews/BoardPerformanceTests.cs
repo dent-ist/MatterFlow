@@ -1,14 +1,14 @@
 using System.Diagnostics;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.IntegrationTests.Tasks;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Tasks;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Shouldly;
 using Xunit.Abstractions;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.WorkViews;
+namespace LptHub.IntegrationTests.WorkViews;
 
 /// <summary>
 /// The Swimlane and Team workload endpoints against about 5,000 Tasks seeded with set-based SQL: median under 450 ms for the grouped board (it was 300 ms; the same test on the previous all-green commit 38f7f85 measured medians of 352, 270 and 318 ms
@@ -78,7 +78,7 @@ public sealed class BoardPerformanceTests(SqlServerFixture sql, ITestOutputHelpe
     private HttpClient Client()
     {
         var http = _logged.CreateClient();
-        http.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        http.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         http.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
         return http;
     }

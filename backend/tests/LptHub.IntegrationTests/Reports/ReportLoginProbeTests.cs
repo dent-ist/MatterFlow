@@ -1,12 +1,12 @@
 using System.Net;
 using System.Net.Http.Json;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.IntegrationTests.Tasks;
-using MatterFlow.Reports.Api;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Tasks;
+using LptHub.Reports.Api;
 using Microsoft.Data.SqlClient;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Reports;
+namespace LptHub.IntegrationTests.Reports;
 
 /// <summary>
 /// The report login against a real SQL Server (epic #671, issue #684): the connection guard, the startup probe and what it says for the demo
@@ -71,9 +71,9 @@ public sealed class ReportLoginProbeTests(SqlServerFixture sql)
     [Fact]
     public async Task The_demo_provisioning_script_gives_a_ready_login_and_is_idempotent()
     {
-        // The demo login keeps its fixed name mf_reports, so the connection string is built from the container's own address.
+        // The demo login keeps its fixed name lpt_reports, so the connection string is built from the container's own address.
         var (factory, manager, appCs) = await StartAsync(cs =>
-            Task.FromResult<string?>(new SqlConnectionStringBuilder(cs) { UserID = "mf_reports", Password = "MatterFlow_Reports1!", IntegratedSecurity = false }.ConnectionString));
+            Task.FromResult<string?>(new SqlConnectionStringBuilder(cs) { UserID = "lpt_reports", Password = "LptHub_Reports1!", IntegratedSecurity = false }.ConnectionString));
         await using var _f = factory;
         var script = await File.ReadAllTextAsync(RepoFile("tools", "db", "provision-report-login.sql"));
 
@@ -85,7 +85,7 @@ public sealed class ReportLoginProbeTests(SqlServerFixture sql)
         status.Enabled.ShouldBeTrue(status.Message);
         status.State.ShouldBe("Ready");
         status.Login.ShouldNotBeNull();
-        status.Login.LoginName.ShouldBe("mf_reports");
+        status.Login.LoginName.ShouldBe("lpt_reports");
         status.Login.WritesDenied.ShouldBeTrue();
         status.Login.AuditTablesDenied.ShouldBeTrue();
         status.Login.ServerProceduresDenied.ShouldBeTrue(); // the script's step in master worked
@@ -107,15 +107,15 @@ public sealed class ReportLoginProbeTests(SqlServerFixture sql)
         before.Enabled.ShouldBeFalse();
         before.State.ShouldBe("RoleMissing");
 
-        await SqlServerFixture.ExecuteAsync(appCs, $"ALTER ROLE mf_report_reader ADD MEMBER [{login.Name}]");
+        await SqlServerFixture.ExecuteAsync(appCs, $"ALTER ROLE lpt_report_reader ADD MEMBER [{login.Name}]");
         (await PostCheckAsync(manager)).State.ShouldBe("Ready");
     }
 
     [Theory]
     [InlineData("db_owner", null)]
     [InlineData("db_datareader", null)]
-    [InlineData("mf_app", null)]
-    [InlineData("mf_report_reader", "db_datawriter")]
+    [InlineData("lpt_app", null)]
+    [InlineData("lpt_report_reader", "db_datawriter")]
     [InlineData(null, "sysadmin")]
     public async Task A_login_with_more_rights_than_a_reader_keeps_reports_off(string? databaseRole, string? extra)
     {
@@ -124,7 +124,7 @@ public sealed class ReportLoginProbeTests(SqlServerFixture sql)
         ReportLogin? login = null;
         var (factory, manager, appCs) = await StartAsync(async cs => (login = await sql.CreateServerLoginAsync(cs, serverRole)).ConnectionString);
         await using var _f = factory;
-        var roles = new[] { "mf_report_reader", databaseRole, serverRole is null ? extra : null }.Where(r => r is not null).Cast<string>().Distinct().ToArray();
+        var roles = new[] { "lpt_report_reader", databaseRole, serverRole is null ? extra : null }.Where(r => r is not null).Cast<string>().Distinct().ToArray();
         await SqlServerFixture.CreateDatabaseUserAsync(appCs, login!.Name, roles);
 
         var status = await PostCheckAsync(manager);
@@ -140,7 +140,7 @@ public sealed class ReportLoginProbeTests(SqlServerFixture sql)
         ReportLogin? login = null;
         var (factory, manager, appCs) = await StartAsync(async cs => (login = await sql.CreateServerLoginAsync(cs, denyServerProcedures: false)).ConnectionString);
         await using var _f = factory;
-        await SqlServerFixture.CreateDatabaseUserAsync(appCs, login!.Name, "mf_report_reader");
+        await SqlServerFixture.CreateDatabaseUserAsync(appCs, login!.Name, "lpt_report_reader");
 
         var warned = await PostCheckAsync(manager);
 
@@ -196,7 +196,7 @@ public sealed class ReportLoginProbeTests(SqlServerFixture sql)
         ReportLogin? login = null;
         var (factory, manager, appCs) = await StartAsync(async cs => (login = await sql.CreateServerLoginAsync(cs)).ConnectionString);
         await using var _f = factory;
-        await SqlServerFixture.CreateDatabaseUserAsync(appCs, login!.Name, "mf_report_reader");
+        await SqlServerFixture.CreateDatabaseUserAsync(appCs, login!.Name, "lpt_report_reader");
         (await PostCheckAsync(manager)).State.ShouldBe("Ready");
         var reader = login.ConnectionString;
 

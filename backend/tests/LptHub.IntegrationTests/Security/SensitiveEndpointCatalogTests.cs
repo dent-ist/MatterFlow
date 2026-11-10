@@ -1,9 +1,9 @@
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Security;
+namespace LptHub.IntegrationTests.Security;
 
 /// <summary>
 /// The catalog test of epic #788 (SM-15/SM-16, README 12.2): every endpoint operation the host exposes is classified in <see cref="SensitiveAccessCatalog"/>, and the catalog

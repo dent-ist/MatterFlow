@@ -1,13 +1,13 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Identity;
+namespace LptHub.IntegrationTests.Identity;
 
 /// <summary>CSRF protection (architecture 6.6) and the "Dev provider never runs in Production" guard. No database needed.</summary>
 public class RequestForgeryGuardTests(NoDatabaseApiFactory factory) : IClassFixture<NoDatabaseApiFactory>
@@ -19,7 +19,7 @@ public class RequestForgeryGuardTests(NoDatabaseApiFactory factory) : IClassFixt
             Content = new StringContent("{}", Encoding.UTF8, contentType),
         };
         if (header)
-            request.Headers.Add("X-MatterFlow-Client", "web");
+            request.Headers.Add("X-LptHub-Client", "web");
         if (fetchSite is not null)
             request.Headers.Add("Sec-Fetch-Site", fetchSite);
         return request;

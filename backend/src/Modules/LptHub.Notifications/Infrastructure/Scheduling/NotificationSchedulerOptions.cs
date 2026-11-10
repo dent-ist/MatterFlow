@@ -1,4 +1,4 @@
-namespace MatterFlow.Notifications.Infrastructure.Scheduling;
+namespace LptHub.Notifications.Infrastructure.Scheduling;
 
 /// <summary>
 /// Settings of the notification scheduler (<c>Notifications:Scheduler</c>). The defaults are the production values; the integration test host

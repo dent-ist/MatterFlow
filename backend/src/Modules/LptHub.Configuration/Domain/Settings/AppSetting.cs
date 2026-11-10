@@ -1,4 +1,4 @@
-namespace MatterFlow.Configuration.Domain.Settings;
+namespace LptHub.Configuration.Domain.Settings;
 
 /// <summary>
 /// One row of <c>dbo.AppSetting</c>: a thin key/value store for administrator-maintained settings (script 48). The type of a value is defined in

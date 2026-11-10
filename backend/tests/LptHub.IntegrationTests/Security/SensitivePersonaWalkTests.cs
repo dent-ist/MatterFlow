@@ -1,7 +1,7 @@
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Security;
+namespace LptHub.IntegrationTests.Security;
 
 /// <summary>
 /// "Walk every endpoint as six personas" (epic #788, SM-15/SM-16, README 12.2): with the rule on, no persona gets a hidden record, a hidden id or a sensitive sentinel from any

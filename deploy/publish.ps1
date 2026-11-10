@@ -2,7 +2,7 @@
 .SYNOPSIS
   Builds the Angular app and publishes the API with the build inside wwwroot, ready to copy to the IIS site folder.
 .EXAMPLE
-  deploy\publish.ps1 -Output C:\build\matterflow
+  deploy\publish.ps1 -Output C:\build\lpt-hub
 .NOTES
   Default runtime identifier is win-x64 (framework-dependent; needs the .NET 10 Hosting Bundle on the server).
   Pass -SkipFrontendInstall to reuse node_modules.
@@ -32,7 +32,7 @@ if (-not (Test-Path (Join-Path $browser 'index.html'))) { throw "Angular build p
 
 Write-Host "==> dotnet publish ($Runtime) -> $Output"
 if (Test-Path $Output) { Remove-Item $Output -Recurse -Force }
-$project = Join-Path $root 'backend\src\MatterFlow.Api\MatterFlow.Api.csproj'
+$project = Join-Path $root 'backend\src\LptHub.Api\LptHub.Api.csproj'
 Invoke-Checked { dotnet publish $project -c Release -r $Runtime --self-contained false -o $Output -p:OpenApiGenerateDocuments=false }
 
 Write-Host '==> Copy the Angular build into wwwroot'

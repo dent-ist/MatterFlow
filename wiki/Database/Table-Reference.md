@@ -4,7 +4,7 @@
 
 **What this page is for.** One entry for every table of the database: what it is for, which module owns it, its columns, foreign keys, indexes, check constraints, triggers and the scripts that created or changed it. Use it when you need the exact column or constraint name. The picture of how tables relate is on [ER Diagrams](ER-Diagrams.md).
 
-**How this page was made.** The facts come from the demo SQL Server database `MatterFlow` (the schema baseline `db/scripts/00-baseline.sql` applied, plus the runner table `SchemaMigration`; the same facts were produced by the archived scripts 01 to 66), read with read-only queries on `sys.tables`, `sys.columns`, `sys.foreign_keys`, `sys.indexes`, `sys.check_constraints` and `sys.triggers`, and were cross-checked against `db/scripts/00-baseline.sql`. Purposes and module ownership are written by hand from the scripts and the code. The "Scripts" line of each table names the archived script (`db/scripts/archive/`, issue #1307) that created or changed it; since the squash everything is defined in the baseline and the line is history only. New scripts (67 and up) add their own number there.
+**How this page was made.** The facts come from the demo SQL Server database `LptHub` (the schema baseline `db/scripts/00-baseline.sql` applied, plus the runner table `SchemaMigration`; the same facts were produced by the archived scripts 01 to 66), read with read-only queries on `sys.tables`, `sys.columns`, `sys.foreign_keys`, `sys.indexes`, `sys.check_constraints` and `sys.triggers`, and were cross-checked against `db/scripts/00-baseline.sql`. Purposes and module ownership are written by hand from the scripts and the code. The "Scripts" line of each table names the archived script (`db/scripts/archive/`, issue #1307) that created or changed it; since the squash everything is defined in the baseline and the line is history only. New scripts (67 and up) add their own number there.
 
 Totals (counted by `tools/db/schema-fingerprint.sql` on a database built from the baseline): 76 tables (75 in the baseline plus `SchemaMigration`), 196 foreign keys, 250 indexes (including primary keys), 148 check constraints, 20 triggers on tables, 762 columns.
 
@@ -97,7 +97,7 @@ A person known to the system, created at first sign-in (just-in-time). Holds dis
 
 - **Module:** Identity. **Area:** Identity and access.
 - **Scripts:** created by script 2; changed by script 59.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_AppUser` (UserId), int identity.
 - **Columns (12; `?` = nullable):** `UserId int`, `DisplayName nvarchar(200)`, `Email nvarchar(320)?`, `IsActive bit`, `BootstrapAppliedAt datetime2(7)?`, `LastLoginAt datetime2(7)?`, `HolidayCalendarId int?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (3):**
@@ -112,7 +112,7 @@ How a person signs in: provider (Windows, Dev, Entra), tenant, subject, username
 
 - **Module:** Identity. **Area:** Identity and access.
 - **Scripts:** created by script 2; changed by script 13.
-- **Report login (`mf_report_reader`):** deny.
+- **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_UserIdentity` (UserIdentityId), int identity.
 - **Columns (14; `?` = nullable):** `UserIdentityId int`, `UserId int`, `Provider varchar(20)`, `TenantId varchar(64)`, `ProviderSubject nvarchar(200)`, `Username nvarchar(256)`, `IsActive bit`, `VerifiedAt datetime2(7)?`, `LastLoginAt datetime2(7)?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (3):**
@@ -128,7 +128,7 @@ A named set of permissions. The built-in System Admin role has the `IsSystemAdmi
 
 - **Module:** Identity. **Area:** Identity and access.
 - **Scripts:** created by script 2; `LandingPage` added by script 67.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_Role` (RoleId), int identity.
 - **Columns (11; `?` = nullable):** `RoleId int`, `Name nvarchar(100)`, `Description nvarchar(500)?`, `IsSystemAdmin bit`, `IsActive bit`, `LandingPage varchar(40)?` (the stable page key from `contracts/landing-pages.json` a person with this role lands on; null = Automatic, the application's own landing rule; epic #1330). Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (2):**
@@ -143,7 +143,7 @@ The permission catalog, synced from `contracts/permissions.json` at startup.
 
 - **Module:** Identity. **Area:** Identity and access.
 - **Scripts:** created by script 2.
-- **Report login (`mf_report_reader`):** deny.
+- **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_Permission` (PermissionId), int identity.
 - **Columns (5; `?` = nullable):** `PermissionId int`, `Code varchar(64)`, `GroupName varchar(40)`, `Description nvarchar(300)`, `IsActive bit`.
 - **Foreign keys:** none.
@@ -155,7 +155,7 @@ Junction: permissions of a role.
 
 - **Module:** Identity. **Area:** Identity and access.
 - **Scripts:** created by script 2.
-- **Report login (`mf_report_reader`):** deny.
+- **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_RolePermission` (RoleId, PermissionId).
 - **Columns (2; `?` = nullable):** `RoleId int`, `PermissionId int`.
 - **Foreign keys (2):**
@@ -169,7 +169,7 @@ Junction: roles of a user, with who granted and when.
 
 - **Module:** Identity. **Area:** Identity and access.
 - **Scripts:** created by script 2.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_UserRole` (UserId, RoleId).
 - **Columns (4; `?` = nullable):** `UserId int`, `RoleId int`, `GrantedAt datetime2(7)`, `GrantedByUserId int?`.
 - **Foreign keys (3):**
@@ -184,7 +184,7 @@ A working group of people (team). A Pod Lead is a role, not a column. Can have a
 
 - **Module:** Identity. **Area:** Identity and access.
 - **Scripts:** created by script 4; changed by script 59.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_Pod` (PodId), int identity.
 - **Columns (10; `?` = nullable):** `PodId int`, `Name nvarchar(100)`, `Description nvarchar(500)?`, `IsActive bit`, `DefaultHolidayCalendarId int?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (3):**
@@ -199,7 +199,7 @@ Junction: users in pods, with a primary pod flag (at most one primary per user).
 
 - **Module:** Identity. **Area:** Identity and access.
 - **Scripts:** created by script 4.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_PodMember` (PodId, UserId).
 - **Columns (3; `?` = nullable):** `PodId int`, `UserId int`, `IsPrimary bit`.
 - **Foreign keys (2):**
@@ -213,7 +213,7 @@ A person's remembered screen state per surface, and named saved views.
 
 - **Module:** Identity. **Area:** Identity and access.
 - **Scripts:** created by script 41.
-- **Report login (`mf_report_reader`):** deny.
+- **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_UserView` (UserViewId), bigint identity.
 - **Columns (9; `?` = nullable):** `UserViewId bigint`, `UserId int`, `Surface varchar(40)`, `Name nvarchar(80)?`, `IsDefault bit`, `StateJson nvarchar(4000)`, `CreatedAt datetime2(3)`, `ModifiedAt datetime2(3)`, `RowVersion timestamp`.
 - **Foreign keys (1):**
@@ -230,7 +230,7 @@ A law-firm client with a zero-padded 5-digit client number.
 
 - **Module:** Organization. **Area:** Clients, Matters and Projects.
 - **Scripts:** created by script 5.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_Client` (ClientId), int identity.
 - **Columns (10; `?` = nullable):** `ClientId int`, `ClientNumber char(5)`, `Name nvarchar(200)`, `IsActive bit`, `CustomFieldsJson nvarchar(max)?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (2):**
@@ -245,7 +245,7 @@ A client case. Business reference is client number plus matter number (CM Number
 
 - **Module:** Organization. **Area:** Clients, Matters and Projects.
 - **Scripts:** created by script 5; changed by scripts 28, 35, 37, 51, 64.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_Matter` (MatterId), int identity.
 - **Columns (21; `?` = nullable):** `MatterId int`, `ClientId int`, `ClientNumber char(5)`, `MatterNumber char(5)`, `MatterRef char(11)`, `Name nvarchar(300)`, `IsActive bit`, `IsSensitive bit`, `CustomFieldsJson nvarchar(max)?`, `PrimaryManagerId int?`, `SecondaryManagerId int?`, `AiAllowed tinyint`, `MatterTypeId int?`, `CurrentStateId int?`, `DmsPath nvarchar(1000)?`, `DfsPath nvarchar(1000)?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (7):**
@@ -266,7 +266,7 @@ Admin-managed list: the Matter Type a matter can carry (optional; `Matter.Matter
 
 - **Module:** Configuration. **Area:** Clients, Matters and Projects.
 - **Scripts:** created by script 64.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_MatterType` (MatterTypeId), int identity.
 - **Columns (9; `?` = nullable):** `MatterTypeId int`, `Name nvarchar(100)`, `SortOrder int`, `IsActive bit`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (2):**
@@ -281,7 +281,7 @@ Admin-managed list: the Current State of a matter (optional, current value only;
 
 - **Module:** Configuration. **Area:** Clients, Matters and Projects.
 - **Scripts:** created by script 64.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_CurrentState` (CurrentStateId), int identity.
 - **Columns (9; `?` = nullable):** `CurrentStateId int`, `Name nvarchar(100)`, `SortOrder int`, `IsActive bit`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (2):**
@@ -296,7 +296,7 @@ Admin-managed list: the title of a team member (`MatterTeamMember.TeamTitleId`).
 
 - **Module:** Configuration. **Area:** Clients, Matters and Projects.
 - **Scripts:** created by script 64.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_TeamTitle` (TeamTitleId), int identity.
 - **Columns (9; `?` = nullable):** `TeamTitleId int`, `Name nvarchar(100)`, `SortOrder int`, `IsActive bit`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (2):**
@@ -311,7 +311,7 @@ A person on a matter's team: a typed-in contact (name, email, title), not a user
 
 - **Module:** Organization. **Area:** Clients, Matters and Projects.
 - **Scripts:** created by script 64.
-- **Report login (`mf_report_reader`):** deny.
+- **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_MatterTeamMember` (MatterTeamMemberId), int identity.
 - **Columns (11; `?` = nullable):** `MatterTeamMemberId int`, `MatterId int`, `Name nvarchar(200)`, `Email nvarchar(254)` (case-insensitive collation), `TeamTitleId int`, `SortOrder int`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (4):**
@@ -328,7 +328,7 @@ A project inside a matter, with custom fields.
 
 - **Module:** Organization. **Area:** Clients, Matters and Projects.
 - **Scripts:** created by script 5.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_Project` (ProjectId), int identity.
 - **Columns (11; `?` = nullable):** `ProjectId int`, `MatterId int`, `Name nvarchar(200)`, `Description nvarchar(2000)?`, `IsActive bit`, `CustomFieldsJson nvarchar(max)?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (3):**
@@ -344,7 +344,7 @@ A calendar item of a matter (types OTHER, CLIENT_MEETING, MEDIATION, FILING_DEAD
 
 - **Module:** Organization. **Area:** Clients, Matters and Projects.
 - **Scripts:** created by script 49.
-- **Report login (`mf_report_reader`):** deny.
+- **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_MatterEvent` (MatterEventId), int identity.
 - **Columns (12; `?` = nullable):** `MatterEventId int`, `MatterId int`, `EventTypeCode varchar(30)`, `Title nvarchar(200)`, `EventDate date`, `EventTime time?`, `Note nvarchar(2000)?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (3):**
@@ -362,7 +362,7 @@ A unit of work on a matter (optionally a project) of one task type, with priorit
 
 - **Module:** WorkManagement. **Area:** Tasks and task configuration.
 - **Scripts:** created by script 12; changed by scripts 15, 18, 20, 25, 26, 33, 35, 37, 42, 47, 57.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_Task` (TaskId), bigint identity.
 - **Columns (31; `?` = nullable):** `TaskId bigint`, `TaskNumber varchar(20)`, `MatterId int`, `ProjectId int?`, `TaskTypeId int`, `FormVersionId int?`, `WorkflowInstanceId bigint`, `Title nvarchar(300)`, `Description nvarchar(max)?`, `PriorityId int`, `StatusCode varchar(20)`, `AssignedPodId int?`, `AssignedUserId int?`, `RequestorName nvarchar(200)`, `RequestorEmail nvarchar(320)?`, `RequestedAt datetime2(3)?`, `DueDate date?`, `DueAtUtc datetime2(3)?`, `DueSortKey datetime2(3)?`, `StatusChangedAt datetime2(3)`, `CompletedAt datetime2(3)?`, `AssignedAt datetime2(3)?`, `DescriptionFormat varchar(4)`, `IsMatterSensitive bit`, `OnHoldReasonId int?`, `UnassignedAt datetime2(3)?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (12):**
@@ -388,7 +388,7 @@ A comment on a task (HTML), with a purpose (normal, on hold or cancel reason) an
 
 - **Module:** WorkManagement. **Area:** Tasks and task configuration.
 - **Scripts:** created by script 12; changed by script 18.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_TaskComment` (TaskCommentId), bigint identity.
 - **Columns (14; `?` = nullable):** `TaskCommentId bigint`, `TaskId bigint`, `AuthorUserId int`, `Purpose varchar(12)`, `BodyHtml nvarchar(max)`, `EditedAt datetime2(3)?`, `IsDeleted bit`, `DeletedAt datetime2(3)?`, `DeletedByUserId int?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (5):**
@@ -407,7 +407,7 @@ Append-only edit and delete history of task comments.
 
 - **Module:** WorkManagement. **Area:** Tasks and task configuration.
 - **Scripts:** created by script 14.
-- **Report login (`mf_report_reader`):** deny.
+- **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_TaskCommentRevision` (TaskCommentRevisionId), bigint identity.
 - **Columns (6; `?` = nullable):** `TaskCommentRevisionId bigint`, `TaskCommentId bigint`, `BodyHtml nvarchar(max)`, `Reason varchar(10)`, `RevisedAt datetime2(3)`, `RevisedByUserId int?`.
 - **Foreign keys (2):**
@@ -423,7 +423,7 @@ Junction: assets linked to a task, with an optional link role. The matter of tas
 
 - **Module:** WorkManagement. **Area:** Tasks and task configuration.
 - **Scripts:** created by script 14.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_TaskAsset` (TaskId, AssetId).
 - **Columns (9; `?` = nullable):** `TaskId bigint`, `AssetId int`, `MatterId int`, `AssetLinkRoleId int?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (5):**
@@ -440,7 +440,7 @@ Admin-defined type of task, with icon, colour key, target days, default workflow
 
 - **Module:** Configuration. **Area:** Tasks and task configuration.
 - **Scripts:** created by script 8; changed by scripts 19, 40.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_TaskType` (TaskTypeId), int identity.
 - **Columns (13; `?` = nullable):** `TaskTypeId int`, `Name nvarchar(100)`, `Description nvarchar(1000)?`, `IsActive bit`, `DefaultWorkflowDefinitionId int?`, `IconKey varchar(50)`, `ColourKey varchar(20)?`, `TargetDays smallint?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (2):**
@@ -455,7 +455,7 @@ Admin-managed task priorities with label, colour, order and a default.
 
 - **Module:** Configuration. **Area:** Tasks and task configuration.
 - **Scripts:** created by script 7.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_Priority` (PriorityId), int identity.
 - **Columns (11; `?` = nullable):** `PriorityId int`, `Label nvarchar(50)`, `SortOrder int`, `Color varchar(20)`, `IsActive bit`, `IsDefault bit`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (2):**
@@ -470,7 +470,7 @@ Display labels of the five fixed task status codes (NEW, IN_PROGRESS, ON_HOLD, C
 
 - **Module:** Configuration. **Area:** Tasks and task configuration.
 - **Scripts:** created by script 7.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_TaskStatusLabel` (StatusCode).
 - **Columns (8; `?` = nullable):** `StatusCode varchar(20)`, `DisplayLabel nvarchar(50)`, `SortOrder int`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (2):**
@@ -486,7 +486,7 @@ Admin-managed list of reasons for putting a task On Hold. Never deleted.
 
 - **Module:** Configuration. **Area:** Tasks and task configuration.
 - **Scripts:** created by script 42.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_OnHoldReason` (OnHoldReasonId), int identity.
 - **Columns (9; `?` = nullable):** `OnHoldReasonId int`, `Name nvarchar(100)`, `SortOrder int`, `IsActive bit`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (2):**
@@ -501,7 +501,7 @@ Admin-managed list of roles that describe how an asset is linked to a task (used
 
 - **Module:** Configuration. **Area:** Tasks and task configuration.
 - **Scripts:** created by script 7.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_AssetLinkRole` (AssetLinkRoleId), int identity.
 - **Columns (9; `?` = nullable):** `AssetLinkRoleId int`, `Name nvarchar(50)`, `SortOrder int`, `IsActive bit`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (2):**
@@ -518,7 +518,7 @@ A reusable step of the step library (title, instructions, documentation link, ta
 
 - **Module:** WorkflowEngine. **Area:** Workflows.
 - **Scripts:** created by script 9.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_StepDefinition` (StepDefinitionId), int identity.
 - **Columns (11; `?` = nullable):** `StepDefinitionId int`, `Title nvarchar(200)`, `Description nvarchar(1000)?`, `Instructions nvarchar(max)?`, `DocumentationUrl nvarchar(1000)?`, `IsActive bit`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (2):**
@@ -533,7 +533,7 @@ Junction: tags on a library step, with an order.
 
 - **Module:** WorkflowEngine. **Area:** Workflows.
 - **Scripts:** created by script 23.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_StepDefinitionTag` (StepDefinitionId, StepTagId).
 - **Columns (3; `?` = nullable):** `StepDefinitionId int`, `StepTagId int`, `SortOrder int`.
 - **Foreign keys (2):**
@@ -548,7 +548,7 @@ Free-form tag of library steps.
 
 - **Module:** WorkflowEngine. **Area:** Workflows.
 - **Scripts:** created by script 23.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_StepTag` (StepTagId), int identity.
 - **Columns (4; `?` = nullable):** `StepTagId int`, `TagKey nvarchar(40)`, `Name nvarchar(40)`, `CreatedAt datetime2(7)`.
 - **Foreign keys:** none.
@@ -561,7 +561,7 @@ A named workflow. Versions hold the steps.
 
 - **Module:** WorkflowEngine. **Area:** Workflows.
 - **Scripts:** created by script 9.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_WorkflowDefinition` (WorkflowDefinitionId), int identity.
 - **Columns (9; `?` = nullable):** `WorkflowDefinitionId int`, `Name nvarchar(200)`, `Description nvarchar(1000)?`, `IsActive bit`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (2):**
@@ -576,7 +576,7 @@ A version of a workflow: DRAFT, PUBLISHED or RETIRED. Published versions are imm
 
 - **Module:** WorkflowEngine. **Area:** Workflows.
 - **Scripts:** created by script 9.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_WorkflowVersion` (WorkflowVersionId), int identity.
 - **Columns (12; `?` = nullable):** `WorkflowVersionId int`, `WorkflowDefinitionId int`, `VersionNo int`, `Status varchar(12)`, `IsOrdered bit`, `PublishedAt datetime2(7)?`, `PublishedByUserId int?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (4):**
@@ -594,7 +594,7 @@ One step of a workflow version, copied from the library at design time.
 
 - **Module:** WorkflowEngine. **Area:** Workflows.
 - **Scripts:** created by script 9.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_WorkflowVersionStep` (WorkflowVersionStepId), int identity.
 - **Columns (11; `?` = nullable):** `WorkflowVersionStepId int`, `WorkflowVersionId int`, `SequenceNo int`, `SourceStepDefinitionId int`, `Title nvarchar(200)`, `Description nvarchar(1000)?`, `Instructions nvarchar(max)?`, `DocumentationUrl nvarchar(1000)?`, `StepFormVersionId int?`, `IsSkippable bit`, `SkipCommentRequired bit`.
 - **Foreign keys (3):**
@@ -611,7 +611,7 @@ The running copy of a workflow version for one task, with its ordering flag and 
 
 - **Module:** WorkflowEngine. **Area:** Workflows.
 - **Scripts:** created by script 11.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_WorkflowInstance` (WorkflowInstanceId), bigint identity.
 - **Columns (9; `?` = nullable):** `WorkflowInstanceId bigint`, `WorkflowVersionId int`, `IsOrdered bit`, `Revision int`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (3):**
@@ -627,7 +627,7 @@ One step of a running workflow instance: a copy of the step text, its status (PE
 
 - **Module:** WorkflowEngine. **Area:** Workflows.
 - **Scripts:** created by script 11; changed by script 33.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_StepInstance` (StepInstanceId), int identity.
 - **Columns (22; `?` = nullable):** `StepInstanceId int`, `WorkflowInstanceId bigint`, `WorkflowVersionStepId int`, `SequenceNo int`, `Title nvarchar(200)`, `Description nvarchar(1000)?`, `Instructions nvarchar(max)?`, `DocumentationUrl nvarchar(1000)?`, `IsSkippable bit`, `SkipCommentRequired bit`, `InputFormVersionId int?`, `InputFormDefinitionId int?`, `Status varchar(12)`, `SkipComment nvarchar(2000)?`, `FirstResolvedAt datetime2(7)?`, `ResolvedAt datetime2(7)?`, `ResolvedByUserId int?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (7):**
@@ -648,7 +648,7 @@ Junction: which workflows may be used for a task type.
 
 - **Module:** Configuration. **Area:** Workflows.
 - **Scripts:** created by script 8.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_TaskTypeWorkflowEligibility` (TaskTypeId, WorkflowDefinitionId).
 - **Columns (4; `?` = nullable):** `TaskTypeId int`, `WorkflowDefinitionId int`, `CreatedAt datetime2(7)`, `CreatedByUserId int?`.
 - **Foreign keys (2):**
@@ -665,7 +665,7 @@ A form container owned by exactly one thing: a task type, a step definition, an 
 
 - **Module:** Configuration. **Area:** Forms and custom fields.
 - **Scripts:** created by script 6; changed by scripts 9, 10.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_FormDefinition` (FormDefinitionId), int identity.
 - **Columns (11; `?` = nullable):** `FormDefinitionId int`, `Scope varchar(20)`, `TaskTypeId int?`, `StepDefinitionId int?`, `AssetTypeId int?`, `IsActive bit`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (4):**
@@ -682,7 +682,7 @@ A version of a form: DRAFT, PUBLISHED or RETIRED. Published versions are immutab
 
 - **Module:** Configuration. **Area:** Forms and custom fields.
 - **Scripts:** created by script 6.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_FormVersion` (FormVersionId), int identity.
 - **Columns (13; `?` = nullable):** `FormVersionId int`, `FormDefinitionId int`, `VersionNo int`, `Status varchar(12)`, `ClonedFromVersionId int?`, `PublishedAt datetime2(7)?`, `PublishedByUserId int?`, `Notes nvarchar(500)?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (5):**
@@ -701,7 +701,7 @@ One field of a form version: key, label, control type, required flag, validation
 
 - **Module:** Configuration. **Area:** Forms and custom fields.
 - **Scripts:** created by script 6.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_FormField` (FormFieldId), int identity.
 - **Columns (14; `?` = nullable):** `FormFieldId int`, `FormVersionId int`, `FieldKey varchar(64)`, `Label nvarchar(200)`, `ControlType varchar(20)`, `HelpText nvarchar(1000)?`, `SortOrder int`, `SectionKey varchar(64)?`, `IsRequired bit`, `DefaultValueJson nvarchar(max)?`, `ValidationJson nvarchar(max)?`, `ShowWhenJson nvarchar(max)?`, `RequiredWhenJson nvarchar(max)?`, `IsFilterable bit`.
 - **Foreign keys (1):**
@@ -716,7 +716,7 @@ One option of a choice field. Immutable once the version is published.
 
 - **Module:** Configuration. **Area:** Forms and custom fields.
 - **Scripts:** created by script 6.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_FormFieldOption` (FormFieldOptionId), int identity.
 - **Columns (6; `?` = nullable):** `FormFieldOptionId int`, `FormFieldId int`, `OptionKey varchar(64)`, `Label nvarchar(200)`, `SortOrder int`, `AvailableWhenJson nvarchar(max)?`.
 - **Foreign keys (1):**
@@ -731,7 +731,7 @@ The stored values (JSON) of a form for one owner (task, step instance, asset, ma
 
 - **Module:** Configuration. **Area:** Forms and custom fields.
 - **Scripts:** created by script 6.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_FormValueSet` (FormValueSetId), bigint identity.
 - **Columns (11; `?` = nullable):** `FormValueSetId bigint`, `OwnerKind varchar(16)`, `OwnerId bigint`, `FormDefinitionId int`, `FormVersionId int`, `ValuesJson nvarchar(max)`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (4):**
@@ -748,7 +748,7 @@ Typed copies of custom field values (text, number, date, date and time, bool) so
 
 - **Module:** Configuration. **Area:** Forms and custom fields.
 - **Scripts:** created by script 6; changed by script 47.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_CustomFieldIndex` (CustomFieldIndexId), bigint identity.
 - **Columns (10; `?` = nullable):** `CustomFieldIndexId bigint`, `OwnerKind varchar(12)`, `OwnerId bigint`, `FormDefinitionId int`, `FieldKey varchar(64)`, `ValueText nvarchar(450)?`, `ValueNumber decimal(19,4)?`, `ValueDate date?`, `ValueDateTime datetime2(7)?`, `ValueBool bit?`.
 - **Foreign keys (1):**
@@ -764,7 +764,7 @@ Admin-defined kind of asset, with a custom field form (through `FormDefinition`)
 
 - **Module:** Assets. **Area:** Assets.
 - **Scripts:** created by script 10; changed by scripts 44, 50, 63.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_AssetType` (AssetTypeId), int identity.
 - **Columns (17; `?` = nullable):** `AssetTypeId int`, `Name nvarchar(100)`, `Description nvarchar(500)?`, `SortOrder int`, `IsActive bit`, `SizeFieldKey varchar(64)?`, `SizeUnit varchar(10)?`, `IconKey varchar(50)?`, `ColourKey varchar(20)?`, `NumberingEnabled bit` (default 0), `NumberingPattern nvarchar(150)` (the tail after the CM Number, default `_{###}`), `NumberingScope int` (1 = per matter). Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (2):**
@@ -779,7 +779,7 @@ A data source or deliverable that belongs to one matter (for example a workspace
 
 - **Module:** Assets. **Area:** Assets.
 - **Scripts:** created by script 10; changed by scripts 43, 63.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_Asset` (AssetId), int identity.
 - **Columns (18; `?` = nullable):** `AssetId int`, `AssetNumber nvarchar(100)?` (the generated Asset Number, a snapshot, never changed; null for assets of types without numbering and for every asset that existed before script 63), `AssetNumberSeq int?` (the counter value it was built from), `MatterId int`, `AssetTypeId int`, `DisplayName nvarchar(300)`, `ExternalReference nvarchar(1000)?`, `Description nvarchar(2000)?`, `IsActive bit`, `DispositionCode varchar(20)`, `DispositionChangedAt datetime2(7)?`, `DispositionChangedByUserId int?`, `DispositionNote nvarchar(500)?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (5):**
@@ -798,7 +798,7 @@ The atomic counter of the automatic asset numbering (issue #1297): one row per a
 
 - **Module:** Assets. **Area:** Assets.
 - **Scripts:** created by script 63.
-- **Report login (`mf_report_reader`):** deny.
+- **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_AssetNumberCounter` (AssetTypeId,ScopeKey).
 - **Columns (4; `?` = nullable):** `AssetTypeId int`, `ScopeKey int`, `NextNumber int` (default 1), `ModifiedAt datetime2(7)`.
 - **Foreign keys (1):**
@@ -812,7 +812,7 @@ A person's saved asset report definition (JSON) for the asset report builder. Un
 
 - **Module:** Assets. **Area:** Assets.
 - **Scripts:** created by script 45.
-- **Report login (`mf_report_reader`):** deny.
+- **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_AssetReport` (AssetReportId), int identity.
 - **Columns (9; `?` = nullable):** `AssetReportId int`, `OwnerUserId int`, `Name nvarchar(100)`, `DefinitionJson nvarchar(4000)`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (3):**
@@ -830,7 +830,7 @@ The agreed format of productions of a matter (image format, text, natives, load 
 
 - **Module:** Productions. **Area:** Productions.
 - **Scripts:** created by script 52.
-- **Report login (`mf_report_reader`):** deny.
+- **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_ProductionSpec` (ProductionSpecId), int identity.
 - **Columns (24; `?` = nullable):** `ProductionSpecId int`, `MatterId int`, `Name nvarchar(200)`, `StatusCode varchar(10)`, `SourceOfAgreement nvarchar(300)?`, `Description nvarchar(1000)?`, `ImageFormat nvarchar(100)?`, `ColourMode nvarchar(100)?`, `TextMode nvarchar(100)?`, `NativesRule nvarchar(300)?`, `LoadFile nvarchar(100)?`, `MetadataFieldsJson nvarchar(4000)?`, `RedactionRule nvarchar(300)?`, `PrivilegeRule nvarchar(300)?`, `DedupRule nvarchar(200)?`, `DateTimeRule nvarchar(200)?`, `NumberingRule nvarchar(200)?`, `DeliveryRule nvarchar(300)?`, `Notes nvarchar(2000)?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (3):**
@@ -847,7 +847,7 @@ A production of a matter: an incoming or outgoing delivery with volume, Bates ra
 
 - **Module:** Productions. **Area:** Productions.
 - **Scripts:** created by script 53.
-- **Report login (`mf_report_reader`):** deny.
+- **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_Production` (ProductionId), int identity.
 - **Columns (18; `?` = nullable):** `ProductionId int`, `MatterId int`, `Name nvarchar(200)`, `VolumeNo nvarchar(50)?`, `DirectionCode varchar(3)`, `PartyName nvarchar(200)?`, `ProductionSpecId int?`, `BatesBegin nvarchar(50)?`, `BatesEnd nvarchar(50)?`, `DocCount int?`, `PageCount int?`, `DeliveredOrDueOn date?`, `Notes nvarchar(4000)?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (4):**
@@ -864,7 +864,7 @@ A comment on a production.
 
 - **Module:** Productions. **Area:** Productions.
 - **Scripts:** created by script 53.
-- **Report login (`mf_report_reader`):** deny.
+- **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_ProductionComment` (ProductionCommentId), int identity.
 - **Columns (9; `?` = nullable):** `ProductionCommentId int`, `ProductionId int`, `MatterId int`, `Body nvarchar(4000)`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (3):**
@@ -882,7 +882,7 @@ A rich text note of a matter (HTML body plus plain text), with pinning and a loc
 
 - **Module:** Notes. **Area:** Notes.
 - **Scripts:** created by script 54.
-- **Report login (`mf_report_reader`):** deny.
+- **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_Note` (NoteId), int identity.
 - **Columns (16; `?` = nullable):** `NoteId int`, `MatterId int`, `Title nvarchar(300)`, `Snippet nvarchar(300)`, `BodyHtml nvarchar(max)`, `BodyText nvarchar(max)`, `IsPinned bit`, `LockedByUserId int?`, `LockedAt datetime2(7)?`, `ContentUpdatedAt datetime2(7)`, `ContentUpdatedByUserId int?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (5):**
@@ -900,7 +900,7 @@ A link from a note to another record (user, note, matter, project or asset).
 
 - **Module:** Notes. **Area:** Notes.
 - **Scripts:** created by script 54.
-- **Report login (`mf_report_reader`):** deny.
+- **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_NoteLink` (NoteId, TargetType, TargetId).
 - **Columns (3; `?` = nullable):** `NoteId int`, `TargetType varchar(10)`, `TargetId int`.
 - **Foreign keys (1):**
@@ -914,7 +914,7 @@ Firm-wide list of note tags.
 
 - **Module:** Notes. **Area:** Notes.
 - **Scripts:** created by script 54.
-- **Report login (`mf_report_reader`):** deny.
+- **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_NoteTag` (NoteTagId), int identity.
 - **Columns (9; `?` = nullable):** `NoteTagId int`, `Name nvarchar(60)`, `ColourKey varchar(20)?`, `IsActive bit`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (2):**
@@ -929,7 +929,7 @@ Junction: tags on a note.
 
 - **Module:** Notes. **Area:** Notes.
 - **Scripts:** created by script 54.
-- **Report login (`mf_report_reader`):** deny.
+- **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_NoteTagLink` (NoteId, NoteTagId).
 - **Columns (2; `?` = nullable):** `NoteId int`, `NoteTagId int`.
 - **Foreign keys (2):**
@@ -943,7 +943,7 @@ A starting text for a note at one of three levels: System, Client or Matter.
 
 - **Module:** Notes. **Area:** Notes.
 - **Scripts:** created by script 55; changed by script 56.
-- **Report login (`mf_report_reader`):** deny.
+- **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_NoteTemplate` (NoteTemplateId), int identity.
 - **Columns (14; `?` = nullable):** `NoteTemplateId int`, `ScopeCode varchar(6)`, `MatterId int?`, `Name nvarchar(100)`, `Description nvarchar(160)?`, `TitleTemplate nvarchar(300)?`, `BodyHtml nvarchar(max)`, `UsedCount int`, `ClientId int?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (4):**
@@ -960,7 +960,7 @@ Junction: suggested tags of a note template.
 
 - **Module:** Notes. **Area:** Notes.
 - **Scripts:** created by script 55.
-- **Report login (`mf_report_reader`):** deny.
+- **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_NoteTemplateTag` (NoteTemplateId, NoteTagId).
 - **Columns (2; `?` = nullable):** `NoteTemplateId int`, `NoteTagId int`.
 - **Foreign keys (2):**
@@ -975,7 +975,7 @@ Per-person availability profile: time zone and whether custom work hours exist. 
 
 - **Module:** Identity. **Area:** Availability and Calendar.
 - **Scripts:** created by script 22.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_UserAvailability` (UserId).
 - **Columns (10; `?` = nullable):** `UserId int`, `Status varchar(20)`, `OutOfOfficeFromDate date?`, `OutOfOfficeUntilDate date?`, `Note nvarchar(200)?`, `TimeZoneId varchar(64)?`, `HasCustomWorkHours bit`, `UpdatedAtUtc datetime2(7)`, `UpdatedByUserId int?`, `RowVersion timestamp`.
 - **Foreign keys (2):**
@@ -990,7 +990,7 @@ Weekly work hours of a person (ISO weekday 1 to 7, start and end time).
 
 - **Module:** Identity. **Area:** Availability and Calendar.
 - **Scripts:** created by script 22.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_UserWorkHour` (UserId, DayOfWeek).
 - **Columns (4; `?` = nullable):** `UserId int`, `DayOfWeek tinyint`, `StartTime time`, `EndTime time`.
 - **Foreign keys (1):**
@@ -1003,7 +1003,7 @@ An Out of office entry of a person (vacation, sick, training, conference, other)
 
 - **Module:** Identity. **Area:** Availability and Calendar.
 - **Scripts:** created by script 58.
-- **Report login (`mf_report_reader`):** deny.
+- **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_UserAbsence` (AbsenceId), int identity.
 - **Columns (11; `?` = nullable):** `AbsenceId int`, `UserId int`, `AbsenceType varchar(20)`, `StartDate date`, `EndDate date?`, `Note nvarchar(200)?`, `CreatedAtUtc datetime2(3)`, `CreatedByUserId int?`, `UpdatedAtUtc datetime2(3)`, `UpdatedByUserId int?`, `RowVersion timestamp`.
 - **Foreign keys (3):**
@@ -1019,7 +1019,7 @@ A named holiday calendar. It can apply to everyone, be the default of a pod, or 
 
 - **Module:** Identity. **Area:** Availability and Calendar.
 - **Scripts:** created by script 59.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_HolidayCalendar` (CalendarId), int identity.
 - **Columns (12; `?` = nullable):** `CalendarId int`, `Name nvarchar(100)`, `ColourKey varchar(20)`, `RegionNote nvarchar(200)?`, `AppliesToEveryone bit`, `SortOrder int`, `IsActive bit`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (2):**
@@ -1034,7 +1034,7 @@ One holiday rule of a calendar (fixed date, nth weekday, Easter offset, once, or
 
 - **Module:** Identity. **Area:** Availability and Calendar.
 - **Scripts:** created by script 59.
-- **Report login (`mf_report_reader`):** allow.
+- **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_Holiday` (HolidayId), int identity.
 - **Columns (22; `?` = nullable):** `HolidayId int`, `CalendarId int`, `Name nvarchar(100)`, `RuleKind varchar(20)`, `Month tinyint?`, `Day tinyint?`, `Nth smallint?`, `Weekday tinyint?`, `PlusDays tinyint`, `EasterOffset smallint?`, `OnceDate date?`, `RangeEndMonth tinyint?`, `RangeEndDay tinyint?`, `RangeEndDate date?`, `Yearly bit`, `WeekendRule varchar(10)`, `RegionNote nvarchar(200)?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (3):**
@@ -1052,7 +1052,7 @@ A category to group reports.
 
 - **Module:** Reports. **Area:** Reports.
 - **Scripts:** created by script 30.
-- **Report login (`mf_report_reader`):** deny.
+- **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_ReportCategory` (ReportCategoryId), int identity.
 - **Columns (9; `?` = nullable):** `ReportCategoryId int`, `Name nvarchar(100)`, `SortOrder int`, `IsActive bit`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (2):**
@@ -1067,7 +1067,7 @@ A report: name, category, current version, timeout and row limit.
 
 - **Module:** Reports. **Area:** Reports.
 - **Scripts:** created by script 30.
-- **Report login (`mf_report_reader`):** deny.
+- **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_ReportDefinition` (ReportId), int identity.
 - **Columns (16; `?` = nullable):** `ReportId int`, `ReportCategoryId int`, `Name nvarchar(150)`, `Description nvarchar(1000)?`, `HelpText nvarchar(max)?`, `SortOrder int`, `IsActive bit`, `CurrentVersionId int?`, `TimeoutSeconds int?`, `MaxRows int?`, `LastPreviewOkVersionId int?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (5):**
@@ -1085,7 +1085,7 @@ One version of a report's SQL text and parameters. Append-only.
 
 - **Module:** Reports. **Area:** Reports.
 - **Scripts:** created by script 30.
-- **Report login (`mf_report_reader`):** deny.
+- **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_ReportVersion` (ReportVersionId), int identity.
 - **Columns (9; `?` = nullable):** `ReportVersionId int`, `ReportId int`, `VersionNo int`, `SqlText nvarchar(max)`, `SqlHash binary`, `ParametersJson nvarchar(max)`, `ChangeNote nvarchar(300)?`, `CreatedAt datetime2(7)`, `CreatedByUserId int?`.
 - **Foreign keys (2):**
@@ -1101,7 +1101,7 @@ A typed parameter of a report (text, number, date, date range, yes or no, single
 
 - **Module:** Reports. **Area:** Reports.
 - **Scripts:** created by script 30.
-- **Report login (`mf_report_reader`):** deny.
+- **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_ReportParameter` (ReportParameterId), int identity.
 - **Columns (15; `?` = nullable):** `ReportParameterId int`, `ReportId int`, `Name varchar(64)`, `Ordinal int`, `Type varchar(20)`, `LookupKind varchar(20)?`, `LookupMulti bit`, `Label nvarchar(100)`, `HelpText nvarchar(300)?`, `DefaultJson nvarchar(500)?`, `IsRequired bit`, `OptionsKind varchar(10)?`, `OptionsJson nvarchar(max)?`, `OptionsSql nvarchar(max)?`, `SettingsJson nvarchar(max)?`.
 - **Foreign keys (1):**
@@ -1115,7 +1115,7 @@ Junction: reports a role may run.
 
 - **Module:** Reports. **Area:** Reports.
 - **Scripts:** created by script 30.
-- **Report login (`mf_report_reader`):** deny.
+- **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_RoleReport` (RoleId, ReportId).
 - **Columns (4; `?` = nullable):** `RoleId int`, `ReportId int`, `GrantedAt datetime2(7)`, `GrantedByUserId int?`.
 - **Foreign keys (3):**
@@ -1130,7 +1130,7 @@ A person's saved view (columns, sort, filters, parameters) of a report.
 
 - **Module:** Reports. **Area:** Reports.
 - **Scripts:** created by script 30.
-- **Report login (`mf_report_reader`):** deny.
+- **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_SavedReportView` (SavedReportViewId), int identity.
 - **Columns (10; `?` = nullable):** `SavedReportViewId int`, `ReportId int`, `UserId int`, `Name nvarchar(100)`, `IsDefault bit`, `ViewJson nvarchar(max)`, `ParamsJson nvarchar(max)?`, `CreatedAt datetime2(7)`, `ModifiedAt datetime2(7)?`, `RowVersion timestamp`.
 - **Foreign keys (2):**
@@ -1145,7 +1145,7 @@ Junction: a person's pinned reports.
 
 - **Module:** Reports. **Area:** Reports.
 - **Scripts:** created by script 30.
-- **Report login (`mf_report_reader`):** deny.
+- **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_ReportFavourite` (UserId, ReportId).
 - **Columns (3; `?` = nullable):** `UserId int`, `ReportId int`, `PinnedAt datetime2(7)`.
 - **Foreign keys (2):**
@@ -1158,7 +1158,7 @@ A person's most recently run reports.
 
 - **Module:** Reports. **Area:** Reports.
 - **Scripts:** created by script 30.
-- **Report login (`mf_report_reader`):** deny.
+- **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_ReportRecent` (UserId, ReportId).
 - **Columns (3; `?` = nullable):** `UserId int`, `ReportId int`, `LastRunAt datetime2(7)`.
 - **Foreign keys (2):**
@@ -1171,7 +1171,7 @@ The run log: who ran which report version, when, with which parameters, status, 
 
 - **Module:** Reports. **Area:** Reports.
 - **Scripts:** created by script 30.
-- **Report login (`mf_report_reader`):** deny.
+- **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_ReportRun` (ReportRunId), bigint identity.
 - **Columns (15; `?` = nullable):** `ReportRunId bigint`, `ReportId int`, `ReportVersionId int`, `UserId int`, `StartedAt datetime2(7)`, `FinishedAt datetime2(7)?`, `Status varchar(12)`, `Kind varchar(12)`, `ParametersJson nvarchar(4000)?`, `RowCount int?`, `Truncated bit`, `DurationMs int?`, `ErrorCode varchar(40)?`, `ExportedRowCount int?`, `CorrelationId uniqueidentifier`.
 - **Foreign keys (3):**
@@ -1190,7 +1190,7 @@ The append-only audit trail: who did what to which object and when. `MatterId` a
 
 - **Module:** Audit. **Area:** Audit, Notifications, Settings and platform.
 - **Scripts:** created by script 3; changed by scripts 17, 36.
-- **Report login (`mf_report_reader`):** deny.
+- **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_AuditEvent` (AuditEventId), bigint identity.
 - **Columns (14; `?` = nullable):** `AuditEventId bigint`, `OccurredAtUtc datetime2(3)`, `ActorUserId int?`, `EventType varchar(64)`, `ObjectType varchar(40)`, `ObjectId varchar(40)`, `MatterId int?`, `TaskId bigint?`, `FieldKey varchar(100)?`, `OldValue nvarchar(max)?`, `NewValue nvarchar(max)?`, `Summary nvarchar(500)?`, `CorrelationId uniqueidentifier`, `IsSensitiveScope bit`.
 - **Foreign keys:** none.
@@ -1204,7 +1204,7 @@ A permanently empty table that references `AuditEvent`, so SQL Server refuses `T
 
 - **Module:** Audit (created by script 13). **Area:** Audit, Notifications, Settings and platform.
 - **Scripts:** created by script 13.
-- **Report login (`mf_report_reader`):** deny.
+- **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_AuditEventGuard` (AuditEventId).
 - **Columns (1; `?` = nullable):** `AuditEventId bigint`.
 - **Foreign keys (1):**
@@ -1216,7 +1216,7 @@ An in-app notification for one recipient. A unique dedupe key stops duplicates; 
 
 - **Module:** Notifications. **Area:** Audit, Notifications, Settings and platform.
 - **Scripts:** created by script 29.
-- **Report login (`mf_report_reader`):** deny.
+- **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_Notification` (Id), bigint identity.
 - **Columns (11; `?` = nullable):** `Id bigint`, `RecipientUserId int`, `EventType varchar(40)`, `ObjectKind varchar(20)`, `ObjectId bigint`, `MatterId int?`, `ActorUserId int?`, `Message nvarchar(300)`, `DedupeKey nvarchar(80)`, `CreatedUtc datetime2(3)`, `ReadUtc datetime2(3)?`.
 - **Foreign keys (3):**
@@ -1232,7 +1232,7 @@ Sparse per-user switches for notification event types (a row exists only when ch
 
 - **Module:** Notifications. **Area:** Audit, Notifications, Settings and platform.
 - **Scripts:** created by script 29.
-- **Report login (`mf_report_reader`):** deny.
+- **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_NotificationPreference` (UserId, EventType).
 - **Columns (4; `?` = nullable):** `UserId int`, `EventType varchar(40)`, `Enabled bit`, `UpdatedUtc datetime2(3)`.
 - **Foreign keys (1):**
@@ -1245,7 +1245,7 @@ Application settings as key and value (text, or a binary file with content type 
 
 - **Module:** Configuration. **Area:** Audit, Notifications, Settings and platform.
 - **Scripts:** created by script 48.
-- **Report login (`mf_report_reader`):** deny.
+- **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_AppSetting` (SettingKey).
 - **Columns (8; `?` = nullable):** `SettingKey varchar(100)`, `ValueText nvarchar(1000)?`, `ValueBinary varbinary(max)?`, `ContentType varchar(100)?`, `ContentSha256 binary?`, `UpdatedAtUtc datetime2(3)`, `UpdatedByUserId int`, `RowVersion timestamp`.
 - **Foreign keys (1):**
@@ -1258,7 +1258,7 @@ Per person: the highest audit event id marked as read in My Matters recent activ
 
 - **Module:** WorkViews (raw SQL, no entity). **Area:** Audit, Notifications, Settings and platform.
 - **Scripts:** created by script 31; changed by script 39.
-- **Report login (`mf_report_reader`):** deny.
+- **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_UserMatterActivitySeen` (UserId).
 - **Columns (4; `?` = nullable):** `UserId int`, `SeenAuditEventId bigint`, `SeenAtUtc datetime2(3)`, `IsInitial bit`.
 - **Foreign keys (1):**
@@ -1271,7 +1271,7 @@ Created by the schema runner (not by a numbered script): one row per applied scr
 
 - **Module:** Data (schema runner, not a numbered script). **Area:** Audit, Notifications, Settings and platform.
 - **Scripts:** created by the schema runner, not by a script.
-- **Report login (`mf_report_reader`):** deny.
+- **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_SchemaMigration` (SchemaMigrationId), int identity.
 - **Columns (9; `?` = nullable):** `SchemaMigrationId int`, `ScriptName nvarchar(260)`, `Prefix int`, `Checksum char(64)`, `AppliedAtUtc datetime2(3)`, `DurationMs int`, `Success bit`, `AppliedBy nvarchar(256)?`, `AppVersion nvarchar(64)?`.
 - **Foreign keys:** none.
@@ -1283,7 +1283,7 @@ Bookkeeping so a one-time seed (for example the starter roles) runs exactly once
 
 - **Module:** Identity (seeder bookkeeping). **Area:** Audit, Notifications, Settings and platform.
 - **Scripts:** created by script 13.
-- **Report login (`mf_report_reader`):** deny.
+- **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_SeedMarker` (Name).
 - **Columns (2; `?` = nullable):** `Name varchar(100)`, `AppliedAt datetime2(7)`.
 - **Foreign keys:** none.

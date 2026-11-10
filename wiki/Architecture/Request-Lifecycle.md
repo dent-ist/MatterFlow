@@ -2,7 +2,7 @@
 
 [[_TOC_]]
 
-**What this page is for.** What happens to one HTTP request, in order: middleware, authentication, authorization policy, filters, controller, application service, database and the response. Also the error format and the `rowVersion` concurrency rule. The order below is read from `backend/src/MatterFlow.Api/Program.cs`.
+**What this page is for.** What happens to one HTTP request, in order: middleware, authentication, authorization policy, filters, controller, application service, database and the response. Also the error format and the `rowVersion` concurrency rule. The order below is read from `backend/src/LptHub.Api/Program.cs`.
 
 ## Pipeline order
 
@@ -14,14 +14,14 @@
 | 4 | `QueryLimitMiddleware` | `Http/ApiRateLimiting.cs` | Rejects a too long query string with 400 `QUERY_TOO_LARGE` |
 | 5 | Exception handler and status code pages | `GlobalExceptionHandler` | Maps exceptions to problem details |
 | 6 | Static files (when the SPA is served) | `Hosting/SpaHosting.cs` | Serves the Angular build from `wwwroot` |
-| 7 | `RequestForgeryGuard` | `Http/RequestForgeryGuard.cs` | Every state-changing request (not GET, HEAD, OPTIONS, TRACE) under `/api` must carry `X-MatterFlow-Client: web` (the Angular `csrfInterceptor` adds it); bodies must be JSON or multipart; a cross-site `Sec-Fetch-Site` is refused with 403 |
+| 7 | `RequestForgeryGuard` | `Http/RequestForgeryGuard.cs` | Every state-changing request (not GET, HEAD, OPTIONS, TRACE) under `/api` must carry `X-LptHub-Client: web` (the Angular `csrfInterceptor` adds it); bodies must be JSON or multipart; a cross-site `Sec-Fetch-Site` is refused with 403 |
 | 8 | Authentication | Identity module | Windows (Negotiate) in production, `Dev` handler in Development and Test |
 | 9 | Authorization | `AccessAuthorizationHandler` | Evaluates the `Perm:` policy of the endpoint (see below) |
 | 10 | Rate limiter | `Http/ApiRateLimiting.cs` | Per-user budgets per minute (all calls, comments, task writes, search, audit, dashboard) |
 | 11 | MVC filters | Identity and Api | `ViewerPreparationFilter`, `ReadQueryTimeoutFilter` (15 s read timeout on the heavy reads), `ErrorResultFilter` |
 | 12 | Controller action | module `Api/` folder | Maps the DTO to a command, calls the application service |
 | 13 | Application service | module `Application/` | Validates (FluentValidation), applies business rules and the visibility rule, uses the DbContext |
-| 14 | `MatterFlowDbContext.SaveChanges` | `MatterFlow.Data` | Interceptors stamp audit columns and write `AuditEvent` rows in the same transaction |
+| 14 | `LptHubDbContext.SaveChanges` | `LptHub.Data` | Interceptors stamp audit columns and write `AuditEvent` rows in the same transaction |
 | 15 | Response | `Result` or DTO | Success JSON, or `application/problem+json` |
 
 Health checks (`/health/live`, `/health/ready`), the OpenAPI document and Swagger (Development) are mapped before the controllers and are anonymous.
@@ -74,7 +74,7 @@ sequenceDiagram
 Errors are RFC 9457 `application/problem+json`:
 
 ```json
-{ "type": "urn:matterflow:error:invalid-status-transition", "title": "Invalid status transition",
+{ "type": "urn:lpt-hub:error:invalid-status-transition", "title": "Invalid status transition",
   "status": 409, "code": "INVALID_STATUS_TRANSITION", "detail": "...", "traceId": "00-...",
   "errors": { "fieldKey": [ { "code": "REQUIRED", "message": "..." } ] }, "meta": { } }
 ```

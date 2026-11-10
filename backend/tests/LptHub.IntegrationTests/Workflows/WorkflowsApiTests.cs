@@ -2,14 +2,14 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.WorkflowEngine.Contracts;
+using LptHub.Identity.Contracts;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.WorkflowEngine.Contracts;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Workflows;
+namespace LptHub.IntegrationTests.Workflows;
 
 /// <summary>
 /// Tickets #35 and #38 acceptance against a real SQL Server through the full HTTP pipeline: the step library, workflow drafts, validated
@@ -32,7 +32,7 @@ public sealed class WorkflowsApiTests(SqlServerFixture sql) : IAsyncLifetime
     private HttpClient As(string user = DatabaseApiFactory.AdminAccount)
     {
         var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        client.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         client.DefaultRequestHeaders.Add("X-Dev-User", user);
         return client;
     }

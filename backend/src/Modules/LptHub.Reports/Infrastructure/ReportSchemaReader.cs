@@ -1,9 +1,9 @@
 using System.Globalization;
-using MatterFlow.Reports.Application;
+using LptHub.Reports.Application;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Caching.Memory;
 
-namespace MatterFlow.Reports.Infrastructure;
+namespace LptHub.Reports.Infrastructure;
 
 /// <summary>
 /// Lists the tables and views of the database that the **report login** can SELECT from, with their columns. The metadata is read through the

@@ -65,7 +65,7 @@ test.describe('Designer not found, no access and failure states (#541)', () => {
       await expect(page.locator('body')).not.toContainText('99999999');
       await expect(page.getByRole('button', { name: /Retry|Try again/ })).toHaveCount(0);
       await expect(crumbs(page)).toHaveText(r.crumbs);
-      await expect(page).toHaveTitle(`${r.title} not found - MatterFlow`);
+      await expect(page).toHaveTitle(`${r.title} not found - LPT Hub`);
       await expect(heading(page)).toBeFocused();
       await noToast(page);
       const back = page.getByRole('link', { name: `Go to ${r.list}` });
@@ -100,7 +100,7 @@ test.describe('Designer not found, no access and failure states (#541)', () => {
     }
     await page.goto(r.url);
     await expect(heading(page)).toHaveText("You don't have access to this asset type.");
-    await expect(page).toHaveTitle('No access to this asset type - MatterFlow');
+    await expect(page).toHaveTitle('No access to this asset type - LPT Hub');
     await expect(page.getByRole('button', { name: 'Retry' })).toHaveCount(0);
     await noToast(page);
     await atEverySize(page, `${r.key}-forbidden`);
@@ -108,7 +108,7 @@ test.describe('Designer not found, no access and failure states (#541)', () => {
     status = 500;
     await page.goto(r.url);
     await expect(heading(page)).toHaveText("Couldn't load this asset type.");
-    await expect(page).toHaveTitle('Asset type could not be loaded - MatterFlow');
+    await expect(page).toHaveTitle('Asset type could not be loaded - LPT Hub');
     await expect(page.locator('[data-error-reference]')).toContainText(reference);
     await expect(page.locator('[data-toast]')).toHaveCount(0);
     await atEverySize(page, `${r.key}-load-failed`);

@@ -1,6 +1,6 @@
-using MatterFlow.SharedKernel.Results;
+using LptHub.SharedKernel.Results;
 
-namespace MatterFlow.SharedKernel.ValueObjects;
+namespace LptHub.SharedKernel.ValueObjects;
 
 /// <summary>
 /// Client/Matter number (addendum B). Input is 1 to 5 ASCII digits (surrounding whitespace trimmed);

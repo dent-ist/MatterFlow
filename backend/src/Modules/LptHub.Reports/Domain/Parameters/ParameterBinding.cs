@@ -1,6 +1,6 @@
 using System.Data;
 
-namespace MatterFlow.Reports.Domain.Parameters;
+namespace LptHub.Reports.Domain.Parameters;
 
 /// <summary>How the engine binds a value that is a list.</summary>
 public enum ListKind

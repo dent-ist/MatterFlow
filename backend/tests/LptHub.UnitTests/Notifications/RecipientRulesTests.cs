@@ -1,8 +1,8 @@
-using MatterFlow.Notifications.Contracts;
-using MatterFlow.Notifications.Domain;
+using LptHub.Notifications.Contracts;
+using LptHub.Notifications.Domain;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Notifications;
+namespace LptHub.UnitTests.Notifications;
 
 /// <summary>The central recipient rules (README section 3): actor never, one per person per action by priority, switches honoured.</summary>
 public class RecipientRulesTests

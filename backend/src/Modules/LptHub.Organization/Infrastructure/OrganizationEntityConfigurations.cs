@@ -1,8 +1,8 @@
-using MatterFlow.Organization.Domain;
+using LptHub.Organization.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace MatterFlow.Organization.Infrastructure;
+namespace LptHub.Organization.Infrastructure;
 
 internal sealed class ClientConfiguration : IEntityTypeConfiguration<Client>
 {

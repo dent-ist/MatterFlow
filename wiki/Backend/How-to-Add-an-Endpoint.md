@@ -2,7 +2,7 @@
 
 [[_TOC_]]
 
-**What this page is for.** The steps and file locations for adding an HTTP endpoint to an existing module, from the controller to the tests and the generated client. The example pattern is `OnHoldReasonsController` and `OnHoldReasonService` in `backend/src/Modules/MatterFlow.Configuration`.
+**What this page is for.** The steps and file locations for adding an HTTP endpoint to an existing module, from the controller to the tests and the generated client. The example pattern is `OnHoldReasonsController` and `OnHoldReasonService` in `backend/src/Modules/LptHub.Configuration`.
 
 ## Steps
 

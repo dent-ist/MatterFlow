@@ -2,12 +2,12 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Shouldly;
 using Xunit.Abstractions;
 
-namespace MatterFlow.IntegrationTests.Audit;
+namespace LptHub.IntegrationTests.Audit;
 
 /// <summary>
 /// The audit browser against about 200,000 events (a year of firm activity is a few hundred thousand): every filter combination the screen offers
@@ -24,7 +24,7 @@ public sealed class AuditSearchPerformanceTests(SqlServerFixture sql, ITestOutpu
     {
         await using var factory = new DatabaseApiFactory(await sql.CreateDatabaseAsync());
         var client = factory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        client.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         client.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
         client.DefaultRequestHeaders.Add("X-Time-Zone", "America/New_York");
         (await client.GetAsync("/api/v1/audit/facets")).EnsureSuccessStatusCode();

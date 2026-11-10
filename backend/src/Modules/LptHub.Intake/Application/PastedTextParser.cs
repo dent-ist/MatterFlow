@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 
-namespace MatterFlow.Intake.Application;
+namespace LptHub.Intake.Application;
 
 /// <summary>
 /// Deterministic parser for email text pasted from Outlook (docs/adr/outlook-dnd-spike.md section 6): a header block (<c>From:</c>,

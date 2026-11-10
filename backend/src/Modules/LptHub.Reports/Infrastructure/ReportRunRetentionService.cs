@@ -3,7 +3,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace MatterFlow.Reports.Infrastructure;
+namespace LptHub.Reports.Infrastructure;
 
 /// <summary>
 /// Keeps the run log for two years (owner decision): once a day it calls <c>dbo.usp_ReportRunPurge</c>, which deletes runs older than that in batches.

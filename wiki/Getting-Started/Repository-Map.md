@@ -29,17 +29,17 @@
 
 | Path | Contents |
 |---|---|
-| `backend/MatterFlow.sln` | Solution file |
+| `backend/LptHub.sln` | Solution file |
 | `backend/Directory.Build.props`, `Directory.Packages.props` | Shared build settings; NuGet versions live only in `Directory.Packages.props` |
-| `backend/src/MatterFlow.Api/` | The host: `Program.cs`, `ModuleComposition.cs`, `Http/` (error format, filters, middleware), `Security/`, `Hosting/` (SPA hosting, migrate-only, readiness), `Seeding/` (starter configuration), `OpenApi/`, `appsettings*.json` |
-| `backend/src/MatterFlow.SharedKernel/` | Types every module may use: `Results`, `Paging`, `Time`, `Visibility`, `Audit`, `Authorization`, `Entities`, `ValueObjects`, `Tasks`, `Availability`, `Text`, `Identity`, `Data` |
-| `backend/src/MatterFlow.Data/` | `MatterFlowDbContext`, EF interceptors (audit, audit columns, stable plan), model conventions, `SchemaMigrations` (the script runner), cross-module relationships |
-| `backend/src/Modules/MatterFlow.<Module>/` | One project per module: `Domain/`, `Application/`, `Infrastructure/`, `Api/` (some modules group files by feature instead) |
-| `backend/src/Modules/MatterFlow.<Module>.Contracts/` | The module's public surface: interfaces and DTOs other modules may use |
-| `backend/tests/MatterFlow.UnitTests/` | Fast tests, no Docker |
-| `backend/tests/MatterFlow.ArchitectureTests/` | Module rules, authorization rules, audit scope, rowVersion rules, source hygiene |
-| `backend/tests/MatterFlow.SchemaTests/` | Schema checks against a real SQL Server (Docker), including the proof that the baseline equals the archived chain |
-| `backend/tests/MatterFlow.IntegrationTests/` | HTTP-level tests with Testcontainers (Docker) |
+| `backend/src/LptHub.Api/` | The host: `Program.cs`, `ModuleComposition.cs`, `Http/` (error format, filters, middleware), `Security/`, `Hosting/` (SPA hosting, migrate-only, readiness), `Seeding/` (starter configuration), `OpenApi/`, `appsettings*.json` |
+| `backend/src/LptHub.SharedKernel/` | Types every module may use: `Results`, `Paging`, `Time`, `Visibility`, `Audit`, `Authorization`, `Entities`, `ValueObjects`, `Tasks`, `Availability`, `Text`, `Identity`, `Data` |
+| `backend/src/LptHub.Data/` | `LptHubDbContext`, EF interceptors (audit, audit columns, stable plan), model conventions, `SchemaMigrations` (the script runner), cross-module relationships |
+| `backend/src/Modules/LPT Hub.<Module>/` | One project per module: `Domain/`, `Application/`, `Infrastructure/`, `Api/` (some modules group files by feature instead) |
+| `backend/src/Modules/LPT Hub.<Module>.Contracts/` | The module's public surface: interfaces and DTOs other modules may use |
+| `backend/tests/LptHub.UnitTests/` | Fast tests, no Docker |
+| `backend/tests/LptHub.ArchitectureTests/` | Module rules, authorization rules, audit scope, rowVersion rules, source hygiene |
+| `backend/tests/LptHub.SchemaTests/` | Schema checks against a real SQL Server (Docker), including the proof that the baseline equals the archived chain |
+| `backend/tests/LptHub.IntegrationTests/` | HTTP-level tests with Testcontainers (Docker) |
 
 See [Backend Modules](../Architecture/Backend-Modules.md) and [Module Guide](../Backend/Module-Guide.md).
 

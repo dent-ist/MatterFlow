@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>
 /// The parameters of <c>GET /my-matters/data</c> (epic #851 issue #869; the Data Area of epic #893 issue #931). Unknown parameters are a 400. Every selection is optional: nothing chosen means

@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace MatterFlow.Assets.Application;
+namespace LptHub.Assets.Application;
 
 /// <summary>Measures of an asset report.</summary>
 public static class AssetReportMeasures

@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
-using MatterFlow.SharedKernel.Paging;
+using LptHub.SharedKernel.Paging;
 
-namespace MatterFlow.Api.Http;
+namespace LptHub.Api.Http;
 
 /// <summary>Standard list query: offset paging plus the whitelisted <c>sort</c> expression. Resource-specific filters derive from or accompany this.</summary>
 public class ListQuery

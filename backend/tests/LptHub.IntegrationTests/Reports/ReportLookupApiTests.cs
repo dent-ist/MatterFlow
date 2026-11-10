@@ -1,9 +1,9 @@
 using System.Net;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Reports;
+namespace LptHub.IntegrationTests.Reports;
 
 /// <summary>
 /// GET /api/v1/reports/{id}/lookups/{parameter} (owner decision 13, 2026-11-07): the pickers of a report's lookup parameters for anybody who may run the report, without the

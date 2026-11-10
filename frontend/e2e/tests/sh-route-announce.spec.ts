@@ -18,10 +18,10 @@ test.describe('Route announcement (#624)', () => {
     await expect(region(page)).toHaveAttribute('aria-live', 'polite');
     await expect(region(page)).toHaveText('');
     await nav(page).getByRole('link', { name: 'Matters', exact: true }).click();
-    await expect(region(page)).toHaveText('Matters - MatterFlow');
-    expect(await page.evaluate(() => document.title)).toBe('Matters - MatterFlow');
+    await expect(region(page)).toHaveText('Matters - LPT Hub');
+    expect(await page.evaluate(() => document.title)).toBe('Matters - LPT Hub');
     await nav(page).getByRole('link', { name: 'Projects' }).click();
-    await expect(region(page)).toHaveText('Projects - MatterFlow');
+    await expect(region(page)).toHaveText('Projects - LPT Hub');
     // Focus is left to the router: the region never takes it.
     expect(
       await page.evaluate(() => document.activeElement?.closest('[data-route-announcer]')),
@@ -30,8 +30,8 @@ test.describe('Route announcement (#624)', () => {
     await page.goBack();
     await expect(page).toHaveURL(/\/matters$/);
     await page.waitForTimeout(1200);
-    await expect(region(page)).toHaveText('Projects - MatterFlow');
-    expect(await page.evaluate(() => document.title)).toBe('Matters - MatterFlow');
+    await expect(region(page)).toHaveText('Projects - LPT Hub');
+    expect(await page.evaluate(() => document.title)).toBe('Matters - LPT Hub');
   });
 
   test('a record announces its own name once it has loaded; a tab change (query) says nothing', async ({
@@ -44,14 +44,14 @@ test.describe('Route announcement (#624)', () => {
     const link = page.locator('a', { hasText: 'Dashboard' }).first();
     await expect(link).toBeVisible();
     await nav(page).getByRole('link', { name: 'Matters', exact: true }).click();
-    await expect(region(page)).toHaveText('Matters - MatterFlow');
+    await expect(region(page)).toHaveText('Matters - LPT Hub');
     // The list is filtered to this client's own unique name: on a database with many clients it is not on the first page of /clients.
     await page.goto(`/clients?name=${encodeURIComponent(client.name as string)}&status=all`);
     await page
       .getByRole('link', { name: client.name as string })
       .first()
       .click();
-    await expect(region(page)).toContainText(new RegExp(`${client.clientNumber}.*- MatterFlow`));
+    await expect(region(page)).toContainText(new RegExp(`${client.clientNumber}.*- LPT Hub`));
   });
 
   test('permission variants: the region is present for every person who gets the shell', async ({
@@ -67,7 +67,7 @@ test.describe('Route announcement (#624)', () => {
       const others = nav(page).locator('a:not([aria-current])');
       if ((await others.count()) === 0) continue; // a person with one page has nowhere else to go
       await others.last().click();
-      await expect(region(page)).toHaveText(/ - MatterFlow$/);
+      await expect(region(page)).toHaveText(/ - LPT Hub$/);
     }
   });
 
@@ -81,7 +81,7 @@ test.describe('Route announcement (#624)', () => {
       await expect(page.getByRole('heading', { level: 1, name: 'Clients' })).toBeVisible();
       if (size.width < 640) await page.getByRole('button', { name: 'Menu', exact: true }).click();
       await nav(page).getByRole('link', { name: 'Matters', exact: true }).click();
-      await expect(region(page)).toHaveText('Matters - MatterFlow');
+      await expect(region(page)).toHaveText('Matters - LPT Hub');
       const box = (await region(page).boundingBox())!;
       expect(box.width * box.height, `region size at ${size.width}`).toBeLessThanOrEqual(1);
       expect(await axeViolations(page), `announcement at ${size.width}`).toEqual([]);

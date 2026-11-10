@@ -1,7 +1,7 @@
-using MatterFlow.SharedKernel.Time;
+using LptHub.SharedKernel.Time;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Notifications.Infrastructure.Scheduling;
+namespace LptHub.Notifications.Infrastructure.Scheduling;
 
 /// <summary>
 /// Retention (README section 11, issue #744), once a day: read notifications older than 90 days are deleted, and so is anything older than 365

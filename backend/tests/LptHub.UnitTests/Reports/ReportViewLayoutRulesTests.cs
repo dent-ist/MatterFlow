@@ -1,7 +1,7 @@
-using MatterFlow.Reports.Application;
+using LptHub.Reports.Application;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Reports;
+namespace LptHub.UnitTests.Reports;
 
 /// <summary>What a saved view may hold before it is stored (issue #722): name, sizes, operators, page sizes, unknown columns.</summary>
 public class ReportViewLayoutRulesTests

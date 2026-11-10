@@ -1,10 +1,10 @@
-using MatterFlow.Audit.Contracts;
-using MatterFlow.Audit.Domain;
-using MatterFlow.Audit.Infrastructure;
-using MatterFlow.SharedKernel.Audit;
+using LptHub.Audit.Contracts;
+using LptHub.Audit.Domain;
+using LptHub.Audit.Infrastructure;
+using LptHub.SharedKernel.Audit;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Audit;
+namespace LptHub.UnitTests.Audit;
 
 public class AuditDiffTests
 {
@@ -174,7 +174,7 @@ public class AuditEventClippingTests
     [Fact]
     public void Long_bounded_columns_are_cut_to_their_width_and_marked()
     {
-        var evt = new MatterFlow.Audit.Domain.AuditEvent
+        var evt = new LptHub.Audit.Domain.AuditEvent
         {
             EventType = new string('e', 100),
             ObjectType = new string('o', 100),
@@ -199,7 +199,7 @@ public class AuditEventClippingTests
     [Fact]
     public void Values_within_the_limits_are_left_alone()
     {
-        var evt = new MatterFlow.Audit.Domain.AuditEvent { EventType = "TASK_CREATED", ObjectType = "Task", ObjectId = "42", FieldKey = null, Summary = new string('s', 500) };
+        var evt = new LptHub.Audit.Domain.AuditEvent { EventType = "TASK_CREATED", ObjectType = "Task", ObjectId = "42", FieldKey = null, Summary = new string('s', 500) };
 
         evt.ClipToColumnLimits();
 

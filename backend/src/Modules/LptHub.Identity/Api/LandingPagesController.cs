@@ -1,10 +1,10 @@
-using MatterFlow.Identity.Authorization;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Identity.LandingPages;
+using LptHub.Identity.Authorization;
+using LptHub.Identity.Contracts;
+using LptHub.Identity.LandingPages;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MatterFlow.Identity.Api;
+namespace LptHub.Identity.Api;
 
 /// <summary>
 /// Landing pages (epic #1330, issue #1332): which page a person sees after sign-in. A role has an optional default page; a person may choose their own;

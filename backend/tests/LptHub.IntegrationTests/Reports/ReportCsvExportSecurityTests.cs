@@ -1,11 +1,11 @@
 using System.Globalization;
 using System.Net;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Reports.ReportSecurityKit;
+using static LptHub.IntegrationTests.Reports.ReportSecurityKit;
 
-namespace MatterFlow.IntegrationTests.Reports;
+namespace LptHub.IntegrationTests.Reports;
 
 /// <summary>
 /// CSV safety end to end (issue #725, spec 12.3 and 16.3 g, threat 7.6): hostile text produced by a real query through the real login, every formula prefix,

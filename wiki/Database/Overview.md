@@ -11,13 +11,13 @@
 | Item | Value |
 |---|---|
 | Engine | SQL Server 2022 (the Docker image `mcr.microsoft.com/mssql/server:2022-latest`); the demo database runs at compatibility level 160. Reports need level 130 or higher (`OPENJSON`) |
-| Database name | `MatterFlow`, schema `dbo` for everything |
+| Database name | `LptHub`, schema `dbo` for everything |
 | Collation (demo) | `SQL_Latin1_General_CP1_CI_AS` (case-insensitive) |
 | Tables | 76 (75 created by the baseline, plus `SchemaMigration` created by the runner) |
 | Foreign keys, indexes, check constraints | 183, 234 (with primary keys), 139 |
 | Triggers on tables | 20; one database-level DDL trigger (`TR_Protect_AuditEvent`) |
 | Functions, procedures, sequence | 3 inline table-valued functions, 2 procedures, 1 sequence (`TaskNumberSeq`) |
-| Database roles | `mf_app`, `mf_migrator`, `mf_report_reader` |
+| Database roles | `lpt_app`, `lpt_migrator`, `lpt_report_reader` |
 | Scripts | `db/scripts/00-baseline.sql` (the whole schema); the old chain 01 to 66 is in `db/scripts/archive/`; the first new script is 67 |
 
 ## Naming and column conventions (as found in the database)
@@ -35,22 +35,22 @@
 ## How the schema is applied
 
 1. The schema is `db/scripts/00-baseline.sql` (one script with every table, index, constraint and trigger; issue #1307) and schema changes after it are only **numbered SQL scripts** in `db/scripts/` (`NN-kebab-description.sql`, from 67). There are **no EF migrations**; EF Core maps entities for data access only.
-2. The scripts are embedded into `MatterFlow.Data` at build time. The runner (`backend/src/MatterFlow.Data/SchemaMigrations`) applies pending scripts in numeric order at API startup, before the host listens, or on demand with `--migrate-only`.
+2. The scripts are embedded into `LptHub.Data` at build time. The runner (`backend/src/LptHub.Data/SchemaMigrations`) applies pending scripts in numeric order at API startup, before the host listens, or on demand with `--migrate-only`.
 3. It takes an application lock (`sp_getapplock`), checks names, duplicate prefixes and the SHA-256 checksum of every applied script, then runs each pending script in one transaction (batches separated by `GO`) and records it in `dbo.SchemaMigration` (script name, prefix, checksum, time, duration, success).
 4. Startup **fails** when: a script errors (rolled back, not recorded), two scripts share a number, an applied script changed or disappeared, or a new script is numbered lower than the highest applied one. Gaps are fine.
 5. **Applied scripts are immutable** (the baseline from the first real deployment on; until then it is edited only together with a rebuild of every demo and test database). A database whose journal lists the old scripts but not the baseline is refused at startup: `npm run db:reset`. To change anything, add a new script. The first line `-- mf:no-transaction` is allowed only for statements that cannot run in a transaction.
 6. Options (`Migrations:*`): `Enabled` (default true; the production template sets false and uses `--migrate-only`), `ConnectionStringName` (`Migrations`), `LockTimeoutSeconds` (300), `CommandTimeoutSeconds` (600), `ScriptsFolder`.
 7. Rules for authors are in `db/scripts/README.md`; the design is in `docs/architecture.md` section 4. Step by step: [How to Change the Schema](How-to-Change-the-Schema.md).
 
-Connection strings: `ConnectionStrings:MatterFlow` (the application, role `mf_app`), `ConnectionStrings:Migrations` (the runner, falls back to `Default`), `ConnectionStrings:ReportsReadOnly` (reports). See [Configuration Reference](../Operations/Configuration-Reference.md).
+Connection strings: `ConnectionStrings:LptHub` (the application, role `lpt_app`), `ConnectionStrings:Migrations` (the runner, falls back to `Default`), `ConnectionStrings:ReportsReadOnly` (reports). See [Configuration Reference](../Operations/Configuration-Reference.md).
 
 ## Database roles
 
 | Role | Created by | Rights |
 |---|---|---|
-| `mf_app` | baseline | DML and EXECUTE only, no DDL; INSERT and SELECT only on `AuditEvent`; the API refuses to start in Production if its identity can change the audit table |
-| `mf_migrator` | baseline | DDL and DML for the schema runner |
-| `mf_report_reader` | baseline | SELECT on tables classified `allow` in `db/report-access.json` (37 tables), explicit DENY on the 34 `deny` tables, no write, EXECUTE or ALTER |
+| `lpt_app` | baseline | DML and EXECUTE only, no DDL; INSERT and SELECT only on `AuditEvent`; the API refuses to start in Production if its identity can change the audit table |
+| `lpt_migrator` | baseline | DDL and DML for the schema runner |
+| `lpt_report_reader` | baseline | SELECT on tables classified `allow` in `db/report-access.json` (37 tables), explicit DENY on the 34 `deny` tables, no write, EXECUTE or ALTER |
 
 Logins and role membership are a DBA step per server (not in scripts).
 
@@ -65,9 +65,9 @@ Logins and role membership are a DBA step per server (not in scripts).
 | Command | Effect |
 |---|---|
 | `npm run db:up` | Start SQL Server (Docker), create the empty database and the report login |
-| `npm run db:down` | Stop the container (data kept in the volume `matterflow-sql-data`) |
+| `npm run db:down` | Stop the container (data kept in the volume `lpt-hub-sql-data`) |
 | `npm run db:reset` | Delete the volume and start again; the API rebuilds the schema at next start |
-| `docker exec` into `matterflow-sql` | Use `/opt/mssql-tools18/bin/sqlcmd` for read-only inspection |
+| `docker exec` into `lpt-hub-sql` | Use `/opt/mssql-tools18/bin/sqlcmd` for read-only inspection |
 
 ## Known differences between docs and database
 

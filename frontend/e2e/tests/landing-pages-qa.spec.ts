@@ -57,7 +57,7 @@ test.describe('Landing pages QA (#1335)', () => {
       await expect(busyPage, `${c.role} with work`).toHaveURL(c.work);
       // The logo follows the same rule.
       await busyPage.goto('/profile');
-      await busyPage.getByRole('link', { name: 'MatterFlow home' }).click();
+      await busyPage.getByRole('link', { name: 'LPT Hub home' }).click();
       await expect(busyPage, `${c.role} logo`).toHaveURL(c.work);
     }
   });

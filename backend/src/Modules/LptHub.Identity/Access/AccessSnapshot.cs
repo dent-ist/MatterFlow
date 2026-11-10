@@ -1,4 +1,4 @@
-namespace MatterFlow.Identity.Access;
+namespace LptHub.Identity.Access;
 
 /// <summary>A resolved user with the effective permissions the authorization handler and <c>/me</c> use. Immutable, cached per request window.</summary>
 public sealed record AccessSnapshot(

@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.ApplicationModels;
 
-namespace MatterFlow.Identity.Authorization;
+namespace LptHub.Identity.Authorization;
 
 /// <summary>
 /// Fail-closed default for controller actions: an action that declares neither an authorization attribute nor <c>[AllowAnonymous]</c> is

@@ -1,10 +1,10 @@
-using MatterFlow.Organization.Application;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Organization.Application;
+using LptHub.SharedKernel.Results;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MatterFlow.Organization.Api;
+namespace LptHub.Organization.Api;
 
 /// <summary>The fixed list of calendar event types (UI-05).</summary>
 [ApiController]

@@ -1,10 +1,10 @@
 > **How this folder is published.** This `wiki/` folder is published as the Azure DevOps wiki: Azure DevOps > Overview > Wiki > Publish code as wiki > pick this repository, the branch and the folder `/wiki`. Each page is a `.md` file. Page names use hyphens (shown as spaces in the title). A folder with the same name as a page holds its sub-pages, and the `.order` file in each folder sets the display order. Diagrams are Mermaid, written in the Azure DevOps form (`::: mermaid` on its own line, the diagram, then `:::`). Links to other wiki pages are relative. Files outside `wiki/` (for example `docs/architecture.md`) are written as plain code paths, because the published wiki cannot link to them: open them in the repository.
 
-# MatterFlow developer wiki
+# LPT Hub developer wiki
 
 [[_TOC_]]
 
-**What this page is for.** This is the front door of the developer wiki. MatterFlow is an internal law-firm eDiscovery tool: it tracks Clients, Matters (cases), Projects, Assets (data sources), Tasks and the Workflows that make a Task run. The wiki explains how the code, the database and the screens fit together, so that a developer can find the right place quickly when adding a feature, changing something or fixing a bug.
+**What this page is for.** This is the front door of the developer wiki. LPT Hub is an internal law-firm eDiscovery tool: it tracks Clients, Matters (cases), Projects, Assets (data sources), Tasks and the Workflows that make a Task run. The wiki explains how the code, the database and the screens fit together, so that a developer can find the right place quickly when adding a feature, changing something or fixing a bug.
 
 The wiki was written from the code, the SQL scripts, the contracts and the design documents in the repository. Where something could not be confirmed, the page says "unverified". The design documents under `docs/` stay the source of truth for design decisions (start with `docs/architecture.md`); the wiki summarises them and says where to look.
 

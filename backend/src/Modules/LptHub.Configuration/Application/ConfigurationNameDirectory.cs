@@ -1,9 +1,9 @@
-using MatterFlow.Configuration.Contracts;
-using MatterFlow.Configuration.Domain;
-using MatterFlow.Configuration.Domain.Forms;
+using LptHub.Configuration.Contracts;
+using LptHub.Configuration.Domain;
+using LptHub.Configuration.Domain.Forms;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Configuration.Application;
+namespace LptHub.Configuration.Application;
 
 /// <summary>Implements <see cref="IConfigurationNameDirectory"/>: one statement per kind, whatever the number of ids.</summary>
 internal sealed class ConfigurationNameDirectory(DbContext db) : IConfigurationNameDirectory

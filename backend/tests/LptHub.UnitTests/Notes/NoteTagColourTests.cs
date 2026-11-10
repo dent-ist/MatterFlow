@@ -1,8 +1,8 @@
-using MatterFlow.Configuration.Contracts;
-using MatterFlow.Notes.Application;
+using LptHub.Configuration.Contracts;
+using LptHub.Notes.Application;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Notes;
+namespace LptHub.UnitTests.Notes;
 
 /// <summary>Every note tag is drawn with a colour: its own, or a palette colour chosen from its id (the same tag always gets the same one).</summary>
 public sealed class NoteTagColourTests

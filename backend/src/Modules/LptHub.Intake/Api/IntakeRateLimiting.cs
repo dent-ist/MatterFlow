@@ -1,12 +1,12 @@
 using System.Threading.RateLimiting;
-using MatterFlow.Intake.Application;
+using LptHub.Intake.Application;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
-namespace MatterFlow.Intake.Api;
+namespace LptHub.Intake.Api;
 
 /// <summary>
 /// Limits on the CPU-bound email parsing endpoints (security review SEC-02): a small number of parses at a time for the whole server and

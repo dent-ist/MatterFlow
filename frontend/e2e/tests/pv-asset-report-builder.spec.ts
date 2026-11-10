@@ -134,7 +134,7 @@ test.describe('Asset report builder (PM v2)', () => {
     const response = await page.request.get('/api/v1/asset-reports');
     for (const r of await response.json())
       await page.request.delete(`/api/v1/asset-reports/${r.assetReportId}`, {
-        headers: { 'X-MatterFlow-Client': 'web' },
+        headers: { 'X-LptHub-Client': 'web' },
       });
   }
 
@@ -146,7 +146,7 @@ test.describe('Asset report builder (PM v2)', () => {
     const k = await kit(seed, personas);
     const page = await asUser(k.fx.pmA.username);
     await page.goto('/assets/reports');
-    await expect(page).toHaveTitle('Assets: Reports - MatterFlow');
+    await expect(page).toHaveTitle('Assets: Reports - LPT Hub');
     await expect(page.getByRole('heading', { level: 1, name: 'Asset Reports' })).toBeVisible();
     await expect(page.locator('[data-result-idle]')).toBeVisible();
 

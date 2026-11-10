@@ -1,9 +1,9 @@
-using MatterFlow.WorkflowEngine.Domain;
+using LptHub.WorkflowEngine.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
-namespace MatterFlow.WorkflowEngine.Infrastructure;
+namespace LptHub.WorkflowEngine.Infrastructure;
 
 internal sealed class WorkflowInstanceRecordConfiguration : IEntityTypeConfiguration<WorkflowInstanceRecord>
 {

@@ -1,8 +1,8 @@
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.ValueObjects;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.ValueObjects;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.SharedKernel;
+namespace LptHub.UnitTests.SharedKernel;
 
 public class BusinessNumberTests
 {

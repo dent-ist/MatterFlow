@@ -1,9 +1,9 @@
 using System.Data;
 using System.Text.Json;
-using MatterFlow.Reports.Application;
+using LptHub.Reports.Application;
 using Microsoft.Data.SqlClient;
 
-namespace MatterFlow.Reports.Infrastructure;
+namespace LptHub.Reports.Infrastructure;
 
 internal sealed class ReportRunLogReader(ReportAppConnection app) : IReportRunLogReader
 {

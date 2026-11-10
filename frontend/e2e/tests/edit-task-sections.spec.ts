@@ -273,7 +273,7 @@ test.describe('Edit task sections (#350)', () => {
         status: 400,
         contentType: 'application/problem+json',
         body: JSON.stringify({
-          type: 'urn:matterflow:error:validation-failed',
+          type: 'urn:lpt-hub:error:validation-failed',
           title: 'Validation failed',
           status: 400,
           code: 'VALIDATION_FAILED',

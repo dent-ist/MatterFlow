@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace MatterFlow.WorkManagement.Domain;
+namespace LptHub.WorkManagement.Domain;
 
 /// <summary>Human-friendly Task reference, <c>TSK-1042</c>, derived from a database sequence value.</summary>
 public static class TaskNumber

@@ -2,7 +2,7 @@
 
 [[_TOC_]]
 
-**What this page is for.** How to fill a local MatterFlow with realistic demo data, and which accounts to sign in as to see the app the way a Director, Pod Lead, Technician, Project Manager, System Admin or new hire sees it. Full text and every option: `README.md` ("Demo data") and `docs/ux/ui-update/stack-howto.md` (the demo stack of the UI update). All data in this repository is demo data; nothing is deployed.
+**What this page is for.** How to fill a local LPT Hub with realistic demo data, and which accounts to sign in as to see the app the way a Director, Pod Lead, Technician, Project Manager, System Admin or new hire sees it. Full text and every option: `README.md` ("Demo data") and `docs/ux/ui-update/stack-howto.md` (the demo stack of the UI update). All data in this repository is demo data; nothing is deployed.
 
 ## Load demo data
 
@@ -37,7 +37,7 @@ Reports need three things, and no single command did all of them before issue #7
 
 | Need | Who provides it |
 |---|---|
-| The report login `mf_reports` (the reports run on their own read-only SQL login) | `npm start` (`db:up` and `db:report-login` run `tools/db/provision-report-login.sql`); `npm run db:report-login` repeats it. Without it Reports say "not configured" |
+| The report login `lpt_reports` (the reports run on their own read-only SQL login) | `npm start` (`db:up` and `db:report-login` run `tools/db/provision-report-login.sql`); `npm run db:report-login` repeats it. Without it Reports say "not configured" |
 | The ten starter reports, active and previewed | The API at startup: `Seed:StarterReports` is on in Development (off elsewhere), idempotent, never overwrites an administrator's edit, `DryRun` only logs. See [Add a Report](../How-To/Add-a-Report.md) and [Reports Module](../Architecture/Reports-Module.md) |
 | A role that holds `Report.Run` and the starters | `npm run seed:demo` (step "Reports: starter reports for the demo"): creates `Report Runner (demo)` with only `Report.Run`, assigns the starters to it and to the System Admin role (merged, never replaced), and adds the role to Test User 02. Only the Project Manager starter role holds `Report.Run` (owner decision 8) and the seeder gives it just the two Project Manager starters; Director and the others hold none, which is why this role exists for the demo |
 
@@ -70,7 +70,7 @@ The starter roles and what they hold are in [Authentication and Authorization](.
 2. Sign in as `KE\kekim`: Administration > Users shows `KE\newhire` under Pending access.
 3. Open the user, tick a role, Save. Sign in as `KE\newhire` again: the permitted screens appear.
 
-Covered by `backend/tests/MatterFlow.IntegrationTests/Identity/WalkingSkeletonTests.cs`.
+Covered by `backend/tests/LptHub.IntegrationTests/Identity/WalkingSkeletonTests.cs`.
 
 ## Test personas (automated)
 

@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 
-namespace MatterFlow.Reports.Domain.Parameters;
+namespace LptHub.Reports.Domain.Parameters;
 
 /// <summary>
 /// Coerces the values of a run from JSON to the declared CLR/SQL types on the server (spec 5.1, 5.3, 5.4). An invalid value is a

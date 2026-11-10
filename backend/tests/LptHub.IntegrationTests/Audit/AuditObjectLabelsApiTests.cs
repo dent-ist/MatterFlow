@@ -1,13 +1,13 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Audit;
+namespace LptHub.IntegrationTests.Audit;
 
 /// <summary>
 /// <c>object.label</c> for the Administration records (#649): asset types, priorities, status labels, link roles, roles and form definitions read
@@ -32,7 +32,7 @@ public sealed class AuditObjectLabelsApiTests(SqlServerFixture sql) : IAsyncLife
     private HttpClient Client(string user, Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory<Program>? factory = null)
     {
         var client = (factory ?? _factory).CreateClient();
-        client.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        client.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         client.DefaultRequestHeaders.Add("X-Dev-User", user);
         return client;
     }

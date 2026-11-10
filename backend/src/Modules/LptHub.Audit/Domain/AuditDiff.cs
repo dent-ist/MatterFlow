@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 
-namespace MatterFlow.Audit.Domain;
+namespace LptHub.Audit.Domain;
 
 /// <summary>One changed field: a property name or a JSON sub-key (<c>form:ocr_language</c>) with formatted old/new values.</summary>
 public sealed record FieldChange(string FieldKey, string? OldValue, string? NewValue);

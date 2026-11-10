@@ -6,7 +6,7 @@
 
 | Page | Use it to |
 |---|---|
-| [Overview](Getting-Started/Overview.md) | Learn what MatterFlow is and its main building blocks |
+| [Overview](Getting-Started/Overview.md) | Learn what LPT Hub is and its main building blocks |
 | [Repository Map](Getting-Started/Repository-Map.md) | Find what lives in each top-level folder |
 | [Local Setup](Getting-Started/Local-Setup.md) | Run SQL Server, the API and the web app locally |
 | [Cloud Container Notes](Getting-Started/Cloud-Container-Notes.md) | Work in the ephemeral Linux cloud container |

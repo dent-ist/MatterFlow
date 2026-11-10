@@ -87,7 +87,7 @@ describe('TimeZoneSelect (#540, #567)', () => {
     const { el } = await create('Asia/Tokyo');
     expect(el.querySelector('[data-tz-time]')!.textContent).toContain('It is 10:41 PM there now.');
     expect(el.querySelector('[data-tz-note]')!.textContent).toMatch(
-      /Dates and times elsewhere in MatterFlow use your browser's time zone \(.+\)\./,
+      /Dates and times elsewhere in LPT Hub use your browser's time zone \(.+\)\./,
     );
     // The live region is not the clock: a tick is not announced.
     expect(el.querySelector('[data-tz-time]')!.getAttribute('aria-live')).toBeNull();

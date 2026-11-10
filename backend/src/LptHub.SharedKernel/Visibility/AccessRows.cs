@@ -1,4 +1,4 @@
-namespace MatterFlow.SharedKernel.Visibility;
+namespace LptHub.SharedKernel.Visibility;
 
 /// <summary>
 /// The only columns of a matter the visibility rule needs. The Organization module projects its matters to this shape, so the rule is written once

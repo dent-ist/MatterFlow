@@ -24,7 +24,7 @@
 | UI text | Title Case for names and buttons, sentence case for reading text | "Task Queue" |
 | Issue and epic references | `#1234` in comments and commit messages; script headers name the epic | "epic #788" |
 
-Note: the entity of table `dbo.Task` is the C# class `WorkTask` (`backend/src/Modules/MatterFlow.WorkManagement/Domain/TaskEntities.cs`), presumably to avoid a clash with `System.Threading.Tasks.Task` (reason unverified). Search for `WorkTask` in code and for `Task` in SQL.
+Note: the entity of table `dbo.Task` is the C# class `WorkTask` (`backend/src/Modules/LptHub.WorkManagement/Domain/TaskEntities.cs`), presumably to avoid a clash with `System.Threading.Tasks.Task` (reason unverified). Search for `WorkTask` in code and for `Task` in SQL.
 
 ## Recipes
 
@@ -44,7 +44,7 @@ Run from the repository root.
 | An error code's origin | `grep -rn "SENSITIVE_NEEDS_MANAGER" backend/src frontend/src` |
 | A setting key | `grep -rn "Dashboard.Gauge" backend/src frontend/src` (application setting) or `grep -rn "SensitiveMatterAccess" backend/src deploy docs` (configuration) |
 | A configuration option class | `grep -rn "GetSection(\"" backend/src` |
-| The test for a feature | Feature name under `backend/tests/MatterFlow.IntegrationTests/<Area>`, `frontend/e2e/tests` (list the folder and look for the word), or `*.spec.ts` beside the file |
+| The test for a feature | Feature name under `backend/tests/LptHub.IntegrationTests/<Area>`, `frontend/e2e/tests` (list the folder and look for the word), or `*.spec.ts` beside the file |
 | The decision behind a behaviour | `grep -n "keyword" docs/requirements/decisions-addendum.md docs/architecture.md`; see [Decision Index](../Reference/Decision-Index.md) |
 | A design rule (D-xx) | `grep -n "D-43" docs/ux/design-guidelines.md` |
 | A UI component | [Shared Components Catalogue](../Frontend/Shared-Components-Catalogue.md) or `grep -rn "selector: 'mf-" frontend/src/app/shared` |

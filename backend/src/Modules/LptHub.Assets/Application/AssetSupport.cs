@@ -1,10 +1,10 @@
 using System.Linq.Expressions;
-using MatterFlow.SharedKernel.Paging;
-using MatterFlow.SharedKernel.Results;
+using LptHub.SharedKernel.Paging;
+using LptHub.SharedKernel.Results;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Assets.Application;
+namespace LptHub.Assets.Application;
 
 internal static class AssetSupport
 {

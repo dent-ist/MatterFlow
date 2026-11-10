@@ -1,16 +1,16 @@
 using System.Reflection;
-using MatterFlow.Assets;
-using MatterFlow.Audit;
-using MatterFlow.Configuration;
-using MatterFlow.Identity;
-using MatterFlow.Notes;
-using MatterFlow.Notifications;
-using MatterFlow.Organization;
-using MatterFlow.Productions;
-using MatterFlow.WorkflowEngine;
-using MatterFlow.WorkManagement;
+using LptHub.Assets;
+using LptHub.Audit;
+using LptHub.Configuration;
+using LptHub.Identity;
+using LptHub.Notes;
+using LptHub.Notifications;
+using LptHub.Organization;
+using LptHub.Productions;
+using LptHub.WorkflowEngine;
+using LptHub.WorkManagement;
 
-namespace MatterFlow.Data;
+namespace LptHub.Data;
 
 /// <summary>The module assemblies scanned for entity type configurations. A module that owns entities is listed here once.</summary>
 public static class ModuleAssemblies

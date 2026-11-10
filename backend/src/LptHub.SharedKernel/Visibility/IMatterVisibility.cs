@@ -1,7 +1,7 @@
 using System.Linq.Expressions;
-using MatterFlow.SharedKernel.Results;
+using LptHub.SharedKernel.Results;
 
-namespace MatterFlow.SharedKernel.Visibility;
+namespace LptHub.SharedKernel.Visibility;
 
 /// <summary>
 /// The one port every read path and every command uses to apply the sensitive-matter rule (epic #788, README section 4; for the "matters managed

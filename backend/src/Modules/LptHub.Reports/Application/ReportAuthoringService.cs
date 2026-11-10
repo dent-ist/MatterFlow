@@ -1,11 +1,11 @@
 using System.Text.Json;
-using MatterFlow.Reports.Domain;
-using MatterFlow.Reports.Domain.Parameters;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Reports.Domain;
+using LptHub.Reports.Domain.Parameters;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Results;
 using Microsoft.Extensions.Options;
 
-namespace MatterFlow.Reports.Application;
+namespace LptHub.Reports.Application;
 
 /// <summary>The outcome of a preview (spec 6.6). For administrators only: it may contain SQL Server's own error text.</summary>
 /// <param name="Success">True when the query ran and returned at most the cap.</param>

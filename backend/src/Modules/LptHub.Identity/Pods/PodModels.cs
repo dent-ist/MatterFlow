@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace MatterFlow.Identity.Pods;
+namespace LptHub.Identity.Pods;
 
 /// <summary>A Pod in a list.</summary>
 /// <param name="PodId">Pod id.</param>

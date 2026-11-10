@@ -1,6 +1,6 @@
 # Quality Risk Register
 
-Top 15 quality risks for MatterFlow Phase 1. Likelihood (L) and Impact (I) scored 1 to 5; Score = L x I. Test ids refer to `traceability.md` and `permission-matrix-tests.md`. Review at each phase gate; owner updates status.
+Top 15 quality risks for LPT Hub Phase 1. Likelihood (L) and Impact (I) scored 1 to 5; Score = L x I. Test ids refer to `traceability.md` and `permission-matrix-tests.md`. Review at each phase gate; owner updates status.
 
 | ID | Risk | L | I | Score | Mitigation | Covering tests | Owner / when |
 |---|---|---|---|---|---|---|---|

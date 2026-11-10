@@ -1,11 +1,11 @@
-using MatterFlow.Identity.Access;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Identity.Access;
+using LptHub.Identity.Contracts;
+using LptHub.SharedKernel.Results;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
-namespace MatterFlow.Identity.Authorization;
+namespace LptHub.Identity.Authorization;
 
 /// <summary>
 /// The caller must hold <see cref="Code"/> (System Admin holds every permission). A policy name may list alternatives separated by
@@ -32,8 +32,8 @@ public static class AccessPolicies
 
     /// <summary>Separates alternative permission codes inside one <c>Perm:</c> policy name (any one of them grants access).</summary>
     public const char AnyOfSeparator = '|';
-    public const string Authenticated = "MatterFlow.Authenticated";
-    public const string NonPending = "MatterFlow.NonPending";
+    public const string Authenticated = "LptHub.Authenticated";
+    public const string NonPending = "LptHub.NonPending";
 
     /// <summary>Failure-reason prefix carrying the missing permission code: <c>PERMISSION_DENIED:Task.Create</c>.</summary>
     public const string PermissionDeniedReasonPrefix = ErrorCodes.PermissionDenied + ":";

@@ -145,7 +145,7 @@ describe('PodWorkPage', () => {
 
   it('names the tab in the browser title, the table caption and the live region (M8)', async () => {
     const el = await open('/pods/work?view=all');
-    expect(document.title).toBe('Pod Work: Pod A: All Open - MatterFlow');
+    expect(document.title).toBe('Pod Work: Pod A: All Open - LPT Hub');
     expect(el.querySelector('caption')!.textContent!.trim()).toMatch(/^Pod Work: All Open/);
     expect(el.querySelector('.wl-sr')!.textContent).toContain('All Open: 1 task');
   });
@@ -642,7 +642,7 @@ describe('PodWorkPage', () => {
       const el = await open('/pods/work?podId=5');
       expect(line(el)).toBe('Pod A \u00b7 23 members \u00b7 you are a member (primary)');
       expect(el.querySelector('[data-page-description]')!.getAttribute('title')).toBe(line(el));
-      expect(document.title).toBe('Pod Work: Pod A: Unassigned - MatterFlow');
+      expect(document.title).toBe('Pod Work: Pod A: Unassigned - LPT Hub');
     });
 
     it('says "you are not a member" for a pod the viewer is not in, without "(primary)", and "1 member" for one', async () => {
@@ -671,7 +671,7 @@ describe('PodWorkPage', () => {
         response: of(podPage([], { pod: undefined, pods: NO_PRIMARY })),
       });
       expect(el.querySelector('[data-page-description]')!.textContent!.trim()).toBe('');
-      expect(document.title).toBe('Pod Work - MatterFlow');
+      expect(document.title).toBe('Pod Work - LPT Hub');
     });
   });
 

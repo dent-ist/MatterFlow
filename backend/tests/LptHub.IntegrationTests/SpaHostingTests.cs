@@ -1,16 +1,16 @@
 using System.Net;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests;
+namespace LptHub.IntegrationTests;
 
 /// <summary>Production hosting (ticket #60): the Angular build served from wwwroot, SPA fallback, cache headers, security headers on static responses. No database.</summary>
 public sealed class SpaHostingTests : IDisposable
 {
-    private const string IndexHtml = "<!doctype html><html><head><title>MatterFlow</title></head><body><mf-root></mf-root></body></html>";
+    private const string IndexHtml = "<!doctype html><html><head><title>LPT Hub</title></head><body><mf-root></mf-root></body></html>";
     private const string HashedScript = "main-KV7X2SA5.js";
     private readonly string _webRoot = Path.Combine(Path.GetTempPath(), "mf-wwwroot-" + Guid.NewGuid().ToString("N"));
 
@@ -48,7 +48,7 @@ public sealed class SpaHostingTests : IDisposable
         });
 
     private static HttpClient Https(WebApplicationFactory<Program> factory) =>
-        factory.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://matterflow.firm.test") });
+        factory.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://lpt-hub.firm.test") });
 
     private static string Header(HttpResponseMessage response, string name) =>
         response.Headers.TryGetValues(name, out var values) ? string.Join(",", values)

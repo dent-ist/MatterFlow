@@ -1,13 +1,13 @@
-using MatterFlow.Configuration.Application.Settings;
-using MatterFlow.Configuration.Domain.Settings;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Configuration.Application.Settings;
+using LptHub.Configuration.Domain.Settings;
+using LptHub.SharedKernel.Results;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Net.Http.Headers;
 
-namespace MatterFlow.Configuration.Api;
+namespace LptHub.Configuration.Api;
 
 /// <summary>
 /// The public branding endpoints (epic #850, design section 5): the application name and the custom icon, readable without signing in so the
@@ -145,7 +145,7 @@ public class SettingsBrandingController(BrandingService branding) : ControllerBa
         return this.ToActionResult(await branding.SetIconAsync(bytes, form["rowVersion"].ToString(), cancellationToken));
     }
 
-    /// <summary>Resets the name to the default (<c>MatterFlow</c>) by deleting the stored value.</summary>
+    /// <summary>Resets the name to the default (<c>LPT Hub</c>) by deleting the stored value.</summary>
     [HttpDelete("name", Name = "ResetBrandingName")]
     [Authorize(Policy = ConfigurationPolicies.SettingsManage)]
     [ProducesResponseType<BrandingAdminView>(StatusCodes.Status200OK, "application/json")]

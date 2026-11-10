@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>
 /// The parameters every <c>/my-matters/*</c> call accepts (epic #667, docs/ux/pm-review/README.md section 5). "My matters" is a default view,

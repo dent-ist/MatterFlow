@@ -1,7 +1,7 @@
-using MatterFlow.SharedKernel.Audit;
-using MatterFlow.SharedKernel.Entities;
+using LptHub.SharedKernel.Audit;
+using LptHub.SharedKernel.Entities;
 
-namespace MatterFlow.Identity.Domain;
+namespace LptHub.Identity.Domain;
 
 /// <summary>A holiday calendar (script 59): a named set of holiday rules. <see cref="AppliesToEveryone"/> makes it a firm closure calendar that counts for every person.</summary>
 [Audited(ObjectType = "HolidayCalendar")]

@@ -1,8 +1,8 @@
-using MatterFlow.Assets.Domain;
-using MatterFlow.Configuration.Contracts.Forms;
+using LptHub.Assets.Domain;
+using LptHub.Configuration.Contracts.Forms;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>The kinds of group an asset aggregate can have.</summary>
 public enum AssetGroupKind

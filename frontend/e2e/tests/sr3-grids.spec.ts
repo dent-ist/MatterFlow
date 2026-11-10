@@ -46,7 +46,7 @@ test.describe('Search results grids and cards (WP-SR3, WP-SR4)', () => {
     await expect(page.locator('[data-hit-row]')).toHaveCount(25);
     await expect(page.locator('[data-grid-heading]')).toBeFocused();
     await expect(page.locator('[data-grid-heading]')).toContainText('Assets, 58 results');
-    await expect(page).toHaveTitle('Search Results: Assets - MatterFlow');
+    await expect(page).toHaveTitle('Search Results: Assets - LPT Hub');
   });
 
   test('a type tab: 44 px rows at 1366 and 1920, the name is the only link, assets show Type and Matter number, page 3 by pager and by URL', async ({

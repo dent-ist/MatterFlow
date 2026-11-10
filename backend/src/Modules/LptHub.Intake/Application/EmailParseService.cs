@@ -1,9 +1,9 @@
 using System.Text.RegularExpressions;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Time;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Time;
 using Microsoft.Extensions.Options;
 
-namespace MatterFlow.Intake.Application;
+namespace LptHub.Intake.Application;
 
 /// <summary>
 /// Parses an uploaded <c>.eml</c> / <c>.msg</c> or pasted text into prefill values, entirely in memory. Nothing is written to disk or the

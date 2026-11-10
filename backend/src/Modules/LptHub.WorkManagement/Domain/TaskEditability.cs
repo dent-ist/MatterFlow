@@ -1,7 +1,7 @@
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Tasks;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Tasks;
 
-namespace MatterFlow.WorkManagement.Domain;
+namespace LptHub.WorkManagement.Domain;
 
 /// <summary>Operations whose availability depends on Task status (architecture 8.3 rule 5).</summary>
 public enum TaskOperation

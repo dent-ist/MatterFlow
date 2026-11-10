@@ -1,7 +1,7 @@
-using MatterFlow.Search.Application.Queries;
+using LptHub.Search.Application.Queries;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Search;
+namespace LptHub.UnitTests.Search;
 
 /// <summary>Input handling of search (architecture 14, addendum B): length, LIKE escaping and number normalization, without a database.</summary>
 public class SearchTermTests

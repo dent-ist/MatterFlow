@@ -1,6 +1,6 @@
-using MatterFlow.SharedKernel.Time;
+using LptHub.SharedKernel.Time;
 
-namespace MatterFlow.Configuration.Application.Settings;
+namespace LptHub.Configuration.Application.Settings;
 
 /// <summary>One stored setting as the application reads it (a detached copy; never tracked by EF).</summary>
 /// <param name="Key">Setting key.</param>

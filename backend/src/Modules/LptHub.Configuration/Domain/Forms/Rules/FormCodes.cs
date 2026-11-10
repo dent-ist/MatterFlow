@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace MatterFlow.Configuration.Domain.Forms.Rules;
+namespace LptHub.Configuration.Domain.Forms.Rules;
 
 /// <summary>Per-field validation error codes (contracts/form-rules.md section 3).</summary>
 public enum FormErrorCode

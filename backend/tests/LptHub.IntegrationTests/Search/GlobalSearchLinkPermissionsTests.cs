@@ -1,8 +1,8 @@
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Search.SearchData;
+using static LptHub.IntegrationTests.Search.SearchData;
 
-namespace MatterFlow.IntegrationTests.Search;
+namespace LptHub.IntegrationTests.Search;
 
 /// <summary>Hit links and permissions (#461): what a caller without Matter.View is given, so no row can link to a page they cannot open.</summary>
 [Collection(SqlServerCollection.Name)]

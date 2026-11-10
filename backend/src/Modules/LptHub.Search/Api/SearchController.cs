@@ -1,12 +1,12 @@
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Search.Application.Queries;
-using MatterFlow.SharedKernel.Paging;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Identity.Contracts;
+using LptHub.Search.Application.Queries;
+using LptHub.SharedKernel.Paging;
+using LptHub.SharedKernel.Results;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MatterFlow.Search.Api;
+namespace LptHub.Search.Api;
 
 /// <summary>
 /// Global and advanced search (architecture 14). A caller needs at least one object type's View permission; each type is searched, and its hits
@@ -15,7 +15,7 @@ namespace MatterFlow.Search.Api;
 /// </summary>
 [ApiController]
 [Route("api/v1/search")]
-[MatterFlow.SharedKernel.Visibility.PreparesViewer]
+[LptHub.SharedKernel.Visibility.PreparesViewer]
 public class SearchController(SearchService search) : ControllerBase
 {
     /// <summary>Any one of the View permissions opens the search endpoints (the types the caller may not view are left out of the results).</summary>

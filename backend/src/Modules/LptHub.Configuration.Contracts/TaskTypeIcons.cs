@@ -1,7 +1,7 @@
 using System.Collections.Frozen;
 using System.Text.Json;
 
-namespace MatterFlow.Configuration.Contracts;
+namespace LptHub.Configuration.Contracts;
 
 /// <summary>One icon of the Task Type icon library (<c>contracts/task-type-icons.json</c>).</summary>
 /// <param name="Key">Stable kebab-case id (a Tabler Icons outline name); this is what <c>TaskType.IconKey</c> stores.</param>

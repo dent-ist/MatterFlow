@@ -1,12 +1,12 @@
-using MatterFlow.Data.SchemaMigrations;
+using LptHub.Data.SchemaMigrations;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 
-namespace MatterFlow.SchemaTests;
+namespace LptHub.SchemaTests;
 
 /// <summary>
-/// Baseline (archived 13-security-hardening.sql) (security review SEC-04): the audit table is append-only for the application identity (mf_app) and
+/// Baseline (archived 13-security-hardening.sql) (security review SEC-04): the audit table is append-only for the application identity (lpt_app) and
 /// cannot be truncated, dropped or stripped of its trigger by accident or from application code, even by a privileged login.
 /// </summary>
 [Collection(SqlServerCollection.Name)]
@@ -51,10 +51,10 @@ public class AuditProtectionSchemaTests(SqlServerFixture sql)
     {
         var cs = await MigratedAsync();
 
-        (await ExecAsync(cs, "SELECT COUNT(*) FROM sys.database_principals WHERE name IN ('mf_app','mf_migrator') AND type = 'R'")).ShouldBe(2);
+        (await ExecAsync(cs, "SELECT COUNT(*) FROM sys.database_principals WHERE name IN ('lpt_app','lpt_migrator') AND type = 'R'")).ShouldBe(2);
         (await ExecAsync(cs, """
             SELECT COUNT(*) FROM sys.database_permissions p JOIN sys.database_principals g ON g.principal_id = p.grantee_principal_id
-            WHERE p.major_id = OBJECT_ID('dbo.AuditEvent') AND g.name = 'mf_app' AND p.state = 'D' AND p.permission_name IN ('UPDATE','DELETE','ALTER')
+            WHERE p.major_id = OBJECT_ID('dbo.AuditEvent') AND g.name = 'lpt_app' AND p.state = 'D' AND p.permission_name IN ('UPDATE','DELETE','ALTER')
             """)).ShouldBe(3);
         (await ExecAsync(cs, "SELECT COUNT(*) FROM sys.triggers WHERE name = 'TR_Protect_AuditEvent' AND parent_class_desc = 'DATABASE' AND is_disabled = 0")).ShouldBe(1);
     }
@@ -63,7 +63,7 @@ public class AuditProtectionSchemaTests(SqlServerFixture sql)
     public async Task The_application_identity_can_append_and_read_but_not_change_the_audit_trail_or_the_schema()
     {
         var admin = await MigratedAsync();
-        var app = await LoginInRoleAsync(admin, "mf_app");
+        var app = await LoginInRoleAsync(admin, "lpt_app");
 
         await ExecAsync(app, Insert);
         (await ExecAsync(app, "SELECT COUNT(*) FROM dbo.AuditEvent")).ShouldBe(1);
@@ -85,7 +85,7 @@ public class AuditProtectionSchemaTests(SqlServerFixture sql)
     [Fact]
     public async Task The_startup_exposure_probe_distinguishes_a_privileged_identity_from_the_application_role()
     {
-        // Same query as MatterFlow.Api.Security.AuditStoreGuard.ExposureSql.
+        // Same query as LptHub.Api.Security.AuditStoreGuard.ExposureSql.
         const string probe = """
             SELECT CAST(CASE WHEN OBJECT_ID('dbo.AuditEvent') IS NOT NULL
                               AND (ISNULL(HAS_PERMS_BY_NAME('dbo.AuditEvent', 'OBJECT', 'UPDATE'), 0) = 1
@@ -94,7 +94,7 @@ public class AuditProtectionSchemaTests(SqlServerFixture sql)
                              THEN 1 ELSE 0 END AS int)
             """;
         var admin = await MigratedAsync();
-        var app = await LoginInRoleAsync(admin, "mf_app");
+        var app = await LoginInRoleAsync(admin, "lpt_app");
 
         (await ExecAsync(admin, probe)).ShouldBe(1);
         (await ExecAsync(app, probe)).ShouldBe(0);
@@ -104,7 +104,7 @@ public class AuditProtectionSchemaTests(SqlServerFixture sql)
     public async Task The_schema_runner_role_cannot_rewrite_audit_rows_either()
     {
         var admin = await MigratedAsync();
-        var migrator = await LoginInRoleAsync(admin, "mf_migrator");
+        var migrator = await LoginInRoleAsync(admin, "lpt_migrator");
 
         await ExecAsync(migrator, Insert);
         await ShouldRejectAsync(migrator, "UPDATE dbo.AuditEvent SET Summary = 'x'", "permission was denied");

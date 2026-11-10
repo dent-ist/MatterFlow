@@ -10,8 +10,8 @@
 |---|---|
 | `No space left on device`, builds or Docker fail | The cloud container has a small disk. Check `df -h /`. Remove your own build output (`backend/**/bin`, `obj`, `frontend/dist`, `frontend/node_modules` copies, `artifacts/`), stale worktrees (`git worktree remove`), and Docker leftovers you created (`docker image prune` only for images you pulled; never remove another agent's container or volume). Do not copy `node_modules`; hard-link it (`cp -al`) |
 | `Cannot connect to the Docker daemon` | Start it: `nohup dockerd >/tmp/dockerd.log 2>&1 &`, wait about 10 to 15 seconds, then retry ([Cloud Container Notes](../Getting-Started/Cloud-Container-Notes.md)) |
-| SQL Server container not healthy or port 1433 refused | `docker ps` and `docker logs matterflow-sql`. Start it with `npm run db:up` (or `docker compose -f docker-compose.dev.yml up -d --wait sqlserver`). The sa password is in `docker-compose.dev.yml`; connection strings need `TrustServerCertificate=True` |
-| `Cannot open database "MatterFlow"` | The init container did not run: `docker compose -f docker-compose.dev.yml run --rm --no-deps sqlserver-init` (part of `npm run db:up`) |
+| SQL Server container not healthy or port 1433 refused | `docker ps` and `docker logs lpt-hub-sql`. Start it with `npm run db:up` (or `docker compose -f docker-compose.dev.yml up -d --wait sqlserver`). The sa password is in `docker-compose.dev.yml`; connection strings need `TrustServerCertificate=True` |
+| `Cannot open database "LptHub"` | The init container did not run: `docker compose -f docker-compose.dev.yml run --rm --no-deps sqlserver-init` (part of `npm run db:up`) |
 | Want a clean database | `npm run db:reset` (deletes the volume). Do not do this on a database other people use |
 | `ng` fails with a Node version message | You used the global or latest Angular CLI. Use the repo-local CLI: `npm run ng -- ...` inside `frontend/` ([Commands](../Getting-Started/Commands.md)) |
 | `npm ci` peer dependency errors | Run it inside `frontend/` where `.npmrc` sets `legacy-peer-deps` |
@@ -26,7 +26,7 @@
 | Startup fails naming a script and a checksum | An applied script was edited. Restore the original file from git; add a new script for the change ([How to Change the Schema](../Database/How-to-Change-the-Schema.md)) |
 | Startup fails: duplicate prefix | Two scripts share a number; renumber the unmerged one |
 | Startup fails: a new script is numbered lower than the highest applied | Out-of-order merge; renumber it to the next free number |
-| Startup fails with the audit guard message (Production) | The API's SQL identity can alter `dbo.AuditEvent` (for example `sa` or `db_owner`). Use the `mf_app` role; local Development databases are not checked the same way |
+| Startup fails with the audit guard message (Production) | The API's SQL identity can alter `dbo.AuditEvent` (for example `sa` or `db_owner`). Use the `lpt_app` role; local Development databases are not checked the same way |
 | `/health/ready` 503 | `database_not_configured`, `database_unreachable`, `migrations_pending` (run `--migrate-only`), or `migration_failed` (a `Success=0` row) |
 | Warning "READ_COMMITTED_SNAPSHOT is off" | Expected on the demo database; a DBA step in production (runbook section 3) |
 | Every request answers 400 "Invalid Hostname" | `AllowedHosts` lacks the host name used |
@@ -37,7 +37,7 @@
 
 | Symptom | Cause and fix |
 |---|---|
-| 400 "Client header required" on POST, PUT or DELETE | Send `X-MatterFlow-Client: web` (the Angular app does it; curl and Swagger need it explicitly) |
+| 400 "Client header required" on POST, PUT or DELETE | Send `X-LptHub-Client: web` (the Angular app does it; curl and Swagger need it explicitly) |
 | 401 | No identity: with Dev auth set `Auth__Dev__DefaultUser` or send `X-Dev-User` |
 | 403 `ACCESS_PENDING` | The user has no role yet; grant one in Administration > Users |
 | 403 `PERMISSION_DENIED` | The policy names a permission the user lacks (the detail names it). The role may need it, or a script that grants new permissions to existing roles has not run (roles are seeded once) |

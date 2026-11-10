@@ -1,13 +1,13 @@
 using System.Text.RegularExpressions;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Identity.Seeding;
-using MatterFlow.Reports.Application;
-using MatterFlow.Reports.Application.Starters;
-using MatterFlow.Reports.Domain;
-using MatterFlow.Reports.Domain.Parameters;
+using LptHub.Identity.Contracts;
+using LptHub.Identity.Seeding;
+using LptHub.Reports.Application;
+using LptHub.Reports.Application.Starters;
+using LptHub.Reports.Domain;
+using LptHub.Reports.Domain.Parameters;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Reports;
+namespace LptHub.UnitTests.Reports;
 
 /// <summary>
 /// The starter reports as data (issue #724): every embedded SQL file is in the manifest and the other way round, and each starter passes the same checks an

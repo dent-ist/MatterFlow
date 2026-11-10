@@ -43,7 +43,7 @@ A form has versions: DRAFT, PUBLISHED, RETIRED. Only a draft can be edited; publ
 1. Edit `contracts/form-rules.schema.json` and `contracts/form-rules.md`.
 2. Add or change vectors in `contracts/form-rules.vectors.json` (decide the intended behaviour first; review diffs by hand) and message keys in `form-rules.messages.json`.
 3. Run `node contracts/validate-contracts.mjs`.
-4. Update both implementations: `backend/src/Modules/MatterFlow.Configuration/Domain/Forms/Rules` (the .NET evaluator, `FormEvaluator`) and `frontend/projects/form-engine/src/lib/rules`. Both suites load the same vector file.
+4. Update both implementations: `backend/src/Modules/LptHub.Configuration/Domain/Forms/Rules` (the .NET evaluator, `FormEvaluator`) and `frontend/projects/form-engine/src/lib/rules`. Both suites load the same vector file.
 
 ## Related pages
 

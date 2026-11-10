@@ -2,13 +2,13 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using MatterFlow.Audit.Domain;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.IntegrationTests.Workflows;
+using LptHub.Audit.Domain;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Workflows;
 using Microsoft.EntityFrameworkCore;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Tasks;
+namespace LptHub.IntegrationTests.Tasks;
 
 /// <summary>
 /// Test support for the Task endpoints against a real SQL Server: builds the configuration a Task needs (Matter, Project, Task Type with a request form,
@@ -59,7 +59,7 @@ public sealed class TaskHarness
     public HttpClient As(string user, string? timeZone = null)
     {
         var client = Factory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        client.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         client.DefaultRequestHeaders.Add("X-Dev-User", user);
         if (timeZone is not null)
             client.DefaultRequestHeaders.Add("X-Time-Zone", timeZone);

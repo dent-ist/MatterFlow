@@ -2,14 +2,14 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Reports.ReportSecurityKit;
+using static LptHub.IntegrationTests.Reports.ReportSecurityKit;
 
-namespace MatterFlow.IntegrationTests.Reports;
+namespace LptHub.IntegrationTests.Reports;
 
 /// <summary>
 /// Access to Reports (issue #725, spec 16.3 h and j, threat 7.5 and 7.7): one walk over every Reports route the host exposes (so a new endpoint cannot ship
@@ -49,7 +49,7 @@ public sealed partial class ReportAccessMatrixTests(SqlServerFixture sql)
         if (route.Method is "POST" or "PUT")
             request.Content = new StringContent("{}", Encoding.UTF8, "application/json");
         request.Headers.TryAddWithoutValidation("If-Match", "\"AAAAAAAAB9E=\"");
-        request.Headers.TryAddWithoutValidation("X-MatterFlow-Client", "web"); // without it a write is refused as a bad request before anyone is asked who they are
+        request.Headers.TryAddWithoutValidation("X-LptHub-Client", "web"); // without it a write is refused as a bad request before anyone is asked who they are
         return await client.SendAsync(request);
     }
 
@@ -249,7 +249,7 @@ public sealed partial class ReportAccessMatrixTests(SqlServerFixture sql)
         await using var h = await ReportTestHarness.StartAsync(sql);
         var (runner, role) = await h.PersonAsync(@"KE\runner", "Report.Run");
         var report = await h.AddReportAsync("SELECT 1 AS one", roleIds: role);
-        var hash = Convert.ToHexString(MatterFlow.Reports.Domain.SqlValidator.Hash("SELECT 2 AS two"));
+        var hash = Convert.ToHexString(LptHub.Reports.Domain.SqlValidator.Hash("SELECT 2 AS two"));
 
         async Task<(string Column, int VersionNo)> RunAndDefinitionAsync()
         {

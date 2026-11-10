@@ -1,6 +1,6 @@
-using MatterFlow.SharedKernel.Availability;
+using LptHub.SharedKernel.Availability;
 
-namespace MatterFlow.SharedKernel.Tasks;
+namespace LptHub.SharedKernel.Tasks;
 
 /// <summary>
 /// The capacity states of a person (Dashboard v4, decision AS items 5 and 6). The first four come from the number of open assigned Tasks that are not On hold;

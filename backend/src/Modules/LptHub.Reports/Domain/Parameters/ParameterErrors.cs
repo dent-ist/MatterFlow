@@ -1,6 +1,6 @@
-using MatterFlow.SharedKernel.Results;
+using LptHub.SharedKernel.Results;
 
-namespace MatterFlow.Reports.Domain.Parameters;
+namespace LptHub.Reports.Domain.Parameters;
 
 /// <summary>Maps binder errors to the product's 422 validation shape: one entry per parameter name with stable codes.</summary>
 public static class ParameterErrors

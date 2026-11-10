@@ -9,13 +9,13 @@
 | Task | Command | Notes |
 |---|---|---|
 | Build like CI | `dotnet build -warnaserror` | CI builds `-c Release --no-restore -warnaserror`; warnings are errors |
-| Fast tests | `dotnet test tests/MatterFlow.UnitTests` | No Docker |
-| Architecture tests | `dotnet test tests/MatterFlow.ArchitectureTests` | No Docker |
+| Fast tests | `dotnet test tests/LptHub.UnitTests` | No Docker |
+| Architecture tests | `dotnet test tests/LptHub.ArchitectureTests` | No Docker |
 | All tests | `dotnet test` | Needs Docker (Schema and Integration tests start SQL Server) |
-| One test | `dotnet test tests/MatterFlow.UnitTests --filter "FullyQualifiedName~Name"` | |
+| One test | `dotnet test tests/LptHub.UnitTests --filter "FullyQualifiedName~Name"` | |
 | Format check | `dotnet format --verify-no-changes` | CI uses `dotnet format --no-restore --verify-no-changes` |
-| Run the API | `dotnet run --project src/MatterFlow.Api` | Needs connection strings, see [Local Setup](Local-Setup.md) |
-| Apply schema only | `dotnet run --project src/MatterFlow.Api -- --migrate-only` | Also `MATTERFLOW_MIGRATE_ONLY=true` (`Hosting/MigrateOnlyCommand.cs`) |
+| Run the API | `dotnet run --project src/LptHub.Api` | Needs connection strings, see [Local Setup](Local-Setup.md) |
+| Apply schema only | `dotnet run --project src/LptHub.Api -- --migrate-only` | Also `LPTHUB_MIGRATE_ONLY=true` (`Hosting/MigrateOnlyCommand.cs`) |
 | Regenerate OpenAPI | `dotnet build` (the API build writes `contracts/openapi/v1.json`) | Then regenerate the client, see below |
 
 ## Frontend (run in `frontend/`)
@@ -48,7 +48,7 @@
 
 ## Before you commit
 
-1. Backend: `dotnet build -warnaserror`, `dotnet test tests/MatterFlow.UnitTests`, `dotnet test tests/MatterFlow.ArchitectureTests`, `dotnet format --verify-no-changes`.
+1. Backend: `dotnet build -warnaserror`, `dotnet test tests/LptHub.UnitTests`, `dotnet test tests/LptHub.ArchitectureTests`, `dotnet format --verify-no-changes`.
 2. Frontend: `npm run lint`, `npm run format:check`, `npm test`, `npm run build`.
 3. If the API changed: regenerate `contracts/openapi/v1.json` and the client (`npm run api:generate`) and commit both.
 4. UI work: the extra checks in [UI Standard](../Frontend/UI-Standard.md).

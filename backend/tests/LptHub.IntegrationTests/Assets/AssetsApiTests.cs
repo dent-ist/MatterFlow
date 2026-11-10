@@ -2,14 +2,14 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using MatterFlow.Assets.Contracts;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.Assets.Contracts;
+using LptHub.Identity.Contracts;
+using LptHub.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Assets;
+namespace LptHub.IntegrationTests.Assets;
 
 /// <summary>
 /// Asset Types and Matter-owned Assets (ticket 37) against a real SQL Server through the full HTTP pipeline: one Matter per Asset that
@@ -28,7 +28,7 @@ public sealed class AssetsApiTests(SqlServerFixture sql) : IAsyncLifetime
     private HttpClient As(string user = DatabaseApiFactory.AdminAccount)
     {
         var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        client.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         client.DefaultRequestHeaders.Add("X-Dev-User", user);
         return client;
     }
@@ -245,7 +245,7 @@ public sealed class AssetsApiTests(SqlServerFixture sql) : IAsyncLifetime
         invalid.GetProperty("errors").GetProperty("form:pages")[0].GetProperty("code").GetString().ShouldBe("OUT_OF_RANGE");
         invalid.GetProperty("errors").GetProperty("form:format")[0].GetProperty("code").GetString().ShouldBe("OPTION_NOT_ALLOWED");
         invalid.GetProperty("errors").GetProperty("form:nope")[0].GetProperty("code").GetString().ShouldBe("UNKNOWN_FIELD");
-        (await _factory.CountAsync<MatterFlow.Assets.Domain.Asset>()).ShouldBe(0);
+        (await _factory.CountAsync<LptHub.Assets.Domain.Asset>()).ShouldBe(0);
 
         // Hidden value (ocr_language needs scanned) is dropped, not stored; the response and the history say so.
         var created = await CreateAssetAsync(matterId, typeId, formValues: """{"pages":5,"scanned":false,"ocr_language":"eng"}""");
@@ -470,7 +470,7 @@ public sealed class AssetsApiTests(SqlServerFixture sql) : IAsyncLifetime
 
         var active = await OkAsync(await As().PostAsJsonAsync($"/api/v1/assets/{id}/active", new { isActive = true, rowVersion = inactive.GetProperty("rowVersion").GetString() }));
         active.GetProperty("isActive").GetBoolean().ShouldBeTrue();
-        (await _factory.CountAsync<MatterFlow.Assets.Domain.Asset>()).ShouldBe(1);
+        (await _factory.CountAsync<LptHub.Assets.Domain.Asset>()).ShouldBe(1);
     }
 
     [Fact]

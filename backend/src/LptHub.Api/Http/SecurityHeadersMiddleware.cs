@@ -1,4 +1,4 @@
-namespace MatterFlow.Api.Http;
+namespace LptHub.Api.Http;
 
 /// <summary>
 /// Adds the browser security headers to every response (security review SEC-08), including error responses, because it runs first.

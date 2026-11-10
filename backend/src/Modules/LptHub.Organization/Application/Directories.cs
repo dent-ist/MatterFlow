@@ -1,8 +1,8 @@
-using MatterFlow.Organization.Contracts;
-using MatterFlow.Organization.Domain;
+using LptHub.Organization.Contracts;
+using LptHub.Organization.Domain;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Organization.Application;
+namespace LptHub.Organization.Application;
 
 /// <summary>Implements the read-only lookups other modules use (<see cref="IMatterDirectory"/>).</summary>
 internal sealed class MatterDirectory(DbContext db) : IMatterDirectory

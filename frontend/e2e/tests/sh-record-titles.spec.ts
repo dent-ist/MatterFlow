@@ -5,8 +5,8 @@ import { atEverySize } from '../support/screens';
 
 /**
  * BUG-8 (#594): the not-found, no-access and could-not-be-loaded states of the four records set their own document title through the one
- * helper (`recordStateTitle`): "<Record> not found - MatterFlow", "No access to this <record> - MatterFlow", "<Record> could not be loaded
- * - MatterFlow". Client, Matter and Project used to keep "Client - MatterFlow" while loading failed. The page itself does not change.
+ * helper (`recordStateTitle`): "<Record> not found - LPT Hub", "No access to this <record> - LPT Hub", "<Record> could not be loaded
+ * - LPT Hub". Client, Matter and Project used to keep "Client - LPT Hub" while loading failed. The page itself does not change.
  */
 const KINDS = [
   { api: 'clients', noun: 'client', title: 'Client' },
@@ -28,7 +28,7 @@ test.describe('Record states: document titles (#594)', () => {
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(
         `We couldn't find that ${k.noun}.`,
       );
-      await expect(page).toHaveTitle(`${k.title} not found - MatterFlow`);
+      await expect(page).toHaveTitle(`${k.title} not found - LPT Hub`);
 
       // 403 and 500: the record exists, its request is answered with the failure.
       let id: number;
@@ -47,7 +47,7 @@ test.describe('Record states: document titles (#594)', () => {
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(
         `You don't have access to this ${k.noun}.`,
       );
-      await expect(page).toHaveTitle(`No access to this ${k.noun} - MatterFlow`);
+      await expect(page).toHaveTitle(`No access to this ${k.noun} - LPT Hub`);
       await unroute();
 
       const unroute500 = await failApi(page, `**/api/v1/${k.api}/${id}`, 500, {
@@ -57,7 +57,7 @@ test.describe('Record states: document titles (#594)', () => {
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(
         `Couldn't load this ${k.noun}.`,
       );
-      expect(await titleOf(page)).toBe(`${k.title} could not be loaded - MatterFlow`);
+      expect(await titleOf(page)).toBe(`${k.title} could not be loaded - LPT Hub`);
       await unroute500();
 
       // Retry recovers: the title names the record again, not the state.

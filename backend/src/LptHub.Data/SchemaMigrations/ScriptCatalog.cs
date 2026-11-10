@@ -1,4 +1,4 @@
-namespace MatterFlow.Data.SchemaMigrations;
+namespace LptHub.Data.SchemaMigrations;
 
 public static class ScriptCatalog
 {

@@ -76,7 +76,7 @@ test.describe('Asset Types page chrome (#633)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/admin/asset-types');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Asset Types');
-    await expect(page).toHaveTitle('Asset Types - MatterFlow');
+    await expect(page).toHaveTitle('Asset Types - LPT Hub');
     await expect(crumbs(page)).toHaveText([/Administration/, /Asset Types/]);
     await expect(
       page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Asset Types' }),
@@ -94,7 +94,7 @@ test.describe('Asset Types page chrome (#633)', () => {
     // The old Link Roles addresses go to the Link Roles list under Lists.
     await page.goto('/admin/asset-link-roles');
     await expect(page).toHaveURL(/\/admin\/lists\/link-roles$/);
-    await expect(page).toHaveTitle('Lists: Link Roles - MatterFlow');
+    await expect(page).toHaveTitle('Lists: Link Roles - LPT Hub');
     await page.goto('/admin/asset-types?tab=link-roles');
     await expect(page).toHaveURL(/\/admin\/lists\/link-roles$/);
     await shot(page, 'asset-types-link-roles-moved');

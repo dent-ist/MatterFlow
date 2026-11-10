@@ -1,8 +1,8 @@
-using MatterFlow.Identity.Domain;
+using LptHub.Identity.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace MatterFlow.Identity.Infrastructure;
+namespace LptHub.Identity.Infrastructure;
 
 internal sealed class PodConfiguration : IEntityTypeConfiguration<Pod>
 {

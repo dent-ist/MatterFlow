@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>
 /// Plain-list export (PM v2, #879): the rows of a list as CSV or tab-separated text. It is a list export, not a status report: no layout, no

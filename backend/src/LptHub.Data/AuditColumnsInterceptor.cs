@@ -1,11 +1,11 @@
-using MatterFlow.SharedKernel.Entities;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Time;
+using LptHub.SharedKernel.Entities;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Time;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
-namespace MatterFlow.Data;
+namespace LptHub.Data;
 
 /// <summary>Stamps CreatedAt/By and ModifiedAt/By on <see cref="IAuditStamped"/> entities during SaveChanges. (AuditEvent generation is a separate interceptor.)</summary>
 public sealed class AuditColumnsInterceptor(IClock clock, ICurrentUser currentUser) : SaveChangesInterceptor

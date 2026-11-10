@@ -1,7 +1,7 @@
-using MatterFlow.SharedKernel.Audit;
-using MatterFlow.SharedKernel.Entities;
+using LptHub.SharedKernel.Audit;
+using LptHub.SharedKernel.Entities;
 
-namespace MatterFlow.Audit.Domain;
+namespace LptHub.Audit.Domain;
 
 /// <summary>
 /// One immutable audit row. Intentionally not <see cref="AuditedAttribute">[Audited]</see> and not an audit-stamped entity.

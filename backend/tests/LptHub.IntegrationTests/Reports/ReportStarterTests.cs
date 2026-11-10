@@ -1,16 +1,16 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.Api.Seeding;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.IntegrationTests.Tasks;
-using MatterFlow.Reports.Application.Starters;
+using LptHub.Api.Seeding;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Tasks;
+using LptHub.Reports.Application.Starters;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Reports;
+namespace LptHub.IntegrationTests.Reports;
 
 /// <summary>
 /// The starter reports (issue #724) on a real API, SQL Server and the real read-only report login: every starter is seeded active and previewed, runs with its
@@ -326,7 +326,7 @@ public sealed class ReportStarterTests(SqlServerFixture sql)
     {
         public string EnvironmentName { get; set; } = name;
 
-        public string ApplicationName { get; set; } = "MatterFlow.Api";
+        public string ApplicationName { get; set; } = "LptHub.Api";
 
         public string ContentRootPath { get; set; } = "";
 

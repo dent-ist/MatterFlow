@@ -1,17 +1,17 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.IntegrationTests.Organization;
-using MatterFlow.IntegrationTests.Tasks;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Organization;
+using LptHub.IntegrationTests.Tasks;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
-using Place = MatterFlow.IntegrationTests.Workflows.WorkflowInstanceHarness.Place;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
+using Place = LptHub.IntegrationTests.Workflows.WorkflowInstanceHarness.Place;
 
-namespace MatterFlow.IntegrationTests.Workflows;
+namespace LptHub.IntegrationTests.Workflows;
 
 /// <summary>
 /// <c>openTaskCount</c>, <c>createdByUserId</c> and <c>createdByName</c> on each workflow version (#391) and the read policy of the version endpoint
@@ -196,7 +196,7 @@ public sealed class WorkflowVersionOpenCountsApiTests(SqlServerFixture sql) : IA
             logging.AddProvider(logs);
         })));
         var http = logged.CreateClient();
-        http.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        http.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         http.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
 
         async Task<(int Statements, JsonElement Detail)> ReadAsync()

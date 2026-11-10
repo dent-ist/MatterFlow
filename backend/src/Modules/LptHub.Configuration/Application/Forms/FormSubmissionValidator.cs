@@ -1,9 +1,9 @@
 using System.Text.Json;
-using MatterFlow.Configuration.Contracts.Forms;
-using MatterFlow.Configuration.Domain.Forms.Rules;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Configuration.Contracts.Forms;
+using LptHub.Configuration.Domain.Forms.Rules;
+using LptHub.SharedKernel.Results;
 
-namespace MatterFlow.Configuration.Application.Forms;
+namespace LptHub.Configuration.Application.Forms;
 
 /// <summary>Validates submitted values against a stored form version with the authoritative evaluator (<see cref="IFormSubmissionValidator"/>).</summary>
 internal sealed class FormSubmissionValidator(FormSchemaLoader loader, IEnumerable<IFormReferenceValidator> referenceValidators) : IFormSubmissionValidator

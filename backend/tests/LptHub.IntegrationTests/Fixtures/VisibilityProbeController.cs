@@ -1,11 +1,11 @@
-using MatterFlow.Identity.Authorization;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.SharedKernel.Visibility;
-using MatterFlow.WorkManagement.Domain;
+using LptHub.Identity.Authorization;
+using LptHub.Identity.Contracts;
+using LptHub.SharedKernel.Visibility;
+using LptHub.WorkManagement.Domain;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.IntegrationTests.Fixtures;
+namespace LptHub.IntegrationTests.Fixtures;
 
 /// <summary>Test-only window onto <see cref="IMatterVisibility"/> (epic #788): what the port lets the caller (or <c>forUser</c>) see. Not part of the API.</summary>
 [ApiController]

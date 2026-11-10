@@ -1,4 +1,4 @@
-namespace MatterFlow.Reports.Application;
+namespace LptHub.Reports.Application;
 
 /// <summary>Filters of the run log (all optional).</summary>
 /// <param name="Before">Cursor: only runs with a smaller id (older).</param>

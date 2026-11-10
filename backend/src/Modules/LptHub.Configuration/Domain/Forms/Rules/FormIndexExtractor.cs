@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace MatterFlow.Configuration.Domain.Forms.Rules;
+namespace LptHub.Configuration.Domain.Forms.Rules;
 
 /// <summary>
 /// One typed row for the derived <c>CustomFieldIndex</c> table (architecture 7.6). Exactly one of the value

@@ -1,6 +1,6 @@
 # 01 Architecture
 
-Related: `docs/architecture.md` sections 2, 5, 6.6, `docs/runbook.md` section 5, `deploy/web.config`, `backend/src/MatterFlow.Api/Http/SecurityHeadersMiddleware.cs`, `backend/src/MatterFlow.Api/Hosting/SpaHosting.cs`.
+Related: `docs/architecture.md` sections 2, 5, 6.6, `docs/runbook.md` section 5, `deploy/web.config`, `backend/src/LptHub.Api/Http/SecurityHeadersMiddleware.cs`, `backend/src/LptHub.Api/Hosting/SpaHosting.cs`.
 
 ## 1. Components
 
@@ -10,13 +10,13 @@ flowchart LR
   U -->|new window, NO Windows auth| IIS
   subgraph Server[Windows Server]
     IIS[IIS site<br/>location / : Windows auth<br/>location /apps : anonymous]
-    subgraph Web[MatterFlow.Api - app pool - in-process]
+    subgraph Web[LptHub.Api - app pool - in-process]
       SPA[Angular SPA + /api Windows auth]
       GW[Apps Gateway<br/>static, session, YARP proxy,<br/>platform endpoints, JWKS]
       REG[Apps module<br/>registry, approval, tokens, audit]
       CON[Connector runtime]
     end
-    AH[MatterFlow.AppHost<br/>Windows service]
+    AH[LptHub.AppHost<br/>Windows service]
     FB[File Broker<br/>Windows service, own account]
     B1[App backend A<br/>per-app account, localhost:51xx]
     B2[App backend B]
@@ -40,17 +40,17 @@ flowchart LR
 
 | Component | Runs as | Responsibility | Never does |
 |---|---|---|---|
-| MatterFlow web | App pool identity (gMSA `svc-matterflow$`, `docs/runbook.md` 5.1) | Registry, upload/validate, unzip, gateway, tokens, permission checks, audit, connector calls | Run uploaded code; create IIS sites/app pools; read network shares directly |
+| LPT Hub web | App pool identity (gMSA `svc-lpt-hub$`, `docs/runbook.md` 5.1) | Registry, upload/validate, unzip, gateway, tokens, permission checks, audit, connector calls | Run uploaded code; create IIS sites/app pools; read network shares directly |
 | Apps Gateway | Inside web process | Serves `/apps/*` with sandbox headers; authenticates by token; proxies to back ends | Accept Windows credentials on `/apps` |
 | App Host | Own Windows service account | Start/stop/restart back ends in job objects; health; logs; per-app config | Serve users; talk to SQL Server |
-| File Broker | Own account `svc-mf-files` (file shares only) | Browse/read/write inside allow-listed roots for approved apps | Run app code; accept requests except from MatterFlow web (localhost, signed) |
+| File Broker | Own account `svc-mf-files` (file shares only) | Browse/read/write inside allow-listed roots for approved apps | Run app code; accept requests except from LPT Hub web (localhost, signed) |
 | App back end | Per-app account | App logic; may call platform services with a service token | Reach the network directly (firewalled to loopback), read other apps' data |
 
-The App Host and File Broker may ship as two roles of one executable (`MatterFlow.AppHost.exe --role host|broker`), installed as two services so they have different accounts. **IT dependency** (see `06`). The App Host is needed from Phase 2 and the File Broker from Phase 3; Phase 1 serves static front ends only.
+The App Host and File Broker may ship as two roles of one executable (`LptHub.AppHost.exe --role host|broker`), installed as two services so they have different accounts. **IT dependency** (see `06`). The App Host is needed from Phase 2 and the File Broker from Phase 3; Phase 1 serves static front ends only.
 
 ## 2. Storage layout
 
-Configured by `Apps:StoragePath` (default `D:\MatterFlow\apps`, shown here as `\apps`), `Apps:DataPath` (`\apps-data`). Both outside the IIS site folder and outside `wwwroot`; there is no IIS virtual directory or handler mapping pointing at them.
+Configured by `Apps:StoragePath` (default `D:\LPT Hub\apps`, shown here as `\apps`), `Apps:DataPath` (`\apps-data`). Both outside the IIS site folder and outside `wwwroot`; there is no IIS virtual directory or handler mapping pointing at them.
 
 ```text
 \apps\
@@ -149,7 +149,7 @@ MapWhen(path starts with "/apps/" AND second segment present)  -->  APPS BRANCH:
     AppsRateLimiter      per session / per IP, separate budgets (static, api, platform)
     AppsRouter           _mf endpoints | /api/ proxy (YARP) | static files
     (no RequestForgeryGuard, no UseAuthentication/Windows, no SPA fallback)
-UseMatterFlowStaticFiles (SPA)
+UseLptHubStaticFiles (SPA)
 RequestForgeryGuard, Authentication, Authorization, RateLimiter
 controllers, SPA fallback
 ```
@@ -177,10 +177,10 @@ Access-Control-Allow-Origin: null  + Vary: Origin  (api and _mf: preflight answe
 
 ### Why the sandbox works, and what it breaks
 
-- `sandbox` without `allow-same-origin` gives the document an **opaque origin**: it cannot read MatterFlow's origin storage, cannot call same-origin DOM APIs of MatterFlow windows, `document.cookie`, `localStorage`, `sessionStorage` and IndexedDB throw `SecurityError`, and `fetch` to `/api/...` is a cross-origin request with `Origin: null`. Because MatterFlow's `/api` sends no CORS headers and requires the `X-MatterFlow-Client` header (needs a preflight that fails), the app can neither read nor write MatterFlow data. Because IIS demands Windows credentials on `/api` and a credential-less cross-origin `fetch` never carries them, ambient authority is also absent.
+- `sandbox` without `allow-same-origin` gives the document an **opaque origin**: it cannot read LPT Hub's origin storage, cannot call same-origin DOM APIs of LPT Hub windows, `document.cookie`, `localStorage`, `sessionStorage` and IndexedDB throw `SecurityError`, and `fetch` to `/api/...` is a cross-origin request with `Origin: null`. Because LPT Hub's `/api` sends no CORS headers and requires the `X-LptHub-Client` header (needs a preflight that fails), the app can neither read nor write LPT Hub data. Because IIS demands Windows credentials on `/api` and a credential-less cross-origin `fetch` never carries them, ambient authority is also absent.
 - `connect-src` limited to the app's own path is **defence in depth** (path matching is ignored after redirects), not the primary control.
-- Frame busting: `frame-ancestors 'none'` + `X-Frame-Options: DENY` stop clickjacking in window mode; the future `embedded` mode would change this to `frame-ancestors 'self'` and MatterFlow's CSP gets `frame-src https://<host>/apps/`.
-- COOP `same-origin` plus `rel=noopener` leaves the app window with no handle to the MatterFlow window.
+- Frame busting: `frame-ancestors 'none'` + `X-Frame-Options: DENY` stop clickjacking in window mode; the future `embedded` mode would change this to `frame-ancestors 'self'` and LPT Hub's CSP gets `frame-src https://<host>/apps/`.
+- COOP `same-origin` plus `rel=noopener` leaves the app window with no handle to the LPT Hub window.
 - **What it breaks for apps:** no cookies/web storage/IndexedDB/service workers (keep state in memory; use `postMessage` only within the app); module scripts and fonts are CORS fetches (hence `ACAO: *` on static files); `window.open` popups are sandboxed (no `allow-popups-to-escape-sandbox`); no top navigation; no `document.domain`; blob/PDF preview in `<iframe>` or `<object>` is blocked (`object-src 'none'`; render PDF with a JS viewer or offer a download); clipboard read blocked. Section 7 of `08` lists workarounds.
 
 ### CORS and `Origin: null`

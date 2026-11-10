@@ -1,11 +1,11 @@
 using System.Globalization;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Notifications.Contracts;
-using MatterFlow.Organization.Contracts;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.WorkManagement.Domain;
+using LptHub.Identity.Contracts;
+using LptHub.Notifications.Contracts;
+using LptHub.Organization.Contracts;
+using LptHub.SharedKernel.Identity;
+using LptHub.WorkManagement.Domain;
 
-namespace MatterFlow.WorkManagement.Application;
+namespace LptHub.WorkManagement.Application;
 
 /// <summary>
 /// The create-path notification events of the Task commands (epic #753): who is told what when a Task is created, assigned or commented. Each

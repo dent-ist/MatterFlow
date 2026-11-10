@@ -1,7 +1,7 @@
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace MatterFlow.Data.SchemaMigrations;
+namespace LptHub.Data.SchemaMigrations;
 
 /// <summary>Splits a script on lines containing only GO, ignoring GO inside block comments, strings and bracketed identifiers.</summary>
 public static partial class SqlBatchSplitter

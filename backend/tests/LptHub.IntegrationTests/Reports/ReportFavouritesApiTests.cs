@@ -2,10 +2,10 @@ using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Reports;
+namespace LptHub.IntegrationTests.Reports;
 
 /// <summary>Favourites (PUT/DELETE /api/v1/reports/{id}/favourite, <c>isFavourite</c> in the list) and the Recent line (GET /api/v1/reports/recent), issue #723.</summary>
 [Collection(SqlServerCollection.Name)]
@@ -77,7 +77,7 @@ public sealed class ReportFavouritesApiTests(SqlServerFixture sql)
         }
 
         var anonymous = h.Factory.CreateClient(); // not signed in; the CSRF header is there so the answer is the sign-in one
-        anonymous.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        anonymous.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         (await anonymous.PutAsync(Fav(report), null)).StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
         (await anonymous.DeleteAsync(Fav(report))).StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
         (await anonymous.GetAsync("/api/v1/reports/recent")).StatusCode.ShouldBe(HttpStatusCode.Unauthorized);

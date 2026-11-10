@@ -1,8 +1,8 @@
 using System.Globalization;
 using System.Text;
-using MatterFlow.IntegrationTests.Tasks;
+using LptHub.IntegrationTests.Tasks;
 
-namespace MatterFlow.IntegrationTests.Organization;
+namespace LptHub.IntegrationTests.Organization;
 
 /// <summary>Seeds Tasks, Matters and Projects with set-based SQL for the Task count tests (the HTTP APIs would take minutes at this size).</summary>
 internal static class CountsSeed

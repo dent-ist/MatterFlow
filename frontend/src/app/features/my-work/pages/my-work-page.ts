@@ -647,7 +647,7 @@ export class MyWorkPage extends QueuePageBase<MyWorkData> {
       this.pods.set(c.options);
       this.podCount.set(c.memberOf);
     });
-    // The browser title names the tab ("My Work: Closed - MatterFlow") and follows tab changes without a reload (M8).
+    // The browser title names the tab ("My Work: Closed - LPT Hub") and follows tab changes without a reload (M8).
     effect(() => this.pageTitle.pin(`My Work: ${this.tabLabel()}`));
     inject(DestroyRef).onDestroy(() => this.pageTitle.unpin());
     // A closed-date range replaces "all time": the stale flag does not come back when the range is cleared.

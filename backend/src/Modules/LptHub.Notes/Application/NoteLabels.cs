@@ -1,8 +1,8 @@
-using MatterFlow.Notes.Contracts;
-using MatterFlow.Notes.Domain;
+using LptHub.Notes.Contracts;
+using LptHub.Notes.Domain;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Notes.Application;
+namespace LptHub.Notes.Application;
 
 /// <summary>Internal lookup for other modules (titles only; the caller gates by matter).</summary>
 internal sealed class NoteLabels(DbContext db) : INoteLabels

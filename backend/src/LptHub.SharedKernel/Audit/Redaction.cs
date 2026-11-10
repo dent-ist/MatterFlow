@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace MatterFlow.SharedKernel.Audit;
+namespace LptHub.SharedKernel.Audit;
 
 /// <summary>
 /// Helpers that keep sensitive values (email bodies/addresses, field values, comment text) out of logs

@@ -26,7 +26,7 @@ npm start          # SQL Server in Docker, then the API on :5080 and the Angular
 | Web app (Angular dev server, proxies `/api` to the API) | http://localhost:4200 |
 | API | http://localhost:5080 (liveness `/health/live`, readiness `/health/ready`) |
 | Swagger UI (Development only) | http://localhost:5080/swagger (OpenAPI JSON at `/openapi/v1.json`) |
-| SQL Server | `127.0.0.1:1433`, database `MatterFlow`, user `sa`, the public dev password in `docker-compose.dev.yml` |
+| SQL Server | `127.0.0.1:1433`, database `LptHub`, user `sa`, the public dev password in `docker-compose.dev.yml` |
 
 Other root scripts: `db:up`, `db:down`, `db:reset` (deletes the database volume and starts again), `api`, `web`, `form-engine`, `start:user1` to `start:user3` (sign in as another Dev user), `seed:demo`.
 
@@ -38,7 +38,7 @@ The `Dev` provider is only allowed when `ASPNETCORE_ENVIRONMENT` is `Development
 
 - `Auth:Dev:DefaultUser` is the user every browser request is signed in as (`npm start` uses `KE\kekim`, the bootstrap System Admin).
 - The header `X-Dev-User` (or in Development the query `?devUser=`) names the caller for one request.
-- `backend/src/MatterFlow.Api/appsettings.Development.json` seeds `KE\user1` to `KE\user10` (role Data Technician) from `Dev:Users`.
+- `backend/src/LptHub.Api/appsettings.Development.json` seeds `KE\user1` to `KE\user10` (role Data Technician) from `Dev:Users`.
 - A user with no roles lands on the **Access Pending** page until an admin assigns a role (Administration > Users).
 
 Personas of the demo data are listed in [Demo Data and Personas](../Operations/Demo-Data-and-Personas.md).
@@ -60,7 +60,7 @@ The seeder talks to the real HTTP API, so every record passes the normal validat
 ```
 docker compose -f docker-compose.dev.yml up -d --wait sqlserver
 docker compose -f docker-compose.dev.yml run --rm --no-deps sqlserver-init
-cd backend && dotnet run --project src/MatterFlow.Api        # needs ConnectionStrings__Default and __MatterFlow, Auth__Dev__DefaultUser
+cd backend && dotnet run --project src/LptHub.Api        # needs ConnectionStrings__Default and __LptHub, Auth__Dev__DefaultUser
 cd frontend && npm ci && npm run start:api                   # real API; plain `npm start` uses an in-memory stub
 ```
 

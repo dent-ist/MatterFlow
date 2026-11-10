@@ -1,6 +1,6 @@
-using MatterFlow.Productions.Domain;
+using LptHub.Productions.Domain;
 
-namespace MatterFlow.Productions.Application;
+namespace LptHub.Productions.Application;
 
 /// <summary>The small rules of production specs that need no database: the name of a copy, and which specs a production may be given.</summary>
 internal static class ProductionSpecRules

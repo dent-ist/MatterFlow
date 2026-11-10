@@ -1,6 +1,6 @@
-using MatterFlow.SharedKernel.Visibility;
+using LptHub.SharedKernel.Visibility;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>
 /// The part of every viewer-dependent cache key that stands for "what this person may see right now" (epic #788, README section 10): <c>off</c> while the go-live

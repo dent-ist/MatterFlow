@@ -1,8 +1,8 @@
-using MatterFlow.Reports.Application;
-using MatterFlow.Reports.Application.Results;
+using LptHub.Reports.Application;
+using LptHub.Reports.Application.Results;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Reports;
+namespace LptHub.UnitTests.Reports;
 
 /// <summary>Date-times in a result: an instant (datetimeoffset) is stored in UTC and sent with a Z; a wall-clock value is sent as it is (issue: date-times in the person's zone).</summary>
 public class ResultInstantTests

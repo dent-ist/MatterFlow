@@ -1,8 +1,8 @@
 using System.Data;
-using MatterFlow.Reports.Application;
+using LptHub.Reports.Application;
 using Microsoft.Data.SqlClient;
 
-namespace MatterFlow.Reports.Infrastructure;
+namespace LptHub.Reports.Infrastructure;
 
 /// <summary>
 /// Writes <c>dbo.ReportRun</c> with the application connection: an INSERT when a run starts, and one call of <c>dbo.usp_ReportRunComplete</c>

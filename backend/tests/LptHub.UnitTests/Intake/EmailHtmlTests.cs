@@ -1,10 +1,10 @@
 using System.Text;
-using MatterFlow.Intake.Application;
-using MatterFlow.SharedKernel.Time;
+using LptHub.Intake.Application;
+using LptHub.SharedKernel.Time;
 using Microsoft.Extensions.Options;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Intake;
+namespace LptHub.UnitTests.Intake;
 
 /// <summary>The HTML body of an email as the description candidate (decision R): tables kept, hostile markup gone, limits fall back to text.</summary>
 public class EmailHtmlTests
@@ -18,7 +18,7 @@ public class EmailHtmlTests
             + (text is null ? string.Empty : "--b1\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n" + text + "\r\n")
             + "--b1\r\nContent-Type: text/html; charset=utf-8\r\n\r\n" + html + "\r\n--b1--\r\n");
 
-    private static async Task<MatterFlow.Intake.Application.ParsedEmailResponse> ParseAsync(byte[] bytes)
+    private static async Task<LptHub.Intake.Application.ParsedEmailResponse> ParseAsync(byte[] bytes)
     {
         await using var stream = new MemoryStream(bytes);
         var result = await Service().ParseFileAsync(stream, "mail.eml", CancellationToken.None);

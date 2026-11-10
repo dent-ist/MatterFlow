@@ -1,7 +1,7 @@
 using System.Net.Mail;
-using MatterFlow.SharedKernel.Results;
+using LptHub.SharedKernel.Results;
 
-namespace MatterFlow.WorkManagement.Domain;
+namespace LptHub.WorkManagement.Domain;
 
 /// <summary>Field validation for Task text fields. Each method returns a field error or null.</summary>
 public static class TaskValidation

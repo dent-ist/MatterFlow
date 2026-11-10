@@ -1,26 +1,26 @@
-using MatterFlow.Api.Http;
-using MatterFlow.Api.Seeding;
-using MatterFlow.Assets;
-using MatterFlow.Audit;
-using MatterFlow.Audit.Contracts;
-using MatterFlow.Configuration;
-using MatterFlow.Configuration.Application.Lookups;
-using MatterFlow.Data;
-using MatterFlow.Identity;
-using MatterFlow.Identity.Seeding;
-using MatterFlow.Intake;
-using MatterFlow.Notes;
-using MatterFlow.Notifications;
-using MatterFlow.Organization;
-using MatterFlow.Productions;
-using MatterFlow.Reports;
-using MatterFlow.Search;
-using MatterFlow.WorkflowEngine;
-using MatterFlow.WorkManagement;
-using MatterFlow.WorkViews;
+using LptHub.Api.Http;
+using LptHub.Api.Seeding;
+using LptHub.Assets;
+using LptHub.Audit;
+using LptHub.Audit.Contracts;
+using LptHub.Configuration;
+using LptHub.Configuration.Application.Lookups;
+using LptHub.Data;
+using LptHub.Identity;
+using LptHub.Identity.Seeding;
+using LptHub.Intake;
+using LptHub.Notes;
+using LptHub.Notifications;
+using LptHub.Organization;
+using LptHub.Productions;
+using LptHub.Reports;
+using LptHub.Search;
+using LptHub.WorkflowEngine;
+using LptHub.WorkManagement;
+using LptHub.WorkViews;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-namespace MatterFlow.Api;
+namespace LptHub.Api;
 
 /// <summary>
 /// The single list of modules composed into the host. Adding a module is one line here;
@@ -28,7 +28,7 @@ namespace MatterFlow.Api;
 /// </summary>
 public static class ModuleComposition
 {
-    public static IServiceCollection AddMatterFlowModules(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
+    public static IServiceCollection AddLptHubModules(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
     {
         services.AddDataModule();
         services.AddIdentityModule(configuration, environment);

@@ -1,8 +1,8 @@
-using MatterFlow.Productions.Application;
-using MatterFlow.Productions.Domain;
+using LptHub.Productions.Application;
+using LptHub.Productions.Domain;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Productions;
+namespace LptHub.UnitTests.Productions;
 
 /// <summary>The duplicate and retire rules of production specs (MD-09).</summary>
 public sealed class ProductionSpecRulesTests

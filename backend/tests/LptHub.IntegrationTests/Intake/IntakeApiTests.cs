@@ -2,11 +2,11 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.Identity.Contracts;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Intake;
+namespace LptHub.IntegrationTests.Intake;
 
 /// <summary>
 /// <c>POST /api/v1/intake/parse-email</c> through the real pipeline (Dev auth, permission policy, multipart and JSON binding, ProblemDetails)
@@ -26,7 +26,7 @@ public sealed class IntakeApiTests(SqlServerFixture sql) : IAsyncLifetime
     private HttpClient As(string user = DatabaseApiFactory.AdminAccount)
     {
         var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        client.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         client.DefaultRequestHeaders.Add("X-Dev-User", user);
         return client;
     }
@@ -214,7 +214,7 @@ public sealed class IntakeApiTests(SqlServerFixture sql) : IAsyncLifetime
         HttpClient Client()
         {
             var client = limited.CreateClient();
-            client.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+            client.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
             client.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
             return client;
         }

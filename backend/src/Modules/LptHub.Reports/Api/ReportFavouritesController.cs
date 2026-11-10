@@ -1,9 +1,9 @@
-using MatterFlow.Reports.Application;
+using LptHub.Reports.Application;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MatterFlow.Reports.Api;
+namespace LptHub.Reports.Api;
 
 /// <summary>A report in the person's Recent line.</summary>
 /// <param name="ReportId">Id of the report (the run page is <c>/reports/{reportId}</c>).</param>

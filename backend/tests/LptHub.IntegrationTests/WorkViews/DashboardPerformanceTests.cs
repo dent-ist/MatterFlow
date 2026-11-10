@@ -1,15 +1,15 @@
 using System.Diagnostics;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.IntegrationTests.Tasks;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Tasks;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Shouldly;
 using Xunit.Abstractions;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.WorkViews;
+namespace LptHub.IntegrationTests.WorkViews;
 
 /// <summary>The Dashboard against about 5,000 Tasks seeded with set-based SQL: a few aggregate statements and a generous time bound.</summary>
 [Collection(SqlServerCollection.Name)]
@@ -85,7 +85,7 @@ public sealed class DashboardPerformanceTests(SqlServerFixture sql, ITestOutputH
     public async Task The_dashboard_is_fast_uses_a_few_statements_and_its_counts_agree_with_the_queue()
     {
         var http = _logged.CreateClient();
-        http.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        http.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         http.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
 
         var warm = await OkAsync(await http.GetAsync("/api/v1/dashboard"));
@@ -124,7 +124,7 @@ public sealed class DashboardPerformanceTests(SqlServerFixture sql, ITestOutputH
     {
         // P1 (#89): the scope is one more predicate on the existing IX_Task_Pod (AssignedPodId, StatusCode) index, so no new index script is needed.
         var http = _logged.CreateClient();
-        http.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        http.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         http.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
         await OkAsync(await http.GetAsync($"/api/v1/dashboard?podScope={_podId}"));
 
@@ -159,7 +159,7 @@ public sealed class DashboardPerformanceTests(SqlServerFixture sql, ITestOutputH
     public async Task The_trend_by_task_type_is_fast_uses_a_fixed_number_of_statements_and_adds_up()
     {
         var http = _logged.CreateClient();
-        http.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        http.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         http.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
         var ids = string.Join('&', _typeIds.Select(id => "taskTypeIds=" + id));
         var url = $"/api/v1/dashboard/trend?periodDays=90&fresh=true&{ids}";

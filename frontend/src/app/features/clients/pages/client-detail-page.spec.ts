@@ -444,11 +444,11 @@ describe('ClientDetailPage', () => {
 
   it('names the record and the tab in the document title, and the id while loading', async () => {
     await create(['Client.View', 'Matter.View']);
-    expect(document.title).toBe('00343 Acme Corp: Overview - MatterFlow');
+    expect(document.title).toBe('00343 Acme Corp: Overview - LPT Hub');
     await openTab('matters');
-    expect(document.title).toBe('00343 Acme Corp: Matters - MatterFlow');
+    expect(document.title).toBe('00343 Acme Corp: Matters - LPT Hub');
     await openTab(undefined);
-    expect(document.title).toBe('00343 Acme Corp: Overview - MatterFlow');
+    expect(document.title).toBe('00343 Acme Corp: Overview - LPT Hub');
   });
 
   it('offers Activity as a header button (Audit.View) that opens the drawer titled with the client', async () => {

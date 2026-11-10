@@ -1,12 +1,12 @@
-using MatterFlow.Identity.Application;
-using MatterFlow.Identity.Authorization;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Results;
+using LptHub.Identity.Application;
+using LptHub.Identity.Authorization;
+using LptHub.Identity.Contracts;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Results;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MatterFlow.Identity.Api;
+namespace LptHub.Identity.Api;
 
 /// <summary>
 /// The signed-in user's own availability (time zone, work hours, Out of office entries and holidays; profile page). Any user who can work Tasks (<c>Task.View</c>) may edit their own.

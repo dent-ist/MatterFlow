@@ -1,4 +1,4 @@
-namespace MatterFlow.Reports.Application;
+namespace LptHub.Reports.Application;
 
 /// <summary>What a store call came to. Not-found, concurrent change and duplicate name are normal outcomes, not exceptions.</summary>
 public enum StoreStatus

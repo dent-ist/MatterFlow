@@ -2,9 +2,9 @@ using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
-using MatterFlow.SharedKernel.Results;
+using LptHub.SharedKernel.Results;
 
-namespace MatterFlow.Configuration.Domain.Settings;
+namespace LptHub.Configuration.Domain.Settings;
 
 /// <summary>
 /// SVG allow-list (design section 6.2). An SVG icon is parsed with <see cref="XmlReader"/> (DTD prohibited, no resolver, size limits) and

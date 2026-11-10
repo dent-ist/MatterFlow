@@ -1,11 +1,11 @@
 using System.ComponentModel.DataAnnotations;
-using MatterFlow.Audit.Application;
-using MatterFlow.SharedKernel.Authorization;
+using LptHub.Audit.Application;
+using LptHub.SharedKernel.Authorization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MatterFlow.Audit.Api;
+namespace LptHub.Audit.Api;
 
 /// <summary>The admin audit browser: search across all audit events (newest first). Requires the <c>Audit.View</c> policy.</summary>
 [ApiController]

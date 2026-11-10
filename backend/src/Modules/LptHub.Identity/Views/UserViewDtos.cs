@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 
-namespace MatterFlow.Identity.Views;
+namespace LptHub.Identity.Views;
 
 /// <summary>One stored view of the signed-in person: the remembered state of a surface (<c>name</c> null) or a named saved view.</summary>
 /// <param name="Id">Row id (named views are changed and deleted by it).</param>

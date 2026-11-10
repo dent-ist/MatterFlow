@@ -1,7 +1,7 @@
-using MatterFlow.Search.Application.Queries;
+using LptHub.Search.Application.Queries;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace MatterFlow.Search;
+namespace LptHub.Search;
 
 /// <summary>Composition entry point of the Search module.</summary>
 public static class SearchModule

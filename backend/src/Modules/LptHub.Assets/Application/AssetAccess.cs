@@ -1,9 +1,9 @@
 using System.Linq.Expressions;
-using MatterFlow.Assets.Contracts;
-using MatterFlow.Assets.Domain;
-using MatterFlow.SharedKernel.Visibility;
+using LptHub.Assets.Contracts;
+using LptHub.Assets.Domain;
+using LptHub.SharedKernel.Visibility;
 
-namespace MatterFlow.Assets.Application;
+namespace LptHub.Assets.Application;
 
 /// <summary>
 /// The assets the caller may see (epic #788, mode A): those of a visible matter, plus those linked to a task that is currently assigned to the caller.

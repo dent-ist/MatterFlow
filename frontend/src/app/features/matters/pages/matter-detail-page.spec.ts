@@ -940,11 +940,11 @@ describe('MatterDetailPage', () => {
 
   it('names the record and the tab in the document title', async () => {
     await create(['Matter.View', 'Project.View', 'Asset.View']);
-    expect(document.title).toBe('00343-00012 Merger Review: Summary - MatterFlow');
+    expect(document.title).toBe('00343-00012 Merger Review: Summary - LPT Hub');
     await openTab('projects');
-    expect(document.title).toBe('00343-00012 Merger Review: Projects - MatterFlow');
+    expect(document.title).toBe('00343-00012 Merger Review: Projects - LPT Hub');
     await openTab('assets');
-    expect(document.title).toBe('00343-00012 Merger Review: Assets - MatterFlow');
+    expect(document.title).toBe('00343-00012 Merger Review: Assets - LPT Hub');
   });
 
   it('sorts the Projects tab in natural order (Wave 7 before Wave 15, accents and case ignored)', async () => {

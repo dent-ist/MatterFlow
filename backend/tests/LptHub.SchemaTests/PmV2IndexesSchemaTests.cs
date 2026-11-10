@@ -1,9 +1,9 @@
-using MatterFlow.Data.SchemaMigrations;
+using LptHub.Data.SchemaMigrations;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 
-namespace MatterFlow.SchemaTests;
+namespace LptHub.SchemaTests;
 
 /// <summary>Baseline (archived 47-pm-v2-performance-indexes.sql) (PM v2, epic #851, issue #887): the covering index of the Data tab and the asset reports and the task index of the Breakdown exist, are not filtered and keep the older indexes.</summary>
 [Collection(SqlServerCollection.Name)]

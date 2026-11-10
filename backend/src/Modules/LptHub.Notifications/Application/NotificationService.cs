@@ -1,15 +1,15 @@
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
-using MatterFlow.Notifications.Contracts;
-using MatterFlow.Notifications.Domain;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Paging;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Time;
+using LptHub.Notifications.Contracts;
+using LptHub.Notifications.Domain;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Paging;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Time;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Notifications.Application;
+namespace LptHub.Notifications.Application;
 
 /// <summary>The cheap part of the poll: enough to build the ETag without reading any item.</summary>
 public sealed record NotificationPollState(int UnreadCount, long LatestId, string ETag);

@@ -1,11 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
-using static MatterFlow.IntegrationTests.WorkViews.QueueData;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.WorkViews.QueueData;
 
-namespace MatterFlow.IntegrationTests.WorkViews;
+namespace LptHub.IntegrationTests.WorkViews;
 
 /// <summary>GET /api/v1/my-work and /api/v1/pod-work (ticket 50): tabs, counts, multi-Pod My Work (SCN-007), Pod Work scoping.</summary>
 [Collection(SqlServerCollection.Name)]
@@ -119,7 +119,7 @@ public sealed class MyWorkAndPodWorkApiTests(SqlServerFixture sql)
     private static bool HasBuckets(System.Text.Json.JsonElement page) =>
         page.TryGetProperty("bucketCounts", out var b) && b.ValueKind != System.Text.Json.JsonValueKind.Null;
 
-    private static DateOnly Application_EndOfWeek(DateOnly today) => MatterFlow.WorkViews.Application.Queries.TaskQueueRules.EndOfWeek(today);
+    private static DateOnly Application_EndOfWeek(DateOnly today) => LptHub.WorkViews.Application.Queries.TaskQueueRules.EndOfWeek(today);
 
     [Fact]
     public async Task Group_by_due_is_only_for_the_active_tab_and_unknown_groups_are_rejected()

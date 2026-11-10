@@ -1,11 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Assets.AssetTestKit;
+using static LptHub.IntegrationTests.Assets.AssetTestKit;
 
-namespace MatterFlow.IntegrationTests.Assets;
+namespace LptHub.IntegrationTests.Assets;
 
 /// <summary>Saved asset reports (epic #851, issue #872): personal definitions, validation, ownership, limits.</summary>
 [Collection(SqlServerCollection.Name)]

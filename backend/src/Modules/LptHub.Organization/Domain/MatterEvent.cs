@@ -1,7 +1,7 @@
-using MatterFlow.SharedKernel.Audit;
-using MatterFlow.SharedKernel.Entities;
+using LptHub.SharedKernel.Audit;
+using LptHub.SharedKernel.Entities;
 
-namespace MatterFlow.Organization.Domain;
+namespace LptHub.Organization.Domain;
 
 /// <summary>
 /// A calendar item of a matter (UI update epic #953, UI-05): a hearing, a deposition, a filing deadline. <see cref="EventDate"/> is a floating calendar date and

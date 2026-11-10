@@ -1,7 +1,7 @@
-using MatterFlow.SharedKernel.Audit;
-using MatterFlow.SharedKernel.Entities;
+using LptHub.SharedKernel.Audit;
+using LptHub.SharedKernel.Entities;
 
-namespace MatterFlow.Identity.Domain;
+namespace LptHub.Identity.Domain;
 
 /// <summary>The application-owned user. Every actor/assignee foreign key in the system references <see cref="Entity{TKey}.Id"/> (UserId).</summary>
 [Audited(ObjectType = "User")]

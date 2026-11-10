@@ -1,12 +1,12 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.Identity.Domain;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.Identity.Domain;
+using LptHub.IntegrationTests.Fixtures;
 using Microsoft.EntityFrameworkCore;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Identity;
+namespace LptHub.IntegrationTests.Identity;
 
 /// <summary>Security review SEC-06 (bootstrap), SEC-07 (audit of provisioning, bootstrap and renames), SEC-13 (self-edit after cache expiry).</summary>
 [Collection(SqlServerCollection.Name)]
@@ -21,7 +21,7 @@ public sealed class IdentityResolverTests(SqlServerFixture sql) : IAsyncLifetime
     private static HttpClient Client(WebApplicationFactoryLike factory, string user)
     {
         var client = factory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        client.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         client.DefaultRequestHeaders.Add("X-Dev-User", user);
         return client;
     }

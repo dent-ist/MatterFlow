@@ -2,11 +2,11 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.Identity.Contracts;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Identity;
+namespace LptHub.IntegrationTests.Identity;
 
 /// <summary>
 /// The column filters of the administration lists (epic #75, Batch 4): Users (name, account, e-mail, roles, availability, first-seen days),
@@ -26,7 +26,7 @@ public sealed class AdminColumnFilterTests(SqlServerFixture sql) : IAsyncLifetim
     private HttpClient As(string user = DatabaseApiFactory.AdminAccount)
     {
         var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        client.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         client.DefaultRequestHeaders.Add("X-Dev-User", user);
         return client;
     }
@@ -53,7 +53,7 @@ public sealed class AdminColumnFilterTests(SqlServerFixture sql) : IAsyncLifetim
 
     private Task SetProfileAsync(string account, string displayName, string? email) => _factory.WithDbAsync(async db =>
     {
-        var user = db.Set<MatterFlow.Identity.Domain.UserIdentity>().Where(i => i.Username == account).Select(i => i.User).Single();
+        var user = db.Set<LptHub.Identity.Domain.UserIdentity>().Where(i => i.Username == account).Select(i => i.User).Single();
         user.DisplayName = displayName;
         user.Email = email;
         await db.SaveChangesAsync();
@@ -269,7 +269,7 @@ public sealed class AdminColumnFilterTests(SqlServerFixture sql) : IAsyncLifetim
         var bob = await ProvisionAsync(@"KE\bob");
         await _factory.WithDbAsync(async db =>
         {
-            db.Set<MatterFlow.Audit.Domain.AuditEvent>().AddRange(
+            db.Set<LptHub.Audit.Domain.AuditEvent>().AddRange(
                 Event(alice, "ALICE_DID"),
                 Event(bob, "BOB_DID"),
                 Event(null, "SYSTEM_DID"));
@@ -287,7 +287,7 @@ public sealed class AdminColumnFilterTests(SqlServerFixture sql) : IAsyncLifetim
         (await Types("")).ShouldBe(["ALICE_DID", "BOB_DID", "SYSTEM_DID"]);
     }
 
-    private static MatterFlow.Audit.Domain.AuditEvent Event(int? actor, string eventType) => new()
+    private static LptHub.Audit.Domain.AuditEvent Event(int? actor, string eventType) => new()
     {
         ObjectType = "Test",
         ObjectId = "1",

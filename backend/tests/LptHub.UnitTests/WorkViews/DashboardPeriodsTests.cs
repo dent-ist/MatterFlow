@@ -1,8 +1,8 @@
-using MatterFlow.SharedKernel.Time;
-using MatterFlow.WorkViews.Application.Queries;
+using LptHub.SharedKernel.Time;
+using LptHub.WorkViews.Application.Queries;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.WorkViews;
+namespace LptHub.UnitTests.WorkViews;
 
 /// <summary>The one Dashboard period vocabulary (P3): keys, month edges, the viewer's zone at fixed instants, custom limits and the old periodDays argument.</summary>
 public class DashboardPeriodsTests

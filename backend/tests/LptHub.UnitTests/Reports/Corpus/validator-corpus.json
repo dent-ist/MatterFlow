@@ -349,7 +349,7 @@
   {
    "id": "V035",
    "category": "not-a-query",
-   "sql": "DROP DATABASE MatterFlow",
+   "sql": "DROP DATABASE LptHub",
    "valid": false,
    "codes": [
     "MUST_START_WITH_SELECT"

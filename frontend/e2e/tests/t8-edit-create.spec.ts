@@ -342,7 +342,7 @@ test.describe('T8: Edit dialog (E1 #319, #320, BUG-3 #321)', () => {
         status: 400,
         contentType: 'application/problem+json',
         body: JSON.stringify({
-          type: 'urn:matterflow:error:validation-failed',
+          type: 'urn:lpt-hub:error:validation-failed',
           title: 'Validation failed',
           status: 400,
           code: 'VALIDATION_FAILED',

@@ -1,4 +1,4 @@
-namespace MatterFlow.SharedKernel.Tasks;
+namespace LptHub.SharedKernel.Tasks;
 
 /// <summary>What the assignee suggestions need to know about one person's Task load (#757).</summary>
 /// <param name="OpenTaskCount">Tasks assigned to the person that are open: New, In Progress or On Hold (the Task Queue's rule).</param>

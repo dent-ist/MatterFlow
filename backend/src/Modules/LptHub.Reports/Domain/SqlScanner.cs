@@ -1,4 +1,4 @@
-namespace MatterFlow.Reports.Domain;
+namespace LptHub.Reports.Domain;
 
 /// <summary>One <c>:NAME</c> token found in the SQL text: where it is and how it was spelled.</summary>
 /// <param name="Name">Upper-cased name without the colon (<c>:date</c> and <c>:DATE</c> are the same parameter).</param>

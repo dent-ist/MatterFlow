@@ -255,7 +255,7 @@ test.describe('pf3-states: skeleton while loading and the shared record state on
         state.locator('[data-error-reference], mf-error-reference').first(),
       ).toBeVisible();
       await expect(me.locator('.p-toast-message, [data-toast]')).toHaveCount(0);
-      await expect(me).toHaveTitle('Profile could not be loaded - MatterFlow');
+      await expect(me).toHaveTitle('Profile could not be loaded - LPT Hub');
       await noHorizontalScroll(me);
       await axeClean(me, `load error at ${size.width}`);
       if (size.width === 1366) await shot(me, 'pf3-load-error');

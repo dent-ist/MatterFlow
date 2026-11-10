@@ -34,9 +34,9 @@
 - JSON camelCase; enums as strings; ids as numbers; dates `yyyy-MM-dd`; instants ISO 8601 UTC with `Z`; `rowVersion` as a base64 string.
 - Matter references always carry both parts: `clientNumber`, `matterNumber`, `matterRef` (`00343-00012`). Number inputs accept 1 to 5 digits and are normalised (400 `INVALID_NUMBER_FORMAT`).
 - Paging `page` (1 based) and `pageSize` (default 25, max 100) returning `{items, total, page, pageSize}`; audit uses keyset paging (`afterId`). Sorting `sort=priority,-dueAt`; unknown filters or parameters are 400.
-- Errors are `application/problem+json` with `type` `urn:matterflow:error:<code-in-kebab-case>`, `code`, `traceId`, optional `errors` and `meta`.
+- Errors are `application/problem+json` with `type` `urn:lpt-hub:error:<code-in-kebab-case>`, `code`, `traceId`, optional `errors` and `meta`.
 
-### Error codes (constants in `backend/src/MatterFlow.SharedKernel/Results/ErrorCodes.cs`)
+### Error codes (constants in `backend/src/LptHub.SharedKernel/Results/ErrorCodes.cs`)
 
 UPPER_SNAKE_CASE, stable once released (clients and tests depend on them). Families seen: validation (`VALIDATION_FAILED`, `FORM_VALIDATION_FAILED`, `INVALID_NUMBER_FORMAT`), access (`UNAUTHENTICATED`, `ACCESS_PENDING`, `ACCOUNT_DISABLED`, `PERMISSION_DENIED`), existence and conflict (`NOT_FOUND`, `CONCURRENCY_CONFLICT`, `DUPLICATE_NUMBER`, `DUPLICATE_NAME`), state rules (`MATTER_INACTIVE`, `INVALID_STATUS_TRANSITION`, `COMPLETION_BLOCKED`, `TASK_NOT_EDITABLE`, ...), limits (`PAYLOAD_TOO_LARGE`, `QUERY_TOO_LARGE`, `QUERY_TIMEOUT`), Sensitive matter (`SENSITIVE_CONFIRMATION_REQUIRED`, `SENSITIVE_NEEDS_MANAGER`) and codes owned by a module (for example the absence codes in `Identity/Application/AbsenceService.cs`). `ErrorCodes.cs` holds the shared ones (62 constants); the list in `docs/architecture.md` section 11 may lag the code.
 

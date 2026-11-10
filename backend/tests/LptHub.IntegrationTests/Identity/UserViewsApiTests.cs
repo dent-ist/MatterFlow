@@ -1,10 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Identity;
+namespace LptHub.IntegrationTests.Identity;
 
 /// <summary>PM v2 #856: the signed-in person's remembered screen state and named saved views; always their own rows.</summary>
 [Collection(SqlServerCollection.Name)]
@@ -23,7 +23,7 @@ public sealed class UserViewsApiTests(SqlServerFixture sql) : IAsyncLifetime
     private async Task<HttpClient> UserAsync(string user, params string[] permissions)
     {
         var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        client.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         client.DefaultRequestHeaders.Add("X-Dev-User", user);
         (await client.GetAsync("/api/v1/me")).StatusCode.ShouldBe(HttpStatusCode.OK);
         if (permissions.Length > 0)

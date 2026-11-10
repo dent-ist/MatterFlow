@@ -1,13 +1,13 @@
-using MatterFlow.Assets.Domain;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.Organization.Domain;
-using MatterFlow.SharedKernel.Visibility;
-using MatterFlow.WorkManagement.Domain;
+using LptHub.Assets.Domain;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.Organization.Domain;
+using LptHub.SharedKernel.Visibility;
+using LptHub.WorkManagement.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Visibility;
+namespace LptHub.IntegrationTests.Visibility;
 
 /// <summary>
 /// Issue #1304: an entity loaded through a visibility helper must be TRACKED for a caller who is not "see all" while the sensitive-matter rule is on. The helpers filter with a subquery over the

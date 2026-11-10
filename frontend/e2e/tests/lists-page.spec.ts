@@ -25,7 +25,7 @@ test.describe('the Lists page (epic #1314)', () => {
       await page.setViewportSize(size);
       await page.goto('/admin/lists/priorities');
       await expect(page.getByRole('heading', { level: 1 })).toHaveText('Lists');
-      await expect(page).toHaveTitle('Lists: Priorities - MatterFlow');
+      await expect(page).toHaveTitle('Lists: Priorities - LPT Hub');
       const catalogue = page.getByRole('complementary', { name: 'Lists' });
       await expect(catalogue).toBeVisible();
       // 320 px at both sizes: the catalogue never grows.
@@ -89,7 +89,7 @@ test.describe('the Lists page (epic #1314)', () => {
       await page.setViewportSize(SIZES[1]);
       await page.goto(`/admin/lists/${key}`);
       await expect(page.getByRole('heading', { level: 2 })).toHaveText(label);
-      await expect(page).toHaveTitle(`Lists: ${label} - MatterFlow`);
+      await expect(page).toHaveTitle(`Lists: ${label} - LPT Hub`);
       await expect(page.locator('[data-shown-on]')).toContainText('Shown on:');
       await expect(page.locator('[data-rule]')).toBeVisible();
       await expect(page.locator('[data-list-body] tbody tr').first()).toBeVisible();

@@ -2,11 +2,11 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.WorkManagement;
+namespace LptHub.IntegrationTests.WorkManagement;
 
 /// <summary>
 /// The task read and write paths under the sensitive-matter rule (epic #788, SM-06, inventory R14 to R23): the personas of README 12.2 walk the task list,

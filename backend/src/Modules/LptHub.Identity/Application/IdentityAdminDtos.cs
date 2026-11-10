@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Identity.Pods;
+using LptHub.Identity.Contracts;
+using LptHub.Identity.Pods;
 
-namespace MatterFlow.Identity.Application;
+namespace LptHub.Identity.Application;
 
 /// <summary>One row of the users list. <c>Pods</c> are all of the person's Pods (inactive ones too), by name, with the primary one flagged.</summary>
 public sealed record UserSummaryDto(

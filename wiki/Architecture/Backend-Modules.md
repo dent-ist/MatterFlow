@@ -6,7 +6,7 @@
 
 ## The rule in one sentence
 
-A module (`MatterFlow.<Module>`) may reference only `MatterFlow.SharedKernel` and the **`.Contracts`** projects of other modules. Only the two query-side modules (`WorkViews`, `Search`), `MatterFlow.Data` and `MatterFlow.Api` may reference other modules' internals. `MatterFlow.ArchitectureTests` (`ModuleDependencyRulesTests.cs`) reads the csproj files and fails the build otherwise.
+A module (`LPT Hub.<Module>`) may reference only `LptHub.SharedKernel` and the **`.Contracts`** projects of other modules. Only the two query-side modules (`WorkViews`, `Search`), `LptHub.Data` and `LptHub.Api` may reference other modules' internals. `LptHub.ArchitectureTests` (`ModuleDependencyRulesTests.cs`) reads the csproj files and fails the build otherwise.
 
 ## Modules
 
@@ -33,7 +33,7 @@ Per-module detail: [Module Guide](../Backend/Module-Guide.md).
 
 ## Dependency diagram
 
-Arrows point from the referencing project to the `.Contracts` project it uses. Dotted arrows are the query-side modules, which reference whole modules (internals) and `MatterFlow.Data`. Every project also references `SharedKernel` (not drawn). Built from the csproj files at the commit below.
+Arrows point from the referencing project to the `.Contracts` project it uses. Dotted arrows are the query-side modules, which reference whole modules (internals) and `LptHub.Data`. Every project also references `SharedKernel` (not drawn). Built from the csproj files at the commit below.
 
 ::: mermaid
 flowchart LR
@@ -101,16 +101,16 @@ flowchart LR
 
 Notes read off the csproj files:
 
-- `WorkViews` references `Audit.Contracts` only (to log `EXPORT_RUN`) and the full projects of WorkManagement, Organization, Assets, WorkflowEngine, Configuration, Identity, plus `MatterFlow.Data`.
-- `Search` references the full projects of WorkManagement, Organization, Assets, Configuration, `Identity.Contracts` and `MatterFlow.Data`.
-- `MatterFlow.Data` references every module project except the query-side ones, Intake and Reports (it needs the entity types for the DbContext and the cross-module relationships).
-- `MatterFlow.Api` (the host) references SharedKernel, Data and all 14 modules (WorkViews, Search, Intake included).
+- `WorkViews` references `Audit.Contracts` only (to log `EXPORT_RUN`) and the full projects of WorkManagement, Organization, Assets, WorkflowEngine, Configuration, Identity, plus `LptHub.Data`.
+- `Search` references the full projects of WorkManagement, Organization, Assets, Configuration, `Identity.Contracts` and `LptHub.Data`.
+- `LptHub.Data` references every module project except the query-side ones, Intake and Reports (it needs the entity types for the DbContext and the cross-module relationships).
+- `LptHub.Api` (the host) references SharedKernel, Data and all 14 modules (WorkViews, Search, Intake included).
 - `WorkflowEngine` needs the task status but does not reference WorkManagement: it declares `ITaskStatusGate` in its own Contracts and WorkManagement implements it (dependency inversion).
-- `Audit` cannot know user names or object labels (Identity already depends on Audit). The host supplies `IAuditDisplayLookup` (`MatterFlow.Api/Http/AuditDisplayLookup.cs`, registered in `ModuleComposition`).
+- `Audit` cannot know user names or object labels (Identity already depends on Audit). The host supplies `IAuditDisplayLookup` (`LptHub.Api/Http/AuditDisplayLookup.cs`, registered in `ModuleComposition`).
 
 ## What the architecture tests enforce
 
-`backend/tests/MatterFlow.ArchitectureTests/`:
+`backend/tests/LptHub.ArchitectureTests/`:
 
 | Test class | Rule |
 |---|---|
@@ -123,7 +123,7 @@ Notes read off the csproj files:
 
 ## Other rules (from `docs/architecture.md` section 5.2)
 
-1. Entities have no navigation properties across modules; cross-module links are scalar ids. The foreign keys themselves exist in the SQL scripts. `docs/architecture.md` says cross-module relationships are configured in a `CrossModuleRelationships.cs` in `MatterFlow.Data`, but no such file exists at this commit (the DbContext applies each module's own `IEntityTypeConfiguration` classes from `ModuleAssemblies`), so treat that sentence as out of date.
+1. Entities have no navigation properties across modules; cross-module links are scalar ids. The foreign keys themselves exist in the SQL scripts. `docs/architecture.md` says cross-module relationships are configured in a `CrossModuleRelationships.cs` in `LptHub.Data`, but no such file exists at this commit (the DbContext applies each module's own `IEntityTypeConfiguration` classes from `ModuleAssemblies`), so treat that sentence as out of date.
 2. State-changing work happens inside the owning module's application service and transaction. Modules call each other synchronously through Contracts.
 3. Controllers hold no business logic: they map DTOs to commands and results to problem details.
 4. No code branches on role names, only on permission codes.

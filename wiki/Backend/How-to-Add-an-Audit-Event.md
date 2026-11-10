@@ -27,10 +27,10 @@
        Summary = "Matter 00343-00012 created.",
    });
    ```
-   `IAuditWriter` comes from `MatterFlow.Audit.Contracts`. The actor, time and correlation id are filled in on save. The event is saved in the same transaction as the change; if it fails, the change fails.
+   `IAuditWriter` comes from `LptHub.Audit.Contracts`. The actor, time and correlation id are filled in on save. The event is saved in the same transaction as the change; if it fails, the change fails.
 3. **Scope.** An event about something that belongs to a matter must carry `MatterId` (and `TaskId` for tasks). Architecture tests (`AuditScopeRulesTests`) fail for audited matter-owned entities without a declared scope and for explicit entries without a matter, except a known list of administration events.
 4. **Readable text.** The Audit Logs page and the Activity drawer show `Summary` and the composed text (`AuditSummaryComposer`, `TaskActivityNarrator` for tasks). Add a label for the new event type in the frontend: `frontend/src/app/shared/ui/event-type.ts` (event type names and icons), and `audit-format.ts` if values need formatting.
-5. **Filters.** The audit browser filters by `ObjectType` and `EventType`. If you add a new object type, check `AuditDisplayLookup` (`MatterFlow.Api/Http/AuditDisplayLookup.cs`) so the object label and actor name can be shown.
+5. **Filters.** The audit browser filters by `ObjectType` and `EventType`. If you add a new object type, check `AuditDisplayLookup` (`LptHub.Api/Http/AuditDisplayLookup.cs`) so the object label and actor name can be shown.
 6. **Tests.** Assert the event in the module's integration test (query `GET /api/v1/audit/events` as an admin).
 7. **Wiki:** if you add a notable event family, mention it in the feature's row of [Feature Map](../Features/Feature-Map.md).
 

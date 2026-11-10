@@ -1,8 +1,8 @@
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Identity.Domain;
+using LptHub.Identity.Contracts;
+using LptHub.Identity.Domain;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Identity.Application;
+namespace LptHub.Identity.Application;
 
 /// <summary>Implements <see cref="IMatterManagerEligibility"/> and the query behind <c>GET /users/matter-managers</c>.</summary>
 public sealed class MatterManagerEligibility(DbContext db) : IMatterManagerEligibility

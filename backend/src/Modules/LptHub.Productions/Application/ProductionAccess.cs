@@ -1,10 +1,10 @@
 using System.Linq.Expressions;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Organization.Contracts;
-using MatterFlow.SharedKernel.Visibility;
+using LptHub.Identity.Contracts;
+using LptHub.Organization.Contracts;
+using LptHub.SharedKernel.Visibility;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Productions.Application;
+namespace LptHub.Productions.Application;
 
 /// <summary>
 /// The sensitive-matter rule for this module (epic #788, mode M): productions, specs and comments are those of a matter the caller may see, for reads and writes alike.

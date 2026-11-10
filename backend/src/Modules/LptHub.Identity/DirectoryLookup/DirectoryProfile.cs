@@ -1,9 +1,9 @@
 using System.Runtime.Versioning;
-using MatterFlow.Identity.Authentication;
+using LptHub.Identity.Authentication;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace MatterFlow.Identity.DirectoryLookup;
+namespace LptHub.Identity.DirectoryLookup;
 
 /// <summary>Profile attributes read from the directory.</summary>
 public sealed record DirectoryProfile(string? DisplayName, string? Email);

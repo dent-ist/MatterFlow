@@ -1,5 +1,5 @@
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Identity.Domain;
+using LptHub.Identity.Contracts;
+using LptHub.Identity.Domain;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.SqlClient;
@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-namespace MatterFlow.IntegrationTests.Fixtures;
+namespace LptHub.IntegrationTests.Fixtures;
 
 /// <summary>
 /// The real API against a real SQL Server database (migrations and the Identity seed run at startup) using the Dev auth provider.
@@ -23,7 +23,7 @@ public sealed class DatabaseApiFactory(string connectionString, string? environm
     public IReadOnlyList<(string Key, string Value)> ExtraSettings { get; init; } = [];
 
     /// <summary>A clock the host uses instead of the system clock, for tests whose result depends on the time of day or the zone.</summary>
-    public MatterFlow.SharedKernel.Time.IClock? Clock { get; init; }
+    public LptHub.SharedKernel.Time.IClock? Clock { get; init; }
 
     /// <summary>Extra options for the shared database context (for example a command-counting interceptor in a query-count test).</summary>
     public Action<DbContextOptionsBuilder>? ConfigureDb { get; init; }
@@ -33,7 +33,7 @@ public sealed class DatabaseApiFactory(string connectionString, string? environm
         if (environment is not null)
             builder.UseEnvironment(environment);
 
-        builder.UseSetting("ConnectionStrings:MatterFlow", connectionString);
+        builder.UseSetting("ConnectionStrings:LptHub", connectionString);
         builder.UseSetting("ConnectionStrings:Default", connectionString);
         builder.UseSetting("Migrations:Enabled", "true");
         // The notification scheduler's timer stays off in tests; the scheduler tests call NotificationScheduler.RunOnceAsync themselves.
@@ -73,10 +73,10 @@ public sealed class DatabaseApiFactory(string connectionString, string? environm
         {
             services.AddControllers().AddApplicationPart(typeof(DatabaseApiFactory).Assembly);
             if (ConfigureDb is { } configureDb)
-                services.ConfigureDbContext<MatterFlow.Data.MatterFlowDbContext>(configureDb);
+                services.ConfigureDbContext<LptHub.Data.LptHubDbContext>(configureDb);
             if (Clock is { } clock)
             {
-                services.RemoveAll<MatterFlow.SharedKernel.Time.IClock>();
+                services.RemoveAll<LptHub.SharedKernel.Time.IClock>();
                 services.AddSingleton(clock);
             }
         });

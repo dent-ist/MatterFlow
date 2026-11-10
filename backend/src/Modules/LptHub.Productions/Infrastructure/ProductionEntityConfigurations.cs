@@ -1,9 +1,9 @@
-using MatterFlow.Productions.Application;
-using MatterFlow.Productions.Domain;
+using LptHub.Productions.Application;
+using LptHub.Productions.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace MatterFlow.Productions.Infrastructure;
+namespace LptHub.Productions.Infrastructure;
 
 internal sealed class ProductionSpecConfiguration : IEntityTypeConfiguration<ProductionSpec>
 {

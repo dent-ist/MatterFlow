@@ -1,11 +1,11 @@
 using System.Net;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Microsoft.AspNetCore.Hosting;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.WorkViews;
+namespace LptHub.IntegrationTests.WorkViews;
 
 /// <summary>GET /api/v1/dashboard/workload (epic #68, issue #71): who can hold work, open counts per priority, availability, load levels, filters, permissions.</summary>
 [Collection(SqlServerCollection.Name)]
@@ -145,7 +145,7 @@ public sealed class WorkloadApiTests(SqlServerFixture sql)
             b.UseSetting("Dashboard:Workload:NormalMax", "1");
         });
         var client = tight.CreateClient();
-        client.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        client.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         client.DefaultRequestHeaders.Add("X-Dev-User", DatabaseApiFactory.AdminAccount);
 
         var board = await OkAsync(await client.GetAsync("/api/v1/dashboard/workload"));

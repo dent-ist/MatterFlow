@@ -1,11 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Tasks;
+namespace LptHub.IntegrationTests.Tasks;
 
 /// <summary>
 /// The Task rows of the permission matrix (docs/qa/permission-matrix-tests.md section 3): per operation an unauthenticated caller, a user with no
@@ -134,7 +134,7 @@ public sealed class TaskPermissionMatrixTests(SqlServerFixture sql) : IAsyncLife
 
         // (a) Not signed in.
         var anonymous = _factory.CreateClient();
-        anonymous.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        anonymous.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
         (await SendAsync(anonymous, request)).StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
 
         // (b) Signed in but without any permission.

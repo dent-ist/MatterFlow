@@ -1,8 +1,8 @@
 using AngleSharp.Dom;
 using AngleSharp.Html.Parser;
-using MatterFlow.SharedKernel.Text;
+using LptHub.SharedKernel.Text;
 
-namespace MatterFlow.Intake.Application;
+namespace LptHub.Intake.Application;
 
 /// <summary>
 /// The HTML body of an email as a Task description candidate (decision R): sanitized by the shared <see cref="RichHtml"/> (basic formatting and

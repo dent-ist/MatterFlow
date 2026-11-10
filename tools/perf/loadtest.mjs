@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// MatterFlow load test: N concurrent virtual users, each signed in as a seeded persona user (Dev auth, X-Dev-User), for D seconds.
+// LPT Hub load test: N concurrent virtual users, each signed in as a seeded persona user (Dev auth, X-Dev-User), for D seconds.
 // No dependencies (Node 22 fetch). Usage:
 //   node loadtest.mjs --base http://127.0.0.1:5911 --vus 50 --duration 60 [--warmup 10] [--think 400-1600] [--out result.json] [--only scenario,scenario]
 //
@@ -26,7 +26,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const userName = (i) => `perf.user${String(i).padStart(3, '0')}`;
 
 // ---------------------------------------------------------------- reference data (sampled through the API as the admin)
-const admin = { 'X-Dev-User': 'perf.admin', 'X-MatterFlow-Client': 'web' };
+const admin = { 'X-Dev-User': 'perf.admin', 'X-LptHub-Client': 'web' };
 async function getJson(path, headers = admin) {
   const r = await fetch(BASE + path, { headers });
   if (!r.ok) throw new Error(`${path} -> ${r.status} ${await r.text()}`);
@@ -77,7 +77,7 @@ function record(name, ms, status) {
 }
 
 async function call(vu, name, method, path, body) {
-  const headers = { 'X-Dev-User': vu.user, 'X-MatterFlow-Client': 'web', 'X-Time-Zone': 'America/New_York' };
+  const headers = { 'X-Dev-User': vu.user, 'X-LptHub-Client': 'web', 'X-Time-Zone': 'America/New_York' };
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   const t0 = performance.now();
   let status = 0;

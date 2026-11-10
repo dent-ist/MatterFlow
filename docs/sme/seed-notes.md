@@ -1,6 +1,6 @@
 # Starter configuration seed: notes
 
-How `docs/sme/seed-configuration.json` is loaded (ticket #56) and where the real schema forced a change. The JSON file itself is unchanged and is embedded into the API host at build time (`backend/src/MatterFlow.Api/Seeding/`).
+How `docs/sme/seed-configuration.json` is loaded (ticket #56) and where the real schema forced a change. The JSON file itself is unchanged and is embedded into the API host at build time (`backend/src/LptHub.Api/Seeding/`).
 
 ## Running it
 

@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace MatterFlow.Reports.Application;
+namespace LptHub.Reports.Application;
 
 /// <summary>A column of a saved view: its place in the list is its order.</summary>
 /// <param name="Name">The result column's name.</param>

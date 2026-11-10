@@ -52,21 +52,21 @@ test.describe('Document titles and crumb targets (#359, #360)', () => {
     ).versions[0].workflowVersionId;
 
     const cases: [string, string][] = [
-      ['/admin/task-types', 'Task Types - MatterFlow'],
-      ['/admin/workflows', 'Task Types: Workflows - MatterFlow'],
-      ['/admin/steps', 'Task Types: Workflow Steps - MatterFlow'],
-      ['/admin/task-types/new', 'New Task Type - MatterFlow'],
-      [`/admin/task-types/${tt.id}`, `${tt.name} - MatterFlow`],
-      [`/admin/task-types/${tt.id}/form`, `${tt.name} Form - MatterFlow`],
-      ['/admin/workflows/new', 'Task Types: New Workflow - MatterFlow'],
-      [`/admin/workflows/${wf.workflowDefinitionId}`, `${wf.name}: Overview - MatterFlow`],
+      ['/admin/task-types', 'Task Types - LPT Hub'],
+      ['/admin/workflows', 'Task Types: Workflows - LPT Hub'],
+      ['/admin/steps', 'Task Types: Workflow Steps - LPT Hub'],
+      ['/admin/task-types/new', 'New Task Type - LPT Hub'],
+      [`/admin/task-types/${tt.id}`, `${tt.name} - LPT Hub`],
+      [`/admin/task-types/${tt.id}/form`, `${tt.name} Form - LPT Hub`],
+      ['/admin/workflows/new', 'Task Types: New Workflow - LPT Hub'],
+      [`/admin/workflows/${wf.workflowDefinitionId}`, `${wf.name}: Overview - LPT Hub`],
       [
         `/admin/workflows/${wf.workflowDefinitionId}/versions/${versionId}`,
-        `${wf.name} v1 (Published) - MatterFlow`,
+        `${wf.name} v1 (Published) - LPT Hub`,
       ],
-      ['/admin/steps/new', 'New Step - MatterFlow'],
-      [`/admin/steps/${step.id}`, `${step.title} - MatterFlow`],
-      [`/admin/steps/${step.id}/form`, `${step.title} Form - MatterFlow`],
+      ['/admin/steps/new', 'New Step - LPT Hub'],
+      [`/admin/steps/${step.id}`, `${step.title} - LPT Hub`],
+      [`/admin/steps/${step.id}/form`, `${step.title} Form - LPT Hub`],
     ];
     for (const [url, title] of cases) {
       await page.goto(url);
@@ -78,11 +78,11 @@ test.describe('Document titles and crumb targets (#359, #360)', () => {
     const wf = await seed.workflow({});
     const tt = await seed.taskType({ workflows: [wf] });
     await page.goto(`/admin/task-types/${tt.id}`);
-    await expect(page).toHaveTitle(`${tt.name} - MatterFlow`);
+    await expect(page).toHaveTitle(`${tt.name} - LPT Hub`);
     const renamed = `${tt.name} renamed`;
     await page.locator('#tt-name').fill(renamed);
     await page.getByRole('button', { name: 'Save Changes' }).click();
-    await expect(page).toHaveTitle(`${renamed} - MatterFlow`);
+    await expect(page).toHaveTitle(`${renamed} - LPT Hub`);
   });
 
   test('a long record name is cut at 60 characters in the title and at 40 in the last crumb', async ({
@@ -92,7 +92,7 @@ test.describe('Document titles and crumb targets (#359, #360)', () => {
     const name = `Large Production Workflow With An Extremely Long Name ${uid()}`;
     const wf = await seed.workflow({ name });
     await page.goto(`/admin/workflows/${wf.workflowDefinitionId}`);
-    await expect(page).toHaveTitle(`${name.slice(0, 60).trimEnd()}…: Overview - MatterFlow`);
+    await expect(page).toHaveTitle(`${name.slice(0, 60).trimEnd()}…: Overview - LPT Hub`);
     const crumb = page.locator('[data-crumb-current]');
     await expect(crumb).toHaveAttribute('title', name);
     await expect(crumb.locator('[aria-hidden="true"]')).toHaveText(
@@ -136,11 +136,11 @@ test.describe('Document titles and crumb targets (#359, #360)', () => {
     const typeRole = await seed.role(['TaskType.Manage', 'Task.View'], 'Type only');
     const typePage = await asUser((await seed.user([typeRole.name], 'tt-ttonly')).username);
     await typePage.goto(`/admin/task-types/${tt.id}/form`);
-    await expect(typePage).toHaveTitle(`${tt.name} Form - MatterFlow`);
+    await expect(typePage).toHaveTitle(`${tt.name} Form - LPT Hub`);
     const wfRole = await seed.role(['Workflow.Manage'], 'Workflow only');
     const wfPage = await asUser((await seed.user([wfRole.name], 'tt-wfonly')).username);
     await wfPage.goto(`/admin/workflows/${wf.workflowDefinitionId}`);
-    await expect(wfPage).toHaveTitle(`${wf.name}: Overview - MatterFlow`);
+    await expect(wfPage).toHaveTitle(`${wf.name}: Overview - LPT Hub`);
     const viewerRole = await seed.role(['Task.View'], 'Viewer');
     const viewer = await asUser((await seed.user([viewerRole.name], 'tt-viewer')).username);
     await viewer.goto(`/admin/task-types/${tt.id}`);

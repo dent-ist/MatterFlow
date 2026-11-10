@@ -9,7 +9,7 @@ export const ANNOUNCE_MAX_MS = 2000;
 
 /**
  * Route announcement (S9a, #624): after a navigation to another page a visually hidden polite live region says the document title
- * ("Clients - MatterFlow"), so a screen-reader user hears that the page changed. Focus is never moved (focus handling, including the
+ * ("Clients - LPT Hub"), so a screen-reader user hears that the page changed. Focus is never moved (focus handling, including the
  * Back rules of decision V, is the pages' and the router's own).
  *
  * Rules: the first navigation of the session (the browser announces the loaded page itself), Back/Forward (`popstate`) and navigations

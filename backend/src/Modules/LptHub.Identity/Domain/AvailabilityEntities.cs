@@ -1,4 +1,4 @@
-namespace MatterFlow.Identity.Domain;
+namespace LptHub.Identity.Domain;
 
 /// <summary>
 /// A user's availability profile (script 22): time zone and work hours. The Out of office columns (<c>Status</c>, the two dates and the note) of script 22 are no

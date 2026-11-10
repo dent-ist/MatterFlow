@@ -1,12 +1,12 @@
 using System.ComponentModel.DataAnnotations;
 using System.Linq.Expressions;
-using MatterFlow.SharedKernel.Paging;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.ValueObjects;
+using LptHub.SharedKernel.Paging;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.ValueObjects;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Organization.Application;
+namespace LptHub.Organization.Application;
 
 /// <summary>Offset paging and sort parameters shared by the Organization list endpoints (same shape as the host's standard list query).</summary>
 public class OrgListQuery

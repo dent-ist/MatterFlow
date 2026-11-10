@@ -1,6 +1,6 @@
-using MatterFlow.Audit.Contracts;
+using LptHub.Audit.Contracts;
 
-namespace MatterFlow.Productions.Application;
+namespace LptHub.Productions.Application;
 
 /// <summary>Reads the audit trail of one object as the history panel shows it (who, when, what; values of the fields named in <c>valueNames</c> replaced by readable names).</summary>
 internal static class ProductionHistory

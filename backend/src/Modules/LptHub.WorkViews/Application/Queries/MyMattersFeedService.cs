@@ -1,15 +1,15 @@
 using System.Globalization;
 using System.Linq.Expressions;
-using MatterFlow.Assets.Domain;
-using MatterFlow.Configuration.Domain;
-using MatterFlow.Identity.Domain;
-using MatterFlow.Organization.Domain;
-using MatterFlow.SharedKernel.Paging;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.WorkManagement.Domain;
+using LptHub.Assets.Domain;
+using LptHub.Configuration.Domain;
+using LptHub.Identity.Domain;
+using LptHub.Organization.Domain;
+using LptHub.SharedKernel.Paging;
+using LptHub.SharedKernel.Results;
+using LptHub.WorkManagement.Domain;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.WorkViews.Application.Queries;
+namespace LptHub.WorkViews.Application.Queries;
 
 /// <summary>
 /// The six-kind recent activity feed (UI-03, #956): New assets, New comments, New status updates, On hold, Overdue, Due date updated. The event kinds come from assets (created) and the
@@ -117,7 +117,7 @@ public sealed class MyMattersFeedService(MyMattersScopeResolver scopes, MyMatter
         {
             [FeedKinds.NewAssets] = db.Set<Asset>().AsNoTracking().Where(a => matterIds.Contains(a.MatterId) && a.CreatedAtUtc >= since)
                 .Select(a => new FeedRow { Id = a.Id, At = a.CreatedAtUtc, Actor = a.CreatedByUserId, MatterId = a.MatterId, AssetId = a.Id }),
-            [FeedKinds.OnHold] = scope.Tasks().Where(t => t.Status == MatterFlow.SharedKernel.Tasks.TaskStatusCode.OnHold)
+            [FeedKinds.OnHold] = scope.Tasks().Where(t => t.Status == LptHub.SharedKernel.Tasks.TaskStatusCode.OnHold)
                 .Select(t => new FeedRow { Id = t.Id, At = t.StatusChangedAtUtc, Actor = null, MatterId = t.MatterId, TaskId = t.Id }),
             [FeedKinds.Overdue] = scope.Tasks().Where(ShowFilter.Active).Where(TaskQueueRules.Overdue(clock))
                 .Select(t => new FeedRow { Id = t.Id, At = t.DueAtUtc ?? t.DueSortKey ?? t.CreatedAtUtc, Actor = null, MatterId = t.MatterId, TaskId = t.Id }),

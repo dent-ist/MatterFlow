@@ -1,9 +1,9 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using MatterFlow.Reports.Application;
+using LptHub.Reports.Application;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Reports;
+namespace LptHub.UnitTests.Reports;
 
 /// <summary>The audit events of Reports: codes, wording, limits, and that the SQL text is never in them (spec 13; issue #707).</summary>
 public class ReportAuditEntryTests
@@ -11,7 +11,7 @@ public class ReportAuditEntryTests
     private const string Sql = "SELECT secret_column FROM dbo.SecretTable WHERE x = 1";
     private static readonly byte[] Hash = SqlHashOf(Sql);
 
-    private static byte[] SqlHashOf(string sql) => MatterFlow.Reports.Domain.SqlValidator.Hash(sql);
+    private static byte[] SqlHashOf(string sql) => LptHub.Reports.Domain.SqlValidator.Hash(sql);
 
     private static IEnumerable<ReportAuditEntry> Samples()
     {
@@ -146,7 +146,7 @@ public class ReportAuditEntryTests
     [Fact]
     public void The_run_log_json_for_the_column_never_exceeds_4000_characters()
     {
-        var many = Enumerable.Range(0, 30).Select(i => new MatterFlow.Reports.Domain.Parameters.BoundParameter("P" + i, System.Data.SqlDbType.NVarChar, 400, 0, 0, "x", MatterFlow.Reports.Domain.Parameters.ListKind.None, "P" + i + "=" + new string('x', 200))).ToList();
+        var many = Enumerable.Range(0, 30).Select(i => new LptHub.Reports.Domain.Parameters.BoundParameter("P" + i, System.Data.SqlDbType.NVarChar, 400, 0, 0, "x", LptHub.Reports.Domain.Parameters.ListKind.None, "P" + i + "=" + new string('x', 200))).ToList();
 
         var json = ReportRunService.LogJson(many);
 

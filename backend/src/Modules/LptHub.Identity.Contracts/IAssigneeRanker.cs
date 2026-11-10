@@ -1,4 +1,4 @@
-namespace MatterFlow.Identity.Contracts;
+namespace LptHub.Identity.Contracts;
 
 /// <summary>One person who could be assigned a Task, with the facts a ranking may use.</summary>
 /// <param name="UserId">User id.</param>

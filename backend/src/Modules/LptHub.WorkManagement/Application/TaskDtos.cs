@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
-using MatterFlow.WorkManagement.Domain;
+using LptHub.WorkManagement.Domain;
 
-namespace MatterFlow.WorkManagement.Application;
+namespace LptHub.WorkManagement.Application;
 
 // ---- references
 

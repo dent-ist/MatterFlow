@@ -1,8 +1,8 @@
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Results;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Results;
 using Microsoft.Extensions.Options;
 
-namespace MatterFlow.Reports.Application;
+namespace LptHub.Reports.Application;
 
 /// <summary>
 /// Personal favourites and the Recent line of the reports list (issue #723, spec section 7). Everything is bound to the caller: nobody reaches another

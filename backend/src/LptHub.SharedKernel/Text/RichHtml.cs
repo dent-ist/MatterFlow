@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 using AngleSharp;
 using Ganss.Xss;
 
-namespace MatterFlow.SharedKernel.Text;
+namespace LptHub.SharedKernel.Text;
 
 /// <summary>
 /// Server-side sanitizing of rich text: task comments (decision D, ticket 43), task descriptions and the HTML body of an email read by intake. It is basic rich text: paragraphs, line breaks, bold, italic,

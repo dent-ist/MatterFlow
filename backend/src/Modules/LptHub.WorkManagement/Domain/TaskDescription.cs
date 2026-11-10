@@ -1,7 +1,7 @@
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Text;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Text;
 
-namespace MatterFlow.WorkManagement.Domain;
+namespace LptHub.WorkManagement.Domain;
 
 /// <summary>How a Task description is stored (column <c>DescriptionFormat</c>).</summary>
 public enum TaskDescriptionFormat

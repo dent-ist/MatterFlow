@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace MatterFlow.Api.Seeding;
+namespace LptHub.Api.Seeding;
 
 /// <summary>An option of a seeded SELECT, RADIO or MULTISELECT field.</summary>
 public sealed record SeedOption(string Key, string Label);
@@ -108,7 +108,7 @@ public sealed record SeedTaskType
 /// <summary>The SME starter configuration (docs/sme/seed-configuration.json, embedded into the host at build time).</summary>
 public sealed record StarterSeedData
 {
-    public const string ResourceName = "MatterFlow.Seed.seed-configuration.json";
+    public const string ResourceName = "LptHub.Seed.seed-configuration.json";
 
     private static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web)
     {

@@ -1,12 +1,12 @@
 using System.Text.Json;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Reports.Application;
-using MatterFlow.Reports.Domain;
+using LptHub.Identity.Contracts;
+using LptHub.Reports.Application;
+using LptHub.Reports.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MatterFlow.Reports.Api;
+namespace LptHub.Reports.Api;
 
 /// <summary>Permission policies of the Reports endpoints (every action names one; the architecture tests enforce it).</summary>
 internal static class ReportPolicies

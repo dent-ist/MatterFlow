@@ -1,9 +1,9 @@
-using MatterFlow.Data.SchemaMigrations;
+using LptHub.Data.SchemaMigrations;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 
-namespace MatterFlow.SchemaTests;
+namespace LptHub.SchemaTests;
 
 /// <summary>Dashboard Calendar (epic #1074, issue #1075; baseline, formerly scripts 58 to 60): absences, holiday calendars and their constraints.</summary>
 [Collection(SqlServerCollection.Name)]

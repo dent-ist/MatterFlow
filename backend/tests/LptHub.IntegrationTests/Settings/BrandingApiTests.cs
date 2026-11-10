@@ -4,14 +4,14 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using MatterFlow.Audit.Domain;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.IntegrationTests.Tasks;
+using LptHub.Audit.Domain;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Shouldly;
-using static MatterFlow.IntegrationTests.Tasks.TaskHarness;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
-namespace MatterFlow.IntegrationTests.Settings;
+namespace LptHub.IntegrationTests.Settings;
 
 /// <summary>Epic #850 (BR-01 to BR-03): the public branding endpoints, the administration endpoints, the cache headers and the audit.</summary>
 [Collection(SqlServerCollection.Name)]
@@ -29,7 +29,7 @@ public sealed class BrandingApiTests(SqlServerFixture sql) : IAsyncLifetime
         _factory = new DatabaseApiFactory(await sql.CreateDatabaseAsync());
         _h = new TaskHarness(_factory);
         _anonymous = _factory.CreateClient(); // no X-Dev-User: not signed in
-        _anonymous.DefaultRequestHeaders.Add("X-MatterFlow-Client", "web");
+        _anonymous.DefaultRequestHeaders.Add("X-LptHub-Client", "web");
     }
 
     public async Task DisposeAsync() => await _factory.DisposeAsync();
@@ -87,7 +87,7 @@ public sealed class BrandingApiTests(SqlServerFixture sql) : IAsyncLifetime
         var response = await _anonymous.GetAsync("/api/v1/branding");
         var body = await OkAsync(response);
 
-        Str(body, "appName").ShouldBe("MatterFlow");
+        Str(body, "appName").ShouldBe("LPT Hub");
         body.GetProperty("iconUrl").ValueKind.ShouldBe(JsonValueKind.Null);
         body.GetProperty("iconKind").ValueKind.ShouldBe(JsonValueKind.Null);
         Str(body, "version").Length.ShouldBe(12);
@@ -101,7 +101,7 @@ public sealed class BrandingApiTests(SqlServerFixture sql) : IAsyncLifetime
         Header(icon, "Cache-Control").ShouldContain("no-store");
 
         var admin = await AdminViewAsync();
-        Str(admin, "appName").ShouldBe("MatterFlow");
+        Str(admin, "appName").ShouldBe("LPT Hub");
         admin.GetProperty("appNameIsCustom").GetBoolean().ShouldBeFalse();
         Str(admin, "appNameRowVersion").ShouldBe(string.Empty);
         Str(admin, "iconRowVersion").ShouldBe(string.Empty);
@@ -176,7 +176,7 @@ public sealed class BrandingApiTests(SqlServerFixture sql) : IAsyncLifetime
         var problem = await ProblemAsync(await _h.Admin.PutAsJsonAsync(Base + "/name", new { appName = name, rowVersion = "" }), HttpStatusCode.BadRequest, code);
         problem.GetProperty("errors").GetProperty("appName")[0].GetProperty("code").GetString().ShouldBe(code);
 
-        Str(await OkAsync(await _anonymous.GetAsync("/api/v1/branding")), "appName").ShouldBe("MatterFlow");
+        Str(await OkAsync(await _anonymous.GetAsync("/api/v1/branding")), "appName").ShouldBe("LPT Hub");
         (await AuditAsync()).ShouldBeEmpty();
     }
 
@@ -204,7 +204,7 @@ public sealed class BrandingApiTests(SqlServerFixture sql) : IAsyncLifetime
         var saved = await SetNameAsync("Temp", string.Empty);
         var version = Str(saved, "appNameRowVersion");
         var reset = await OkAsync(await _h.Admin.DeleteAsync(Base + "/name?rowVersion=" + Uri.EscapeDataString(version)));
-        Str(reset, "appName").ShouldBe("MatterFlow");
+        Str(reset, "appName").ShouldBe("LPT Hub");
 
         await ProblemAsync(await _h.Admin.PutAsJsonAsync(Base + "/name", new { appName = "Late", rowVersion = version }), HttpStatusCode.Conflict, "CONCURRENCY_CONFLICT");
     }
@@ -323,9 +323,9 @@ public sealed class BrandingApiTests(SqlServerFixture sql) : IAsyncLifetime
         (await _anonymous.GetAsync("/api/v1/branding/icon")).StatusCode.ShouldBe(HttpStatusCode.NotFound);
 
         var afterName = await OkAsync(await _h.Admin.DeleteAsync(Base + "/name?rowVersion=" + Uri.EscapeDataString(Str(name, "appNameRowVersion"))));
-        Str(afterName, "appName").ShouldBe("MatterFlow");
+        Str(afterName, "appName").ShouldBe("LPT Hub");
         afterName.GetProperty("appNameIsCustom").GetBoolean().ShouldBeFalse();
-        Str(await OkAsync(await _anonymous.GetAsync("/api/v1/branding")), "appName").ShouldBe("MatterFlow");
+        Str(await OkAsync(await _anonymous.GetAsync("/api/v1/branding")), "appName").ShouldBe("LPT Hub");
 
         // Resetting what is already the default succeeds and writes nothing.
         var before = (await AuditAsync()).Count;
@@ -346,7 +346,7 @@ public sealed class BrandingApiTests(SqlServerFixture sql) : IAsyncLifetime
         events.Select(e => e.EventType).ShouldBe(["SETTINGS_BRANDING_NAME_CHANGED", "SETTINGS_BRANDING_NAME_CHANGED", "SETTINGS_BRANDING_ICON_CHANGED", "SETTINGS_BRANDING_RESET"]);
         events.ShouldAllBe(e => e.ObjectType == "AppSetting" && e.ActorUserId != null && e.MatterId == null && e.TaskId == null);
 
-        events[0].OldValue.ShouldBe("MatterFlow");
+        events[0].OldValue.ShouldBe("LPT Hub");
         events[0].NewValue.ShouldBe("Audited Firm");
         events[1].OldValue.ShouldBe("Audited Firm");
         events[1].NewValue.ShouldBe("Audited Firm 2");
@@ -412,7 +412,7 @@ public sealed class BrandingWindowsProviderTests(SqlServerFixture sql)
 
         var branding = await client.GetAsync("/api/v1/branding");
         branding.StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await branding.Content.ReadAsStringAsync()).ShouldContain("\"appName\":\"MatterFlow\"");
+        (await branding.Content.ReadAsStringAsync()).ShouldContain("\"appName\":\"LPT Hub\"");
         branding.Headers.Contains("WWW-Authenticate").ShouldBeFalse();
         (await client.GetAsync("/api/v1/branding/icon")).StatusCode.ShouldBe(HttpStatusCode.NotFound);
 

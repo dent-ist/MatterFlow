@@ -2,14 +2,14 @@
 
 The schema is `00-baseline.sql` plus the numbered scripts that follow it (ADR 003, addendum J; baseline since issue #1307).
 EF Core maps entities for data access only; there are no EF migrations. The startup runner in
-`MatterFlow.Data/SchemaMigrations` applies the scripts in order. Full design: `docs/architecture.md` section 4.
+`LptHub.Data/SchemaMigrations` applies the scripts in order. Full design: `docs/architecture.md` section 4.
 
 ## The baseline (`00-baseline.sql`)
 
 - One script with a complete `CREATE TABLE` for every table (columns, defaults, primary, unique, check and foreign keys), all indexes,
   the sequence, functions, procedures, triggers (including the guard triggers such as `TR_Asset_Guard` and the database DDL trigger that protects
   the audit tables), the structural seed rows (System Admin role, permission catalog rows, the five task status labels), the database roles
-  `mf_app`, `mf_migrator`, `mf_report_reader` and every GRANT / DENY. Read it top to bottom to see the whole schema.
+  `lpt_app`, `lpt_migrator`, `lpt_report_reader` and every GRANT / DENY. Read it top to bottom to see the whole schema.
 - It replaces the 63 scripts `01-init.sql` to `66-director-be-manager.sql` (numbers 16, 61 and 62 never existed). Those are kept unchanged in
   [`archive/`](archive/) for history; the runner does not see them (the embedded glob is `db/scripts/*.sql`, not recursive).
 - **Number and name:** `00-baseline.sql`, prefix **0**, so it always sorts and runs first, and the rule "a pending script must not have a lower
@@ -38,7 +38,7 @@ EF Core maps entities for data access only; there are no EF migrations. The star
 - UTF-8, LF line endings (normalized before hashing). Start each script with a comment: purpose and owner.
 - Name every constraint and index explicitly (`PK_`, `FK_`, `UQ_`, `CK_`, `IX_`, `DF_`) so later scripts can reference them.
 - Every script that adds a table must classify it in `db/report-access.json` and add the matching `GRANT SELECT` or `DENY SELECT, VIEW DEFINITION`
-  line for `mf_report_reader` (and `ALTER`/write denies for `mf_app` where the table is append-only), otherwise `ReportAccessCatalogueTests` fails.
+  line for `lpt_report_reader` (and `ALTER`/write denies for `lpt_app` where the table is append-only), otherwise `ReportAccessCatalogueTests` fails.
   Keep `docs` in step: `wiki/Database/Table-Reference.md`, `ER-Diagrams.md` and `Schema-Script-History.md` (`node wiki/tools/check-db-docs.mjs`).
 - Prefix allocation: each PR that adds a script takes the next free number at merge time. If two PRs collide,
   renumber the **unmerged** one. CI flags duplicate prefixes and edits to existing scripts.
@@ -48,7 +48,7 @@ EF Core maps entities for data access only; there are no EF migrations. The star
 
 ## Runner behavior (summary)
 
-- Scripts are embedded into `MatterFlow.Data` at build time and applied at startup in numeric-prefix order,
+- Scripts are embedded into `LptHub.Data` at build time and applied at startup in numeric-prefix order,
   each in one transaction, recorded in `dbo.SchemaMigration` (name, prefix, SHA-256 checksum, time, duration, success).
 - Startup **fails** on: a script error (rolled back, not recorded), a duplicate prefix, a checksum change or removal of an
   applied script, a new script numbered lower than the highest applied one, or a database built by the old chain (see above).

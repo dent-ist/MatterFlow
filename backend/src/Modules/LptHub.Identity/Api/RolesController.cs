@@ -1,10 +1,10 @@
-using MatterFlow.Identity.Application;
-using MatterFlow.Identity.Authorization;
-using MatterFlow.Identity.Contracts;
+using LptHub.Identity.Application;
+using LptHub.Identity.Authorization;
+using LptHub.Identity.Contracts;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MatterFlow.Identity.Api;
+namespace LptHub.Identity.Api;
 
 /// <summary>
 /// Roles, role-permission assignment and the permission catalog (UX S12). Reading roles and the catalog needs <c>User.View</c> (the user

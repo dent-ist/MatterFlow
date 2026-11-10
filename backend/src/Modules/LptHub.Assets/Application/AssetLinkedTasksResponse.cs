@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
-using MatterFlow.Assets.Contracts;
+using LptHub.Assets.Contracts;
 
-namespace MatterFlow.Assets.Application;
+namespace LptHub.Assets.Application;
 
 /// <summary>The Tasks an Asset is linked to (supplied by the Task module through <see cref="IAssetTaskLinkReader"/>).</summary>
 /// <param name="Items">Newest link first.</param>

@@ -1,22 +1,22 @@
 using System.Data;
 using System.Linq.Expressions;
-using MatterFlow.Assets.Contracts;
-using MatterFlow.Assets.Domain;
-using MatterFlow.Configuration.Contracts.Forms;
-using MatterFlow.Configuration.Domain;
-using MatterFlow.Identity.Contracts;
-using MatterFlow.Organization.Domain;
-using MatterFlow.SharedKernel.Identity;
-using MatterFlow.SharedKernel.Paging;
-using MatterFlow.SharedKernel.Results;
-using MatterFlow.SharedKernel.Tasks;
-using MatterFlow.SharedKernel.ValueObjects;
-using MatterFlow.SharedKernel.Visibility;
-using MatterFlow.WorkManagement.Domain;
+using LptHub.Assets.Contracts;
+using LptHub.Assets.Domain;
+using LptHub.Configuration.Contracts.Forms;
+using LptHub.Configuration.Domain;
+using LptHub.Identity.Contracts;
+using LptHub.Organization.Domain;
+using LptHub.SharedKernel.Identity;
+using LptHub.SharedKernel.Paging;
+using LptHub.SharedKernel.Results;
+using LptHub.SharedKernel.Tasks;
+using LptHub.SharedKernel.ValueObjects;
+using LptHub.SharedKernel.Visibility;
+using LptHub.WorkManagement.Domain;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Search.Application.Queries;
+namespace LptHub.Search.Application.Queries;
 
 /// <summary>
 /// Read side of global and advanced search: plain SQL Server queries (architecture 14), one per object type, never a search engine. Each type is

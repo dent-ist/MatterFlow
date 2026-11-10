@@ -1,7 +1,7 @@
-using MatterFlow.SharedKernel.Text;
+using LptHub.SharedKernel.Text;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.SharedKernel;
+namespace LptHub.UnitTests.SharedKernel;
 
 /// <summary>
 /// The Note profile keeps a link to a OneNote page (<c>onenote:https://...</c>, the notes mockup r3 link dialog); the Basic profile (comments, descriptions) never does,

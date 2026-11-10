@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace MatterFlow.Intake.Application;
+namespace LptHub.Intake.Application;
 
 /// <summary>Where the parsed values came from.</summary>
 public enum EmailSource

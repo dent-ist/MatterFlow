@@ -1,13 +1,13 @@
 using System.Globalization;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.Reports.Domain;
-using MatterFlow.Reports.Domain.Parameters;
-using MatterFlow.Reports.Infrastructure;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.Reports.Domain;
+using LptHub.Reports.Domain.Parameters;
+using LptHub.Reports.Infrastructure;
 using Microsoft.Data.SqlClient;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Reports;
+namespace LptHub.IntegrationTests.Reports;
 
 /// <summary>
 /// Multi-choice binding against SQL Server 2022 through the real report login (epic #671, issue #698): both <c>IN :X</c> and <c>IN (:X)</c>,
@@ -26,7 +26,7 @@ public sealed class ReportListBindingTests(SqlServerFixture sql) : IAsyncLifetim
     {
         var admin = await sql.CreateMigratedDatabaseAsync();
         var login = await sql.CreateServerLoginAsync(admin);
-        await SqlServerFixture.CreateDatabaseUserAsync(admin, login.Name, "mf_report_reader");
+        await SqlServerFixture.CreateDatabaseUserAsync(admin, login.Name, "lpt_report_reader");
         _reader = login.ConnectionString;
     }
 

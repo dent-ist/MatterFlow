@@ -1,10 +1,10 @@
-using MatterFlow.Reports.Application;
-using MatterFlow.Reports.Domain.Parameters;
+using LptHub.Reports.Application;
+using LptHub.Reports.Domain.Parameters;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace MatterFlow.Reports.Api;
+namespace LptHub.Reports.Api;
 
 /// <summary>A column the report login can read.</summary>
 public sealed record SchemaColumnResponse(string Name, string Type, bool IsNullable, bool IsPrimaryKey);

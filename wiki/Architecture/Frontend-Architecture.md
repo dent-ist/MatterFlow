@@ -54,7 +54,7 @@ Nothing about a matter is written to `localStorage`; the keys hold ids of the pe
 
 ## HTTP layer
 
-`core/http/interceptors.ts` (`MF_HTTP_INTERCEPTORS`): `timeZoneInterceptor` adds `X-Time-Zone`; `csrfInterceptor` adds `X-MatterFlow-Client: web` on state-changing calls; `problemDetailsInterceptor` turns `application/problem+json` into a typed `ApiError` and raises the global toast unless a request opts out (`SKIP_ERROR_TOAST`); `connectivityInterceptor` drives the connection banner. 409 `CONCURRENCY_CONFLICT` offers a reload. The client itself is generated: [API Client and Generated Code](../Frontend/API-Client-and-Generated-Code.md).
+`core/http/interceptors.ts` (`MF_HTTP_INTERCEPTORS`): `timeZoneInterceptor` adds `X-Time-Zone`; `csrfInterceptor` adds `X-LptHub-Client: web` on state-changing calls; `problemDetailsInterceptor` turns `application/problem+json` into a typed `ApiError` and raises the global toast unless a request opts out (`SKIP_ERROR_TOAST`); `connectivityInterceptor` drives the connection banner. 409 `CONCURRENCY_CONFLICT` offers a reload. The client itself is generated: [API Client and Generated Code](../Frontend/API-Client-and-Generated-Code.md).
 
 ## Shared UI and the standard
 

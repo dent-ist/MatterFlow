@@ -1,14 +1,14 @@
-using MatterFlow.Configuration.Contracts;
-using MatterFlow.Organization.Contracts;
-using MatterFlow.SharedKernel.Tasks;
-using MatterFlow.WorkManagement.Contracts;
-using MatterFlow.WorkManagement.Domain;
+using LptHub.Configuration.Contracts;
+using LptHub.Organization.Contracts;
+using LptHub.SharedKernel.Tasks;
+using LptHub.WorkManagement.Contracts;
+using LptHub.WorkManagement.Domain;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.WorkManagement.Application;
+namespace LptHub.WorkManagement.Application;
 
 /// <summary>Read-only Task lookups for other modules (<see cref="ITaskDirectory"/>).</summary>
-internal sealed class TaskDirectory(DbContext db) : ITaskDirectory, MatterFlow.Identity.Contracts.IUserWorkSource
+internal sealed class TaskDirectory(DbContext db) : ITaskDirectory, LptHub.Identity.Contracts.IUserWorkSource
 {
     public Task<bool> HasOpenAssignedWorkAsync(int userId, CancellationToken cancellationToken = default) =>
         db.Set<WorkTask>().AsNoTracking().AnyAsync(

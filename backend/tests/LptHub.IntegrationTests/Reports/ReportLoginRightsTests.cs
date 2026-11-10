@@ -1,15 +1,15 @@
 using System.Globalization;
-using MatterFlow.IntegrationTests.Fixtures;
+using LptHub.IntegrationTests.Fixtures;
 using Microsoft.Data.SqlClient;
 using Shouldly;
 using Xunit.Abstractions;
-using static MatterFlow.IntegrationTests.Reports.ReportSecurityKit;
+using static LptHub.IntegrationTests.Reports.ReportSecurityKit;
 
-namespace MatterFlow.IntegrationTests.Reports;
+namespace LptHub.IntegrationTests.Reports;
 
 /// <summary>
 /// What the report login itself may do, with the validator out of the way (issue #725, spec 16.3 c, threat 7.2 and 7.3). The tests connect with the real
-/// login that <see cref="ReportTestHarness"/> provisioned (database role <c>mf_report_reader</c>) and try everything an author would try if the parser let
+/// login that <see cref="ReportTestHarness"/> provisioned (database role <c>lpt_report_reader</c>) and try everything an author would try if the parser let
 /// it through: writes, DDL, procedures, other databases, linked servers, role changes, server state. Every attempt must be refused by SQL Server for a
 /// rights reason, and afterwards nothing may have changed. <c>ReportsSchemaTests</c> already proves the per-table rights against the catalogue; this adds
 /// the attempts and the server and database level.
@@ -123,13 +123,13 @@ public sealed class ReportLoginRightsTests(SqlServerFixture sql, ITestOutputHelp
             "DROP TABLE dbo.Pod",
             "ALTER ROLE db_owner ADD MEMBER [" + user + "]",
             "ALTER ROLE db_datawriter ADD MEMBER [" + user + "]",
-            "ALTER ROLE mf_app ADD MEMBER [" + user + "]",
-            "ALTER ROLE mf_report_reader DROP MEMBER [" + user + "]",
+            "ALTER ROLE lpt_app ADD MEMBER [" + user + "]",
+            "ALTER ROLE lpt_report_reader DROP MEMBER [" + user + "]",
             "GRANT SELECT ON dbo.AuditEvent TO public",
-            "GRANT SELECT ON dbo.AuditEvent TO mf_report_reader",
+            "GRANT SELECT ON dbo.AuditEvent TO lpt_report_reader",
             "GRANT CONTROL ON DATABASE::[" + database + "] TO public",
-            "DENY SELECT ON dbo.AppUser TO mf_report_reader",
-            "REVOKE SELECT ON dbo.AppUser FROM mf_report_reader",
+            "DENY SELECT ON dbo.AppUser TO lpt_report_reader",
+            "REVOKE SELECT ON dbo.AppUser FROM lpt_report_reader",
             "ALTER AUTHORIZATION ON SCHEMA::dbo TO [" + user + "]",
             "ALTER DATABASE [" + database + "] SET RECOVERY SIMPLE",
             "CREATE DATABASE sneaky_" + Guid.NewGuid().ToString("N")[..8],
@@ -280,7 +280,7 @@ public sealed class ReportLoginRightsTests(SqlServerFixture sql, ITestOutputHelp
         // the container), the DENY is repeatable, and it removes only the intended rights (the login still works and keeps no other right in master).
         var appCs = await sql.CreateMigratedDatabaseAsync();
         var login = await sql.CreateServerLoginAsync(appCs, denyServerProcedures: false);
-        await SqlServerFixture.CreateDatabaseUserAsync(appCs, login.Name, "mf_report_reader");
+        await SqlServerFixture.CreateDatabaseUserAsync(appCs, login.Name, "lpt_report_reader");
         string[] calls = ["EXEC master.dbo.xp_dirtree N'/', 1, 1", "EXEC master.dbo.xp_fileexist N'/etc/passwd'", "EXEC master.dbo.xp_fixeddrives", "EXEC master.dbo.xp_msver"];
 
         foreach (var call in calls)
@@ -375,10 +375,10 @@ public sealed class ReportLoginRightsTests(SqlServerFixture sql, ITestOutputHelp
         var serverRoles = new[] { "sysadmin", "securityadmin", "serveradmin", "setupadmin", "processadmin", "diskadmin", "dbcreator", "bulkadmin" };
         foreach (var role in serverRoles)
             Convert.ToInt32(await SqlServerFixture.ScalarAsync(reader, $"SELECT ISNULL(IS_SRVROLEMEMBER('{role}'), 0)"), CultureInfo.InvariantCulture).ShouldBe(0, role);
-        var databaseRoles = new[] { "db_owner", "db_securityadmin", "db_accessadmin", "db_backupoperator", "db_ddladmin", "db_datawriter", "db_datareader", "db_denydatareader", "db_denydatawriter", "mf_app", "mf_migrator" };
+        var databaseRoles = new[] { "db_owner", "db_securityadmin", "db_accessadmin", "db_backupoperator", "db_ddladmin", "db_datawriter", "db_datareader", "db_denydatareader", "db_denydatawriter", "lpt_app", "lpt_migrator" };
         foreach (var role in databaseRoles)
             Convert.ToInt32(await SqlServerFixture.ScalarAsync(reader, $"SELECT ISNULL(IS_MEMBER('{role}'), 0)"), CultureInfo.InvariantCulture).ShouldBe(0, role);
-        Convert.ToInt32(await SqlServerFixture.ScalarAsync(reader, "SELECT IS_MEMBER('mf_report_reader')"), CultureInfo.InvariantCulture).ShouldBe(1);
+        Convert.ToInt32(await SqlServerFixture.ScalarAsync(reader, "SELECT IS_MEMBER('lpt_report_reader')"), CultureInfo.InvariantCulture).ShouldBe(1);
 
         // Reading is the only right it has, and only on the allowed tables: none of the write rights on any table at all.
         (await SqlServerFixture.ScalarAsync(reader, "SELECT COUNT(*) FROM sys.tables t WHERE HAS_PERMS_BY_NAME(QUOTENAME(SCHEMA_NAME(t.schema_id)) + '.' + QUOTENAME(t.name), 'OBJECT', 'INSERT') = 1 OR HAS_PERMS_BY_NAME(QUOTENAME(SCHEMA_NAME(t.schema_id)) + '.' + QUOTENAME(t.name), 'OBJECT', 'UPDATE') = 1 OR HAS_PERMS_BY_NAME(QUOTENAME(SCHEMA_NAME(t.schema_id)) + '.' + QUOTENAME(t.name), 'OBJECT', 'DELETE') = 1"))

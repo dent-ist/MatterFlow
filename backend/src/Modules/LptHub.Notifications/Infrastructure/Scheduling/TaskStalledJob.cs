@@ -1,8 +1,8 @@
 using System.Globalization;
-using MatterFlow.Notifications.Contracts;
+using LptHub.Notifications.Contracts;
 using Microsoft.EntityFrameworkCore;
 
-namespace MatterFlow.Notifications.Infrastructure.Scheduling;
+namespace LptHub.Notifications.Infrastructure.Scheduling;
 
 /// <summary>An open task that may have been unassigned or on hold for a while, with the instant that state began.</summary>
 public sealed class StalledTaskRow

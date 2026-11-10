@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace MatterFlow.Notifications.Application;
+namespace LptHub.Notifications.Application;
 
 /// <summary>One notification as the recipient sees it. The client builds the link from <c>objectKind</c> and <c>objectId</c>.</summary>
 /// <param name="Id">Notification id; also the poll cursor.</param>

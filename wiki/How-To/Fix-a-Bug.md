@@ -9,7 +9,7 @@
 1. Note the address in the browser. Look it up in [Routing and Navigation](../Frontend/Routing-and-Navigation.md) to get the feature folder and the page component. If you only know the menu name, use the menu table on the same page.
 2. Open the page component (`frontend/src/app/features/<area>/pages/...-page.ts`). Components are usually standalone with inline templates; search for the visible text (the label, button or heading) to find the exact element. Use the exact Title Case string ([Find Things](Find-Things.md)).
 3. Find the API call: the component or its facade injects a generated client (`ClientsClient`, `TasksClient`, ...). The method name is the controller action name (for example `ListTasks`).
-4. In the browser developer tools, Network tab, look at the request: URL, status, response body. An error body has a `code` and `traceId`; the code names the rule that fired (stable codes are in `backend/src/MatterFlow.SharedKernel/Results/ErrorCodes.cs`).
+4. In the browser developer tools, Network tab, look at the request: URL, status, response body. An error body has a `code` and `traceId`; the code names the rule that fired (stable codes are in `backend/src/LptHub.SharedKernel/Results/ErrorCodes.cs`).
 
 ## 2. Find the backend code
 
@@ -24,7 +24,7 @@
 ## 3. Reproduce
 
 - Start the demo stack ([Local Setup](../Getting-Started/Local-Setup.md)) and seed data (`npm run seed:demo`). Sign in as the right persona ([Demo Data and Personas](../Operations/Demo-Data-and-Personas.md)): many bugs only show for a role.
-- Read the API directly: Swagger (`http://localhost:5080/swagger`, Development) or `curl -H 'X-Dev-User: KE\kekim' -H 'X-MatterFlow-Client: web' ...` (the client header is needed for POST, PUT, DELETE).
+- Read the API directly: Swagger (`http://localhost:5080/swagger`, Development) or `curl -H 'X-Dev-User: KE\kekim' -H 'X-LptHub-Client: web' ...` (the client header is needed for POST, PUT, DELETE).
 - Inspect the data read-only with `sqlcmd` in the SQL container.
 - Write a failing test first: a unit test for a pure rule, an integration test for an endpoint, a Vitest spec for a component, a Playwright spec for a flow.
 

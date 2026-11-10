@@ -1,12 +1,12 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using MatterFlow.IntegrationTests.Fixtures;
-using MatterFlow.Reports.Application.Results;
+using LptHub.IntegrationTests.Fixtures;
+using LptHub.Reports.Application.Results;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
 
-namespace MatterFlow.IntegrationTests.Reports;
+namespace LptHub.IntegrationTests.Reports;
 
 /// <summary>GET /api/v1/reports/runs/{runId}/rows and DELETE: server-side paging, sorting and filtering, ownership, expiry and the memory budget (issue #705).</summary>
 [Collection(SqlServerCollection.Name)]

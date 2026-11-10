@@ -1,7 +1,7 @@
-using MatterFlow.WorkViews.Application.Queries;
+using LptHub.WorkViews.Application.Queries;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.WorkViews;
+namespace LptHub.UnitTests.WorkViews;
 
 /// <summary>Dashboard Users person history (issue #1092): the pure rules of medians, ratios, on-time and the month series.</summary>
 public class UserHistoryRulesTests

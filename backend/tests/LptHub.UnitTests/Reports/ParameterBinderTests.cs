@@ -1,10 +1,10 @@
 using System.Data;
 using System.Text.Json;
-using MatterFlow.Reports.Domain;
-using MatterFlow.Reports.Domain.Parameters;
+using LptHub.Reports.Domain;
+using LptHub.Reports.Domain.Parameters;
 using Shouldly;
 
-namespace MatterFlow.UnitTests.Reports;
+namespace LptHub.UnitTests.Reports;
 
 /// <summary>Server-side coercion of every parameter type, boundary values, built-ins, defaults and error names (spec 5.1, 5.3; issue #694).</summary>
 public class ParameterBinderTests
@@ -517,8 +517,8 @@ public class ParameterBinderTests
     [Fact]
     public void The_assign_managers_built_in_is_reserved_so_an_author_cannot_define_a_parameter_with_its_name()
     {
-        MatterFlow.Reports.Domain.BuiltInParameters.IsBuiltIn("CURRENT_USER_CAN_ASSIGN_MANAGERS").ShouldBeTrue();
-        MatterFlow.Reports.Domain.BuiltInParameters.Unavailable.ShouldNotContain("CURRENT_USER_CAN_ASSIGN_MANAGERS");
+        LptHub.Reports.Domain.BuiltInParameters.IsBuiltIn("CURRENT_USER_CAN_ASSIGN_MANAGERS").ShouldBeTrue();
+        LptHub.Reports.Domain.BuiltInParameters.Unavailable.ShouldNotContain("CURRENT_USER_CAN_ASSIGN_MANAGERS");
     }
 
     [Fact]
@@ -618,7 +618,7 @@ public class ParameterModelTests
             new("PODS", ParameterErrorCodes.TooMany, "Choose at most 200 values."),
         ]);
 
-        error.Type.ShouldBe(MatterFlow.SharedKernel.Results.ErrorType.Validation);
+        error.Type.ShouldBe(LptHub.SharedKernel.Results.ErrorType.Validation);
         error.Code.ShouldBe("REPORT_PARAMETERS_INVALID");
         error.FieldErrors!.Keys.ShouldBe(["parameters.DATE", "parameters.PODS"]);
         error.FieldErrors["parameters.DATE"].Select(f => f.Code).ShouldBe(["INVALID_DATE", "RANGE_ORDER"]);

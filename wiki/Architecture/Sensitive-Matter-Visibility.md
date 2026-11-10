@@ -18,9 +18,9 @@ Everyone else gets "nothing": the matter is absent from every list, count, searc
 
 | Piece | Location |
 |---|---|
-| The port `IMatterVisibility` (the only place the rule is written) | `backend/src/MatterFlow.SharedKernel/Visibility/IMatterVisibility.cs`; implemented by `MatterVisibility` in `backend/src/Modules/MatterFlow.Identity/Access/MatterVisibility.cs` |
+| The port `IMatterVisibility` (the only place the rule is written) | `backend/src/LptHub.SharedKernel/Visibility/IMatterVisibility.cs`; implemented by `MatterVisibility` in `backend/src/Modules/LptHub.Identity/Access/MatterVisibility.cs` |
 | C# predicates (expression trees) | `SharedKernel/Visibility/VisibilityPredicates.cs`: `VisibleMatters`, `VisibleTasks`, `WhereMatterVisible`, `WhereTaskVisibleBy`; single-record gates `CanSeeMatterAsync`, `CanSeeTaskAsync`; the generic 404 |
-| SQL twin for raw SQL readers | Three inline functions `dbo.fnMatterVisible`, `dbo.fnTaskVisible`, `dbo.fnAssetVisible` (script 35), denied to `mf_report_reader` |
+| SQL twin for raw SQL readers | Three inline functions `dbo.fnMatterVisible`, `dbo.fnTaskVisible`, `dbo.fnAssetVisible` (script 35), denied to `lpt_report_reader` |
 | "Managed by me" scope | `IManagedMatterScope` (`SharedKernel/Visibility/ManagedMatterScope.cs`, implemented in Identity), passes through `IMatterVisibility` |
 | Per-request preparation | `ViewerPreparationFilter` and `[PreparesViewer]`: loads the sensitive matters the caller manages as short id lists |
 | Task copy of the flag | `dbo.Task.IsMatterSensitive` kept in step by triggers (script 37) for speed |
@@ -44,9 +44,9 @@ There is no EF global query filter on purpose (decided against; architecture 6.8
 
 1. Decide which kind it is: a resource by id, a list, an aggregate, a write, or neutral (no matter data).
 2. Read data through the shared visible sources of your module (for example `TaskAccess.Visible`, `AssetAccess.Visible`, `WhereMatterRowVisible`) or `IMatterVisibility`. Do not call `Set<Matter>()`, `Set<WorkTask>()`, `Set<Project>()` or `Set<Asset>()` directly.
-3. **Classify the endpoint** in `backend/tests/MatterFlow.IntegrationTests/Security/SensitiveAccessCatalog.cs`. The key is the HTTP method and the exact route pattern, for example `"GET api/v1/notes/{noteId:int}"`. Give the kind (`Gated`, `List`, `Aggregate`, `Write`, `Neutral`, `Open`), the kind of id (`IdKind`), a reason, and the calls the persona walk sends (placeholders `{matter}`, `{task}`, `{project}`, `{asset}`, `{client}`, `{user}`). `SensitiveEndpointCatalogTests` fails when an endpoint is unclassified or the catalog names one that no longer exists.
-4. If you added a source file that touches the matter, task, project or asset sets (or raw SQL on those tables, or the audit and notification tables), add it with a reason to the allow-lists in `backend/tests/MatterFlow.ArchitectureTests/VisibilitySourceRulesTests.cs` after review.
-5. Run the persona walk (needs Docker): `dotnet test tests/MatterFlow.IntegrationTests --filter "FullyQualifiedName~Sensitive"`.
+3. **Classify the endpoint** in `backend/tests/LptHub.IntegrationTests/Security/SensitiveAccessCatalog.cs`. The key is the HTTP method and the exact route pattern, for example `"GET api/v1/notes/{noteId:int}"`. Give the kind (`Gated`, `List`, `Aggregate`, `Write`, `Neutral`, `Open`), the kind of id (`IdKind`), a reason, and the calls the persona walk sends (placeholders `{matter}`, `{task}`, `{project}`, `{asset}`, `{client}`, `{user}`). `SensitiveEndpointCatalogTests` fails when an endpoint is unclassified or the catalog names one that no longer exists.
+4. If you added a source file that touches the matter, task, project or asset sets (or raw SQL on those tables, or the audit and notification tables), add it with a reason to the allow-lists in `backend/tests/LptHub.ArchitectureTests/VisibilitySourceRulesTests.cs` after review.
+5. Run the persona walk (needs Docker): `dotnet test tests/LptHub.IntegrationTests --filter "FullyQualifiedName~Sensitive"`.
 
 ## The tests
 

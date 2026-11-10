@@ -1,6 +1,6 @@
-using MatterFlow.Reports.Domain.Parameters;
+using LptHub.Reports.Domain.Parameters;
 
-namespace MatterFlow.Reports.Domain;
+namespace LptHub.Reports.Domain;
 
 /// <summary>The text the engine sends for a report, with everything needed to validate it and to map positions back to the author's text.</summary>
 /// <param name="Scan">The scan of the author's text.</param>
