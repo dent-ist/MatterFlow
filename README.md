@@ -67,7 +67,7 @@ cd frontend && npm run lint && npm run format:check && npx tsc -p tsconfig.app.j
 
 ```bash
 cd backend  && dotnet test tests/LptHub.UnitTests          # fast; also tests/LptHub.ArchitectureTests (module boundaries)
-cd frontend && npm test                                         # Vitest (jsdom): the app and the form-engine library
+cd frontend && npm test                                         # Vitest (jsdom): the app and the form-engine library (ends the run itself, see scripts/run-ng-test.mjs)
 node contracts/validate-contracts.mjs                          # OpenAPI, form-rule and permission contracts
 ```
 

@@ -8,7 +8,7 @@
     "build:report": "node scripts/bundle-report.mjs",
     "start:api": "ng serve --configuration api",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test frontend --watch=false && ng test form-engine --watch=false",
+    "test": "node scripts/run-ng-test.mjs frontend form-engine",
     "lint": "eslint \"{src,projects}/**/*.{ts,html}\" && node scripts/check-theme-colours.mjs && node scripts/check-theme-contrast.mjs && node scripts/check-icon-sizes.mjs && node scripts/check-off-scale.mjs",
     "lint:colours": "node scripts/check-theme-colours.mjs && node scripts/check-theme-contrast.mjs",
     "api:generate": "nswag run nswag.json",
