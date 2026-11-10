@@ -8,7 +8,7 @@ namespace LptHub.IntegrationTests.Fixtures;
 /// <summary>One real SQL Server container (random host port) shared by the tests; each test gets its own migrated database.</summary>
 public sealed class SqlServerFixture : IAsyncLifetime
 {
-    private readonly MsSqlContainer _container = new MsSqlBuilder().WithImage("mcr.microsoft.com/mssql/server:2022-latest").Build();
+    private readonly MsSqlContainer _container = new MsSqlBuilder("mcr.microsoft.com/mssql/server:2022-latest").Build();
 
     /// <summary>Administrator connection to master (for server-level checks).</summary>
     public string MasterConnectionString => _container.GetConnectionString();
