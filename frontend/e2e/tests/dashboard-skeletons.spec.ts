@@ -194,10 +194,12 @@ for (const size of SIZES) {
         if (size.width >= 768) {
           expect(Math.abs(after.height - before.height), 'height').toBeLessThanOrEqual(1);
         }
-        expect(
-          await shifts(page),
-          `layout shift of the load: ${await shiftSources(page)}`,
-        ).toBeLessThanOrEqual(0.02);
+        const shift = await shifts(page);
+        // The measured value goes into the report of every run (JSON and HTML reporters), so a creeping shift is seen before it reaches the limit (#809).
+        test.info().annotations.push({ type: 'layout-shift', description: shift.toFixed(4) });
+        expect(shift, `layout shift of the load: ${await shiftSources(page)}`).toBeLessThanOrEqual(
+          0.02,
+        );
         expect(await announcements(page)).toBe(0);
         await shoot(page, `${tab.name}-loaded-${size.width}`);
       });
