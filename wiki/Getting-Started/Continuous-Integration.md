@@ -9,7 +9,7 @@
 | Workflow | When | What it does |
 |---|---|---|
 | `ci.yml` | Push to `dev` and every pull request, except changes that only touch `docs/**` or `*.md` (so wiki-only changes do not run it) | Three parallel jobs, below |
-| `e2e.yml` | Manually, weekly (Mondays 03:43 UTC), and on pull requests carrying the label `e2e` | Playwright suite against a real stack, in five parallel jobs (`--shard=1/4` to `4/4`, plus the `sensitive-*` specs on a stack with the sensitive-matter switch on); 40-minute job limit each |
+| `e2e.yml` | Manually, weekly (Mondays 03:43 UTC), and on pull requests carrying the label `e2e` | Playwright suite against a real stack, in 14 parallel jobs, each with its own stack: 12 shards of the `chromium` project (`--project=chromium --shard=1/12` to `12/12`, about 218 tests each, one worker), the `branding` spec alone (`--project=branding --no-deps`, 18 tests) and the `sensitive-*` specs on a stack with the sensitive-matter switch on (14 tests); 40-minute job limit and 35-minute test step limit each, plus one `e2e (result)` job that fails when any of them did not succeed |
 | `nightly.yml` | Weekly (Mondays 03:17 UTC) and manually | Full backend suite with code coverage (`backend-quick` for unit and architecture tests, and the same seven `backend-integration` shards as `ci.yml`; keep the lists in step), frontend test and build, NuGet vulnerability scan, `npm audit --omit=dev --audit-level=high` |
 | `publish.yml` | Manually | Builds the IIS package with `deploy/publish.sh ... win-x64` and checks its contents; uploads it as an artifact |
 | `codeql.yml` | Weekly (Mondays 04:41 UTC) and manually | CodeQL analysis for C# and JavaScript/TypeScript |
@@ -62,3 +62,11 @@ All integration tests share one SQL Server collection, so they run one after the
 When you add a namespace it runs in `integration-rest` without any change. When a shard grows past about 15 minutes, move a namespace into its own shard: add it to a `filter` and to the negation list of `integration-rest` (the lists must stay disjoint). `nightly.yml` repeats the same matrix; change both files together.
 
 The required status checks for branch protection are the job names `backend`, `frontend` and one `backend-integration (<shard>)` per shard of the table above (seven names).
+
+## E2E shards
+
+Counts from `npx playwright test -c e2e/playwright.config.ts --list` (2026-11-10): 2,635 tests in 325 files = 2,617 in the `chromium` project (324 files) + 18 in `branding` (1 file). The 14 `sensitive-*` tests are part of the `chromium` count: they skip themselves in the 12 shards (switch off) and run in the sensitive-matter job.
+
+- Why not `--shard=i/4` on the whole suite (run 42881292528, #1356): Playwright keeps a project together with the projects it depends on, and `branding` depends on `chromium`, so shard 1 got all 2,635 tests (one worker, cut by the 35-minute step limit at test 501) and shards 2 to 4 got none and passed in about two minutes, because Playwright exits 0 for an empty shard.
+- Now: `--project=chromium --shard=i/12` gives 214 to 222 tests per shard (about 2 s per passing test, 8 s per failed attempt with its retry, so about 15 to 20 minutes plus 3.5 minutes for the build and the stack). Each job first runs `--list` and fails when it would run 0 tests. `branding` runs alone because it changes the application name for everybody.
+- To change the shard count, change `/12` and the matrix entries together; check with `--list` that the slices add up to 2,617 tests. Make `e2e (result)` the required check instead of the single jobs.

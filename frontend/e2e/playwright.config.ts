@@ -45,6 +45,9 @@ export default defineConfig({
   },
   projects: [
     // The branding spec changes the application name and icon for everybody (epic #850), so it runs alone after the rest of the suite.
+    // CAUTION (#1356): `--shard` keeps a project together with the projects it depends on, so with this dependency `--shard=i/n` on the whole
+    // suite puts all tests into one shard and leaves the others empty. CI therefore shards `--project=chromium` only and runs
+    // `--project=branding --no-deps` as its own job (.github/workflows/e2e.yml).
     { name: 'chromium', testIgnore: '**/app-settings.spec.ts', use: { browserName: 'chromium' } },
     {
       name: 'branding',
