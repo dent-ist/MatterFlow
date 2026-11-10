@@ -4,6 +4,8 @@
 //   node tools/rename/rename.mjs            dry run (default): changes nothing, prints a markdown summary
 //   node tools/rename/rename.mjs --apply    1. git mv of paths (history follows), 2. content rules, on the working tree
 //   node tools/rename/rename.mjs --check    completeness check: exit 1 if the old name still appears outside the allow-list
+//                                           (a line that contains the marker "rename-allow:" and a reason is skipped: used where a living
+//                                           document must name the old name on purpose, e.g. the "upgrading a machine that ran MatterFlow" steps)
 //
 // Options: --list-review  print every line the "needs a human look" rules touched (default: counts and a short sample)
 //          --list-all     print every changed line per rule (long)
@@ -160,6 +162,7 @@ if (CHECK) {
       if (t.buf.toString('latin1').match(/matterflow/i)) hits.push('binary/non-UTF8 content contains the old name');
     } else {
       t.text.split(/\r?\n/).forEach((line, i) => {
+        if (line.includes('rename-allow:')) return;
         if (OLD_ANY.test(line) || OLD_ROLE.test(line)) hits.push(`${i + 1}: ${line.trim().slice(0, 160)}`);
       });
     }

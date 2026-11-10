@@ -555,3 +555,20 @@ Starter defaults: Project Manager = My Matters, Director = Dashboard; Pod Lead, 
 5. If the landing page cannot be read (API error), the browser falls back to the Automatic rule; nothing is lost.
 
 No new configuration key, no new permission (`Role.Manage` edits the role field), no new keyboard shortcut.
+
+## 19. Upgrading a machine that ran MatterFlow <!-- rename-allow: heading names the old product on purpose -->
+
+The product was renamed from MatterFlow to LPT Hub (epic #1345). Nothing was ever deployed, so only developer and demo machines are affected. The database name, the four database roles, the Docker container and volume, the connection-string key, the CSRF header and the default dev passwords all changed, and `db/scripts/00-baseline.sql` was edited in place, so an existing local database cannot be kept: it is rebuilt (`npm run db:reset`) and the demo data is created again. Nothing in it is worth migrating. <!-- rename-allow: upgrade steps name the old names on purpose -->
+
+1. Stop the running stack (Ctrl+C in the `npm start` terminal) and stop and remove the old container and its data volume. The old container still holds port 1433, so this must come first:
+   ```bash
+   docker rm -f matterflow-sql                # rename-allow: old container
+   docker volume rm matterflow-sql-data       # rename-allow: old data volume
+   ```
+   (`docker rm -f` says "No such container" when the machine never had it; that is fine.)
+2. `git pull` the renamed branch. Rename or re-clone the working folder only if you want to; nothing depends on the folder name.
+3. `npm install` (the package names changed) and `npm run setup` if the frontend dependencies changed.
+4. `npm run db:reset` (creates the new `lpt-hub-sql` container and `lpt-hub-sql-data` volume with an empty `LptHub` database and the role `lpt_report_reader`).
+5. `npm start`, and from a second terminal `npm run seed:demo`.
+
+Also changed for anyone who set them by hand: `ConnectionStrings__MatterFlow` is now `ConnectionStrings__LptHub`, `MATTERFLOW_MIGRATE_ONLY` is now `LPTHUB_MIGRATE_ONLY`, the header `X-MatterFlow-Client` is `X-LptHub-Client`, the roles `mf_app`, `mf_migrator`, `mf_report_reader` and the login `mf_reports` are `lpt_app`, `lpt_migrator`, `lpt_report_reader` and `lpt_reports`, and the dev passwords are `LptHub_Dev1!`, `LptHub_Reports1!` and `LptHub_Perf1!`. <!-- rename-allow: list of old names -->

@@ -37,6 +37,8 @@ npm start          # SQL Server (Docker), the API on :5080 and the web app on :4
 npm run seed:demo  # optional, from a second terminal: fills the app with demo users, matters and tasks
 ```
 
+**Machine that ran the product under its old name (MatterFlow)?** Follow [Runbook section 19](docs/runbook.md) once: remove the old SQL container and volume, then `git pull`, `npm run db:reset`, `npm start`, `npm run seed:demo`. <!-- rename-allow: upgrade pointer names the old product -->
+
 **Existing local database from before the schema baseline (issue #1307)?** The API refuses it at startup with a message; run `npm run db:reset` once (it deletes the local SQL Server volume and rebuilds the database from `db/scripts/00-baseline.sql`; run `npm run seed:demo` again afterwards).
 
 Open http://localhost:4200. You are signed in as the System Admin `KE\kekim` (Dev authentication, which only works in Development and Test). Swagger is at http://localhost:5080/swagger. In a cloud container, start Docker first (`nohup dockerd >/tmp/dockerd.log 2>&1 &`).

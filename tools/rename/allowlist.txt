@@ -2,6 +2,7 @@
 # Format: <path glob> | <reason>. Paths are repository-relative with "/" separators, matched against the OLD path.
 #   **  any number of folders      *  anything inside one path segment
 # A line starting with "!" removes a path from the allow-list again (the last matching line wins).
+# Besides this list, --check skips single lines that carry the marker "rename-allow: <reason>" (living docs that must name the old name on purpose).
 # Everything that matches is left exactly as it is: no content rule, no path rename, and --check ignores it.
 
 db/scripts/archive/**                       | archived schema scripts 01 to 66: immutable history (CLAUDE.md schema rule)
@@ -22,3 +23,8 @@ docs/ux/**                                  | dated design records: review round
 !docs/ux/**/*.sh                            | runnable helper scripts: must not keep pointing at the old container, database or connection-string key
 !docs/ux/ui-update/stack-howto.md           | describes how to start the local stack (container and volume names)
 !docs/ux/pm-review/fixtures.md              | describes how to run the seed against the local container
+
+# Added in the apply step (#1347/#1348): files that must keep the legacy role names because they define the explicit role-name mapping.
+backend/tests/LptHub.SchemaTests/BaselineEquivalenceTests.cs | compares the archived chain (roles mf_*) with the baseline (roles lpt_*); proves the two role sets differ, then compares under the fixed mapping
+tools/db/schema-fingerprint.sql             | documents and implements the fixed legacy-role mapping mf_* -> lpt_* used when comparing an archive-built database with a baseline-built one
+tools/db/compare-schema.sh                  | header comment pointing at that mapping
