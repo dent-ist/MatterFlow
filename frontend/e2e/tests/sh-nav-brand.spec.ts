@@ -181,7 +181,7 @@ test.describe('The LPT Hub mark (#626)', () => {
       expect(res.status(), file).toBe(200);
       expect(res.headers()['content-type'], file).toContain(type);
     }
-    expect(await request.get('/favicon.svg').then((r) => r.text())).toContain('#1F4E9C');
+    expect(await request.get('/favicon.svg').then((r) => r.text())).toContain('#1d4e89');
     await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#1F4E9C');
   });
 });

@@ -223,9 +223,7 @@ test.describe('Pod Work strip and tabs', () => {
       await expect(page).toHaveURL(/overdue=true/);
       await expect(pw.tab(/^All Open/)).toHaveAttribute('aria-selected', 'true');
       await expect(item(page, 'overdue')).toHaveAttribute('aria-pressed', 'true');
-      await expect(page).toHaveTitle(
-        new RegExp(`^Pod Work: ${fx.busy.name}: All Open - LPT Hub$`),
-      );
+      await expect(page).toHaveTitle(new RegExp(`^Pod Work: ${fx.busy.name}: All Open - LPT Hub$`));
       await expect(page.getByRole('table').first().locator('caption')).toContainText('All Open');
       // The bookmark of the old tab with no filters at all: All open.
       await page.goto(`/pods/work?view=all&podId=${fx.busy.podId}`);
