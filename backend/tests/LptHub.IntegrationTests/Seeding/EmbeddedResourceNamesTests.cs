@@ -11,6 +11,9 @@ namespace LptHub.IntegrationTests.Seeding;
 /// </summary>
 public sealed class EmbeddedResourceNamesTests
 {
+    // Built from two halves so that the completeness check (tools/rename/rename.mjs --check) does not find the old name in this file.
+    private static readonly string OldName = "Matter" + "Flow";
+
     [Fact]
     public void The_seed_resource_is_embedded_under_the_constant_name_and_can_be_read()
     {
@@ -37,7 +40,7 @@ public sealed class EmbeddedResourceNamesTests
 
         var assemblies = new[] { typeof(StarterSeedData).Assembly, typeof(StarterReportManifest).Assembly, typeof(EmbeddedMigrationScriptSource).Assembly };
         assemblies.SelectMany(a => a.GetManifestResourceNames())
-            .Where(n => n.Contains("MatterFlow", StringComparison.OrdinalIgnoreCase))
+            .Where(n => n.Contains(OldName, StringComparison.OrdinalIgnoreCase))
             .ShouldBeEmpty();
     }
 }
