@@ -145,6 +145,54 @@ test.describe('old addresses go to the Lists page (UI spec 6.2)', () => {
     await expect(page.getByRole('dialog', { name: 'New Priority' })).toBeVisible();
   });
 
+  test('?edit= opens the dialog on the four lists that did not read it, and closing the dialog takes it off the address (#1339)', async ({
+    page,
+    admin,
+  }) => {
+    const created = await admin.post('/api/v1/matter-types', {
+      name: `Edit bookmark ${Date.now()}`,
+      isActive: true,
+    });
+    const tag = await admin.post('/api/v1/note-tags', {
+      name: `Edit tag ${Date.now()}`,
+      colourKey: 'blue',
+    });
+    const cases = [
+      ['matter-types', 'new', 'New Matter Type'],
+      ['matter-types', String(created.id), 'Rename Matter Type'],
+      ['current-states', 'new', 'New Current State'],
+      ['team-titles', 'new', 'New Title'],
+      ['note-tags', 'new', 'New Tag'],
+      ['note-tags', String(tag.noteTagId), 'Edit Tag'],
+    ] as const;
+    for (const [key, edit, title] of cases) {
+      await page.goto(`/admin/lists/${key}?edit=${edit}`);
+      const dialog = page.getByRole('dialog', { name: title });
+      await expect(dialog, `${key}?edit=${edit}`).toBeVisible();
+      await dialog.getByRole('button', { name: 'Cancel' }).click();
+      await expect(dialog).toHaveCount(0);
+      await expect(page).toHaveURL(new RegExp(`/admin/lists/${key}$`));
+    }
+  });
+
+  test('the rule line sits right under the grid, also under a short list, at both sizes (#1339)', async ({
+    page,
+  }) => {
+    for (const size of SIZES) {
+      await page.setViewportSize(size);
+      await page.goto('/admin/lists/status-labels');
+      await expect(page.locator('[data-list-body] tbody tr')).toHaveCount(5);
+      const gap = await page.evaluate(() => {
+        const pager = document.querySelector('[data-list-body] mf-pager')!.getBoundingClientRect();
+        const frame = document.querySelector('[data-list-body]')!.getBoundingClientRect();
+        const rule = document.querySelector('[data-rule]')!.getBoundingClientRect();
+        return { underPager: rule.top - pager.bottom, underBody: rule.top - frame.bottom };
+      });
+      expect(gap.underBody, `at ${size.width}`).toBeLessThanOrEqual(16);
+      expect(gap.underPager, `at ${size.width}`).toBeLessThanOrEqual(24);
+    }
+  });
+
   test('/admin/lists and an unknown list open the first permitted list', async ({ page }) => {
     await page.goto('/admin/lists');
     await expect(page).toHaveURL(/\/admin\/lists\/matter-types$/);

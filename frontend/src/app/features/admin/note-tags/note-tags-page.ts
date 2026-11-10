@@ -2,10 +2,14 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   forwardRef,
   inject,
+  input,
   signal,
+  untracked,
 } from '@angular/core';
+import { Router } from '@angular/router';
 import { LIST_BODY } from '../lists/list-body';
 import { AdminTabCounts } from '../admin-tabs';
 import { firstValueFrom } from 'rxjs';
@@ -158,6 +162,10 @@ import { TagChip } from '../../../shared/ui/tag-chip';
   `,
 })
 export class NoteTagsPage {
+  /** `?edit=<id>` / `?edit=new` of the Lists address (a bookmark or the old link): opens that dialog once the tags are loaded; closing it takes the value off the address (#1339). */
+  readonly edit = input<string | undefined>(undefined);
+  private readonly router = inject(Router);
+  private editHandled: string | undefined;
   private readonly api = inject(NoteTagsClient);
   private readonly notify = inject(NotificationService);
   private readonly report = AdminTabCounts.report('note-tags');
@@ -208,6 +216,41 @@ export class NoteTagsPage {
 
   constructor() {
     void this.load();
+    effect(() => {
+      const wanted = this.edit();
+      const ready = this.state() === 'ready';
+      untracked(() => {
+        if (wanted === undefined) {
+          this.editHandled = undefined;
+          return;
+        }
+        if (!ready || this.editHandled === wanted) return;
+        this.editHandled = wanted;
+        const tag =
+          wanted === 'new' ? null : this.tags().find((t) => String(t.noteTagId) === wanted);
+        if (wanted === 'new') this.openNew();
+        else if (tag) this.openEdit(tag);
+        else this.clearEditParam();
+      });
+    });
+    // Whatever closes the dialog (Cancel, Escape, Save) takes `edit` off the address.
+    let wasOpen = false;
+    effect(() => {
+      const open = this.panel();
+      untracked(() => {
+        if (!open && wasOpen) this.clearEditParam();
+        wasOpen = open;
+      });
+    });
+  }
+
+  private clearEditParam(): void {
+    if (this.edit() === undefined) return;
+    void this.router.navigate([], {
+      queryParams: { edit: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
   /** The row menu (D-44, #1153): Edit, Deactivate / Activate, Delete last and set apart (disabled with its reason while notes use the tag). */

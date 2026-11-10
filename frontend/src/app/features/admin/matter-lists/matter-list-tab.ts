@@ -12,7 +12,7 @@ import {
   forwardRef,
 } from '@angular/core';
 import { LIST_BODY } from '../lists/list-body';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Button } from 'primeng/button';
 import { Observable, firstValueFrom } from 'rxjs';
 import {
@@ -173,6 +173,8 @@ interface ListApi {
 })
 export class MatterListTab {
   readonly kind = input.required<MatterListKind>();
+  /** `?edit=<id>` / `?edit=new` of the Lists address (a bookmark or the old link): opens that dialog once the list is loaded; closing it takes the value off the address (#1339). */
+  readonly edit = input<string | undefined>(undefined);
 
   protected readonly paging = new LocalPaging();
   private readonly typesApi = inject(MatterTypesClient);
@@ -181,6 +183,9 @@ export class MatterListTab {
   private readonly notify = inject(NotificationService);
   private readonly auth = inject(AuthStore);
   private readonly injector = inject(Injector);
+  private readonly router = inject(Router);
+  /** The `edit` value already shown (or found to match no item), so a reload after Save does not open it again. */
+  private editHandled: string | undefined;
   private readonly counts = inject(AdminTabCounts, { optional: true });
 
   protected readonly text = computed(() => MATTER_LIST_TEXTS[this.kind()]);
@@ -256,8 +261,25 @@ export class MatterListTab {
       this.kind();
       untracked(() => {
         this.dialog.set(null);
+        this.editHandled = undefined;
         this.paging.goTo(1);
         void this.load();
+      });
+    });
+    // The address asks for a dialog: New, or Rename of the item with that id. An unknown id is dropped from the address without a dialog.
+    effect(() => {
+      const wanted = this.edit();
+      const ready = this.state() === 'ready' && this.canManage();
+      untracked(() => {
+        if (wanted === undefined) {
+          this.editHandled = undefined;
+          return;
+        }
+        if (!ready || this.editHandled === wanted) return;
+        this.editHandled = wanted;
+        const item = wanted === 'new' ? 'new' : this.rows().find((r) => String(r.id) === wanted);
+        if (item) this.dialog.set(item);
+        else this.clearEditParam();
       });
     });
     // Each time the dialog opens the draft starts from the item (or empty).
@@ -298,6 +320,16 @@ export class MatterListTab {
   protected closeDialog(): void {
     this.clearErrors();
     this.dialog.set(null);
+    this.clearEditParam();
+  }
+
+  private clearEditParam(): void {
+    if (this.edit() === undefined) return;
+    void this.router.navigate([], {
+      queryParams: { edit: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
   private clearErrors(): void {

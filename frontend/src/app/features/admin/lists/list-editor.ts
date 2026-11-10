@@ -80,7 +80,7 @@ export const MATTER_LIST_KEYS: readonly AdminListKey[] = [
       @switch (family()) {
         @case ('matter') {
           @defer (on immediate) {
-            <mf-matter-list-tab [kind]="matterKind()" />
+            <mf-matter-list-tab [kind]="matterKind()" [edit]="edit()" />
           }
         }
         @case ('priorities') {
@@ -100,7 +100,7 @@ export const MATTER_LIST_KEYS: readonly AdminListKey[] = [
         }
         @case ('note-tags') {
           @defer (on immediate) {
-            <mf-note-tags-page />
+            <mf-note-tags-page [edit]="edit()" />
           }
         }
         @case ('link-roles') {
@@ -146,8 +146,19 @@ export const MATTER_LIST_KEYS: readonly AdminListKey[] = [
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
     }
+    /* The grid takes the room it needs, never more: the rule line sits right under the grid frame, also under a short list (Status Labels: five rows),
+       and a long list still fills the pane and scrolls inside its frame (#1339). The record grid's 412 px minimum frame is off here for the same reason. */
     .le__body {
+      flex: 0 1 auto;
       min-height: 0;
+      --mf-frame-min: 0px;
+    }
+    :host ::ng-deep .le__body .mf-fill,
+    :host ::ng-deep .le__body > *,
+    :host ::ng-deep .le__body mf-record-grid,
+    :host ::ng-deep .le__body mf-grid-frame,
+    :host ::ng-deep .le__body .mf-scroll-area {
+      flex: 0 1 auto;
     }
     .le__rule {
       display: flex;

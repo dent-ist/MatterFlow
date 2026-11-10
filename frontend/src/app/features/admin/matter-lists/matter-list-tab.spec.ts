@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { MatterListItemView, MatterTypesClient } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import {
@@ -80,10 +80,11 @@ describe('Matter Lists wording (UI spec 7.3)', () => {
 @Component({
   imports: [MatterListTab],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<mf-matter-list-tab kind="matter-types" />`,
+  template: `<mf-matter-list-tab kind="matter-types" [edit]="edit()" />`,
 })
 class Host {
   readonly unused = signal(0);
+  readonly edit = signal<string | undefined>(undefined);
 }
 
 describe('MatterListTab (Matter Types)', () => {
@@ -94,7 +95,7 @@ describe('MatterListTab (Matter Types)', () => {
   const host = (): HTMLElement => current!;
   const all = (s: string) => Array.from(document.body.querySelectorAll<HTMLElement>(s));
 
-  async function start(list: MatterListItemView[] | 'error', manage = true) {
+  async function start(list: MatterListItemView[] | 'error', manage = true, edit?: string) {
     document.body.querySelectorAll('.p-dialog-mask').forEach((e) => e.remove());
     api = {
       listMatterTypes: vi
@@ -124,6 +125,7 @@ describe('MatterListTab (Matter Types)', () => {
     });
     await TestBed.inject(AuthStore).ensureLoaded();
     const f = TestBed.createComponent(Host);
+    f.componentInstance.edit.set(edit);
     document.body.appendChild(f.nativeElement);
     await settle(f);
     current = f.nativeElement;
@@ -215,6 +217,43 @@ describe('MatterListTab (Matter Types)', () => {
       "A matter type named 'advisory' already exists. It is inactive; activate it instead.",
     );
     expect(api['createMatterType']).not.toHaveBeenCalled();
+  });
+
+  describe('?edit= of the address (#1339)', () => {
+    const dialogTitle = () => q('[data-lookup-title]')?.textContent?.trim();
+
+    it('?edit=new opens the New dialog once the list is loaded', async () => {
+      await start([item(1, 'Litigation')], true, 'new');
+      expect(dialogTitle()).toBe('New Matter Type');
+    });
+
+    it('?edit=<id> opens Rename for that item with its name, and closing it takes edit off the address', async () => {
+      const f = await start([item(1, 'Litigation'), item(2, 'Advisory')], true, '2');
+      expect(dialogTitle()).toBe('Rename Matter Type');
+      expect((q('#matter-list-name') as HTMLInputElement).value).toBe('Advisory');
+      const go = vi.spyOn(TestBed.inject(Router), 'navigate');
+      all('.mf-dlg button')
+        .find((b) => b.textContent!.trim() === 'Cancel')!
+        .click();
+      await settle(f);
+      expect(go).toHaveBeenCalledWith(
+        [],
+        expect.objectContaining({ queryParams: { edit: null }, replaceUrl: true }),
+      );
+    });
+
+    it('an id that is not in the list opens nothing and is taken off the address', async () => {
+      const go = vi.spyOn(Router.prototype, 'navigate');
+      await start([item(1, 'Litigation')], true, '77');
+      expect(dialogTitle()).toBeUndefined();
+      expect(go).toHaveBeenCalledWith([], expect.objectContaining({ queryParams: { edit: null } }));
+      go.mockRestore();
+    });
+
+    it('a person without MatterList.Manage gets no dialog from the address', async () => {
+      await start([item(1, 'Litigation')], false, 'new');
+      expect(dialogTitle()).toBeUndefined();
+    });
   });
 
   it('shows "No matter types yet." and the error block with Retry', async () => {
