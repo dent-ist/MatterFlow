@@ -4,6 +4,8 @@
 # Env:    MF_SQL_SERVER (default localhost), MF_SQL_USER (default sa), MF_SQL_PASSWORD (required),
 #         MF_SQLCMD (default: sqlcmd; for the dev container use
 #         "docker exec -i lpt-hub-sql /opt/mssql-tools18/bin/sqlcmd" and run the script from a place where docker is available).
+# Roles:  the fingerprint maps the legacy role names mf_app/mf_migrator/mf_report_reader/mf_reports to lpt_* (see schema-fingerprint.sql), so a database
+#         built from db/scripts/archive can be compared with one built from the baseline.
 # Output: a unified diff of the two descriptions; exit code 0 and no output lines starting with + or - means the schemas are equal.
 set -euo pipefail
 a=${1:?database A}

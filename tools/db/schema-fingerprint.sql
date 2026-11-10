@@ -7,6 +7,13 @@
 --   hash of the normalised text), database roles and their members, every permission (database, schema, object and column level), extended
 --   properties, identity counters, and the content of every table that has rows (time and row-version columns are masked, the runner journal is skipped).
 -- Names that SQL Server generates (object ids, column ids) are not used; positions are ranks.
+-- Legacy role names (rename to LPT Hub, issue #1348): the archived scripts in db/scripts/archive (never edited) create the roles mf_app, mf_migrator and
+--   mf_report_reader (and the demo login mf_reports); the baseline creates lpt_app, lpt_migrator and lpt_report_reader (and lpt_reports). So that a
+--   database built from the archive and one built from the baseline can be compared, this script writes the role names in the NEW form:
+--   the lines of the sections principal, member and permission, and the text of every function, procedure and trigger before it is hashed
+--   (usp_ReportRunComplete names a role). The mapping is fixed and explicit: mf_report_reader -> lpt_report_reader, mf_reports -> lpt_reports,
+--   mf_migrator -> lpt_migrator, mf_app -> lpt_app (REPLACE chains in the two module inserts and the UPDATE before the final SELECT).
+--   Nothing else is mapped.
 
 SET NOCOUNT ON;
 CREATE TABLE #o (section VARCHAR(20) NOT NULL, line NVARCHAR(MAX) NOT NULL);
@@ -68,10 +75,10 @@ FROM sys.sequences;
 INSERT #o
 SELECT 'module', o.type + N' ' + o.name + N' parent=' + ISNULL(po.name, N'') + N' ansi=' + CAST(m.uses_ansi_nulls AS NVARCHAR(5)) + N' qi=' + CAST(m.uses_quoted_identifier AS NVARCHAR(5))
   + ISNULL(N' disabled=' + CAST(tr.is_disabled AS NVARCHAR(5)), N'') + ISNULL(N' instead=' + CAST(tr.is_instead_of_trigger AS NVARCHAR(5)), N'')
-  + N' sha=' + CONVERT(NVARCHAR(64), HASHBYTES('SHA2_256', LTRIM(RTRIM(REPLACE(REPLACE(m.definition, NCHAR(13), N''), N'CREATE OR ALTER', N'CREATE')))), 2)
+  + N' sha=' + CONVERT(NVARCHAR(64), HASHBYTES('SHA2_256', LTRIM(RTRIM(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(m.definition, NCHAR(13), N''), N'CREATE OR ALTER', N'CREATE'), N'mf_report_reader', N'lpt_report_reader'), N'mf_reports', N'lpt_reports'), N'mf_migrator', N'lpt_migrator'), N'mf_app', N'lpt_app')))), 2)
 FROM sys.sql_modules m JOIN sys.objects o ON o.object_id = m.object_id LEFT JOIN sys.objects po ON po.object_id = o.parent_object_id LEFT JOIN sys.triggers tr ON tr.object_id = o.object_id;
 INSERT #o
-SELECT 'module', N'DDL-TRIGGER ' + name + N' disabled=' + CAST(is_disabled AS NVARCHAR(5)) + N' sha=' + CONVERT(NVARCHAR(64), HASHBYTES('SHA2_256', LTRIM(RTRIM(REPLACE(REPLACE(OBJECT_DEFINITION(object_id), NCHAR(13), N''), N'CREATE OR ALTER', N'CREATE')))), 2)
+SELECT 'module', N'DDL-TRIGGER ' + name + N' disabled=' + CAST(is_disabled AS NVARCHAR(5)) + N' sha=' + CONVERT(NVARCHAR(64), HASHBYTES('SHA2_256', LTRIM(RTRIM(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(OBJECT_DEFINITION(object_id), NCHAR(13), N''), N'CREATE OR ALTER', N'CREATE'), N'mf_report_reader', N'lpt_report_reader'), N'mf_reports', N'lpt_reports'), N'mf_migrator', N'lpt_migrator'), N'mf_app', N'lpt_app')))), 2)
 FROM sys.triggers WHERE parent_class = 0;
 INSERT #o
 SELECT 'module', N'DDL-EVENTS ' + t.name + N' ' + e.type_desc FROM sys.triggers t JOIN sys.trigger_events e ON e.object_id = t.object_id WHERE t.parent_class = 0;
@@ -120,6 +127,10 @@ CLOSE tabs; DEALLOCATE tabs;
 INSERT #o
 SELECT 'identity', t.name + N' next=' + CAST(ISNULL(IDENT_CURRENT(N'dbo.' + t.name), 0) AS NVARCHAR(30))
 FROM sys.tables t WHERE t.name <> N'SchemaMigration' AND OBJECTPROPERTY(t.object_id, 'TableHasIdentity') = 1;
+
+-- Explicit legacy role-name mapping (see the header). Longest names first; the module texts are mapped above, before hashing.
+UPDATE #o SET line = REPLACE(REPLACE(REPLACE(REPLACE(line, N'mf_report_reader', N'lpt_report_reader'), N'mf_reports', N'lpt_reports'), N'mf_migrator', N'lpt_migrator'), N'mf_app', N'lpt_app')
+WHERE section IN ('principal', 'member', 'permission');
 
 SELECT section + N' | ' + line AS line FROM #o ORDER BY section, line COLLATE Latin1_General_BIN2;
 DROP TABLE #o;
