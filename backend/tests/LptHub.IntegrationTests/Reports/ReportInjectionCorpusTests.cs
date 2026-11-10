@@ -69,6 +69,8 @@ public sealed class ReportInjectionCorpusTests(SqlServerFixture sql)
 
     private static async Task<List<string>> CachedStatementsAsync(string connectionString, string marker)
     {
+        // The plan cache is server-wide: let the background drops of earlier tests' databases finish first, or the scan can hit a database "in transition" (#1354).
+        await DatabaseApiFactory.WaitForPendingDropsAsync();
         await using var connection = new SqlConnection(connectionString);
         await connection.OpenAsync();
         await using var command = connection.CreateCommand();

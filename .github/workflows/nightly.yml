@@ -18,9 +18,12 @@ env:
   CI: true
 
 jobs:
-  backend-full:
+  # The whole backend suite in ONE job ran into its 60-minute limit (#1354): the integration tests share one SQL Server collection and run one after
+  # the other (about 70 minutes in total). It runs like ci.yml now: unit and architecture tests in one job, schema and integration tests in parallel
+  # shards, each with its own SQL Server container, with code coverage. Every test still runs exactly once. KEEP THE SHARD LISTS IN STEP WITH ci.yml.
+  backend-quick:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: backend
@@ -29,21 +32,88 @@ jobs:
       - uses: ./.github/actions/setup-dotnet
       - name: Build
         run: dotnet build --no-restore -c Release -warnaserror
-      - name: Full test suite (unit, architecture, schema, integration)
-        run: >
-          dotnet test --no-build -c Release
-          --collect:"XPlat Code Coverage"
-          --logger "trx" --results-directory ../TestResults
+      - name: Unit and architecture tests
+        run: |
+          for project in LptHub.UnitTests LptHub.ArchitectureTests; do
+            dotnet test "tests/$project" --no-build -c Release \
+              --collect:"XPlat Code Coverage" \
+              --logger "trx;LogFileName=$project.trx" --results-directory ../TestResults/quick
+          done
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: nightly-backend-test-results
+          name: nightly-backend-test-results-quick
+          path: TestResults
+          if-no-files-found: ignore
+
+  backend-integration:
+    name: backend-integration (${{ matrix.shard }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # WorkViews took about 19 minutes in one shard (run 580, #1354): split by class-name prefix (Dashboard and MyMatters classes, and the rest) into two shards of about 10 minutes.
+          - shard: integration-work-views-dashboard-my-matters
+            project: LptHub.IntegrationTests
+            filter: 'FullyQualifiedName~LptHub.IntegrationTests.WorkViews.MyMatters|FullyQualifiedName~LptHub.IntegrationTests.WorkViews.Dashboard'
+          - shard: integration-work-views-other
+            project: LptHub.IntegrationTests
+            filter: 'FullyQualifiedName~LptHub.IntegrationTests.WorkViews.&FullyQualifiedName!~LptHub.IntegrationTests.WorkViews.MyMatters&FullyQualifiedName!~LptHub.IntegrationTests.WorkViews.Dashboard'
+          - shard: integration-reports-notifications-audit
+            project: LptHub.IntegrationTests
+            filter: 'FullyQualifiedName~LptHub.IntegrationTests.Reports.|FullyQualifiedName~LptHub.IntegrationTests.Notifications.|FullyQualifiedName~LptHub.IntegrationTests.Audit.'
+          - shard: integration-tasks-workflows
+            project: LptHub.IntegrationTests
+            filter: 'FullyQualifiedName~LptHub.IntegrationTests.Tasks.|FullyQualifiedName~LptHub.IntegrationTests.Workflows.|FullyQualifiedName~LptHub.IntegrationTests.WorkManagement.|FullyQualifiedName~LptHub.IntegrationTests.Visibility.'
+          - shard: integration-identity-organization-security
+            project: LptHub.IntegrationTests
+            filter: 'FullyQualifiedName~LptHub.IntegrationTests.Identity.|FullyQualifiedName~LptHub.IntegrationTests.Organization.|FullyQualifiedName~LptHub.IntegrationTests.Security.'
+          # Everything else in the project: the negation of the four lists above (keep it in step with them).
+          - shard: integration-rest
+            project: LptHub.IntegrationTests
+            filter: 'FullyQualifiedName!~LptHub.IntegrationTests.WorkViews.&FullyQualifiedName!~LptHub.IntegrationTests.Reports.&FullyQualifiedName!~LptHub.IntegrationTests.Notifications.&FullyQualifiedName!~LptHub.IntegrationTests.Audit.&FullyQualifiedName!~LptHub.IntegrationTests.Tasks.&FullyQualifiedName!~LptHub.IntegrationTests.Workflows.&FullyQualifiedName!~LptHub.IntegrationTests.WorkManagement.&FullyQualifiedName!~LptHub.IntegrationTests.Visibility.&FullyQualifiedName!~LptHub.IntegrationTests.Identity.&FullyQualifiedName!~LptHub.IntegrationTests.Organization.&FullyQualifiedName!~LptHub.IntegrationTests.Security.'
+          # All schema tests (no filter).
+          - shard: schema
+            project: LptHub.SchemaTests
+            filter: ''
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-dotnet
+      - name: Pre-pull SQL Server image (retries on registry hiccups)
+        working-directory: .
+        run: |
+          for attempt in 1 2 3; do
+            docker pull mcr.microsoft.com/mssql/server:2022-latest && exit 0
+            echo "::warning::docker pull failed (attempt $attempt)"; sleep 10
+          done
+          exit 1
+      - name: Build
+        run: dotnet build --no-restore -c Release -warnaserror
+      - name: Tests (${{ matrix.shard }})
+        timeout-minutes: 30
+        env:
+          PROJECT: ${{ matrix.project }}
+          SHARD: ${{ matrix.shard }}
+          TEST_FILTER: ${{ matrix.filter }}
+        run: |
+          dotnet test "tests/$PROJECT" --no-build -c Release ${TEST_FILTER:+--filter "$TEST_FILTER"} \
+            --collect:"XPlat Code Coverage" \
+            --logger "trx;LogFileName=$SHARD.trx" --results-directory ../TestResults/integration
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nightly-backend-test-results-${{ matrix.shard }}
           path: TestResults
           if-no-files-found: ignore
 
   frontend-tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     defaults:
       run:
         working-directory: frontend
@@ -55,8 +125,8 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci || (sleep 15 && npm ci)
-      - run: npm test
-      - run: npm run build
+      - run: npm test # ends the run after the Vitest summary (#1353)
+      - run: npm run build # ends the run after the build result (#1354)
 
   # Security review SEC-11: fail the night when a dependency has a known vulnerability (direct or transitive).
   dependency-audit:

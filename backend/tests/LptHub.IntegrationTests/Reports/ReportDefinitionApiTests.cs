@@ -161,8 +161,9 @@ public sealed class ReportDefinitionApiTests(SqlServerFixture sql)
         body.ShouldNotContain("Password", Case.Insensitive);
         body.ShouldNotContain("Server=", Case.Insensitive);
         body.ShouldNotContain("ReportsReadOnly", Case.Insensitive);
+        // isFavourite is the caller's own favourite mark on the report (issue #1326, PUT /reports/{id}/favourite): a plain boolean, not part of the report's SQL or security data.
         JsonDocument.Parse(body).RootElement.EnumerateObject().Select(p => p.Name).Order().ShouldBe(
-            ["categoryId", "categoryName", "description", "helpText", "maxRows", "name", "parameters", "reportId", "timeoutSeconds", "versionNo"]);
+            ["categoryId", "categoryName", "description", "helpText", "isFavourite", "maxRows", "name", "parameters", "reportId", "timeoutSeconds", "versionNo"]);
     }
 
     [Fact]

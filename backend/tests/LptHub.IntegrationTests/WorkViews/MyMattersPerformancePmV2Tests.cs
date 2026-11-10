@@ -369,6 +369,7 @@ public sealed partial class MyMattersPerformanceTests
     /// <summary>The cached plans of the statements that read the typed index, the assets or the tasks: how each index is accessed, the reads, and whether the statement text or plan contains JSON_VALUE.</summary>
     private Task<PlanSummary> CachedPlansAsync() => _factory.WithDbAsync(async db =>
     {
+        await DatabaseApiFactory.WaitForPendingDropsAsync(); // the plan cache is server-wide: let earlier tests' background drops finish (#1354)
         var plans = await db.Database.SqlQuery<StatementPlanRow>($"""
             SELECT TOP 60 qp.query_plan AS PlanXml, CAST(qs.last_logical_reads AS BIGINT) AS Reads,
                    SUBSTRING(st.text, (qs.statement_start_offset / 2) + 1, ((CASE qs.statement_end_offset WHEN -1 THEN DATALENGTH(st.text) ELSE qs.statement_end_offset END - qs.statement_start_offset) / 2) + 1) AS StatementText

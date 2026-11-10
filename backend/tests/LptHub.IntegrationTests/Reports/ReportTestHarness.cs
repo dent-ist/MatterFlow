@@ -38,11 +38,14 @@ internal sealed class ReportTestHarness : IAsyncDisposable
     /// Starts the API on a fresh database with a provisioned report login (role lpt_report_reader) and waits until Reports are Ready.
     /// <paramref name="withLogin"/> false leaves the report connection unconfigured (Reports stay off).
     /// </summary>
-    public static async Task<ReportTestHarness> StartAsync(SqlServerFixture sql, bool withLogin = true, params (string Key, string Value)[] settings)
+    public static Task<ReportTestHarness> StartAsync(SqlServerFixture sql, bool withLogin = true, params (string Key, string Value)[] settings) => StartAsync(sql, null, withLogin, settings);
+
+    /// <summary>Like the overload above, with a time provider for the host (null = the system clock).</summary>
+    public static async Task<ReportTestHarness> StartAsync(SqlServerFixture sql, TimeProvider? time, bool withLogin = true, params (string Key, string Value)[] settings)
     {
         var appConnection = await sql.CreateDatabaseAsync();
         var login = await sql.CreateServerLoginAsync(appConnection);
-        var factory = new DatabaseApiFactory(appConnection, reportsConnectionString: withLogin ? login.ConnectionString : null) { ExtraSettings = settings };
+        var factory = new DatabaseApiFactory(appConnection, reportsConnectionString: withLogin ? login.ConnectionString : null) { ExtraSettings = settings, Time = time };
         var tasks = new TaskHarness(factory);
 
         // The first request migrates the database; then the login gets its user and role and the probe is repeated.
@@ -56,6 +59,17 @@ internal sealed class ReportTestHarness : IAsyncDisposable
         }
 
         return new ReportTestHarness(factory, tasks, appConnection, login);
+    }
+
+    /// <summary>
+    /// Today's date in the firm time zone, worked out exactly like the report engine's built-in <c>:TODAY</c> (same time provider, same <c>Firm:TimeZoneId</c>). Tests that
+    /// seed dates a report compares with <c>:TODAY</c> or with a period default must derive them from this and never from <c>SYSUTCDATETIME()</c>: between 00:00 and
+    /// 05:00 UTC the firm-local date is a day behind the UTC date (#1337).
+    /// </summary>
+    public DateOnly FirmToday()
+    {
+        var zone = LptHub.SharedKernel.Time.UserTimeZone.Resolve(null, Factory.Services.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>()["Firm:TimeZoneId"]).Zone;
+        return DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(Factory.Services.GetRequiredService<TimeProvider>().GetUtcNow().UtcDateTime, zone));
     }
 
     /// <summary>A person holding the given permissions; returns the client and the id of the person's own role (for the assignment).</summary>

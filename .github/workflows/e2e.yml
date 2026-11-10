@@ -6,6 +6,10 @@ name: e2e
 #
 # When it runs: manually, every night against the default branch, and on pull requests that carry the label `e2e`
 # (add the label to run it; new commits to a labeled PR re-run it).
+#
+# One job ran the whole suite (324 spec files, one worker on CI) and was cancelled at its 45-minute limit (#1354). The first problem was a hang: the
+# Angular build inside `deploy/publish.sh` printed its result and the process never ended (fixed in frontend/scripts/run-ng-build.mjs). The suite is
+# also split with Playwright's own `--shard` into four jobs, each with its own throwaway stack, plus one job for the sensitive-matter specs.
 on:
   workflow_dispatch:
   schedule:
@@ -27,10 +31,32 @@ env:
 
 jobs:
   e2e:
+    name: e2e (${{ matrix.name }})
     # Pull requests only run when labeled `e2e`; dispatch and schedule always run.
     if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'e2e')
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false # a failed shard must not hide the verdict of the others
+      matrix:
+        include:
+          # Playwright's --shard=i/n splits the test list into n slices of about equal size; the branding spec (its own project) lands in one of them.
+          - name: shard 1 of 4
+            id: shard-1
+            args: '--shard=1/4'
+          - name: shard 2 of 4
+            id: shard-2
+            args: '--shard=2/4'
+          - name: shard 3 of 4
+            id: shard-3
+            args: '--shard=3/4'
+          - name: shard 4 of 4
+            id: shard-4
+            args: '--shard=4/4'
+          # The sensitive-matter specs need the go-live switch on (epic #788): run-local.sh starts that stack when the arguments name `sensitive-`.
+          - name: sensitive-matter specs
+            id: sensitive
+            args: 'sensitive-'
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet
@@ -46,18 +72,16 @@ jobs:
         working-directory: frontend
         run: npx playwright install --with-deps chromium
       - name: Run the suite (SQL Server container, build, publish, API, tests)
+        timeout-minutes: 35
         working-directory: frontend
-        run: npm run e2e
-      - name: Run the sensitive-matter specs with the rule switched on (epic #788)
-        # The suite above runs with the go-live switch off, as in appsettings.json, and these specs skip themselves there. A second stack
-        # (the published build is reused) starts with Features__SensitiveMatterAccess=true; run-local.sh turns it on for sensitive-*.spec.ts.
-        working-directory: frontend
-        run: E2E_SKIP_BUILD=1 npm run e2e -- sensitive-
+        env:
+          E2E_ARGS: ${{ matrix.args }}
+        run: npm run e2e -- $E2E_ARGS
       - name: Upload Playwright report, traces, screenshots and videos
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: e2e-report-${{ github.run_id }}
+          name: e2e-report-${{ matrix.id }}-${{ github.run_id }}
           path: |
             frontend/playwright-report
             frontend/test-results
@@ -67,7 +91,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: e2e-api-log-${{ github.run_id }}
+          name: e2e-api-log-${{ matrix.id }}-${{ github.run_id }}
           path: artifacts/e2e-api.log
           if-no-files-found: ignore
           retention-days: 14

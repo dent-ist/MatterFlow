@@ -4,7 +4,7 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "ng build",
+    "build": "node scripts/run-ng-build.mjs",
     "build:report": "node scripts/bundle-report.mjs",
     "start:api": "ng serve --configuration api",
     "watch": "ng build --watch --configuration development",

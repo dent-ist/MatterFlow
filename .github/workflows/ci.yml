@@ -53,8 +53,8 @@ jobs:
   # Testcontainers suites: a real SQL Server 2022 in Docker. All integration tests share ONE collection (one container, run one after the
   # other), so the single run took about 35 minutes and ran into the job limit (#1353). The tests are therefore split by namespace into
   # parallel shards, each with its own container. Every test still runs exactly once: the last shard (`integration-rest`) takes everything
-  # the others do not name, so a new namespace is picked up automatically. Keep the `filter` lists disjoint; rebalance when a shard
-  # grows past about 15 minutes. `docs/ci/test-shards.md` has the test counts per shard.
+  # the others do not name, so a new namespace is picked up automatically. Keep the `filter` lists disjoint (nightly.yml uses the same lists);
+  # rebalance when a shard grows past about 15 minutes. The wiki page Getting-Started/Continuous-Integration.md has the test counts per shard.
   backend-integration:
     name: backend-integration (${{ matrix.shard }})
     runs-on: ubuntu-latest
@@ -63,9 +63,13 @@ jobs:
       fail-fast: false # a failed shard must not hide the verdict of the others
       matrix:
         include:
-          - shard: integration-work-views
+          # WorkViews took about 19 minutes in one shard (run 580, #1354): split by class-name prefix (Dashboard and MyMatters classes, and the rest) into two shards of about 10 minutes.
+          - shard: integration-work-views-dashboard-my-matters
             project: LptHub.IntegrationTests
-            filter: 'FullyQualifiedName~LptHub.IntegrationTests.WorkViews.'
+            filter: 'FullyQualifiedName~LptHub.IntegrationTests.WorkViews.MyMatters|FullyQualifiedName~LptHub.IntegrationTests.WorkViews.Dashboard'
+          - shard: integration-work-views-other
+            project: LptHub.IntegrationTests
+            filter: 'FullyQualifiedName~LptHub.IntegrationTests.WorkViews.&FullyQualifiedName!~LptHub.IntegrationTests.WorkViews.MyMatters&FullyQualifiedName!~LptHub.IntegrationTests.WorkViews.Dashboard'
           - shard: integration-reports-notifications-audit
             project: LptHub.IntegrationTests
             filter: 'FullyQualifiedName~LptHub.IntegrationTests.Reports.|FullyQualifiedName~LptHub.IntegrationTests.Notifications.|FullyQualifiedName~LptHub.IntegrationTests.Audit.'
@@ -118,7 +122,8 @@ jobs:
 
   frontend:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # Install, lint, format, Vitest (about 7 minutes), client drift check and production build (about 1 minute) take about 12 minutes; the margin is for a slow runner.
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: frontend
@@ -145,4 +150,7 @@ jobs:
           npm run api:generate
           git diff --exit-code -- src/app/api/generated
       - name: Production build
+        # `npm run build` is scripts/run-ng-build.mjs: it ends the run after `ng build` has printed its result (the `ng` process does not
+        # exit by itself, #1354) and fails on a non-zero exit or an [ERROR] line (compile errors, bundle budgets set to error).
+        timeout-minutes: 10
         run: npm run build

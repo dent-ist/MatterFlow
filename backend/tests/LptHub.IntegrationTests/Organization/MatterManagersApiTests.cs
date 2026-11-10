@@ -100,6 +100,9 @@ public sealed class MatterManagersApiTests(SqlServerFixture sql) : IAsyncLifetim
     public async Task A_fresh_database_seeds_the_same_grants_as_the_upgrade_script_gives_an_existing_one()
     {
         // The upgrade script (MatterManagersSchemaTests) grants Matter.BeManager + AssignManagers to "Project Manager" and AssignManagers to "Director".
+        // Since issue #976 (owner decision 2026-11-07, StarterRoles) the Director starter role also holds Matter.BeManager, so My Matters opens for the Director and the
+        // Director can be named as a matter's project manager. A fresh database seeds that extra grant (existing databases get it from the #976 upgrade script, covered
+        // by DirectorBeManagerMigrationTests), so the Director's expected grants are AssignManagers and BeManager.
         async Task<string[]> GrantsAsync(string role) => await _factory.WithDbAsync(async db =>
             await db.Set<RolePermission>()
                 .Where(rp => rp.Role.Name == role && (rp.Permission.Code == Permissions.Matter.BeManager || rp.Permission.Code == Permissions.Matter.AssignManagers))
@@ -108,7 +111,7 @@ public sealed class MatterManagersApiTests(SqlServerFixture sql) : IAsyncLifetim
                 .ToArrayAsync());
 
         (await GrantsAsync("Project Manager")).ShouldBe([Permissions.Matter.AssignManagers, Permissions.Matter.BeManager]);
-        (await GrantsAsync("Director")).ShouldBe([Permissions.Matter.AssignManagers]);
+        (await GrantsAsync("Director")).ShouldBe([Permissions.Matter.AssignManagers, Permissions.Matter.BeManager]);
         (await GrantsAsync("Pod Lead")).ShouldBeEmpty();
         (await GrantsAsync("Data Technician")).ShouldBeEmpty();
     }

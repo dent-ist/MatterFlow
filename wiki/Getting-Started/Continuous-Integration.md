@@ -9,8 +9,8 @@
 | Workflow | When | What it does |
 |---|---|---|
 | `ci.yml` | Push to `dev` and every pull request, except changes that only touch `docs/**` or `*.md` (so wiki-only changes do not run it) | Three parallel jobs, below |
-| `e2e.yml` | Manually, weekly (Mondays 03:43 UTC), and on pull requests carrying the label `e2e` | Playwright suite against a real stack, then the `sensitive-*` specs with the sensitive-matter switch on |
-| `nightly.yml` | Weekly (Mondays 03:17 UTC) and manually | Full backend suite (unit, architecture, schema, integration), frontend test and build, NuGet vulnerability scan, `npm audit --omit=dev --audit-level=high` |
+| `e2e.yml` | Manually, weekly (Mondays 03:43 UTC), and on pull requests carrying the label `e2e` | Playwright suite against a real stack, in five parallel jobs (`--shard=1/4` to `4/4`, plus the `sensitive-*` specs on a stack with the sensitive-matter switch on); 40-minute job limit each |
+| `nightly.yml` | Weekly (Mondays 03:17 UTC) and manually | Full backend suite with code coverage (`backend-quick` for unit and architecture tests, and the same seven `backend-integration` shards as `ci.yml`; keep the lists in step), frontend test and build, NuGet vulnerability scan, `npm audit --omit=dev --audit-level=high` |
 | `publish.yml` | Manually | Builds the IIS package with `deploy/publish.sh ... win-x64` and checks its contents; uploads it as an artifact |
 | `codeql.yml` | Weekly (Mondays 04:41 UTC) and manually | CodeQL analysis for C# and JavaScript/TypeScript |
 | Dependabot | Monthly, grouped | Minor and patch updates only; major versions are ignored on purpose (owner, 2026-10-24) |
@@ -20,8 +20,8 @@
 | Job | Steps | Reproduce locally |
 |---|---|---|
 | `backend` | Build `-c Release -warnaserror`; OpenAPI drift check (`git diff --exit-code -- ../contracts/openapi/v1.json` after the build); `dotnet format --verify-no-changes`; unit and architecture tests | In `backend/`: `dotnet build -warnaserror`, then `git diff --exit-code -- ../contracts/openapi/v1.json`, `dotnet format --verify-no-changes`, `dotnet test tests/LptHub.UnitTests`, `dotnet test tests/LptHub.ArchitectureTests` |
-| `backend-integration` (6 parallel shards) | Per shard: pre-pull the SQL Server image, build, run one slice of `LptHub.IntegrationTests` (by namespace; the last shard `integration-rest` takes every namespace not named elsewhere) or all of `LptHub.SchemaTests`, each in its own SQL Server container; about 10 minutes per shard, 30-minute job limit; results upload per shard (`backend-test-results-<shard>`) | Needs Docker: `dotnet test tests/LptHub.IntegrationTests` and `dotnet test tests/LptHub.SchemaTests` (all of it, one container, about 35 minutes), or one slice with `--filter "FullyQualifiedName~LptHub.IntegrationTests.Reports."` |
-| `frontend` | `npm ci`; `npm run lint`; `npm run format:check`; `npm test` (`scripts/run-ng-test.mjs`: runs `ng test` for the app and `form-engine`, and ends the run after the Vitest summary because the Angular test process does not exit by itself; 15-minute step limit); API client drift check (`npm run api:generate` then `git diff --exit-code -- src/app/api/generated`); `npm run build` | In `frontend/`: the same commands |
+| `backend-integration` (7 parallel shards) | Per shard: pre-pull the SQL Server image, build, run one slice of `LptHub.IntegrationTests` (by namespace; the last shard `integration-rest` takes every namespace not named elsewhere) or all of `LptHub.SchemaTests`, each in its own SQL Server container; about 8 to 11 minutes per shard, 30-minute job limit, 22-minute test step limit; results upload per shard (`backend-test-results-<shard>`) | Needs Docker: `dotnet test tests/LptHub.IntegrationTests` and `dotnet test tests/LptHub.SchemaTests` (all of it, one container, about 35 minutes), or one slice with `--filter "FullyQualifiedName~LptHub.IntegrationTests.Reports."` |
+| `frontend` | `npm ci`; `npm run lint`; `npm run format:check`; `npm test` (`scripts/run-ng-test.mjs`: runs `ng test` for the app and `form-engine`, and ends the run after the Vitest summary because the Angular test process does not exit by itself; 15-minute step limit); API client drift check (`npm run api:generate` then `git diff --exit-code -- src/app/api/generated`); `npm run build` (`scripts/run-ng-build.mjs`: runs `ng build` and ends the run after its `Output location` line, because the `ng` process does not exit by itself; fails on a non-zero exit or an `[ERROR]` line, bundle budgets included; 10-minute step limit). The job limit is 30 minutes (about 12 are used) | In `frontend/`: the same commands |
 
 A newer push to the same branch or pull request cancels the run in progress.
 
@@ -47,15 +47,18 @@ Last verified against commit b03d0ac.
 
 ## Test shards of `backend-integration`
 
-All integration tests share one SQL Server collection, so they run one after the other in a single container; the whole project takes about 35 minutes and did not fit one job (issue #1353). `ci.yml` therefore runs the project in parallel shards, split by namespace. Test names per shard (`dotnet test --list-tests`, 2026-11-10; the shards together list exactly the 1,922 integration and 111 schema test names of the old single run, no test is dropped):
+All integration tests share one SQL Server collection, so they run one after the other in a single container; the whole project takes about 35 minutes and did not fit one job (issue #1353). `ci.yml` therefore runs the project in parallel shards, split by namespace. Test names per shard (`dotnet test --list-tests`, 2026-11-10; the shards together list exactly the 1,922 integration and 111 schema test names of the old single run, no test is dropped; `WorkViews` took about 19 minutes in one shard and was split in run 580's follow-up, #1354):
 
 | Shard | Namespaces | Tests |
 |---|---|---|
-| `integration-work-views` | `WorkViews` | 600 |
+| `integration-work-views-dashboard-my-matters` | `WorkViews` classes whose name starts with `Dashboard` or `MyMatters` | 339 |
+| `integration-work-views-other` | the other `WorkViews` classes | 261 |
 | `integration-reports-notifications-audit` | `Reports`, `Notifications`, `Audit` | 322 |
 | `integration-tasks-workflows` | `Tasks`, `Workflows`, `WorkManagement`, `Visibility` | 283 |
 | `integration-identity-organization-security` | `Identity`, `Organization`, `Security` | 324 |
 | `integration-rest` | everything not named above (`Assets`, `Configuration`, `Search`, `Settings`, `Forms`, `Intake`, `Seeding` and the classes at the project root) | 393 |
 | `schema` | all of `LptHub.SchemaTests` | 111 |
 
-When you add a namespace it runs in `integration-rest` without any change. When a shard grows past about 15 minutes, move a namespace into its own shard: add it to a `filter` and to the negation list of `integration-rest` (the lists must stay disjoint).
+When you add a namespace it runs in `integration-rest` without any change. When a shard grows past about 15 minutes, move a namespace into its own shard: add it to a `filter` and to the negation list of `integration-rest` (the lists must stay disjoint). `nightly.yml` repeats the same matrix; change both files together.
+
+The required status checks for branch protection are the job names `backend`, `frontend` and one `backend-integration (<shard>)` per shard of the table above (seven names).

@@ -97,12 +97,20 @@ public sealed class ReportStarterTests(SqlServerFixture sql)
         var worker = await h.Tasks.UserIdAsync(@"KE\worker");
         var ghost = await h.Tasks.UserIdAsync(@"KE\ghost");
         var pod = await h.Tasks.CreatePodAsync("Alpha Pod", worker);
+        // The reports compare dates with the firm-local :TODAY and with period defaults that end on it, so every date is seeded from the firm-local
+        // today (never SYSUTCDATETIME(), which is a day ahead of it between 00:00 and 05:00 UTC, #1337). The creation and completion times are the
+        // UTC noon of that day: inside "last 30 days" and "this month" at any hour.
+        var today = h.FirmToday();
+        var overdue = $"{today.AddDays(-3):yyyy-MM-dd}";
+        var stamp = $"{today:yyyy-MM-dd}T12:00:00";
         await SqlServerFixture.ExecuteAsync(h.AppConnection, $"""
+            UPDATE dbo.Task SET CreatedAt = '{stamp}';
+            UPDATE dbo.Task SET CompletedAt = '{stamp}' WHERE StatusCode = 'COMPLETED';
             UPDATE dbo.Matter SET IsSensitive = 1 WHERE MatterId = {sensitiveMatter};
             UPDATE dbo.Task SET IsMatterSensitive = 1 WHERE MatterId = {sensitiveMatter};
-            UPDATE dbo.Task SET AssignedPodId = {pod}, AssignedUserId = {worker}, DueDate = CAST(DATEADD(day, -3, SYSUTCDATETIME()) AS date), DueSortKey = DATEADD(day, -3, SYSUTCDATETIME()) WHERE TaskId = {t1};
+            UPDATE dbo.Task SET AssignedPodId = {pod}, AssignedUserId = {worker}, DueDate = '{overdue}', DueSortKey = '{overdue}T12:00:00' WHERE TaskId = {t1};
             UPDATE dbo.Task SET AssignedUserId = {worker} WHERE StatusCode = 'COMPLETED';
-            UPDATE dbo.Task SET AssignedUserId = {ghost}, DueDate = CAST(DATEADD(day, -3, SYSUTCDATETIME()) AS date), DueSortKey = DATEADD(day, -3, SYSUTCDATETIME()) WHERE TaskId = {t3};
+            UPDATE dbo.Task SET AssignedUserId = {ghost}, DueDate = '{overdue}', DueSortKey = '{overdue}T12:00:00' WHERE TaskId = {t3};
             UPDATE dbo.AppUser SET IsActive = 0 WHERE UserId = {ghost};
             INSERT dbo.AssetType (Name) VALUES (N'Laptop');
             DECLARE @type int = SCOPE_IDENTITY();
@@ -195,10 +203,15 @@ public sealed class ReportStarterTests(SqlServerFixture sql)
             UPDATE dbo.Matter SET IsSensitive = 1, Name = N'Own secret five', PrimaryManagerId = {pmId} WHERE MatterId = {m5};
             """);
 
+        // "Days overdue" is counted against the firm-local :TODAY, so the due dates are seeded from the firm-local today, not from SYSUTCDATETIME() (a day ahead of it
+        // between 00:00 and 05:00 UTC, #1337).
+        var today = h.FirmToday();
+
         async Task<long> OverdueTaskAsync(int matter, int daysLate)
         {
             var id = TaskHarness.TaskId(await h.Tasks.CreateTaskAsync(w with { MatterId = matter }));
-            await SqlServerFixture.ExecuteAsync(h.AppConnection, $"UPDATE dbo.Task SET DueDate = CAST(DATEADD(day, -{daysLate}, SYSUTCDATETIME()) AS date), DueSortKey = DATEADD(day, -{daysLate}, SYSUTCDATETIME()) WHERE TaskId = {id}");
+            var due = $"{today.AddDays(-daysLate):yyyy-MM-dd}";
+            await SqlServerFixture.ExecuteAsync(h.AppConnection, $"UPDATE dbo.Task SET DueDate = '{due}', DueSortKey = '{due}T12:00:00' WHERE TaskId = {id}");
             return id;
         }
 
@@ -214,6 +227,8 @@ public sealed class ReportStarterTests(SqlServerFixture sql)
             await SqlServerFixture.ExecuteAsync(h.AppConnection, $"UPDATE dbo.Task SET AssignedUserId = {noAssignId} WHERE TaskId = {TaskHarness.TaskId(done)}");
         }
 
+        // "Completed this month" compares the completion time (UTC) with the firm-local month: complete the tasks at the UTC noon of the firm-local today.
+        await SqlServerFixture.ExecuteAsync(h.AppConnection, $"UPDATE dbo.Task SET CompletedAt = '{today:yyyy-MM-dd}T12:00:00' WHERE StatusCode = 'COMPLETED'");
         await SqlServerFixture.ExecuteAsync(h.AppConnection, "UPDATE dbo.Task SET IsMatterSensitive = 1 WHERE MatterId IN (SELECT MatterId FROM dbo.Matter WHERE IsSensitive = 1)");
 
         // The manager lists exactly the two PM starters, and no other.

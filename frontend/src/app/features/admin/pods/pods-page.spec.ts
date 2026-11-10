@@ -65,14 +65,23 @@ describe('PodsPage', () => {
     await fixture.whenStable();
   }
 
-  /** Waits (up to 2 s) until the selector matches in the document, so a slow machine does not fail a fixed settle (#1328). */
-  async function waitForSel(sel: string): Promise<HTMLElement> {
+  /**
+   * Opens the record header's overflow menu and waits for the menu item itself (#1354). The menu opens from the trigger's click handler, and
+   * on a loaded CI machine the first click can arrive before the header has finished rendering or is dismissed again at once, so a single
+   * click followed by a fixed wait flaked (run 579: the item never appeared). The state of the button decides: click only while it says the
+   * menu is closed, and stop as soon as the item is in the document.
+   */
+  async function openOverflowItem(action: string): Promise<HTMLElement> {
     for (let i = 0; i < 100; i++) {
-      const found = document.querySelector<HTMLElement>(sel);
+      const found = document.querySelector<HTMLElement>(`[data-action="${action}"]`);
       if (found) return found;
+      const trigger = el().querySelector<HTMLElement>('[data-record-header] [data-overflow]');
+      if (trigger && trigger.getAttribute('aria-expanded') !== 'true') trigger.click();
       await settle(20);
     }
-    return document.querySelector<HTMLElement>(sel)!;
+    throw new Error(
+      `The overflow menu item "${action}" did not appear within about 2 s of opening the menu.`,
+    );
   }
 
   async function click(sel: string): Promise<void> {
@@ -180,10 +189,9 @@ describe('PodsPage', () => {
     it('offers Deactivate pod in the header overflow only with Pod.Manage, and it asks first', async () => {
       await create('Pod.View', 'Pod.Manage', 'Pod.ManageMembers');
       await openEditor(1);
-      q('[data-record-header] [data-overflow]').click();
-      const item = await waitForSel('[data-action="deactivate"]');
-      expect(item?.textContent).toContain('Deactivate Pod');
-      item!.click();
+      const item = await openOverflowItem('deactivate');
+      expect(item.textContent).toContain('Deactivate Pod');
+      item.click();
       await settle();
       expect(api.updatePod).not.toHaveBeenCalled();
       expect(document.body.textContent).toContain('Deactivate Pod');

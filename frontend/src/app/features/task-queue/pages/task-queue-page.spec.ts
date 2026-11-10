@@ -803,18 +803,25 @@ describe('TaskQueuePage', () => {
 
   it('focuses the Title or Ref filter on "/" unless typing in a field', async () => {
     const el = await open('/tasks?status=NEW');
+    // The shortcut handler needs the page inside the document. The test moves the page's root element into <body>, and Angular's teardown
+    // does not remove an element that was moved there, so this test removes it itself, also when an expectation fails: it was the table left
+    // in the shared document that made other specs reading `document.body` flake (#1329).
     document.body.appendChild(el);
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: '/', cancelable: true }));
-    await settle();
-    expect(document.activeElement).toBe(filterInput(el, 'q'));
-    (document.activeElement as HTMLElement).blur();
-
     const other = document.createElement('input');
-    document.body.appendChild(other);
-    other.focus();
-    other.dispatchEvent(new KeyboardEvent('keydown', { key: '/', bubbles: true }));
-    expect(document.activeElement).toBe(other);
-    other.remove();
+    try {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: '/', cancelable: true }));
+      await settle();
+      expect(document.activeElement).toBe(filterInput(el, 'q'));
+      (document.activeElement as HTMLElement).blur();
+
+      document.body.appendChild(other);
+      other.focus();
+      other.dispatchEvent(new KeyboardEvent('keydown', { key: '/', bubbles: true }));
+      expect(document.activeElement).toBe(other);
+    } finally {
+      other.remove();
+      el.remove();
+    }
   });
 
   describe('My matters / All (epic #758)', () => {

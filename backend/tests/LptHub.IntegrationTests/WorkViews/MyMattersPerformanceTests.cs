@@ -412,6 +412,7 @@ public sealed partial class MyMattersPerformanceTests(SqlServerFixture sql, ITes
     /// <summary>The access paths on Task in the cached plans of the statements that read it: operator, index and the optimizer's row estimate.</summary>
     private Task<List<string>> TaskAccessPathsAsync(string table = "Task") => _factory.WithDbAsync(async db =>
     {
+        await DatabaseApiFactory.WaitForPendingDropsAsync(); // the plan cache is server-wide: let earlier tests' background drops finish (#1354)
         var pattern = table == "Task" ? "%[[]Task]%" : "%" + table + "%";
         var plans = await db.Database.SqlQuery<PlanRow>($"""
             SELECT TOP 40 qp.query_plan AS PlanXml, qs.last_execution_time AS LastRun, CAST(qs.last_logical_reads AS BIGINT) AS Reads

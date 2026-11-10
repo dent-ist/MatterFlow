@@ -25,6 +25,9 @@ public sealed class DatabaseApiFactory(string connectionString, string? environm
     /// <summary>A clock the host uses instead of the system clock, for tests whose result depends on the time of day or the zone.</summary>
     public LptHub.SharedKernel.Time.IClock? Clock { get; init; }
 
+    /// <summary>A time provider the host uses instead of the system one (the reports build "today" and the period defaults from it), for tests that must run at a chosen moment, such as late evening in the firm zone.</summary>
+    public TimeProvider? Time { get; init; }
+
     /// <summary>Extra options for the shared database context (for example a command-counting interceptor in a query-count test).</summary>
     public Action<DbContextOptionsBuilder>? ConfigureDb { get; init; }
 
@@ -74,6 +77,12 @@ public sealed class DatabaseApiFactory(string connectionString, string? environm
             services.AddControllers().AddApplicationPart(typeof(DatabaseApiFactory).Assembly);
             if (ConfigureDb is { } configureDb)
                 services.ConfigureDbContext<LptHub.Data.LptHubDbContext>(configureDb);
+            if (Time is { } time)
+            {
+                services.RemoveAll<TimeProvider>();
+                services.AddSingleton(time);
+            }
+
             if (Clock is { } clock)
             {
                 services.RemoveAll<LptHub.SharedKernel.Time.IClock>();
@@ -89,7 +98,28 @@ public sealed class DatabaseApiFactory(string connectionString, string? environm
     public override async ValueTask DisposeAsync()
     {
         await base.DisposeAsync();
-        _ = DropDatabaseAsync(connectionString);
+        var drop = DropDatabaseAsync(connectionString);
+        lock (PendingDrops)
+        {
+            PendingDrops.RemoveAll(t => t.IsCompleted);
+            PendingDrops.Add(drop);
+        }
+    }
+
+    private static readonly List<Task> PendingDrops = [];
+
+    /// <summary>
+    /// Waits until every background drop started by <see cref="DisposeAsync"/> has finished. A drop puts its database into SINGLE_USER and then drops it, and a
+    /// server-wide query that reads the plan cache (<c>sys.dm_exec_query_stats</c> with <c>sys.dm_exec_sql_text</c>) can meet that database halfway and fail with
+    /// "Database ... is in transition. Try the statement later." (the flake of ReportInjectionCorpusTests in CI run 580, #1354). Tests tick one after the other, so once the
+    /// earlier drops are done nothing else changes a database while such a query runs.
+    /// </summary>
+    public static async Task WaitForPendingDropsAsync()
+    {
+        Task[] drops;
+        lock (PendingDrops)
+            drops = [.. PendingDrops];
+        await Task.WhenAll(drops);
     }
 
     private static async Task DropDatabaseAsync(string connectionString)
