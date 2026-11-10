@@ -38,6 +38,7 @@ test.describe('The menu: order, indent and names (#620, #621, MM-59)', () => {
         /^Assets$/,
         /Pod Work/,
         /Task Queue/,
+        /Reports/,
       ]);
       await expect(nav(page).getByRole('button', { name: 'More' })).toHaveCount(0);
       // Projects and Assets are children of Matters: indented in the panel and the phone Menu, a small gap instead in the 56 px rail.

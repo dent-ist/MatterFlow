@@ -123,7 +123,16 @@ public sealed class ReadinessAndMigrateOnlyTests(SqlServerFixture sql)
         var exitCode = await MigrateOnlyCommand.RunAsync([MigrateOnlyCommand.Switch, $"--ConnectionStrings:Migrations={connectionString}"]);
 
         exitCode.ShouldBe(0);
-        (await ScalarAsync(connectionString, "SELECT COUNT(*) FROM dbo.SchemaMigration WHERE Success = 1")).ShouldBeGreaterThan(10);
+        // The baseline (prefix 0) plus every later numbered script (67 and up) are applied, and none failed. Since the baseline (issue #1307)
+        // a fresh database has few rows, so the test no longer asserts a fixed count of ten.
+        (await ScalarAsync(connectionString, "SELECT COUNT(*) FROM dbo.SchemaMigration WHERE Prefix = 0 AND Success = 1")).ShouldBe(1);
+        (await ScalarAsync(connectionString, "SELECT COUNT(*) FROM dbo.SchemaMigration WHERE Prefix > 0 AND Success = 1")).ShouldBeGreaterThan(0);
+        (await ScalarAsync(connectionString, "SELECT COUNT(*) FROM dbo.SchemaMigration WHERE Success = 0")).ShouldBe(0);
+        var applied = await ScalarAsync(connectionString, "SELECT COUNT(*) FROM dbo.SchemaMigration");
+
+        // Idempotent: a second run applies nothing new.
+        (await MigrateOnlyCommand.RunAsync([MigrateOnlyCommand.Switch, $"--ConnectionStrings:Migrations={connectionString}"])).ShouldBe(0);
+        (await ScalarAsync(connectionString, "SELECT COUNT(*) FROM dbo.SchemaMigration")).ShouldBe(applied);
         (await ReadyAsync(connectionString)).Status.ShouldBe(HttpStatusCode.OK);
     }
 

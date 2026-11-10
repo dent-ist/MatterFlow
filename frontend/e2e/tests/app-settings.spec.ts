@@ -112,7 +112,7 @@ test.describe('the administrator changes the name and the icon', () => {
           bg: css.backgroundColor,
         };
       }),
-    ).toEqual({ radius: '6px', padding: '4px', bg: 'rgb(255, 255, 255)' });
+    ).toEqual({ radius: '4px', padding: '4px', bg: 'rgb(255, 255, 255)' });
     const nav = (await page.locator('nav.mf-nav').boundingBox())!;
     const logo = (await page.locator('.mf-logo').boundingBox())!;
     expect(logo.x).toBe(0);
@@ -271,7 +271,7 @@ test.describe('who can see it', () => {
     await technician.goto('/admin/settings');
     // The 403 page keeps the address that was asked for (#598), so the address stays /admin/settings.
     await expect(technician.getByRole('heading', { level: 1 })).toContainText(
-      "You don't have permission",
+      "You don't have access",
     );
   });
 
@@ -387,7 +387,7 @@ test.describe('accessibility and reflow', () => {
       const pending = await asUser(username);
       await pending.setViewportSize({ width, height: 768 });
       await pending.goto('/');
-      await expect(pending.locator('.mf-brand')).toHaveText(WIDEST_NAME);
+      await expect(pending.locator('[data-state-brand]')).toHaveText(WIDEST_NAME);
       await noHorizontalScroll(pending);
 
       const error = await asUser(technician);
