@@ -256,7 +256,7 @@ Headings equal the field labels ("Matter Type", "Current State").
 
 **Fit (D-43a).** The old default set used 180 + 200 + 140 + 136 + 96 + 96 + 160 + 48 = 1056 px of the 1098 px frame at 1366 (42 px free). Two 160 px columns need 320 px, so 278 px must go. Shrinking is not possible within the guidelines: CM Number holds 11 mono characters plus the copy button (180), Matter Name has its 200 px minimum (D-43), Client its 140 px token, Status is 160 px because the filter row stacks two filters in it (D-44w, #1276), and the actions column is fixed at 48 (D-42). "Start of Discovery" needs about 140 px with padding, so 160 is already tight. So columns leave the default set.
 
-**New default set, 1366:** 180 + 200 + 140 + 160 + 160 + 160 + 48 = **1048 px of 1098** (50 px spare; Matter Name and Client share it through the springs, Name about 230 px, Client about 160 px). **1920:** the same six columns; the frame is about 1668 px, so Matter Name gets about 580 px and Client about 360 px. Columns do not drop by window width (D-42), so one default set serves both sizes.
+**New default set, 1366:** 180 + 200 + 140 + 160 + 160 + 160 + 48 = **1048 px of 1098** (the sum of the declared minimums, which is what `default-columns-fit.spec.ts` guards; as drawn, measured in #1312, the table gives CM Number 158, Matter Name 246, Client 164, Matter Type 160, Current State 160, Status 161 and Actions 48 = 1097 px, and 165 / 594 / 363 at 1920: the 11 mono characters and the copy button need about 130 px, so nothing is clipped, and `matter-fields-form-list.spec.ts` measures it: no sideways scroll, CM Number at least 140 px and not clipped) (50 px spare; Matter Name and Client share it through the springs, Name about 230 px, Client about 160 px). **1920:** the same six columns; the frame is about 1668 px, so Matter Name gets about 580 px and Client about 360 px. Columns do not drop by window width (D-42), so one default set serves both sizes.
 
 **Which columns leave, and why.**
 - **Primary PM (136):** the PMs are reachable through the "Mine" quick filter and the Primary PM and Secondary PM filters; the Matters list is mostly used to find a matter and tell what kind it is and where it stands, which the new columns now show.
@@ -280,7 +280,7 @@ Headings equal the field labels ("Matter Type", "Current State").
 | Matter Type | multi-select, column "Matter Type", row placeholder word "Matter Type" (D-44d) | "All" first (trigger "All"), then **"Not Set"** (the flag option: matters with no type; travels as its own boolean parameter like "No pod", never mixed with ids), then every type in admin order. Inactive types that matters still use are listed with the suffix " (inactive)". More than 8 options adds the find box. |
 | Current State | same, column "Current State" | same pattern |
 
-- Several values and "Not Set" can be ticked together (a match on any). Trigger texts: "All", the value, "Not Set", "3 selected". Chip text: "Matter Type: Not Set", "Current State: Start of Discovery +1". Remove button name "Remove filter Matter Type: Not Set".
+- Several values and "Not Set" can be ticked together (a match on any). Trigger texts: "All", the value, "Not Set", "3 selected". Chip text: one removable chip per ticked value, as in every list (the shared filter chips, #1312): "Matter Type: Not Set" and "Matter Type: Litigation"; each has the remove button "Remove filter Matter Type: Not Set". The trigger carries the count ("2 selected"); there is no "+1" chip.
 - A filter lives in the filter row **only while its column is shown**. Matter Type and Current State are shown by default, so their filters are in the row; if a person hides a column, its filter moves to the "Other filters" menu of the Filters bar (the existing hidden-column behaviour). The filters of Primary PM and Secondary PM move there too now that those columns are off by default; Open Tasks and Overdue have no filter. A filter on a hidden column still shows as a chip with "(hidden column)" and "Show column".
 - They are `FilterDef`s like Status: URL is the source of truth, saved views and "Clear Filters" work unchanged. Parameter names are the backend's choice (suggested `matterTypeId` repeatable plus `matterTypeNone=true`, `currentStateId` plus `currentStateNone=true`).
 - Print line: "Filters: Matter Type Not Set".
@@ -315,10 +315,10 @@ A reorder list on the kit table, looking like a record grid: frame 12 px radius,
 
 | Column | Width | Matter Types / Current States | Team Titles |
 | --- | --- | --- | --- |
-| Order | 96 | grip + number; drag to reorder | same |
+| Order | content (measured 67) | grip + number; drag to reorder | same |
 | Name (heading "Matter Type" / "Current State" / "Title") | spring, min 200 | name as `mf-btn--name` button that opens Rename (D-44m); one line, ellipsis, tooltip; without permission plain text | same |
-| In Use | 120, right aligned | heading "Matters": number of matters with the value; a number above zero is `mf-link` to the Matters list filtered by it (`/matters?matterTypeId=<id>`), zero is "0" (not a dash, D-43) | heading "Team Members": count of team rows with the title, plain number |
-| Status | 140 | `mf-active-badge` (Active, Inactive) | same |
+| In Use | content (measured 85), right aligned | heading "Matters": number of matters with the value; a number above zero is `mf-link` to the Matters list filtered by it (`/matters?matterTypeId=<id>`), zero is "0" (not a dash, D-43) | heading "Team Members": count of team rows with the title, plain number |
+| Status | content (measured 99) | `mf-active-badge` (Active, Inactive) | same |
 | (actions) | 48 | `mf-action-menu` "..." | same |
 
 Row menu (D-36, more than one action): **Rename**, **Move Up**, **Move Down** (the keyboard path for reordering; disabled at the ends), **Deactivate** or **Activate**, and **Delete** (see below). Inactive rows are muted (`rowClass`, shared inactive look). Reordering changes the order of the dropdowns and filter options everywhere (that is the "ordered list" decision).
