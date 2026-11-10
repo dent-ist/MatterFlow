@@ -20,8 +20,8 @@
 | Job | Steps | Reproduce locally |
 |---|---|---|
 | `backend` | Build `-c Release -warnaserror`; OpenAPI drift check (`git diff --exit-code -- ../contracts/openapi/v1.json` after the build); `dotnet format --verify-no-changes`; unit and architecture tests | In `backend/`: `dotnet build -warnaserror`, then `git diff --exit-code -- ../contracts/openapi/v1.json`, `dotnet format --verify-no-changes`, `dotnet test tests/LptHub.UnitTests`, `dotnet test tests/LptHub.ArchitectureTests` |
-| `backend-integration` | Pre-pull the SQL Server image, build, run `LptHub.IntegrationTests` and `LptHub.SchemaTests` (about 5 minutes) | Needs Docker: `dotnet test tests/LptHub.IntegrationTests` and `dotnet test tests/LptHub.SchemaTests` |
-| `frontend` | `npm ci`; `npm run lint`; `npm run format:check`; `npm test`; API client drift check (`npm run api:generate` then `git diff --exit-code -- src/app/api/generated`); `npm run build` | In `frontend/`: the same commands |
+| `backend-integration` (6 parallel shards) | Per shard: pre-pull the SQL Server image, build, run one slice of `LptHub.IntegrationTests` (by namespace; the last shard `integration-rest` takes every namespace not named elsewhere) or all of `LptHub.SchemaTests`, each in its own SQL Server container; about 10 minutes per shard, 30-minute job limit; results upload per shard (`backend-test-results-<shard>`) | Needs Docker: `dotnet test tests/LptHub.IntegrationTests` and `dotnet test tests/LptHub.SchemaTests` (all of it, one container, about 35 minutes), or one slice with `--filter "FullyQualifiedName~LptHub.IntegrationTests.Reports."` |
+| `frontend` | `npm ci`; `npm run lint`; `npm run format:check`; `npm test` (`scripts/run-ng-test.mjs`: runs `ng test` for the app and `form-engine`, and ends the run after the Vitest summary because the Angular test process does not exit by itself; 15-minute step limit); API client drift check (`npm run api:generate` then `git diff --exit-code -- src/app/api/generated`); `npm run build` | In `frontend/`: the same commands |
 
 A newer push to the same branch or pull request cancels the run in progress.
 
@@ -44,3 +44,18 @@ A newer push to the same branch or pull request cancels the run in progress.
 - [Release Checklist](../How-To/Release-Checklist.md)
 
 Last verified against commit b03d0ac.
+
+## Test shards of `backend-integration`
+
+All integration tests share one SQL Server collection, so they run one after the other in a single container; the whole project takes about 35 minutes and did not fit one job (issue #1353). `ci.yml` therefore runs the project in parallel shards, split by namespace. Test names per shard (`dotnet test --list-tests`, 2026-11-10; the shards together list exactly the 1,922 integration and 111 schema test names of the old single run, no test is dropped):
+
+| Shard | Namespaces | Tests |
+|---|---|---|
+| `integration-work-views` | `WorkViews` | 600 |
+| `integration-reports-notifications-audit` | `Reports`, `Notifications`, `Audit` | 322 |
+| `integration-tasks-workflows` | `Tasks`, `Workflows`, `WorkManagement`, `Visibility` | 283 |
+| `integration-identity-organization-security` | `Identity`, `Organization`, `Security` | 324 |
+| `integration-rest` | everything not named above (`Assets`, `Configuration`, `Search`, `Settings`, `Forms`, `Intake`, `Seeding` and the classes at the project root) | 393 |
+| `schema` | all of `LptHub.SchemaTests` | 111 |
+
+When you add a namespace it runs in `integration-rest` without any change. When a shard grows past about 15 minutes, move a namespace into its own shard: add it to a `filter` and to the negation list of `integration-rest` (the lists must stay disjoint).

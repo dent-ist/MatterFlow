@@ -50,10 +50,39 @@ jobs:
           path: TestResults
           if-no-files-found: ignore
 
-  # Testcontainers suites: a real SQL Server 2022 in Docker (about 5 minutes). Runs in parallel with `backend`.
+  # Testcontainers suites: a real SQL Server 2022 in Docker. All integration tests share ONE collection (one container, run one after the
+  # other), so the single run took about 35 minutes and ran into the job limit (#1353). The tests are therefore split by namespace into
+  # parallel shards, each with its own container. Every test still runs exactly once: the last shard (`integration-rest`) takes everything
+  # the others do not name, so a new namespace is picked up automatically. Keep the `filter` lists disjoint; rebalance when a shard
+  # grows past about 15 minutes. `docs/ci/test-shards.md` has the test counts per shard.
   backend-integration:
+    name: backend-integration (${{ matrix.shard }})
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false # a failed shard must not hide the verdict of the others
+      matrix:
+        include:
+          - shard: integration-work-views
+            project: LptHub.IntegrationTests
+            filter: 'FullyQualifiedName~LptHub.IntegrationTests.WorkViews.'
+          - shard: integration-reports-notifications-audit
+            project: LptHub.IntegrationTests
+            filter: 'FullyQualifiedName~LptHub.IntegrationTests.Reports.|FullyQualifiedName~LptHub.IntegrationTests.Notifications.|FullyQualifiedName~LptHub.IntegrationTests.Audit.'
+          - shard: integration-tasks-workflows
+            project: LptHub.IntegrationTests
+            filter: 'FullyQualifiedName~LptHub.IntegrationTests.Tasks.|FullyQualifiedName~LptHub.IntegrationTests.Workflows.|FullyQualifiedName~LptHub.IntegrationTests.WorkManagement.|FullyQualifiedName~LptHub.IntegrationTests.Visibility.'
+          - shard: integration-identity-organization-security
+            project: LptHub.IntegrationTests
+            filter: 'FullyQualifiedName~LptHub.IntegrationTests.Identity.|FullyQualifiedName~LptHub.IntegrationTests.Organization.|FullyQualifiedName~LptHub.IntegrationTests.Security.'
+          # Everything else in the project: the negation of the four lists above (keep it in step with them).
+          - shard: integration-rest
+            project: LptHub.IntegrationTests
+            filter: 'FullyQualifiedName!~LptHub.IntegrationTests.WorkViews.&FullyQualifiedName!~LptHub.IntegrationTests.Reports.&FullyQualifiedName!~LptHub.IntegrationTests.Notifications.&FullyQualifiedName!~LptHub.IntegrationTests.Audit.&FullyQualifiedName!~LptHub.IntegrationTests.Tasks.&FullyQualifiedName!~LptHub.IntegrationTests.Workflows.&FullyQualifiedName!~LptHub.IntegrationTests.WorkManagement.&FullyQualifiedName!~LptHub.IntegrationTests.Visibility.&FullyQualifiedName!~LptHub.IntegrationTests.Identity.&FullyQualifiedName!~LptHub.IntegrationTests.Organization.&FullyQualifiedName!~LptHub.IntegrationTests.Security.'
+          # All schema tests (no filter).
+          - shard: schema
+            project: LptHub.SchemaTests
+            filter: ''
     defaults:
       run:
         working-directory: backend
@@ -71,16 +100,19 @@ jobs:
           exit 1
       - name: Build
         run: dotnet build --no-restore -c Release -warnaserror
-      - name: Integration and schema tests
+      - name: Tests (${{ matrix.shard }})
+        timeout-minutes: 22
+        env:
+          PROJECT: ${{ matrix.project }}
+          SHARD: ${{ matrix.shard }}
+          TEST_FILTER: ${{ matrix.filter }}
         run: |
-          for project in LptHub.IntegrationTests LptHub.SchemaTests; do
-            dotnet test "tests/$project" --no-build -c Release \
-              --logger "trx;LogFileName=$project.trx" --results-directory ../TestResults/integration
-          done
+          dotnet test "tests/$PROJECT" --no-build -c Release ${TEST_FILTER:+--filter "$TEST_FILTER"} \
+            --logger "trx;LogFileName=$SHARD.trx" --results-directory ../TestResults/integration
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: backend-test-results-integration
+          name: backend-test-results-${{ matrix.shard }}
           path: TestResults
           if-no-files-found: ignore
 
@@ -104,6 +136,9 @@ jobs:
       - name: Format check
         run: npm run format:check
       - name: Unit tests (Vitest)
+        # Runs `ng test` for the app and form-engine and ends the run after the Vitest summary (the Angular test process
+        # does not exit by itself, #1353). Fails on failed tests, errors, an empty run or no summary.
+        timeout-minutes: 15
         run: npm test
       - name: API client drift check
         run: |
