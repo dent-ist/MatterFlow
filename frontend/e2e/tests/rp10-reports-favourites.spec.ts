@@ -135,6 +135,8 @@ test.describe('favourites on the Reports list (#723)', () => {
     await favouritesChip(page).click();
     await expect(favouritesChip(page)).toHaveAttribute('aria-pressed', 'true');
     await expect(page).toHaveURL(/favourites=true/);
+    // The pressed chip is the filter: no second removable "Favourites" chip under the toolbar (#1325).
+    await expect(page.locator('[data-filter-chips] [data-chip="favourites"]')).toHaveCount(0);
     await expect(page.locator('[data-filter-empty]')).toContainText(
       'No reports match these filters.',
     );

@@ -330,6 +330,15 @@ describe('ReportsListPage (#718, #723)', () => {
       expect(groups()).toEqual(['Task follow-up (1)']);
     });
 
+    it('shows the pressed Favourites chip only: no second removable "Favourites" chip under the toolbar (#1325)', async () => {
+      await create(['Report.Run'], withFavourite(), { favourites: 'true' });
+      expect(
+        q('[data-favourites-filter] button[data-key="favourites"]').getAttribute('aria-pressed'),
+      ).toBe('true');
+      expect(el().querySelector('[data-filter-chips] [data-chip="favourites"]')).toBeNull();
+      expect(el().querySelector('[data-clear-filters]')).toBeNull();
+    });
+
     it('says No reports match these filters. with Clear Filters when the person has no favourite and the chip is on', async () => {
       await create(['Report.Run'], twoCategories(), { favourites: 'true' });
       expect(q('[data-filter-empty]').textContent).toContain('No reports match these filters.');

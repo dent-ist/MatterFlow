@@ -29,6 +29,8 @@ export interface AdminTab {
   permission: readonly string[];
   /** The key in `AdminTabCounts`; a tab without one shows no number. */
   countKey?: string;
+  /** Older `?tab=` values that still open this tab (a renamed tab keeps its old bookmarks). */
+  aliases?: readonly string[];
 }
 
 /** Whether a person holds a permission (`AuthStore.has` bound to the store, or a plain set lookup in a test). */
@@ -58,8 +60,9 @@ export function resolveAdminTab(
 ): AdminTab | null {
   const allowed = allowedAdminTabs(tabs, can);
   if (allowed.length === 0) return null;
+  const alias = allowed.find((t) => requested != null && t.aliases?.includes(requested));
   const id = firstAllowedTab(
-    requested,
+    alias?.id ?? requested,
     allowed.map((t) => t.id),
   );
   return allowed.find((t) => t.id === id) ?? null;

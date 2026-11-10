@@ -1,7 +1,7 @@
 import { Page } from '@playwright/test';
 import { Json } from '../support/api';
 import { expect, test } from '../support/fixtures';
-import { atEverySize } from '../support/screens';
+import { SIZES, atEverySize } from '../support/screens';
 import { uid } from '../support/seed';
 
 /**
@@ -161,6 +161,29 @@ test.describe('the result grid (#720)', () => {
     await page.reload();
     await page.getByRole('button', { name: 'Run Report' }).click();
     await expect(headers(page)).toHaveText(['Number', 'Label', 'Even', 'Day']);
+  });
+
+  test('the crumb and the heading stay where they are when the grid appears (#1325)', async ({
+    personas,
+    asUser,
+  }) => {
+    const page = await asUser(
+      (await personas.create({ label: 'rp8-g', roles: [roleName] })).username,
+    );
+    const top = (selector: string) =>
+      page.locator(selector).evaluate((e) => Math.round(e.getBoundingClientRect().top));
+    for (const size of SIZES) {
+      await page.setViewportSize(size);
+      await page.goto(`/reports/${reportId}`);
+      const crumb = '[aria-label="Breadcrumb"]';
+      const formState = { crumb: await top(crumb), heading: await top('h1') };
+      await page.getByRole('button', { name: 'Run Report' }).click();
+      await expect(rows(page).first()).toBeVisible();
+      await expect(page.locator('.rp--fill')).toHaveCount(1);
+      expect({ crumb: await top(crumb), heading: await top('h1') }, `at ${size.width}`).toEqual(
+        formState,
+      );
+    }
   });
 
   test('has no accessibility violation and no sideways page scroll at 1366 and 1920, with the filter row open', async ({

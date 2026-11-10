@@ -392,11 +392,20 @@ test.describe('the editor (#713 to #715)', () => {
     );
   });
 
-  test('Settings shows the state of the report login', async ({ page }) => {
-    await page.goto('/admin/reports?tab=health');
-    await expect(page.locator('[data-chip]')).toHaveText('Ready');
-    await expect(page.locator('[data-login]')).toContainText('lpt_reports');
-    await expect(page.locator('[data-login]')).toContainText('Denied');
+  test('Settings shows the state of the report login, at ?tab=settings and at the old ?tab=health (#1325)', async ({
+    page,
+  }) => {
+    for (const tab of ['settings', 'health']) {
+      await page.goto(`/admin/reports?tab=${tab}`);
+      await expect(page.getByRole('tab', { name: 'Settings' })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      );
+      await expect(page.getByRole('tab', { name: 'Settings' }).locator('i')).toHaveClass(/pi-cog/);
+      await expect(page.locator('[data-chip]')).toHaveText('Ready');
+      await expect(page.locator('[data-login]')).toContainText('lpt_reports');
+      await expect(page.locator('[data-login]')).toContainText('Denied');
+    }
   });
 });
 
@@ -468,7 +477,7 @@ test.describe('accessibility at both desktop sizes (#712 to #717)', () => {
     await check(page, 'rp5-list', async () => {
       await expect(page.getByRole('heading', { level: 1, name: 'Report Setup' })).toBeVisible();
     });
-    for (const t of ['categories', 'runs', 'assignments', 'health']) {
+    for (const t of ['categories', 'runs', 'assignments', 'settings']) {
       await page.goto(`/admin/reports?tab=${t}`);
       await check(page, `rp5-${t}`, async () => {
         await expect(page.getByRole('tabpanel')).toBeVisible();

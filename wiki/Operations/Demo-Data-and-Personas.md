@@ -25,7 +25,7 @@ node tools/seed-demo/seed-demo.mjs --aged --seed 7 # moves dates back so At risk
 |---|---|
 | Users | 50 active test users `Test User 01..50` (`KE\testuser01..`), roles: 31 Data Technician, 11 Data Scientist, 4 Pod Lead, 3 Project Manager, 1 Director (Test User 02); one or two pods each; four out of office |
 | Pods | If none exist, four `Demo ... Pod` pods |
-| Organization | 5 clients (numbers 90001 to 90005), 12 matters (80001 to 80012), 4 projects, 60 assets |
+| Organization | 5 clients (numbers 90001 to 90005), 12 matters (80001 to 80012), 4 projects, 60 assets, a few links between open tasks and assets |
 | Sensitive matters | Two of the 12 matters are Sensitive: one has a Project Manager, one has none. The run ends by listing accounts that see all, what they manage, only their assigned tasks, or none. The rule works only with `Features__SensitiveMatterAccess=true` |
 | Project Manager personas | Test User 35 manages exactly one matter; Test User 19 manages three; their matters hold an overdue, an unassigned, an On hold and (with `--aged`) an At risk task |
 | Reports | The ten starter reports (created by the API itself, see below; the two for Project Managers go to the Project Manager role), the role `Report Runner (demo)` (only `Report.Run`) holding all of them, given to Test User 02 (Director); the System Admin role holds them too |

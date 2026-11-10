@@ -163,6 +163,7 @@ const TABLE: Row[] = [
   ADMIN('reports', 'Report Setup: Categories - LPT Hub', { query: { tab: 'categories' } }),
   ADMIN('reports', 'Report Setup: Run Log - LPT Hub', { query: { tab: 'runs' } }),
   ADMIN('reports', 'Report Setup: Assignments - LPT Hub', { query: { tab: 'assignments' } }),
+  ADMIN('reports', 'Report Setup: Settings - LPT Hub', { query: { tab: 'settings' } }),
   ADMIN('reports', 'Report Setup: Settings - LPT Hub', { query: { tab: 'health' } }),
   ADMIN('audit', 'Audit Logs - LPT Hub'),
   ADMIN('settings', 'Settings: Branding - LPT Hub'),
@@ -198,7 +199,7 @@ function allTitles(): { where: string; title: string }[] {
     'priorities',
     'status-labels',
   ];
-  const queryTabs = ['categories', 'runs', 'assignments', 'health', 'other'];
+  const queryTabs = ['categories', 'runs', 'assignments', 'settings', 'health', 'other'];
   for (const [name, routes] of sets) {
     for (const r of routes) {
       const t = r.title as string | TitleFn | undefined;

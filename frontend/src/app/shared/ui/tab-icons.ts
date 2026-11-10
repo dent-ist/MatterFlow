@@ -107,7 +107,8 @@ export const ICONS: Readonly<Record<string, string>> = {
   runs: 'pi-play',
   'run-log': 'pi-play',
   assignments: 'pi-share-alt',
-  health: 'pi-heart',
+  // The Settings tab of Report Setup (it was a heart, its old id `health`); the same gear as the Settings page.
+  settings: 'pi-cog',
   // People and settings
   roles: 'pi-shield',
   pods: 'pi-users',

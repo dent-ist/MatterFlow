@@ -345,8 +345,10 @@ test.describe('the run page (#719)', () => {
     await page.getByRole('button', { name: 'Run Report' }).click();
     await expect(page.locator('[data-running]')).toContainText('Running...');
     await expect(page.getByRole('button', { name: 'Run Report' })).toHaveCount(0);
-    // The spinner icon of the button is part of its accessible name, so the name is matched, not compared whole.
-    await page.locator('[data-cancel-run] button').click();
+    // The spinner icon is decoration (aria-hidden), so the accessible name is exactly "Cancel" (#1325).
+    const cancel = page.getByRole('button', { name: 'Cancel', exact: true });
+    await expect(cancel.locator('.pi-spinner')).toHaveAttribute('aria-hidden', 'true');
+    await cancel.click();
     await expect(page.getByRole('button', { name: 'Run Report' })).toBeVisible();
     await expect(page.locator('[data-run-banner]')).toHaveCount(0);
     expect(cancels).toBe(1);

@@ -33,6 +33,11 @@ describe('tab icons (LC-10, theme guide 11.3)', () => {
     expect(pageIcon('dashboard')).toBe('pi pi-home');
   });
 
+  it('the Report Setup Settings tab is a gear, not the heart it had as "health" (#1325)', () => {
+    expect(tabIcon('settings')).toBe('pi-cog');
+    expect(tabIcon('Settings')).toBe('pi-cog');
+  });
+
   it('the Task Types tab is the Task Types page icon, never the Asset Types icon of the menu (#1133)', () => {
     expect(tabIcon('task-types')).toBe(ICONS['page-task-types']);
     expect(tabIcon('task-types')).not.toBe(ICONS['page-asset-types']);
@@ -69,6 +74,7 @@ describe('tab icons (LC-10, theme guide 11.3)', () => {
       ['fields', 'page-custom-fields'],
       ['by-member', 'pods', 'page-pod-work'],
       ['request-form', 'form'],
+      ['settings', 'page-settings'],
     ];
     // Different concepts that share an icon today and never sit in one tab strip or beside one page tile; the page epics decide whether to split them.
     const known: string[][] = [

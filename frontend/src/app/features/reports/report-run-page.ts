@@ -88,6 +88,18 @@ const LONG_DESCRIPTION = 240;
     /* While a result fills the window (the summary bar is collapsed, #1286) the page is a fixed page: header, banners and toolbar keep their height and the
        result area takes the rest, so the pager is always in view and the grid body scrolls inside its frame. Same size gate as the fixed pages
        (styles/_fixed-page.scss); below it, and with the form open, the page scrolls as a whole. */
+    @media (min-width: 1100px) and (min-height: 561px) {
+      /* The shell's page padding is 24 px on top, 12 px in the fixed mode the result switches to: with the form open the page pulls up by the
+         difference, so the crumb and the heading stay where they are when the grid appears (#1325). */
+      :host(:not(.rp--fill)) {
+        margin-top: calc(var(--mf-s3) - var(--mf-s5));
+      }
+    }
+    @media (min-width: 768px) and (max-width: 1099px) and (min-height: 561px) {
+      :host(:not(.rp--fill)) {
+        margin-top: calc(var(--mf-s3) - var(--mf-s4));
+      }
+    }
     @media (min-width: 768px) and (min-height: 561px) {
       :host(.rp--fill) {
         --rr-max: none;

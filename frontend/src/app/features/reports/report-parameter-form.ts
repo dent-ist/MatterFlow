@@ -383,11 +383,17 @@ const SEARCH_FROM = 8;
           <p-button
             type="button"
             label="Cancel"
-            icon="pi pi-spin pi-spinner"
             severity="secondary"
             data-cancel-run
             (onClick)="cancelRun.emit()"
-          />
+          >
+            <ng-template #icon>
+              <i
+                class="p-button-icon p-button-icon-left pi pi-spin pi-spinner"
+                aria-hidden="true"
+              ></i>
+            </ng-template>
+          </p-button>
         } @else {
           @if (defs().length > 0) {
             <button type="button" class="mf-btn mf-btn--text" data-reset (click)="onReset()">

@@ -24,14 +24,16 @@ export const REPORT_TABS: readonly AdminTab[] = [
     permission: ['Report.Assign'],
   },
   {
-    id: 'health',
+    id: 'settings',
     label: 'Settings',
-    route: '/admin/reports?tab=health',
+    route: '/admin/reports?tab=settings',
     permission: ['Report.Manage'],
+    // The tab was called "health" before (its first address); a bookmark of `?tab=health` still opens it.
+    aliases: ['health'],
   },
 ];
 
-export type ReportAdminTab = 'reports' | 'categories' | 'runs' | 'assignments' | 'health';
+export type ReportAdminTab = 'reports' | 'categories' | 'runs' | 'assignments' | 'settings';
 
 /** One line per tab, 90 characters at most (the header shows it on one line). */
 export const REPORT_TAB_TEXT: Record<ReportAdminTab, string> = {
@@ -41,5 +43,5 @@ export const REPORT_TAB_TEXT: Record<ReportAdminTab, string> = {
     'Categories group the reports in the lists. They can be renamed and hidden, never deleted.',
   runs: 'Who ran or previewed which report, with which values, how it ended and how long it took.',
   assignments: 'Which role may run which report. Read-only; change it on a role or on a report.',
-  health: 'Whether reports can run, and what the read-only report login is allowed to do.',
+  settings: 'Whether reports can run, and what the read-only report login is allowed to do.',
 };

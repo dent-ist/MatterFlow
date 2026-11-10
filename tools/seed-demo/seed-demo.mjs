@@ -1031,6 +1031,44 @@ async function ensureDemoTargets(admin, ctx, opts, summary) {
 }
 
 /**
+ * Links a few Demo assets to open Demo tasks (issue #1325), through the API like the Assets panel of a task does, so the starter report "Assets linked to open
+ * tasks" shows rows on a demo system. Only the first open tasks of the first Demo matters get a link, and a task that already has one is left alone, so a repeat run
+ * adds nothing.
+ */
+async function ensureTaskAssetLinks(admin, ctx, opts, summary) {
+  summary.taskAssetLinks = 0;
+  if (opts.dryRun) {
+    log('Task asset links: not planned in a dry run.');
+    return;
+  }
+  const OPEN = 'status=NEW&status=IN_PROGRESS&status=ON_HOLD';
+  const roles = await admin.get('/api/v1/asset-link-roles').catch(() => []);
+  const role = (Array.isArray(roles) ? roles : (roles.items ?? [])).find((r) => r.isActive !== false);
+  let matters = 0;
+  for (const [matterId, pool] of ctx.assetPool) {
+    if (matters >= 4 || pool.length === 0) continue;
+    const open = await admin.getAll(`/api/v1/tasks?matterId=${matterId}&${OPEN}`);
+    if (open.length === 0) continue;
+    matters++;
+    // A matter whose open tasks already carry a link (an earlier run, or by hand) is left as it is.
+    let linked = false;
+    for (const task of open) linked ||= (await admin.get(`/api/v1/tasks/${task.taskId}/assets`)).items.length > 0;
+    if (linked) continue;
+    for (const [i, task] of open.slice(0, 3).entries()) {
+      const assets = pool.slice(i, i + 2);
+      for (const asset of assets) {
+        await admin.post(`/api/v1/tasks/${task.taskId}/assets`, {
+          assetId: asset.assetId,
+          assetLinkRoleId: role ? (role.id ?? role.assetLinkRoleId ?? null) : null,
+        });
+        summary.taskAssetLinks++;
+      }
+    }
+  }
+  log(`Task asset links created: ${summary.taskAssetLinks}.`);
+}
+
+/**
  * Tasks for the two personas (issue #925), created only where the persona's matters lack the state: an overdue task, an unassigned task, a task On
  * hold and a task that will be At risk. Through the API like every other task; the At risk and the aged hold only exist after `--aged` has moved
  * their dates (the candidates carry "[persona risk]" in the requestor name so the aging step always takes them, and a repeat run adds none).
@@ -1770,6 +1808,8 @@ async function main() {
 
   step('Tasks for the one-matter and the three-matter Project Manager');
   await ensurePersonaTasks(admin, ctx, opts, summary);
+  step('Links between open tasks and assets');
+  await ensureTaskAssetLinks(admin, ctx, opts, summary);
 
   if (opts.aged) {
     step('Aged dates (--aged): At risk tasks and tasks On hold for days');
@@ -1791,7 +1831,7 @@ async function main() {
   step('Done');
   log(
     `Users created ${summary.usersCreated ?? 0} (${summary.usersExisting ?? 0} existed, ${summary.usersFinished ?? 0} finished), pods created ${summary.podsCreated ?? 0}, clients ${summary.clientsCreated}, ` +
-      `matters ${summary.mattersCreated}, projects ${summary.projectsCreated}, assets ${summary.assetsCreated}, tasks ${created.length}, starter reports assigned ${summary.reportsAssigned ?? 0}.`,
+      `matters ${summary.mattersCreated}, projects ${summary.projectsCreated}, assets ${summary.assetsCreated}, task asset links ${summary.taskAssetLinks ?? 0}, tasks ${created.length}, starter reports assigned ${summary.reportsAssigned ?? 0}.`,
   );
   log(
     `${stats.calls} API calls, ${stats.retries429} rate limit retries, ${stats.retriesTransient} retries after a database conflict, ${Math.round((Date.now() - startedAt) / 1000)} s.`,

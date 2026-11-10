@@ -118,7 +118,7 @@ Each rule: **Do** exactly this; **Don't** the listed things; **Ref** the page or
 
 **D-44c Ref cell (decided after review 13, #1244).** The Ref cell is 100 px with 8 px left and 0 px right padding, because "|| TSK-1234" (On Hold marker and a four-digit ref) needs 87 px. It is the one cell with asymmetric padding; every other cell is 8 px each side. A new marker in the Ref cell needs a wider-column decision, not more padding trimming.
 
-**D-44d Filter row and list pages (decided after review 13).** A filter-row input placeholder is the short heading word ("Number", "Name"), in Title Case, never a different word (not "Matter" for a CM Number). A filter row has one background across all cells, the sticky first cell included. A cursor-paged list without a total (Matter > Activities, audit search) keeps "Show More" and shows no page numbers and no "of N"; a numbered pager only where the API returns a total.
+**D-44d Filter row and list pages (decided after review 13).** A filter-row input placeholder is the short heading word ("Number", "Name"), in Title Case, never a different word (not "Matter" for a CM Number). A filter row has one background across all cells, the sticky first cell included. A cursor-paged list without a total (Matter > Activities, audit search, Report Setup > Run Log: the API answers a page and a cursor, never a count) keeps "Show More" and shows no page numbers and no "of N"; a numbered pager only where the API returns a total.
 
 **D-44e Leave question (decided after review 13).** The extra button of the unsaved-changes question is Title Case: "Save and Leave" (the verb Save is the primary), next to "Keep Editing" and "Discard Changes".
 

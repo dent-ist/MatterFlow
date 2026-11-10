@@ -51,6 +51,22 @@ describe('admin tab model (#545)', () => {
     expect(adminMenuTarget(TABS, has())).toBeNull();
   });
 
+  it('opens a renamed tab for its old `?tab=` value (an alias), and still falls back for a tab the person may not use', () => {
+    const renamed: AdminTab[] = [
+      { id: 'runs', label: 'Run Log', route: '/x?tab=runs', permission: [] },
+      {
+        id: 'settings',
+        label: 'Settings',
+        route: '/x?tab=settings',
+        permission: ['X.Manage'],
+        aliases: ['health'],
+      },
+    ];
+    expect(resolveAdminTab(renamed, 'settings', has('X.Manage'))?.id).toBe('settings');
+    expect(resolveAdminTab(renamed, 'health', has('X.Manage'))?.id).toBe('settings');
+    expect(resolveAdminTab(renamed, 'health', has())?.id).toBe('runs');
+  });
+
   it('falls back to the first allowed tab for a requested tab the person may not use', () => {
     const can = has('Pod.Manage');
     expect(resolveAdminTab(TABS, 'roles', can)?.id).toBe('pods');

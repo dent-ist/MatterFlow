@@ -265,7 +265,8 @@ export const ADMIN_ROUTES: Routes = [
         categories: pageTab('Report Setup', 'Categories'),
         runs: pageTab('Report Setup', 'Run Log'),
         assignments: pageTab('Report Setup', 'Assignments'),
-        health: pageTab('Report Setup', 'Settings'),
+        settings: pageTab('Report Setup', 'Settings'),
+        health: pageTab('Report Setup', 'Settings'), // the first address of the tab, still accepted
       };
       return names[tab] ?? 'Report Setup';
     },

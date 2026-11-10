@@ -269,6 +269,9 @@ describe('ReportParameterForm (#719)', () => {
         b.textContent!.trim(),
       );
       expect(buttons).toEqual(['Cancel']);
+      // The spinner is decoration: the button's name is exactly "Cancel" (#1325).
+      const spinner = q('[data-cancel-run] .pi-spinner');
+      expect(spinner.getAttribute('aria-hidden')).toBe('true');
       expect(q('fieldset').hasAttribute('disabled')).toBe(true);
       q('[data-cancel-run]').querySelector('button')!.click();
       expect(host().cancels).toBe(1);

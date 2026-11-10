@@ -317,6 +317,8 @@ export class ReportsListPage {
   protected readonly filters = new ListFilters({
     screen: 'reports',
     noun: 'reports',
+    // The pressed Favourites chip of the toolbar is the filter: a second removable "Favourites" chip under it would say the same (#1325).
+    ownedKeys: (): readonly string[] => (this.favouritesOnly() ? ['favourites'] : []),
     defs: computed((): FilterDef[] => [
       { key: 'q', label: 'Search', type: 'text', search: true },
       {
@@ -339,7 +341,9 @@ export class ReportsListPage {
     ]),
   });
 
-  protected readonly favouritesOnly = computed(() => this.filters.text('favourites') === 'true');
+  protected readonly favouritesOnly = computed<boolean>(
+    () => this.filters.text('favourites') === 'true',
+  );
   protected readonly favouriteChips = computed<readonly FilterChip[]>(() => [
     { key: 'favourites', label: 'Favourites', icon: 'pi-star', pressed: this.favouritesOnly() },
   ]);
@@ -374,7 +378,9 @@ export class ReportsListPage {
   private readonly recent = signal<readonly RecentReportResponse[]>([]);
   /** The line shows while the person has run something and no search or filter is active (spec 7.2); it never holds a report the list does not. */
   protected readonly recentShown = computed(() => {
-    if (this.state() !== 'ready' || this.filters.activeCount() > 0) return [];
+    // The pressed Favourites chip owns its filter (it is not counted), so it is asked for by itself.
+    if (this.state() !== 'ready' || this.filters.activeCount() > 0 || this.favouritesOnly())
+      return [];
     const known = new Set(this.all().map((r) => r.reportId));
     return this.recent()
       .filter((r) => known.has(r.reportId))
