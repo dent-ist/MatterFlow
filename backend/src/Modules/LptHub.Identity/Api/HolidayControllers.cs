@@ -7,7 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace LptHub.Identity.Api;
 
 /// <summary>
-/// Administration of holiday calendars and their holidays (Dashboard Calendar, epic #1074). Needs <c>Settings.Manage</c>. A calendar holds holiday rules (fixed date, Nth weekday of a month, days from Easter, one-time day,
+/// Administration of holiday calendars and their holidays (Dashboard Calendar, epic #1074). Needs <c>Settings.Manage</c>; the list of calendars is also open to <c>User.Manage</c> (owner decision, #1362), because
+/// whoever may give a person a holiday calendar must see the calendars to choose from. Every write stays on <c>Settings.Manage</c>. A calendar holds holiday rules (fixed date, Nth weekday of a month, days from Easter, one-time day,
 /// range) that are expanded for any year; nothing is entered per year. Writes are audited and use row versions (409 when someone changed it meanwhile).
 /// </summary>
 [ApiController]
@@ -15,9 +16,9 @@ namespace LptHub.Identity.Api;
 [Produces("application/json")]
 public class HolidayCalendarsController(HolidayCalendarService calendars) : ControllerBase
 {
-    /// <summary>All calendars (inactive ones too) with their holiday and people counts.</summary>
+    /// <summary>All calendars (inactive ones too) with their holiday and people counts. <c>Settings.Manage</c> or <c>User.Manage</c> (the picker in the user drawer, #1362).</summary>
     [HttpGet(Name = "ListHolidayCalendars")]
-    [RequirePermission(Permissions.Settings.Manage)]
+    [RequirePermission(Permissions.Settings.Manage + "|" + Permissions.User.Manage)]
     [ProducesResponseType<HolidayCalendarDto[]>(StatusCodes.Status200OK, "application/json")]
     public async Task<IActionResult> List(CancellationToken cancellationToken) => Ok(await calendars.ListAsync(cancellationToken));
 

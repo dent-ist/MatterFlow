@@ -280,8 +280,10 @@
                 <p class="ud-note" data-availability-note>
                   Availability is saved in its own dialog.
                 </p>
-                <!-- Dashboard Calendar (epic #1074): the person's holiday calendar. -->
-                <mf-user-calendar-field [userId]="u.userId" [canManage]="canManage()" />
+                <!-- Dashboard Calendar (epic #1074): the person's holiday calendar. Read with User.Manage (the availability read and the list of calendars need it), so a read-only drawer has no such field (#1362). -->
+                @if (canManage()) {
+                  <mf-user-calendar-field [userId]="u.userId" [canManage]="true" />
+                }
               </div>
             </section>
 

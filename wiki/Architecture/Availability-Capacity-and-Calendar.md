@@ -61,7 +61,7 @@ flowchart TD
 - Endpoints `GET /api/v1/dashboard/calendar/days`, `/day`, `/summary` (`DashboardCalendarController`); needs `Dashboard.View` and `Dashboard.ViewCalendar`. `absenceType` is left out without `Dashboard.ViewAbsenceReasons`; the note is never returned.
 - Per day: expected = people in view minus holiday and non-working; available = expected minus Out of office. Day tiles are Available, Out of Office and Off Hours (people off for a holiday count in Off Hours).
 - Thresholds in `Calendar.Thresholds` (defaults 75 percent firm, 60 percent pod, optional per-pod minimum people).
-- Administration of holidays: Administration > Settings (holiday calendars, import, thresholds), permission `Settings.Manage`.
+- Administration of holidays: Administration > Settings (holiday calendars, import, thresholds), permission `Settings.Manage`. The list of calendars (`GET /admin/holiday-calendars`) is also open to `User.Manage`, so the Holiday Calendar picker of the user drawer works for a person who manages users but not settings (owner decision, #1362); every write, the single calendar, the holidays, the preview and the settings stay on `Settings.Manage`.
 - Out of office entry endpoints: `/api/v1/users/{id}/absences` (`AbsenceService`); advisory check `POST /users/{id}/absences/check` (WorkViews).
 
 ## Where to look when changing it
