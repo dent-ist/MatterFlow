@@ -226,7 +226,9 @@ test.describe('My Matters: one dropdown style and icons (UI-19)', () => {
     await expect(page.locator('mf-mm-task-list a[data-task-link]').first()).toBeVisible();
     // The icons of the first row: task type chip, status chip icon, assignee cell (Unassigned has its icon), the overdue warning.
     const row = page.locator('mf-mm-task-list tr[data-task]').first();
-    await expect(row.locator('mf-task-type-chip [role=img]')).toHaveCount(1);
+    // The Type cell is the chip and the type's name beside it (#1232): the chip is decorative, the name is the text.
+    await expect(row.locator('mf-task-type-cell [data-type-chip] .chip')).toHaveCount(1);
+    await expect(row.locator('mf-task-type-cell [data-type-name]')).not.toHaveText('');
     await expect(row.locator('mf-status-chip .newic, mf-status-chip .pi')).not.toHaveCount(0);
     await expect(row.locator('[data-cell=assignee] .pi-user-minus')).toHaveCount(1);
     await expect(row.locator('[data-cell=due] .pi-exclamation-triangle')).toHaveCount(1);
@@ -269,10 +271,12 @@ test.describe('My Matters: review round 2 (UI-20)', () => {
       .getByRole('heading', { name: 'My Matters', level: 1 })
       .evaluate((e) => parseFloat(getComputedStyle(e).fontSize));
     expect(h1).toBeGreaterThanOrEqual(21.5);
-    const chip = row.locator('mf-task-type-chip [role=img]');
+    // The chip is decorative since #1232 (the type's name sits beside it): no role, hidden from assistive tools, the name is the text and the tooltip.
+    const chip = row.locator('mf-task-type-cell [data-type-chip] .chip');
     const box = await chip.boundingBox();
     expect(box!.width).toBeGreaterThanOrEqual(31);
-    await expect(chip).toHaveAttribute('aria-label', /^Task type: /);
+    await expect(chip).toHaveAttribute('aria-hidden', 'true');
+    await expect(row.locator('mf-task-type-cell [data-type-name]')).not.toHaveText('');
     const bg = await chip.evaluate((e) => getComputedStyle(e).backgroundColor);
     expect(bg).not.toBe('rgba(0, 0, 0, 0)');
     // Due: icon and date on line 1, the overdue note on line 2.
@@ -494,6 +498,8 @@ test.describe('My Matters: calendar events, assets and activity (need the UI-03 
       'aria-label',
       /1 event/,
     );
+    // The side panel starts collapsed under 1500 px of window (D-44i): at 1920 it is open and shows Upcoming Events.
+    await page.setViewportSize({ width: 1920, height: 1080 });
     await page.goto(`/my-matters?matterId=${a.matterId}`);
     await expect(page.locator('[data-section="events"]')).toContainText('Motion hearing');
     // A person who is not a manager of the matter and cannot edit matters does not see the item at all unless they can see the matter.

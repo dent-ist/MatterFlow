@@ -3,6 +3,7 @@ import path from 'node:path';
 import { Page, Route } from '@playwright/test';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
+import { ci } from '../support/text';
 import { Seeder, uid } from '../support/seed';
 
 /**
@@ -55,7 +56,7 @@ const LISTS: ListSpec[] = [
     api: '/api/v1/projects',
     url: () => '/projects',
     noun: 'projects',
-    none: /No projects yet\. Open a matter and choose New project\./,
+    none: ci(/No projects yet\. Open a matter and choose New project\./),
   },
   {
     name: 'client-matters',

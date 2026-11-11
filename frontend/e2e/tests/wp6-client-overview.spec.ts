@@ -4,6 +4,7 @@ import { Page } from '@playwright/test';
 import { Json } from '../support/api';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
+import { ciTexts } from '../support/text';
 import { Seeder, uid } from '../support/seed';
 import { TaskApi } from '../support/tasks';
 import { dateInZone, FIRM_ZONE } from '../support/time';
@@ -166,10 +167,12 @@ test.describe('WP6: Client Overview (#261) and tab counts (#262)', () => {
     });
     // The order of the strip is the Dashboard's.
     expect(
-      await overview
-        .locator('[data-strip-item]')
-        .evaluateAll((e) => e.map((x) => x.textContent!.replace(/\s+/g, ' ').trim())),
-    ).toEqual(['Open 9', 'Overdue 3', 'Due soon 1', 'ASAP 1', 'On hold 1']);
+      ciTexts(
+        await overview
+          .locator('[data-strip-item]')
+          .evaluateAll((e) => e.map((x) => x.textContent!.replace(/\s+/g, ' ').trim())),
+      ),
+    ).toEqual(ciTexts(['Open 9', 'Overdue 3', 'Due soon 1', 'ASAP 1', 'On hold 1']));
     // Overdue keeps the word and the icon, not only the colour.
     await expect(overview.locator('[data-strip-item="overdue"] .pi')).toBeVisible();
 
@@ -188,8 +191,9 @@ test.describe('WP6: Client Overview (#261) and tab counts (#262)', () => {
     // Number, name and status are in the header only; the old rows are gone.
     await expect(overview.locator('dl')).toHaveCount(0);
     await expect(overview.getByText('Client Number')).toHaveCount(0);
+    // The numeric date form (D-61): MM/DD in the current year, MM/DD/YYYY otherwise.
     await expect(overview.locator('[data-created-line]')).toContainText(
-      /^\s*Created [A-Z][a-z]{2} \d{1,2}, \d{4}/,
+      /^\s*Created \d{2}\/\d{2}(\/\d{4})?/,
     );
 
     await expect(page.getByRole('tab')).toHaveText(['Overview', 'Matters (3)']);
@@ -410,7 +414,7 @@ test.describe('WP6: strip numbers equal the Task Queue totals behind each link, 
       await expect(page.locator('[data-top-matters] tbody tr')).toHaveCount(3);
       expect(
         (await page.locator('[data-top-matters] th').allTextContents()).map((t) => t.trim()),
-      ).toEqual(['Matter', 'Name', 'Status']);
+      ).toEqual(['CM Number', 'Matter Name', 'Status']);
       await expect(page.locator('.ov-h')).toHaveText('Matters');
       await expect(page.getByRole('tab')).toHaveText(['Overview', 'Matters (3)']);
       await axeClean(page, `no Task.View ${w}x${h}`);
