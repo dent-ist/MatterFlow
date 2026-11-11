@@ -43,6 +43,11 @@
   vertical-align: middle;
 }
 
+/* The availability chip (26 px) arrives with the profile: the line keeps its height while it loads, so the page below does not move (#532). */
+.pp__who--chip {
+  min-height: 26px;
+}
+
 .pp__name {
   color: var(--mf-text);
   font-size: var(--mf-fs-md);
