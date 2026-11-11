@@ -5,6 +5,7 @@ import { TaskQueuePage } from '../pages/queues.pages';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { Seeder, uid } from '../support/seed';
+import { ci } from '../support/text';
 
 /**
  * Matter cell and default columns (TQ-WP8, #197, #198, #348): the Matter Number cell is the reference only (one line), the Matter Name
@@ -194,7 +195,7 @@ test.describe('Matter column default and notice (#198)', () => {
     await page.getByRole('button', { name: 'Columns', exact: true }).click();
     await page.getByLabel('CM Number', { exact: true }).uncheck();
     await expect(page.locator('th[data-col="matter"]')).toHaveCount(0);
-    await page.getByRole('button', { name: /Reset columns/ }).click();
+    await page.getByRole('button', { name: ci(/Reset columns/) }).click();
     await expect(page.locator('th[data-col="matter"]')).toBeVisible();
   });
 });

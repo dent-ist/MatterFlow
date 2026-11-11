@@ -5,6 +5,7 @@ import { MyWorkPage, TaskQueuePage } from '../pages/queues.pages';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
+import { chooseView } from '../support/views';
 
 /**
  * Task Queue toolbar (WP5: #216, #217): row 1 is one line (views, Columns, Other filters, Filters) that never moves; row 2 exists only
@@ -73,8 +74,11 @@ test.describe('Task Queue toolbar (WP5)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     const queue = new TaskQueuePage(page);
     await queue.open();
-    // The Task Queue's row 2 is full (the quick views), so the Sorted by line always has row 3 to itself.
-    await expect(page.locator('[data-toolbar-row2] [data-sort-note]')).toHaveCount(1);
+    // The Sorted by line is part of row 2, between the views and Columns (the first `.lt`); row 3 (`data-toolbar-row2`) holds only the chips and the notice.
+    await expect(
+      page.locator('[data-grid-toolbar]:not([data-toolbar-row2]) [data-sort-note]'),
+    ).toHaveCount(1);
+    await expect(page.locator('[data-toolbar-row2] [data-sort-note]')).toHaveCount(0);
     const base = await row1(page);
     expect(base.bar.height).toBeLessThanOrEqual(48);
     // Left to right on one line: Search, Filters, Other filters, the views, then Columns and the "..." menu at the right end.
@@ -94,7 +98,10 @@ test.describe('Task Queue toolbar (WP5)', () => {
         base.bar.height / 2,
       );
     }
-    await expect(page.locator('[data-sort-note]').first()).toContainText(
+    // The line is short ("Sorted by Priority"); the whole sentence is its tooltip (#1126).
+    await expect(page.locator('[data-sort-note]').first()).toContainText('Sorted by Priority');
+    await expect(page.locator('[data-sorted-text]')).toHaveAttribute(
+      'title',
       'Sorted by Priority, most urgent first (default order)',
     );
     await expect(page.locator('[data-sort-note]')).toHaveCount(1);
@@ -103,7 +110,7 @@ test.describe('Task Queue toolbar (WP5)', () => {
     const gridTop = (await box(page.locator('thead').first())).y;
     await shot(page, 'default-1366x768');
 
-    // Sorted: Reset sort appears in row 3, row 2 stays, the header keeps its arrow and aria-sort.
+    // Sorted: Reset sort appears next to the Sorted by line, row 2 stays, the header keeps its arrow and aria-sort.
     await page.locator('thead th[data-col="due"] button').click();
     await expect(page.locator('[data-reset-sort]')).toBeVisible();
     await expect(page.locator('[data-sort-note]')).toContainText('Sorted by Due date');
@@ -184,7 +191,7 @@ test.describe('Task Queue toolbar (WP5)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     const queue = new TaskQueuePage(page);
     await queue.open();
-    await queue.quickView('Overdue').click();
+    await chooseView(page, 'overdue'); // at 1366 the Overdue view is in the More menu
     await expect
       .poll(() => page.evaluate((k) => localStorage.getItem(k), viewKey(me.userId)))
       .toContain('overdue');
@@ -198,11 +205,12 @@ test.describe('Task Queue toolbar (WP5)', () => {
     await expect(page.locator('[data-restored-notice] [data-dismiss-notice]')).toHaveAccessibleName(
       'Dismiss',
     );
-    // Row 2 is reserved by the notice: the grid starts where it does with chips in row 2 (or, within one row of text, the same).
+    // Row 2 does not move. A pressed quick view is a pressed button, not a chip, so before the notice there is no row 3 at all: the notice is that row, one
+    // line of text (about 46 px with its gap), and the grid starts that much lower (LC-01).
     expect(await row1(page)).toEqual(base);
     const noticeTop = (await box(page.locator('thead').first())).y;
-    // Row 3 also holds the Sorted by line; a notice that wraps may be one text line taller than the chips (LC-01).
-    expect(Math.abs(noticeTop - chipsTop)).toBeLessThanOrEqual(24);
+    expect(noticeTop - chipsTop, 'the notice adds one row').toBeGreaterThan(24);
+    expect(noticeTop - chipsTop, 'the notice adds one row').toBeLessThanOrEqual(56);
     await shot(page, 'restored-notice-1366x768');
     if (axeAvailable()) expect(await axeViolations(page), 'notice').toEqual([]);
 

@@ -255,12 +255,13 @@ test.describe('Due cell (#209)', () => {
     expect((await row.boundingBox())!.height).toBeLessThanOrEqual(40);
     // The longest relative text is never clipped at 152 px; only the date may give way.
     const longRoot = page.locator(`[data-task="${longest.taskNumber}"] td[data-col="due"] .dc`);
-    await expect(longRoot.locator('.dc-l2')).toHaveText('Overdue 120d');
+    // The inline layout prints the numeric suffix of D-60 ("+120d" for 120 days late) beside the date; the sentence is in the accessible name.
+    await expect(longRoot.locator('.dc-l2')).toHaveText('+120d');
     const l2 = (await longRoot.locator('.dc-l2').boundingBox())!;
     const td = (await page
       .locator(`[data-task="${longest.taskNumber}"] td[data-col="due"]`)
       .boundingBox())!;
-    expect(l2.x + l2.width, 'Overdue 120d inside the cell').toBeLessThanOrEqual(td.x + td.width);
+    expect(l2.x + l2.width, '+120d inside the cell').toBeLessThanOrEqual(td.x + td.width);
     await shot(page, 'due-cell-compact-1366x768');
     await axeClean(page, 'Due cell Compact');
   });
