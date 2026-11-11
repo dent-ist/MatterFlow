@@ -1,4 +1,0 @@
-GET /reports/runs/run-8/rows?page=1&pageSize=50    <-- raw: GET /reports/runs/run-8/rows?page=1&pageSize=50
-GET /reports/runs/run-8/rows?page=1&pageSize=50&sort=#1:asc    <-- raw: GET /reports/runs/run-8/rows?page=1&pageSize=50&sort=%231%3Aasc
-GET /reports/runs/run-8/rows?page=1&pageSize=50&sort=#1:asc&filter=[{"column":"#1","op":"contains","value":"smith"}]    <-- raw: GET /reports/runs/run-8/rows?page=1&pageSize=50&sort=%231%3Aasc&filter=%5B%7B%22column%22%3A%22%231%22%2C%22op%22%3A%22contains%22%2C%22value%22%3A%22smith%22%7D%5D
-GET /reports/runs/run-8/export.csv?sort=#1:asc&filter=[{"column":"#1","op":"contains","value":"smith"}]&columns=#0&columns=#1&columns=#2    <-- raw: GET /reports/runs/run-8/export.csv?sort=%231%3Aasc&filter=%5B%7B%22column%22%3A%22%231%22%2C%22op%22%3A%22contains%22%2C%22value%22%3A%22smith%22%7D%5D&columns=%230&columns=%231&columns=%232

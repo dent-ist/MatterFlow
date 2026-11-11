@@ -1,6 +1,0 @@
-{"date":"2026-11-06","tip":"6b6f358",
-"1272":{"clientMatters_1366":[157,501,125,105,161,48],"clientMatters_1920":[157,1055,125,105,161,48],"mattersList_1920":[158,527,325,125,125,105,238,48],"note":"Matters list stacks only below 1500 px"},
-"1273":{"matterTasks_1366":{"projectOff":[100,128,282,112,136,152,140,48],"projectOn":[100,128,142,140,112,136,152,140,48]},"cell":"underlined link or span title No project with mf-zero-dash (speaks 0)","menu":["Move to Project..."],"dialog":"416 px, Move to Project, white Project dropdown, Cancel, Move Task"},
-"1274":{"chipButton":"28 px box (1 px transparent border) around a 26 px pill, min-height 26px"},
-"1271":"_banners.scss comment says icon 18; wiki fixed",
-"createTask_1366":{"h1Top":43,"crumbTop":15,"1920":{"h1Top":93,"crumbTop":65}}}

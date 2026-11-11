@@ -1,5 +1,0 @@
-{"date":"2026-11-06","tip":"6cb1083",
-"1265":{"critical_high":"mf-btn--chip aria-label Edit <name>, hover outline 1px","plain":"mf-btn--name underlined","privateClass":0,"tabStopsPerRow":"3 (name, count, menu)"},
-"1266":{"saveToasts":"one visible toast: Saved as version 3 | Valid: one SELECT, 0 parameters. (a separate live region is not a toast)","previewToast":"Couldn't run the preview. | reason, buttons Copy Reference and Dismiss","categoriesAddRow":["Cancel 32","Add Category 32"]},
-"1267":{"cell":{"1366closed":446,"1366open":304,"1920closed":1000,"1920open":708},"icon":"clock circle at 1366 both states","word":"1920 both states, 78x26 pill","titleRoom":"closed 1366: plain 262 link, at risk about 170"},
-"axeRegion":{"cause":"tooltip div role=tooltip appended to body (shared/ui/tip.ts), shown after hover on the panel toggle; appears also at 1920 closed after hover; not caused by #1267","fix":"aria-hidden on the tooltip, #1268"}}

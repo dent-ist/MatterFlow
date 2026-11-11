@@ -1,8 +1,0 @@
-{"date":"2026-11-06","tip":"c4cce1a",
-"tabs_1366":{"projects":[679,125,105,140,48],"assets":[128,485,105,168,162,48],"productions":[216,168,246,106,160,152,48],"activities":[124,876,96],"client matters":[157,423,125,105,238,48]},
-"all":"table 1096 px at 1366 and 1650 px at 1920, no sideways scroll, rows 44, no clipped cell, axe 0 on all five at both sizes, resize handles 4/5/6/3/5",
-"activitiesSticky":"band 222 stays, rows move 1500 px at both sizes",
-"productionCreated":"UD Review Production created through the dialog on matter 1 (row 44, menu Open Production / Delete Production) then deleted via the menu: Delete Production confirm, row gone",
-"specs":"empty state: No specs yet. A spec is the agreed format of the productions. | New Spec",
-"clientMattersFilters":"Active over Sensitive: Any, stacked, as on the Matters list (Status 160 there)",
-"taskProjectCell":"inline mf-dropdown data-project-dropdown, text No Project"}

@@ -1,5 +1,0 @@
-{"date":"2026-11-06","tip":"09dc26e",
-"coverage":{"heading":"H2 16/700 (#cv-h) under H1","axe":0,"sizes":[1366,1920]},
-"swimlane":{"noSearch":"A with href, aria-label '7 New tasks in the Task Queue'","search":"SPAN, aria-label '2 In Progress tasks match the search', no href","dashed":0,"axe":0},
-"wording":["You don't have access to tasks.","You don't have access to assets, so linked assets aren't shown here.","You don't have access to the inputs of this step."],
-"noAssetsRow":{"how":"counts-by-type response mocked as empty on matter 1 (real data has assets)","row":"card 52 px high, No assets yet. left, New Asset text button right, no icon, no dashed","detailsTop":{"withRow":241,"withTiles":243}}}

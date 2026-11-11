@@ -1,9 +1,0 @@
-{"date":"2026-11-06","tip":"0f603c1 (AT 7c5c2b7)",
-"1193":{"h1":"22/700, one line, no ring, takes focus on 404/403/Error/Pending; record not-found H1 does not take focus","card":"480 px, tile 48, one button 36 px","buttons":{"404":"Go to My Work","403":"Go to My Work","error":"Retry","pending":"Check Again","matter":"Go to Matters","task":"Go to Task Queue"}},
-"1194":{"searchMenu":"groups with See all N (24 px), rows 36-60, footer See All Results + 285 results for Demo","userMenu":"14/400 items"},
-"1195":"nav Users count chip: white pill 1","1196":{"sensitive":"h36 r4 amber, icon","inactive":"pg-banner h36 icon","offline":"pg-banner--full warning with Retry","online":"pg-banner--success Back online. green"},
-"swimlaneStatusMenu":["Put on Hold","Complete... (needs step inputs)","Cancel Task"],"swimlaneSpecStale":"expects lowercase labels",
-"1189":{"secs":["Matters 12","Clients 5","Tasks 204","Projects 4","Assets 60"],"seeAll":"A.mf-btn--text 24 px, text See all N","empty":"No results for zzzqq. state block"},
-"1190":{"rowH":[56,57],"times":["yesterday","11/04"],"bellRowsPx":67,"empty":"No notifications yet. / You're all caught up."},
-"1191":{"workDays":"7 pressed filter chips 26 px","oooChips":"Vacation info, Training success, Conference neutral"},
-"1192":{"dialogW":576,"edit":"Cancel / Save Changes","overlap":"ad__banner--danger r8 h50 (local style)","nativeSelect":1}}

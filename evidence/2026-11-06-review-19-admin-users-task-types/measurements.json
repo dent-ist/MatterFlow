@@ -1,9 +1,0 @@
-{"date":"2026-11-06","tip":"e23e129",
-"users":{"1366":[303,126,210,140,113,155,48],"1920":[857,126,210,140,113,155,48],"table":1096,"noOtherFiltersButton":true,"grantAccessInRolesCell":true,"podsCell":"Apply/Cancel popover 308 px (unchanged)"},
-"roles":{"nameWrapsSystemAdmin":true,"masterDetail":{"list":320,"editor":762},"chip":"Built-in, Locked"},
-"pods":{"th":[848,108,140],"noLeadOpenTasks":true},
-"taskTypes":{"1366":[240,179,122,143,128,125,154,48],"table":1139,"frame":1096,"overflow":43,"1920":"fits"},
-"workflows":{"1366":[328,210,96,123,151,140,48]},"steps":{"1366":[245,196,259,96,112,140,48]},
-"drawer":{"w":520,"roleChecklist":10},
-"records":{"taskType":"Overview is edit form + header Edit + Edit Form","workflow":"Overview is edit form + header Edit","step":"Details form + header Edit + Edit Inputs","designer":"own H1, versions bar, inner tabs 32 px"},
-"uniqueness":{"workflowName":"UQ_WorkflowDefinition_Name (all)","stepTitle":"UQ_StepDefinition_Title WHERE IsActive=1 (inactive can duplicate)"}}
