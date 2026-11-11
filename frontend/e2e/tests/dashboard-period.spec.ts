@@ -133,7 +133,8 @@ test.describe('the address', () => {
     await expect(period(other)).toHaveAttribute('data-value', '90d');
     await expect(other).toHaveURL(/period=90d/);
     // The Pod Lead's own memory is not the default any more either: the link counts as their choice.
-    await other.goto('/dashboard');
+    // (The period control lives on Trends and Coverage; Summary has none, so the memory is read where it shows.)
+    await other.goto('/dashboard?tab=trends');
     await expect(period(other)).toHaveAttribute('data-value', '90d');
     await other.close();
   });
@@ -234,13 +235,16 @@ test.describe('accessibility and screens', () => {
       page,
     }) => {
       await page.setViewportSize(size);
-      await openSummary(page, '/dashboard?period=custom&from=2026-09-01&to=2026-09-30');
+      // A window that holds tasks (the ones this file seeds in beforeAll), so Trends draws its plot; From is then set after To.
+      const from = dateInZone(FIRM_ZONE, -29);
+      const to = dateInZone(FIRM_ZONE, 0);
+      await openSummary(page, `/dashboard?period=custom&from=${from}&to=${to}`);
       await period(page).focus();
       await expect(period(page)).toBeFocused();
       await page.keyboard.press('Tab');
       await expect(page.getByLabel('From', { exact: true })).toBeFocused();
       await expect(page.getByLabel('From', { exact: true })).toBeVisible();
-      await page.getByLabel('From', { exact: true }).fill('2026-10-05');
+      await page.getByLabel('From', { exact: true }).fill(dateInZone(FIRM_ZONE, 1));
       await page.getByLabel('From', { exact: true }).press('Enter');
       await expect(page.locator('[data-period-error]')).toBeVisible();
       await shoot(page, `period-summary-custom-${size.width}`);
