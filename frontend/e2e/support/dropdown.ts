@@ -24,9 +24,13 @@ const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 export function asDropdown(button: Locator): Dropdown {
   const page: Page = button.page();
   const options = () => page.locator('.dd-panel [role="option"]:not([aria-disabled="true"])');
+  // Opens the list and waits for its panel. The click is repeated only while the button does not report aria-expanded="true" (a click that a re-render of the host swallowed);
+  // a button that already reports it is never clicked again, which would close the list.
   const open = async () => {
-    if ((await button.getAttribute('aria-expanded')) !== 'true') await button.click();
-    await expect(page.locator('.dd-panel [role="listbox"]')).toBeVisible();
+    await expect(async () => {
+      if ((await button.getAttribute('aria-expanded')) !== 'true') await button.click();
+      await expect(page.locator('.dd-panel [role="listbox"]')).toBeVisible({ timeout: 3000 });
+    }).toPass({ timeout: 20_000 });
   };
   const close = async () => {
     if ((await button.getAttribute('aria-expanded')) === 'true')
@@ -50,7 +54,11 @@ export function asDropdown(button: Locator): Dropdown {
                 hasText: new RegExp(`^\\s*${escape(value ?? '')}\\s*(\\d+)?\\s*$`),
               });
       }
-      await target.first().click();
+      // The list can be re-drawn while it loads (options arrive late, the host re-renders): a click on a node that went away is tried again on the open list.
+      await expect(async () => {
+        if ((await page.locator('.dd-panel [role="listbox"]').count()) === 0) await open();
+        await target.first().click({ timeout: 4000 });
+      }).toPass({ timeout: 20_000 });
       await expect(page.locator('.dd-panel')).toHaveCount(0);
     },
     async optionTexts(): Promise<string[]> {
