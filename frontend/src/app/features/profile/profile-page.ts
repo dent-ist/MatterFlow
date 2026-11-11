@@ -68,7 +68,7 @@ import { shortAccountName } from '../../shared/ui/person-name';
     } @else {
       <mf-page-header heading="My Profile" data-profile-header>
         <!-- The person's name and availability are the context line under the title (D-21, #1135). -->
-        <span mfDescription class="pp__who" data-profile-who>
+        <span mfDescription class="pp__who" [class.pp__who--chip]="works()" data-profile-who>
           <span class="pp__name" data-name>{{ name() }}</span>
           @if (works() && mine.profile()) {
             <mf-availability-chip [availability]="mine.current()" />

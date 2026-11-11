@@ -50,6 +50,16 @@ async function addEntry(
   return dialog;
 }
 
+/** Cancel on a form with typed values asks "Discard changes?"; Discard Changes closes the dialog (and its mask) before the next click. */
+async function discard(dialog: Locator): Promise<void> {
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+  await dialog
+    .getByRole('alertdialog', { name: 'Discard changes?' })
+    .getByRole('button', { name: 'Discard Changes' })
+    .click();
+  await expect(dialog).toBeHidden();
+}
+
 test.describe('My profile: several Out of office entries', () => {
   test('add two entries, edit one, delete one; the list is grouped and the dates are numeric', async ({
     asUser,
@@ -133,12 +143,12 @@ test.describe('My profile: several Out of office entries', () => {
       'overlap another entry: Vacation',
     );
     await expect(overlap).toBeVisible();
-    await overlap.getByRole('button', { name: 'Cancel' }).click();
+    await discard(overlap);
 
     const past = await addEntry(me, { start: inDays(-40).text, type: 'Vacation' });
     await past.getByRole('button', { name: 'Add Out of Office', exact: true }).click();
     await expect(past.locator('[data-ad-start-error]')).toBeVisible();
-    await past.getByRole('button', { name: 'Cancel' }).click();
+    await discard(past);
   });
 
   test('"I\'m back" ends a running entry and the header label goes away', async ({

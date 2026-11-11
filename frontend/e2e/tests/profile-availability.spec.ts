@@ -225,10 +225,11 @@ test.describe('My profile: accessibility (axe wcag2a, wcag2aa, wcag21aa)', () =>
 
       await page.setViewportSize({ width: size.width, height: size.height });
       await page.goto(`/admin/users?status=active&name=${encodeURIComponent(name)}`);
-      // A table row from 640 px (with the availability chip), a card below (its summary line says it, #445).
-      const row = page.locator(size.width < 640 ? 'li.rc' : 'tbody tr', { hasText: name });
-      if (size.width < 640) await expect(row.locator('[data-card-summary]')).toBeVisible();
-      else await expect(row.locator('[data-availability-chip]')).toBeVisible();
+      const row = page.locator(`tr[data-record-id="${userId}"]`);
+      // An ordinary person says "Available" in plain text; outside the work hours the server reports Off Hours, which is a chip (#434).
+      await expect(row.locator('[data-availability-cell]')).toHaveText(
+        /^\s*(Available|Off Hours)\s*$/,
+      );
       expect(await axeViolations(page)).toEqual([]);
 
       await openEditAvailability(row);
