@@ -297,8 +297,14 @@ let nextId = 0;
     .head {
       --mf-cc-bg: var(--mf-surface);
     }
+    /* The chip stays 22 px (D-12); the link around it is the 24 px target (WCAG 2.2 SC 2.5.8, #1364). */
     .count {
       display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      min-width: 24px;
+      min-height: 24px;
       border-radius: var(--mf-radius-pill);
       text-decoration: none;
     }
