@@ -9,8 +9,8 @@ import { crowdPlan, seedCoverage, seedWorkload } from '../support/workload';
  * Screenshot run for docs/ux/dashboard-users (not a test: skipped unless E2E_SCREENSHOTS is set to the output folder):
  *   E2E_SCREENSHOTS=docs/ux/dashboard-users frontend/e2e/run-local.sh -g "users screenshots"
  * Seeds a department of 120 people with the mix of a real firm (about a fifth idle, most light or normal, a few heavy, some out of office or
- * off hours, in two pods) and a small coverage history, then takes the Workload and Coverage views in their main states at 1366x768, 1024x768
- * and 375x812. The accounts of the throwaway database have machine names, so the screenshot run replaces the display names in the workload
+ * off hours, in two pods) and a small coverage history, then takes the Workload and Coverage views in their main states at 1366x768.
+ * The accounts of the throwaway database have machine names, so the screenshot run replaces the display names in the workload
  * response with ordinary sample names (nothing else is changed).
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
@@ -63,10 +63,7 @@ test.describe('users screenshots', () => {
     await sampleNames(page);
     const base = `/dashboard?tab=users&uq=${wl.tag}`;
 
-    for (const [w, h] of [
-      [1366, 768],
-      [1024, 768],
-    ]) {
+    for (const [w, h] of [[1366, 768]]) {
       await page.setViewportSize({ width: w, height: h });
       await page.goto(base);
       await ready(page);

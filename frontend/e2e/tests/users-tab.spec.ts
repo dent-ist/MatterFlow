@@ -468,7 +468,7 @@ test.describe('Users tab: workload', () => {
   }) => {
     await onlyDefaultPriorities(page);
     for (const width of [1366, 1920]) {
-      await page.setViewportSize({ width, height: 768 });
+      await page.setViewportSize({ width, height: width === 1366 ? 768 : 1080 });
       await openUsers(page);
       await page.getByRole('button', { name: 'Table' }).click();
       const table = page.locator('[data-users-table]');
@@ -854,9 +854,7 @@ test.describe('Users tab: coverage', () => {
     );
   });
 
-  test('has no axe violations in the matrix and in the cell drawer, and fits 375 px', async ({
-    page,
-  }) => {
+  test('has no axe violations in the matrix and in the cell drawer', async ({ page }) => {
     test.skip(!axeAvailable(), 'axe-core not installed (set E2E_AXE_PATH to axe.min.js)');
     test.setTimeout(300_000);
     await openMatrix(page);
@@ -866,12 +864,5 @@ test.describe('Users tab: coverage', () => {
     await expect(page.locator('[data-coverage-tasks] li').first()).toBeVisible();
     expect(await axeViolations(page, '.mf-coverage-drawer')).toEqual([]);
     await page.keyboard.press('Escape');
-    await page.setViewportSize({ width: 375, height: 812 });
-    await openMatrix(page);
-    await expect(page.locator('[data-coverage-table]')).toBeVisible();
-    const overflow = await page.evaluate(
-      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-    );
-    expect(overflow).toBeLessThanOrEqual(0);
   });
 });

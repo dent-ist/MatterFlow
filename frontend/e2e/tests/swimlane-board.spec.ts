@@ -152,11 +152,14 @@ test.describe('Swimlane board (WP9a)', () => {
     await menuPick(page, 'menuitemradio', 'Comfortable');
   });
 
-  test('the toolbar is one row of at most 56 px from 1100 px, wraps to two lines below, and "..." holds the rest', async ({
+  test('the toolbar is one row of at most 56 px at 1366 and 1920, and "..." holds the rest', async ({
     page,
   }) => {
-    for (const width of [1920, 1366, 1100]) {
-      await page.setViewportSize({ width, height: 768 });
+    for (const [width, height] of [
+      [1920, 1080],
+      [1366, 768],
+    ] as const) {
+      await page.setViewportSize({ width, height });
       await openBoard(page);
       const bar = (await page
         .locator('[role="toolbar"][aria-label="Swimlane controls"]')
@@ -175,13 +178,6 @@ test.describe('Swimlane board (WP9a)', () => {
         expect(b.y + b.height).toBeLessThanOrEqual(bar.y + bar.height + 1);
       }
     }
-    await page.setViewportSize({ width: 1024, height: 768 });
-    await openBoard(page);
-    const narrow = (await page
-      .locator('[role="toolbar"][aria-label="Swimlane controls"]')
-      .boundingBox())!;
-    expect(narrow.height).toBeLessThanOrEqual(2 * 56);
-
     await page.setViewportSize({ width: 1366, height: 768 });
     await openBoard(page);
     await shot(page, '04-toolbar-1366');

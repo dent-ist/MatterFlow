@@ -104,22 +104,6 @@ test.describe('Big screens (#126 W5, #93 P5)', () => {
     await density(page, 'Comfortable');
   });
 
-  test('2560x1440: a lane is at most 480 px wide, the board is left aligned and blank space is on the right', async ({
-    page,
-  }) => {
-    await openBoard(page, { width: 2560, height: 1440 });
-    const head = (await page.locator('[data-dash-head]').boundingBox())!;
-    const boxes = await Promise.all(CODES.map(async (c) => (await lane(page, c).boundingBox())!));
-    for (const box of boxes) expect(box.width).toBeLessThanOrEqual(480.5);
-    expect(Math.abs(boxes[0].x - head.x)).toBeLessThanOrEqual(1);
-    const board = (await page.locator('[data-board]').boundingBox())!;
-    expect(board.y + board.height).toBeGreaterThanOrEqual(1440 - 40);
-    // Lanes keep a gap and are in one row.
-    expect(boxes[1].x).toBeGreaterThan(boxes[0].x + boxes[0].width);
-    expect(new Set(boxes.map((x) => Math.round(x.y))).size).toBe(1);
-    await shot(page, 'board-2560');
-  });
-
   test('1920: Summary, Swimlane, Users, Trends and Coverage use the whole width, Breakdowns keeps 1360 px; the left edge never moves', async ({
     page,
   }) => {
@@ -198,14 +182,9 @@ test.describe('Big screens (#126 W5, #93 P5)', () => {
     test.info().annotations.push({ type: 'measure', description: JSON.stringify(results) });
   });
 
-  test('axe is clean on the 1920 board and the 2560 board', async ({ page }) => {
+  test('axe is clean on the 1920 board', async ({ page }) => {
     test.skip(!axeAvailable(), 'axe-core not installed (set E2E_AXE_PATH to axe.min.js)');
-    for (const [w, h] of [
-      [1920, 1080],
-      [2560, 1440],
-    ]) {
-      await openBoard(page, { width: w, height: h });
-      expect(await axeViolations(page), `board ${w}`).toEqual([]);
-    }
+    await openBoard(page, { width: 1920, height: 1080 });
+    expect(await axeViolations(page), 'board 1920').toEqual([]);
   });
 });

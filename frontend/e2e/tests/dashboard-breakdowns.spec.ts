@@ -455,7 +455,7 @@ test.describe('Dashboard Breakdowns', () => {
     const world = await seed.world();
     await seed.task(world, { title: `BD shot ${uid()}`, dueDate: dateInZone(FIRM_ZONE, -4) });
     for (const [width, height] of [
-      [1366, 900],
+      [1366, 768],
       [1920, 1080],
     ]) {
       await page.setViewportSize({ width, height });
@@ -477,7 +477,7 @@ test.describe('Dashboard Breakdowns', () => {
     await page.waitForTimeout(300);
     await page.screenshot({ path: path.join(SHOTS!, 'bars-1920-long-list.png') });
     await page.unroute(/\/api\/v1\/dashboard\?/);
-    await page.setViewportSize({ width: 1366, height: 900 });
+    await page.setViewportSize({ width: 1366, height: 768 });
     const section = await openBreakdowns(page);
     await page.addStyleTag({ content: 'html{filter:grayscale(1)}' });
     await section.screenshot({ path: path.join(SHOTS!, 'breakdowns-greyscale-1366.png') });

@@ -8,7 +8,7 @@ import { seedBoard } from '../support/board';
  * Screenshot run for docs/ux/dashboard-swimlane (not a test: skipped unless E2E_SCREENSHOTS is set to the output folder):
  *   E2E_SCREENSHOTS=docs/ux/dashboard-swimlane frontend/e2e/run-local.sh -g "swimlane screenshots"
  * Seeds 160 tasks across clients, matters, priorities, statuses and assignees, then takes the board in its main states at
- * 1366x768, 1024x768 and 375x812.
+ * 1366x768.
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
 
@@ -36,10 +36,7 @@ test.describe('swimlane screenshots', () => {
     };
     const base = `/dashboard?tab=swimlane&q=${board.tag}`;
 
-    for (const [w, h] of [
-      [1366, 768],
-      [1024, 768],
-    ]) {
+    for (const [w, h] of [[1366, 768]]) {
       await page.setViewportSize({ width: w, height: h });
       await page.goto(withLane(page, `${base}&group=none&sort=priority`));
       await ready(page);
