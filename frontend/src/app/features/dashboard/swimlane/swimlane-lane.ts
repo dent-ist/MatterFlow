@@ -62,7 +62,8 @@ let nextId = 0;
         <h3 class="name" aria-level="2" [id]="hid">{{ m.label }}</h3>
         @if (searching()) {
           <!-- The Task Queue does not know the search text, so a link would open another number: a plain chip while searching. -->
-          <span class="count" data-lane-count [attr.aria-label]="countLabel()"
+          <!-- role="img": a bare span may not carry an aria-label (axe aria-prohibited-attr, #1365); the sentence replaces the bare number for a screen reader. -->
+          <span class="count" data-lane-count role="img" [attr.aria-label]="countLabel()"
             ><mf-count-chip>{{ m.count | mfInt }}</mf-count-chip></span
           >
         } @else {

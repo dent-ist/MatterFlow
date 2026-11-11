@@ -1275,6 +1275,8 @@ describe('DashSwimlaneTab', () => {
       expect(c.tagName).toBe('SPAN');
       expect(c.hasAttribute('href')).toBe(false);
       expect(c.hasAttribute('title')).toBe(false);
+      // A span may only carry an aria-label with a role that allows it (axe aria-prohibited-attr, #1365).
+      expect(c.getAttribute('role')).toBe('img');
       expect(c.getAttribute('aria-label')).toMatch(/^\d+ New tasks match the search$/);
       expect(c.className).not.toContain('count--caveat');
       // The note of a capped lane still opens the queue with the search.
