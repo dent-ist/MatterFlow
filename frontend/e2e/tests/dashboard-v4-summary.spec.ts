@@ -166,8 +166,9 @@ test.describe('Summary v4', () => {
     await page.goto('/dashboard');
     const battery = page.locator('[data-battery]');
     await expect(battery).toBeVisible();
-    await expect(battery.locator('[data-battery-big]')).toHaveText(
-      /\d+%|After hours|Everyone out|No workers/,
+    // On an empty database nobody takes work yet: the card says so (`[data-battery-empty]`) instead of drawing the percentage.
+    await expect(battery.locator('[data-battery-big], [data-battery-empty]')).toHaveText(
+      /\d+%|After hours|Everyone out|No one in this scope takes work yet/,
     );
     const people = battery.getByRole('button', { name: 'People' });
     if (await people.count()) {
@@ -192,7 +193,7 @@ test.describe('Summary v4', () => {
     const world = await seed.world();
     await seed.task(world, { title: `Gauge ${uid()}` });
     await page.goto('/dashboard');
-    const gauge = page.locator('[data-compact-gauge]');
+    const gauge = page.locator('[data-gauge]');
     await expect(gauge).toBeVisible();
     await expect(gauge.locator('[data-gauge-badge]')).toContainText(/Level \d|Normal|All clear/);
     await gauge.getByRole('button', { name: /Show them, longest waiting first/ }).click();

@@ -64,7 +64,7 @@ test.describe('A failed list load is shown once, inline (#613)', () => {
     const client = await seed.client({ name: `Toast stays ${Date.now()}` });
     await failApi(page, /\/api\/v1\/clients\/\d+$/, 500, { method: 'PUT' });
     await page.goto(`/clients/${client.clientId}/edit`);
-    const name = page.getByRole('textbox', { name: /Client name/ });
+    const name = page.getByRole('textbox', { name: /Client Name/ });
     await name.fill(`Renamed ${Date.now()}`);
     await page.getByRole('button', { name: /^Save/ }).first().click();
     await expect(toasts(page).first()).toBeVisible();
