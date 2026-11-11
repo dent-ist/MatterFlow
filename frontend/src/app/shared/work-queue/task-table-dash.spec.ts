@@ -104,6 +104,22 @@ describe('TaskTable, Dashboard Summary cells', () => {
     expect(c.querySelectorAll('button')).toHaveLength(1);
   });
 
+  it('keeps the same assignee editor when the optimistic row gives the task an assignee, so the server answer is not lost (#1363)', async () => {
+    await create(
+      [aRow({ assignedUser: undefined })],
+      ['ref', 'title', 'assignee'],
+      ['Task.Assign', 'Task.View'],
+    );
+    const before = cell('assignee').querySelector('mf-row-edit');
+    expect(before).not.toBeNull();
+    fixture.componentRef.setInput('rows', [
+      aRow({ assignedUser: { userId: 5, displayName: 'Priya Nair', isActive: true } }),
+    ]);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(cell('assignee').querySelector('mf-row-edit')).toBe(before);
+  });
+
   it('shows only the word Unassigned without the assign permission (no control)', async () => {
     await create([aRow({ assignedUser: undefined })], ['ref', 'title', 'assignee'], ['Task.View']);
     const c = cell('assignee');
