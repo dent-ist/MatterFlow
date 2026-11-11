@@ -131,6 +131,9 @@ test.describe('#281: Back returns focus to the row you left', () => {
   }
 });
 
+/** The group row that folds the Archived projects of the matter's Projects tab (the shared record grid, #1269). */
+const ARCHIVED_TOGGLE = 'mf-matter-projects tr.rg-group[data-group="archived"] button';
+
 const rowLink = (page: Page, list: string, key: number | string) =>
   page.locator(`a[data-row-list="${list}"][data-row-key="${key}"]`);
 
@@ -160,25 +163,26 @@ test.describe('#281: the other origins, the heading fallback and no focus steal'
       expect(page.url()).toContain('tab=matters');
       if (w === 1366) await shot(page, 'focus-client-matters-back');
 
-      // The matter's Projects tab: an active project, then one from the collapsed Archived group (which opens again).
+      // The matter's Projects tab: a project name opens the project's tasks in the side panel (MD-03) instead of leaving the page; Esc closes it and focus is back on
+      // the name link. The Archived group (collapsed on every visit) opens first for an archived project.
       await page.goto(`/matters/${data.m28.matterId}?tab=projects`);
       link = rowLink(page, 'matter-projects', data.projects[1].projectId);
       await link.click();
-      await expect(page).toHaveURL(new RegExp(`/projects/${data.projects[1].projectId}`));
-      await page.goBack();
-      await expect(link).toBeFocused();
+      const panel = page.getByRole('dialog', { name: data.projects[1].name });
+      await expect(panel).toBeVisible();
       expect(page.url()).toContain('tab=projects');
-      await page.locator('[data-archived-toggle]').click();
+      await page.keyboard.press('Escape');
+      await expect(panel).toBeHidden();
+      await expect(link).toBeFocused();
+      await page.locator(ARCHIVED_TOGGLE).click();
       link = rowLink(page, 'matter-projects', data.archived[0].projectId);
       await link.click();
-      await expect(page).toHaveURL(new RegExp(`/projects/${data.archived[0].projectId}`));
-      await page.goBack();
-      // The Archived group is collapsed on every visit: focus lands on its toggle, which is where that row is.
-      await expect(page.locator('[data-archived-toggle]')).toBeFocused();
-      await expect(page.locator('[data-archived-toggle]')).toHaveAttribute(
-        'aria-expanded',
-        'false',
-      );
+      const archivedPanel = page.getByRole('dialog', { name: data.archived[0].name });
+      await expect(archivedPanel).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(archivedPanel).toBeHidden();
+      await expect(link).toBeFocused();
+      await expect(page.locator(ARCHIVED_TOGGLE)).toHaveAttribute('aria-expanded', 'true');
 
       // Projects list.
       await page.goto(`/projects?name=${encodeURIComponent(`Kbd ${tag} P`)}`);
@@ -354,16 +358,16 @@ test.describe('#282: the copy button is not a Tab stop (the right arrow reaches 
     );
   });
 
-  test("the client's Matters tab and the matter header keep working", async ({ page }) => {
+  test("the client's Matters tab and the matter's CM Number keep working", async ({ page }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/clients/${data.big.clientId}?tab=matters&size=50`);
     const link = rowLink(page, 'client-matters', data.matters[3].matterId);
     await link.focus();
     await page.keyboard.press('ArrowRight');
     await expect(page.locator('tr', { has: link }).locator('button[data-row-stop]')).toBeFocused();
-    // The Matter Details header keeps its permanent copy button: a Tab stop, always shown.
+    // The CM Number on the matter's Summary (the matter header no longer carries it) keeps its permanent copy button: a Tab stop, always shown.
     await page.goto(`/matters/${data.matters[3].matterId}`);
-    const header = page.locator('[data-record-header] button.mf-copy');
+    const header = page.locator('[data-summary-details] button.mf-copy');
     await expect(header).toBeVisible();
     await expect(header).not.toHaveAttribute('tabindex', '-1');
   });
@@ -606,7 +610,8 @@ test.describe('#284: tabs, menus, dialogs and drawers by keyboard', () => {
       }) => {
         await page.setViewportSize({ width: w, height: h });
         await page.goto(r.url());
-        const trigger = page.locator('[data-overflow]');
+        // The matter header also has the Create menu (it is a `data-overflow` too): this test is about More actions.
+        const trigger = page.locator('[data-overflow][aria-label^="More actions"]');
         await expect(trigger).toBeVisible();
 
         // Esc closes the menu and focus is back on the button.
@@ -648,6 +653,9 @@ test.describe('#284: tabs, menus, dialogs and drawers by keyboard', () => {
         await page.keyboard.press('Escape');
         await expect(dialog).toHaveCount(0);
         await expect(trigger).toBeFocused();
+
+        // The Matter page has no Activity drawer any more: its Activity is the Activities tab (MD-01), whose keys the Home and End test above covers.
+        if (r.kind === 'matter') return;
 
         // The Activity drawer: a button on a desktop header, an overflow entry on a phone.
         const activity = page.locator('[data-action=activity]');
