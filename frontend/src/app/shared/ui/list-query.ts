@@ -1,6 +1,7 @@
 import { Directive, computed, inject, input, signal, effect, untracked } from '@angular/core';
 import { Router } from '@angular/router';
 import { ApiError } from '../../core/http/api-error';
+import { QuietRequests } from '../../core/http/interceptors';
 import { LoadState } from './data-table';
 import { StatusFilter, parsePage, parseStatus } from './list-helpers';
 
@@ -127,6 +128,8 @@ export abstract class ServerListPage<T> extends ListQueryPage {
   protected readonly state = signal<LoadState>('loading');
   protected readonly rows = signal<T[]>([]);
   protected readonly total = signal(0);
+  /** The two side counts below fail silently (their hint is just left out), so their failures must not toast either. */
+  private readonly quietSideCounts = inject(QuietRequests);
   /** Records the default Status hides ("3 inactive hidden"); 0 when none, when the default is not applied or when the count failed. */
   protected readonly hiddenCount = signal(0);
   /** The total without the "My matters" scope (the "212" of "14 of 212 matters"); null when the list is not scoped or the count failed. */
@@ -217,7 +220,7 @@ export abstract class ServerListPage<T> extends ListQueryPage {
 
   private async unscopedCount(): Promise<number | null> {
     try {
-      return (await this.fetchUnscoped())?.total ?? null;
+      return (await this.quietSideCounts.run(() => this.fetchUnscoped()))?.total ?? null;
     } catch {
       return null;
     }
@@ -225,7 +228,7 @@ export abstract class ServerListPage<T> extends ListQueryPage {
 
   private async hiddenTotal(): Promise<number> {
     try {
-      return (await this.fetchHidden())?.total ?? 0;
+      return (await this.quietSideCounts.run(() => this.fetchHidden()))?.total ?? 0;
     } catch {
       return 0;
     }
