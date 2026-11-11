@@ -1,6 +1,8 @@
 import { DOCUMENT } from '@angular/common';
 import { DestroyRef, Injectable, inject, signal } from '@angular/core';
 
+const INLINE_FAILURE = /couldn.t (load|refresh)|don.t have access/i;
+
 /**
  * Hands the reference id of the latest failed page load to the inline error alert (UXR-18). The HTTP layer reports a
  * server fault of a GET here and holds the toast back for a moment; an alert that shows `<mf-error-reference />` claims the
@@ -29,11 +31,14 @@ export class ErrorReferenceStore {
     this.pending.add(timer);
   }
 
-  /** True while the page shows its own load-error block (an alert or state block that says "Couldn't load ..." or "Couldn't refresh ..."). */
+  /**
+   * True while the page shows its own failure block for a load: an alert or state block that says "Couldn't load ..." / "Couldn't refresh ..."
+   * (a fault) or "You don't have access to ..." (a 403: the shared no-access block of a list, a record or a panel). One failure is one message (D-52).
+   */
   inlineErrorShown(): boolean {
-    return Array.from(this.doc.querySelectorAll('[role="alert"], [data-state-block="error"]')).some(
-      (el) => /couldn.t (load|refresh)/i.test(el.textContent ?? ''),
-    );
+    return Array.from(
+      this.doc.querySelectorAll('[role="alert"], [data-state-block], [data-no-access]'),
+    ).some((el) => INLINE_FAILURE.test(el.textContent ?? ''));
   }
 
   /** An inline alert is showing the error: drop the held toast(s). */
