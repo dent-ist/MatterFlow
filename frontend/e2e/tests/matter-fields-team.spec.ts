@@ -1,4 +1,5 @@
 import { axeAvailable, axeViolations } from '../support/axe';
+import { dropdownById } from '../support/dropdown';
 import { expect, test } from '../support/fixtures';
 import { SIZES, noSideScroll } from '../support/labels';
 import { uid } from '../support/seed';
@@ -38,8 +39,7 @@ test.describe('Matter page: Team tab and Details fields (#1301)', () => {
 
     await dialog.locator('#member-name').fill('Ann Lee');
     await dialog.locator('#member-email').fill('ann.lee@firm.example');
-    await dialog.locator('#member-title').click();
-    await page.getByRole('option', { name: `Attorney ${token}` }).click();
+    await dropdownById(dialog, 'member-title').selectOption({ label: `Attorney ${token}` });
     if (axeAvailable()) expect(await axeViolations(page), 'Add Team Member dialog').toEqual([]);
     await dialog.getByRole('button', { name: 'Add Member' }).click();
     await expect(page.getByText('Team member added')).toBeVisible();
@@ -50,8 +50,7 @@ test.describe('Matter page: Team tab and Details fields (#1301)', () => {
     await page.locator('[data-add-member]').click();
     await dialog.locator('#member-name').fill('Ann Again');
     await dialog.locator('#member-email').fill('ANN.LEE@firm.example');
-    await dialog.locator('#member-title').click();
-    await page.getByRole('option', { name: `Attorney ${token}` }).click();
+    await dropdownById(dialog, 'member-title').selectOption({ label: `Attorney ${token}` });
     await dialog.getByRole('button', { name: 'Add Member' }).click();
     await expect(dialog.locator('#member-email-error')).toContainText(
       'This email is already on the team.',
