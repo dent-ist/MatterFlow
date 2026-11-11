@@ -27,18 +27,26 @@ test.describe('Summary v4', () => {
   }) => {
     const world = await seed.world();
     const tag = uid();
-    await seed.task(world, { title: `Overdue ${tag}`, dueDate: dateInZone(FIRM_ZONE, -4) });
-    await seed.task(world, { title: `Open unassigned ${tag}` });
+    // One pod of this test's own: the cards and the grid then count only its two tasks, whatever other workers create in the firm meanwhile.
+    const tech = await seed.user(['Data Technician'], 'v4cards');
+    const pod = await seed.pod(undefined, [tech.userId]);
+    await seed.task(world, {
+      title: `Overdue ${tag}`,
+      dueDate: dateInZone(FIRM_ZONE, -4),
+      assignedPodId: pod.podId,
+    });
+    await seed.task(world, { title: `Open unassigned ${tag}`, assignedPodId: pod.podId });
 
     await page.setViewportSize({ width: 1366, height: 768 });
-    await page.goto('/dashboard');
+    await page.goto(`/dashboard?pod=${pod.podId}`);
     await expect(page.locator('[data-dash-cards]')).toBeVisible();
     await expect(page.locator('[data-card]')).toHaveCount(3);
     await expect(page.locator('mf-stat-tile, [data-group="overview"]')).toHaveCount(0);
     await expect(page.locator('mf-dropdown[data-period]')).toHaveCount(0);
     await expect(total(page)).toBeVisible();
 
-    const overdue = Number(await card(page, 'overdue').locator('[data-card-count]').innerText());
+    await expect(card(page, 'overdue').locator('[data-card-count]')).toHaveText('1');
+    const overdue = 1;
     await card(page, 'overdue').click();
     await expect(page).toHaveURL(/card=overdue/);
     await expect(card(page, 'overdue')).toHaveAttribute('aria-pressed', 'true');
@@ -108,8 +116,11 @@ test.describe('Summary v4', () => {
   }) => {
     const world = await seed.world();
     const tag = uid();
-    await seed.task(world, { title: `Assign me ${tag}` });
-    await page.goto(`/dashboard?card=unassigned&q=${tag}`);
+    // A pod of this test's own, so the Unassigned card counts only this task whatever other workers create in the firm meanwhile.
+    const member = await seed.user(['Data Technician'], 'v4assign');
+    const pod = await seed.pod(undefined, [member.userId]);
+    await seed.task(world, { title: `Assign me ${tag}`, assignedPodId: pod.podId });
+    await page.goto(`/dashboard?pod=${pod.podId}&card=unassigned&q=${tag}`);
     const row = page.locator('mf-dash-grid [data-task]').first();
     await expect(row).toBeVisible();
     // The summary is served from a 15 second server cache: a read made just after an earlier test may not hold the task seeded above. Refresh reads it again.
@@ -119,8 +130,7 @@ test.describe('Summary v4', () => {
       .poll(async () =>
         Number(await card(page, 'unassigned').locator('[data-card-count]').innerText()),
       )
-      .toBeGreaterThan(0);
-    const before = Number(await card(page, 'unassigned').locator('[data-card-count]').innerText());
+      .toBe(1);
 
     const assign = row.getByRole('button', { name: 'Unassigned: assign this task' });
     await assign.focus();
@@ -135,7 +145,7 @@ test.describe('Summary v4', () => {
       .poll(async () =>
         Number(await card(page, 'unassigned').locator('[data-card-count]').innerText()),
       )
-      .toBe(before - 1);
+      .toBe(0);
 
     const tech = await personas.named('technician');
     const techPage = await asUser(tech.username);
