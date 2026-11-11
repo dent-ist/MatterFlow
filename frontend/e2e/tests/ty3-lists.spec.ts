@@ -5,6 +5,7 @@ import { Api } from '../support/api';
 import { expect, test } from '../support/fixtures';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { Seeder, uid } from '../support/seed';
+import { gridRows, gridScroller } from '../support/grid';
 
 /**
  * WP-TY3 Lists on the grid contract (epic #352): the row overflow menu on the three Administration lists (#355) and the 44 px rows (#356).
@@ -103,10 +104,7 @@ test.describe('Row overflow menu on the three lists (#355)', () => {
         await expect(button, key).toBeVisible();
 
         // Visible inside the table's box without scrolling it, and the page does not scroll sideways.
-        const wrap = (await page
-          .locator('.mf-table-wrap, ul[data-record-cards]')
-          .first()
-          .boundingBox())!;
+        const wrap = (await gridScroller(page).boundingBox())!;
         const box = (await button.boundingBox())!;
         expect(box.x, key).toBeGreaterThanOrEqual(wrap.x - 1);
         expect(box.x + box.width, key).toBeLessThanOrEqual(wrap.x + wrap.width + 1);
@@ -241,7 +239,7 @@ test.describe('Row overflow menu on the three lists (#355)', () => {
     for (let i = 0; i < 3; i++) await seed.step({ title: `Bottom step ${token} ${i}` });
     await page.setViewportSize({ width: 1366, height: 600 });
     await page.goto(`/admin/steps?title=${token}&size=10`);
-    const rows = page.locator('tbody tr:is([data-row], [data-record-id])');
+    const rows = gridRows(page);
     await expect(rows).toHaveCount(3);
     await rows.last().locator('button[data-overflow]').scrollIntoViewIfNeeded();
     await rows.last().locator('button[data-overflow]').click();

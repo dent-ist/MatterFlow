@@ -5,6 +5,7 @@ import { axeAvailable, axeViolations } from '../support/axe';
 import { LISTS, ListKind, seedMix } from '../support/admin-lists';
 import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
+import { gridRows, gridScroller } from '../support/grid';
 
 /**
  * WP-TY3 narrow-window columns of the three Administration lists (#374 Task Types, #375 Workflows and Workflow Steps): the table's columns
@@ -37,7 +38,7 @@ async function noSideways(page: Page, what: string): Promise<void> {
   expect(widths.doc, `${what}: page scrolls sideways`).toBeLessThanOrEqual(widths.inner);
 }
 
-const tableRows = (page: Page) => page.locator('table tbody tr:is([data-row], [data-record-id])');
+const tableRows = (page: Page) => gridRows(page);
 
 test.describe('narrow-window columns: the grid never scrolls sideways and the row menu stays in view (#374, #375)', () => {
   for (const kind of KINDS) {
@@ -53,7 +54,7 @@ test.describe('narrow-window columns: the grid never scrolls sideways and the ro
         await page.evaluate(() => localStorage.clear()).catch(() => undefined);
         await page.goto(`${info.list}?${info.filter}=${token}`);
         await expect(tableRows(page).first()).toBeVisible();
-        const fit = await page.locator('.mf-table-wrap').evaluate((el) => ({
+        const fit = await gridScroller(page).evaluate((el) => ({
           scroll: el.scrollWidth,
           client: el.clientWidth,
         }));

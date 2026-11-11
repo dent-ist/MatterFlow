@@ -6,7 +6,7 @@ import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { Seeder, uid } from '../support/seed';
 import { dateInZone, FIRM_ZONE } from '../support/time';
-import { ciTexts } from '../support/text';
+import { ci, ciTexts } from '../support/text';
 
 /**
  * One vocabulary and the tab rules of My Work (WP5a): the tab names, tooltips and URL values (M5, #171), the Due soon and overdue order
@@ -85,10 +85,10 @@ test.describe('My Work vocabulary and tab rules', () => {
 
     await myWork.tab(/^Due Soon and Overdue/).click();
     await expect(page).toHaveURL(/view=dueSoon/);
-    await expect(page).toHaveTitle('My Work: Due soon and overdue - LPT Hub');
-    await expect(page.locator('table caption')).toHaveText('My Work: Due soon and overdue');
+    await expect(page).toHaveTitle(ci('My Work: Due soon and overdue - LPT Hub'));
+    await expect(page.locator('table caption')).toHaveText(ci('My Work: Due soon and overdue'));
     await expect(page.locator('.wl-sr')).toHaveText(
-      /^Due soon and overdue: 5 tasks, showing 1 to 5$/,
+      ci(/^Due soon and overdue: 5 tasks, showing 1 to 5$/),
     );
 
     // D1: overdue first (oldest due first), then the due date; ASAP and the far one are not here.

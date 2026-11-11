@@ -1,12 +1,18 @@
 import { Page } from '@playwright/test';
 import { expect, test } from '../support/fixtures';
-import { stickyBandProblems } from '../support/sticky-bands';
+import { seedStickyBandRows, stickyBandProblems } from '../support/sticky-bands';
 
 /**
  * Sticky header bands of the shared grid (#1259). Scrolled down and sideways, every heading and every filter cell of a list stays at the top
  * together, opaque, above the rows. The cause was a global `position: relative` on resizable headings that beat the sticky rule of the grid frame
  * (every heading but the first scrolled away) and a pinned first filter cell one layer under the pinned row cells (the Name filter was hidden).
  */
+// Every list needs more than three rows to have something to scroll: the spec makes them instead of relying on what the other specs of its shard left (#1359).
+test.beforeAll(async ({ seed, admin }) => {
+  test.setTimeout(120_000);
+  await seedStickyBandRows(seed, admin);
+});
+
 const toggle = (page: Page) => page.getByRole('button', { name: /^Filters/ });
 
 async function setFilterRow(page: Page, open: boolean): Promise<void> {

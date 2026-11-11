@@ -12,6 +12,7 @@ import {
 } from '../support/labels';
 import { toasts } from '../support/toasts';
 import { uid } from '../support/seed';
+import { ci } from '../support/text';
 
 /**
  * WP-AD3 #614 and #618: the row menu of a priority. Move up / Move down (announced, focus stays on the row's menu button), Set as default
@@ -154,7 +155,7 @@ test.describe('the priority row menu (#614, #618)', () => {
       "The default priority can't be deleted. Make another priority the default first.",
     ]);
     await expect(page.locator('[data-reason]').first()).toBeVisible();
-    await expect(item(page, /^Set as default/)).toHaveCount(0);
+    await expect(item(page, ci(/^Set as default/))).toHaveCount(0);
     await shot(page, 'priority-default-menu');
     // A disabled entry gives its reason and does nothing (force: Playwright does not click what is aria-disabled).
     await deactivate.click({ force: true });
@@ -174,7 +175,7 @@ test.describe('the priority row menu (#614, #618)', () => {
     const before = (await admin.get<Json[]>('/api/v1/priorities')).map((p) => p.label);
     const at = before.indexOf(name);
     await openRowMenu(page, menuOf(page, name));
-    await item(page, /^Move up/).click();
+    await item(page, ci(/^Move up/)).click();
     await expect(page.locator('[data-announce]')).toContainText(
       `${name} moved to position ${at} of`,
     );
@@ -185,10 +186,10 @@ test.describe('the priority row menu (#614, #618)', () => {
     await page.keyboard.press('Enter');
     await expect(page.getByRole('menu')).toBeVisible();
     for (let i = 0; i < 6; i++) {
-      if (await item(page, /^Move down/).evaluate((el) => el === document.activeElement)) break;
+      if (await item(page, ci(/^Move down/)).evaluate((el) => el === document.activeElement)) break;
       await page.keyboard.press('ArrowDown');
     }
-    await expect(item(page, /^Move down/)).toBeFocused();
+    await expect(item(page, ci(/^Move down/))).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(page.locator('[data-announce]')).toContainText(
       `${name} moved to position ${at + 1} of`,
@@ -206,7 +207,7 @@ test.describe('the priority row menu (#614, #618)', () => {
     await page.goto('/admin/priorities');
     try {
       await openRowMenu(page, menuOf(page, target.label));
-      await item(page, /^Set as default/).click();
+      await item(page, ci(/^Set as default/)).click();
       const dialog = page.getByRole('dialog', {
         name: 'Set Default Priority',
       });

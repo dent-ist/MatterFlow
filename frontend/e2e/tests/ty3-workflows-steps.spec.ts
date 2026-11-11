@@ -4,6 +4,7 @@ import { Page } from '@playwright/test';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
+import { gridRows, gridScroller, nameInRow, rowNamed } from '../support/grid';
 
 /**
  * WP-TY3 Workflows columns (#376 Versions, Steps, Task types, Last published; #377 the Draft badge links to the draft and Not published is
@@ -60,7 +61,7 @@ test.describe('Workflows columns (#376, #377)', () => {
 
     await page.setViewportSize(SIZES[0]);
     await page.goto(`/admin/workflows?name=${token}`);
-    await expect(page.locator('tbody tr:is([data-row], [data-record-id])').first()).toBeVisible();
+    await expect(gridRows(page).first()).toBeVisible();
     expect(await heads(page)).toEqual([
       'Name',
       'Versions',
@@ -70,8 +71,7 @@ test.describe('Workflows columns (#376, #377)', () => {
       'Status',
       'Actions',
     ]);
-    const row = (name: string) =>
-      page.locator(`tbody tr:has([data-row="${token} ${name}"], a:has-text("${token} ${name}"))`);
+    const row = (name: string) => rowNamed(page, `${token} ${name}`);
     await expect(row('Recent flow').locator('[data-steps]')).toHaveText('4');
     await expect(row('Recent flow').locator('[data-task-types]')).toHaveText(
       String(byName[`${token} Recent flow`].taskTypeCount),
@@ -88,7 +88,7 @@ test.describe('Workflows columns (#376, #377)', () => {
     await shot(page, 'p376-workflows');
 
     // 44 px rows with the new cells.
-    for (const r of await page.locator('tbody tr:is([data-row], [data-record-id])').all()) {
+    for (const r of await gridRows(page).all()) {
       const box = (await r.boundingBox())!;
       expect(box.height).toBeGreaterThanOrEqual(43);
       expect(box.height).toBeLessThanOrEqual(45);
@@ -99,17 +99,11 @@ test.describe('Workflows columns (#376, #377)', () => {
     await published.getByRole('button').click();
     await expect(page).toHaveURL(/sort=-publishedAtUtc/);
     await expect(published).toHaveAttribute('aria-sort', 'descending');
-    await expect(page.locator('tbody tr:is([data-row], [data-record-id])').last()).toHaveAttribute(
-      'data-row',
-      `${token} Draft only`,
-    ); // never-published workflows come last in both directions
+    await expect(nameInRow(gridRows(page).last(), `${token} Draft only`)).toBeVisible(); // never-published workflows come last in both directions
     const types = page.getByRole('columnheader', { name: 'Task Types' });
     await types.getByRole('button').click();
     await expect(page).toHaveURL(/sort=-taskTypeCount/);
-    await expect(page.locator('tbody tr:is([data-row], [data-record-id])').first()).toHaveAttribute(
-      'data-row',
-      `${token} Recent flow`,
-    );
+    await expect(nameInRow(gridRows(page).first(), `${token} Recent flow`)).toBeVisible();
     if (axeAvailable()) expect(await axeViolations(page), 'workflows columns').toEqual([]);
   });
 
@@ -181,14 +175,14 @@ test.describe('Workflows columns (#376, #377)', () => {
     for (const [width, names] of expected) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto('/admin/workflows');
-      await expect(page.locator('tbody tr:is([data-row], [data-record-id])').first()).toBeVisible();
+      await expect(gridRows(page).first()).toBeVisible();
       expect(await heads(page), `at ${width}`).toEqual(names);
     }
     const role = await seed.role(['Workflow.Manage', 'Task.View'], 'Workflow only');
     const wf = await asUser((await seed.user([role.name], 'ty3w-wf')).username);
     await wf.setViewportSize(SIZES[0]);
     await wf.goto('/admin/workflows');
-    await expect(wf.locator('tbody tr:is([data-row], [data-record-id])').first()).toBeVisible();
+    await expect(gridRows(wf).first()).toBeVisible();
     // Without TaskType.Manage the number of task types is plain text, never a link to a page the person cannot open.
     await expect(wf.locator('[data-task-types-link]')).toHaveCount(0);
     await expect(wf.locator('[data-versions]').first()).toBeVisible();
@@ -233,7 +227,7 @@ test.describe('Steps Inputs column (#378)', () => {
 
     await page.setViewportSize(SIZES[0]);
     await page.goto(`/admin/steps?title=${token}`);
-    await expect(page.locator('tbody tr:is([data-row], [data-record-id])').first()).toBeVisible();
+    await expect(gridRows(page).first()).toBeVisible();
     expect((await heads(page)).includes('Inputs')).toBe(true);
     await expect(cell('Drafted').locator('[data-inputs-draft]')).toHaveText('Draft');
     await expect(cell('Drafted').locator('[data-tone="neutral"]')).toHaveCount(1);
@@ -250,14 +244,12 @@ test.describe('Steps Inputs column (#378)', () => {
     for (const width of [1024, 1280, 1366, 1920]) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto(`/admin/steps?title=${token}`);
-      await expect(page.locator('tbody tr:is([data-row], [data-record-id])').first()).toBeVisible();
-      for (const r of await page.locator('tbody tr:is([data-row], [data-record-id])').all()) {
+      await expect(gridRows(page).first()).toBeVisible();
+      for (const r of await gridRows(page).all()) {
         const box = (await r.boundingBox())!;
         expect(box.height, `at ${width}`).toBeLessThanOrEqual(45);
       }
-      const fit = await page
-        .locator('.mf-table-wrap')
-        .evaluate((el) => el.scrollWidth <= el.clientWidth);
+      const fit = await gridScroller(page).evaluate((el) => el.scrollWidth <= el.clientWidth);
       expect(fit, `at ${width}`).toBe(true);
     }
   });

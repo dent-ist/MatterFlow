@@ -3,6 +3,7 @@ import path from 'node:path';
 import { Locator, Page } from '@playwright/test';
 import { Api, Json } from './api';
 import { expect } from './fixtures';
+import { rowByKey } from './grid';
 import { uid } from './seed';
 
 /** Shared helpers of the WP-AD3 Labels specs (`ad3-*`): the four widths of the acceptance criteria, screenshots, the reflow check. */
@@ -51,11 +52,11 @@ export async function addPriorities(
   };
 }
 
-/** The table row or the phone card of a priority, found by the exact name of its link (a name that merely contains the text is another row). */
+/** The table row or the phone card of a priority: the row whose `data-row` is exactly the name (a name that merely contains the text is another row). */
 export const priorityRow = (page: Page, name: string) =>
-  page
-    .locator('tbody tr[data-row], li.rc')
-    .filter({ has: page.getByRole('button', { name, exact: true }) });
+  rowByKey(page, name).or(
+    page.locator('li.rc').filter({ has: page.getByRole('button', { name, exact: true }) }),
+  );
 
 /**
  * Opens the row menu of `trigger` (the "Actions for ..." button). A row far down the list is scrolled into view first and the page is given

@@ -1,4 +1,6 @@
 import { Page } from '@playwright/test';
+import { Api } from './api';
+import { Seeder, uid } from './seed';
 
 /**
  * The two header bands of a shared grid (#1259): after the grid scrolled down and sideways, EVERY heading cell must still be sticky at the top
@@ -61,4 +63,31 @@ export async function stickyBandProblems(page: Page): Promise<string[]> {
     }
     return problems;
   });
+}
+
+/**
+ * Makes sure every list that `stickyBandProblems` looks at has MORE THAN THREE rows (E2E #1359). The check needs a scrolling grid; a list with three rows or fewer has
+ * nothing to scroll and the helper answered "no grid with more than three rows", so the spec passed or failed with whatever the other specs of its CI shard had left
+ * behind (28 failures in the first full run, 4 in the second, all Projects). Call it once in a `beforeAll`: it creates four clients with a matter, a workflow and a task
+ * type each (Clients, Matters, Workflows, Task Types and Steps lists), four projects, four assets and four tasks assigned to the System Admin (Projects, Assets, Task
+ * Queue and My Work), four people and four pods (Users, Pods) and four asset types. It only adds records, so it is safe next to other specs.
+ */
+export async function seedStickyBandRows(seed: Seeder, admin: Api, rows = 4): Promise<void> {
+  const me = await admin.get<{ userId: number }>('/api/v1/me');
+  const worlds = [];
+  for (let i = 0; i < rows; i++) worlds.push(await seed.world());
+  const first = worlds[0];
+  for (let i = 0; i < rows; i++) {
+    await seed.project(first.matter, `Sticky Project ${uid()}`);
+    await seed.asset(first.matter, `Sticky Asset ${uid()}`);
+    await seed.task(first, { title: `Sticky Task ${uid()}`, assignedUserId: me.userId });
+    await admin.post('/api/v1/asset-types', {
+      name: `Sticky Asset Type ${uid()}`,
+      description: null,
+    });
+  }
+  for (let i = 0; i < rows; i++) {
+    const person = await seed.user([], 'sticky');
+    await seed.pod(`Sticky Pod ${uid()}`, [person.userId]);
+  }
 }
