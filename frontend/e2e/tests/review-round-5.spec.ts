@@ -45,19 +45,24 @@ test.describe('Review round 5: profile availability, Swimlane and Users', () => 
     await expect(page.locator('[data-scroll-hint]')).toHaveCount(0);
   });
 
-  test('UXR5-05: a one-line Swimlane card title is a 24 px target (axe target-size) at 1024', async ({
+  test('UXR5-05: a one-line Swimlane card title is a 24 px target (axe target-size) at 1366 and 1920', async ({
     page,
     seed,
   }) => {
     const world = await seed.world({ stepCount: 2 });
     const tag = uid();
     await seed.task(world, { title: `Hi ${tag}` });
-    await page.setViewportSize({ width: 1024, height: 768 });
-    await page.goto(`/dashboard?tab=swimlane&q=${tag}`);
-    const open = page.locator('[data-card-open]', { hasText: `Hi ${tag}` });
-    await expect(open).toBeVisible();
-    expect((await open.boundingBox())!.height).toBeGreaterThanOrEqual(24);
-    await expectNoAxeViolations(page, 'swimlane at 1024');
+    for (const [width, height] of [
+      [1366, 768],
+      [1920, 1080],
+    ]) {
+      await page.setViewportSize({ width, height });
+      await page.goto(`/dashboard?tab=swimlane&q=${tag}`);
+      const open = page.locator('[data-card-open]', { hasText: `Hi ${tag}` });
+      await expect(open).toBeVisible();
+      expect((await open.boundingBox())!.height).toBeGreaterThanOrEqual(24);
+      await expectNoAxeViolations(page, `swimlane at ${width}`);
+    }
   });
 
   test('UXR5-03: in the "Edit Availability" dialog the Save bar sits flush with the bottom of the dialog (no form rows show under it)', async ({
@@ -70,11 +75,12 @@ test.describe('Review round 5: profile availability, Swimlane and Users', () => 
       `/admin/users?status=all&name=${encodeURIComponent(person.username.split('\\')[1])}`,
     );
     await openEditAvailability(page.locator('tbody tr').first());
+    // The Cancel and Save Changes bar is the footer of the shared form dialog.
     const dialog = page.getByRole('dialog');
-    await expect(dialog.locator('[data-actions]')).toBeVisible();
+    await expect(dialog.locator('.p-dialog-footer')).toBeVisible();
     await expect
       .poll(async () => {
-        const bar = await dialog.locator('[data-actions]').boundingBox();
+        const bar = await dialog.locator('.p-dialog-footer').boundingBox();
         const box = await dialog.boundingBox();
         return bar && box ? Math.round(box.y + box.height - (bar.y + bar.height)) : null;
       })
