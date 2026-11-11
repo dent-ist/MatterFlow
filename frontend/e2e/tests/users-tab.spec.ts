@@ -1,10 +1,11 @@
 import { Locator, Page } from '@playwright/test';
 import { Json } from '../support/api';
+import { shownName } from '../support/text';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { onlyDefaultPriorities } from '../support/isolate';
 import { TaskQueuePage } from '../pages/queues.pages';
-import { labelledDropdown, pickUserStates, userStateCount } from '../support/dropdown';
+import { labelledDropdown, pickUserStates, userStateCount, usersFilter } from '../support/dropdown';
 import {
   CoverageSeed,
   PLAN,
@@ -60,6 +61,8 @@ async function tokenColor(page: Page, token: string): Promise<string> {
 }
 
 const esc = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/** A date as the app prints it in a name: month and day with a slash (UI2 D-60). */
+const DATE = '\\d{1,2}/\\d{1,2}';
 
 test.describe('Users tab: workload', () => {
   test('is the fifth tab, shows a card per person and keeps its own address', async ({ page }) => {
@@ -182,14 +185,15 @@ test.describe('Users tab: workload', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await openUsers(page);
     const box = (await card(page, 'critical').boundingBox())!;
-    expect(box.height).toBeLessThanOrEqual(64);
-    expect(box.width).toBeLessThanOrEqual(200);
+    // One fixed height for every tile since the Users cards redesign (US-12, #1104): 77 px.
+    expect(box.height).toBeLessThanOrEqual(80);
+    expect(box.width).toBeLessThanOrEqual(280);
     expect(box.width * box.height).toBeLessThanOrEqual(89_000 / 4);
     const perLine = await page.locator('[data-users-grid] li').evaluateAll((els) => {
       const top = els[0].getBoundingClientRect().top;
       return els.filter((e) => Math.abs(e.getBoundingClientRect().top - top) < 2).length;
     });
-    expect(perLine).toBeGreaterThanOrEqual(6);
+    expect(perLine).toBeGreaterThanOrEqual(4);
   });
 
   test('shows the default order: available first, out of office last, lighter load first', async ({
@@ -536,8 +540,11 @@ test.describe('Users tab: workload', () => {
 
     const ref = (await rows.first().locator('.mf-ref').first().textContent())!.trim();
     await drawer.getByRole('button', { name: `Reassign ${ref}` }).click();
-    await page.getByRole('textbox', { name: 'Search People' }).fill(person('idle').displayName);
-    await page.getByRole('menuitemradio', { name: person('idle').displayName }).click();
+    // The picker prints a person without the domain of the account (the content rules of #1347).
+    const idleShown = shownName(person('idle').displayName);
+    await page.getByRole('textbox', { name: 'Search People' }).fill(idleShown);
+    await page.getByRole('menuitemradio', { name: idleShown }).click();
+    // The announcement says the full account name.
     await expect(drawer.locator('[data-drawer-live]')).toContainText(
       `${ref} reassigned to ${person('idle').displayName}`,
     );
@@ -668,10 +675,10 @@ test.describe('Users tab: workload', () => {
       await expect(page.locator('[data-assign-dialog]')).toBeVisible();
       await page.locator('[data-assign-dialog] [data-assign-allpods]').check();
       await expect(page.locator('[data-assign-row]').first()).toBeVisible();
-      expect(await axeViolations(page, '.mf-users-assign'), `picker ${width}`).toEqual([]);
+      expect(await axeViolations(page, '.p-dialog'), `picker ${width}`).toEqual([]);
       await page.locator('[data-assign-next]').click();
       await expect(page.locator('[data-assign-confirm]')).toBeVisible();
-      expect(await axeViolations(page, '.mf-users-assign'), `confirm ${width}`).toEqual([]);
+      expect(await axeViolations(page, '.p-dialog'), `confirm ${width}`).toEqual([]);
     }
   });
 });
@@ -709,7 +716,12 @@ test.describe('Users tab: coverage', () => {
     const pm = await asUser(username);
     await pm.goto(`/dashboard?tab=users&view=coverage&uq=${wl.tag}`);
     await expect(pm.locator('[data-user-card]').first()).toBeVisible();
-    await expect(pm.locator('[data-users-views]')).toHaveCount(0);
+    // Without Dashboard.ViewCoverage the switch offers Workload and Skills (Skills needs only the Users tab) and no Coverage.
+    await expect(pm.locator('[data-users-views]').getByRole('button')).toHaveText([
+      'Workload',
+      'Skills',
+    ]);
+    await expect(pm.locator('[data-users-views] [data-view="coverage"]')).toHaveCount(0);
     expect((await pm.request.get('/api/v1/dashboard/coverage')).status()).toBe(403);
   });
 
@@ -768,20 +780,20 @@ test.describe('Users tab: coverage', () => {
     await expect(cell(page, b, cov.typeIds.review)).toHaveAttribute(
       'aria-label',
       new RegExp(
-        `^${esc(b.displayName)}, ${esc(cov.typeNames.review)}: 0 completed from \\w{3} \\d+ to \\w{3} \\d+`,
+        `^${esc(b.displayName)}, ${esc(cov.typeNames.review)}: 0 completed from ${DATE} to ${DATE}`,
       ),
     );
     await expect(cell(page, a, cov.typeIds.production)).toHaveAttribute(
       'aria-label',
       new RegExp(
-        `^${esc(a.displayName)}: 3 ${esc(cov.typeNames.production)} tasks completed from \\w{3} \\d+ to \\w{3} \\d+`,
+        `^${esc(a.displayName)}: 3 ${esc(cov.typeNames.production)} tasks completed from ${DATE} to ${DATE}`,
       ),
     );
     // Relative to the row by default: A has the most Production, so the darkest step; absolute: 3 is step 2.
     await expect(
       cell(page, a, cov.typeIds.production).locator('xpath=ancestor::td'),
     ).toHaveAttribute('data-step', '4');
-    await page.getByLabel('Color Scale').selectOption('absolute');
+    await (await usersFilter(page, 'Color Scale')).selectOption('absolute');
     await expect(
       cell(page, a, cov.typeIds.production).locator('xpath=ancestor::td'),
     ).toHaveAttribute('data-step', '2');
@@ -795,7 +807,9 @@ test.describe('Users tab: coverage', () => {
       'aria-label',
       /completed from /,
     );
-    await page.getByLabel('People', { exact: true }).selectOption('total');
+    // People (and Color Scale, Task Types) are in the Display popover of the Coverage toolbar.
+    await (await usersFilter(page, 'People')).selectOption('total');
+    await page.keyboard.press('Escape');
     await expect(page.locator('thead th[data-person]').first()).toContainText(
       cov.people.a.displayName,
     );

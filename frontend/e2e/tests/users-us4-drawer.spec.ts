@@ -291,7 +291,10 @@ test.describe('#440 Pods, Availability and Profile', () => {
     // The first pod of a person with no pods is the primary one already (no "Make Primary" button then).
     const makePrimary = pop.getByRole('button', { name: `Make ${otherPodName} the primary pod` });
     if ((await makePrimary.count()) > 0) await makePrimary.click();
-    await pop.locator('[data-pods-apply]').click();
+    // Apply is aria-disabled until the choice is a change the popover accepts: wait for that instead of clicking into a disabled button.
+    const apply = pop.locator('[data-pods-apply]');
+    await expect(apply).not.toHaveAttribute('aria-disabled', 'true');
+    await apply.click();
     await expect(pods).toContainText(otherPodName);
     await expect(page.getByRole('status').filter({ hasText: /Pods of/ })).toBeVisible();
     await expect(pods.locator('[data-pods-trigger]')).toBeFocused();

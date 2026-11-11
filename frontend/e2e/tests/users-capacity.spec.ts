@@ -126,12 +126,14 @@ test.describe('Users tab: capacity, population and toolbar', () => {
     // The address is the state: reload keeps it, and Hide them goes back to the rule.
     await openUsers(page, '&unopod=1');
     await expect(cardOf(page, podless.idle.displayName)).toBeVisible();
+    // The population line lives in the Who Is Counted popover now; its button says Hide them while the pod-less people are shown.
+    await page.locator('[data-who-counted]').click();
     await page.getByRole('button', { name: 'Hide them' }).click();
     await expect(page).not.toHaveURL(/unopod/);
     await expect(cardOf(page, podless.idle.displayName)).toHaveCount(0);
   });
 
-  test('counts are equal in the chips, the capacity strip, the tile totals and the API; a Pod scope hides nobody', async ({
+  test('counts are equal in the chips, the tile totals and the API; a Pod scope hides nobody', async ({
     page,
   }) => {
     await openUsers(page);
@@ -168,10 +170,6 @@ test.describe('Users tab: capacity, population and toolbar', () => {
     const slv = levels(scoped);
     expect(await userStateCount(page, 'idle')).toBe(slv.idle);
     expect(await userStateCount(page, 'heavy')).toBe(slv.heavy);
-    await expect(page.locator('[data-capacity]')).toHaveAttribute(
-      'aria-label',
-      new RegExp(`^Capacity: ${slv.idle} idle, ${slv.light} light`),
-    );
     await expect(page.locator('[data-summary-unassigned]')).toContainText(
       `${scoped.summary.unassignedTasks} unassigned task`,
     );
@@ -210,7 +208,7 @@ test.describe('Users tab: capacity, population and toolbar', () => {
     await page.goto('/dashboard?tab=users');
     await expect(page.locator('[data-user-card]').first()).toBeVisible();
     const views = page.locator('[data-users-views]');
-    await expect(views.getByRole('button')).toHaveText(['Workload', 'Coverage']);
+    await expect(views.getByRole('button')).toHaveText(['Workload', 'Coverage', 'Skills']);
     await expect(views.getByRole('button', { name: 'Workload' })).toHaveAttribute(
       'aria-pressed',
       'true',
@@ -218,7 +216,8 @@ test.describe('Users tab: capacity, population and toolbar', () => {
     await expect(views.locator('[role="tablist"]')).toHaveCount(0);
     await expect(page.getByRole('heading', { name: 'Team workload', exact: true })).toHaveCount(1);
 
-    // Keyboard order: switch, search, filters, sort, then density, layout and legend.
+    // Keyboard order: the switch (ONE Tab stop for Workload, Coverage and Skills: the arrows move inside it), search, sort, layout (one stop), the
+    // state filter, who is counted and the unassigned button.
     await views.getByRole('button', { name: 'Workload' }).focus();
     const order: string[] = [];
     for (let i = 0; i < 7; i++) {
@@ -235,15 +234,15 @@ test.describe('Users tab: capacity, population and toolbar', () => {
       );
       await page.keyboard.press('Tab');
     }
-    expect(order).toEqual([
+    expect(order.slice(0, 6)).toEqual([
       'Workload',
-      'Coverage',
-      'Skills',
       'wl-q',
-      'Filters',
+      'Sort: Availability and Load',
       'Layout: cards',
-      'Layout: table',
+      'State: All States',
+      'What the states mean and who is counted',
     ]);
+    expect(order[6]).toMatch(/unassigned tasks?\. Show the list$/);
 
     await views.getByRole('button', { name: 'Coverage' }).click();
     await expect(page).toHaveURL(/view=coverage/);
