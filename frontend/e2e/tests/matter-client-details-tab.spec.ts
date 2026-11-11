@@ -211,7 +211,10 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
     await expect(overflow).toBeFocused();
     await overflow.click();
     await page.getByRole('menuitem', { name: ci('Set inactive') }).click();
-    await page.getByRole('dialog').getByRole('button', { name: ci('Set Client Inactive') }).click();
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: ci('Set Client Inactive') })
+      .click();
     await overflow.click();
     await expect(page.getByRole('menuitem', { name: ci('Set active') })).toBeVisible();
     await expect(page.locator('[data-record-header]')).toContainText('Inactive'); // the status is in the header only (WP6)
