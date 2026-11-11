@@ -4,6 +4,7 @@ import { Page } from '@playwright/test';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
+import { gridRows } from '../support/grid';
 
 /**
  * WP-TY3 Task Types list columns: 44 px rows with a Default workflow column, a number of Workflows and a neutral Not usable badge (#371),
@@ -73,8 +74,8 @@ test.describe('Task Types rows and columns (#371)', () => {
         ).toBeGreaterThanOrEqual(43);
         expect(box.height).toBeLessThanOrEqual(45);
       }
-      // No red box, no chips: the reason is a neutral badge in Status with the text as its description.
-      await expect(page.locator('tbody .chip')).toHaveCount(0);
+      // No red box, no chips: the reason is a neutral badge in Status with the text as its description. (The round icon chip before the name is decorative, aria-hidden.)
+      await expect(page.locator('tbody .chip:not([aria-hidden="true"])')).toHaveCount(0);
       await expect(page.locator('[data-assoc-chip]')).toHaveCount(0);
       const badge = page.locator(
         `tbody tr:has([data-row="${token} Bare"], a:has-text("${token} Bare")) [data-not-usable]`,
@@ -99,39 +100,24 @@ test.describe('Task Types rows and columns (#371)', () => {
     await expect(long).toHaveAttribute('title', /.+/);
   });
 
-  test('the columns drop in a fixed order: Open tasks below 1366, Workflows below 1200, Request form below 1100, Target below 1000', async ({
+  test('every column shows at 1366 and 1920 (the narrower windows that dropped Open tasks, Workflows, Request form and Target went with the desktop-only rule)', async ({
     page,
   }) => {
     const all = [
       'Name',
       'Default Workflow',
-      'Target (days)',
+      'Target (Days)',
       'Request Form',
       'Workflows',
       'Open Tasks',
       'Status',
       'Actions',
     ];
-    const noTasks = all.filter((h) => h !== 'Open Tasks');
-    const noWorkflows = noTasks.filter((h) => h !== 'Workflows');
-    const noForm = noWorkflows.filter((h) => h !== 'Request Form');
-    const expected: [number, string[]][] = [
-      [1920, all],
-      [1366, all],
-      [1365, noTasks],
-      [1280, noTasks],
-      [1200, noTasks],
-      [1199, noWorkflows],
-      [1100, noWorkflows],
-      [1099, noForm],
-      [1000, noForm],
-      [900, noForm.filter((h) => h !== 'Target (days)')],
-    ];
-    for (const [width, names] of expected) {
-      await page.setViewportSize({ width, height: 900 });
+    for (const size of SIZES) {
+      await page.setViewportSize(size);
       await page.goto('/admin/task-types');
-      await expect(page.locator('tbody tr:is([data-row], [data-record-id])').first()).toBeVisible();
-      expect(await heads(page), `at ${width}`).toEqual(names);
+      await expect(gridRows(page).first()).toBeVisible();
+      expect(await heads(page), `at ${size.width}`).toEqual(all);
     }
   });
 
@@ -212,16 +198,10 @@ test.describe('Open tasks (#373)', () => {
     await header.getByRole('button').click();
     await expect(page).toHaveURL(/sort=-openTasks/);
     await expect(header).toHaveAttribute('aria-sort', 'descending');
-    await expect(page.locator('tbody tr:is([data-row], [data-record-id])').first()).toHaveAttribute(
-      'data-row',
-      `${token} Busy`,
-    );
+    await expect(gridRows(page).first()).toContainText(`${token} Busy`);
     await header.getByRole('button').click();
     await expect(page).toHaveURL(/sort=openTasks/);
-    await expect(page.locator('tbody tr:is([data-row], [data-record-id])').first()).toHaveAttribute(
-      'data-row',
-      `${token} Quiet`,
-    );
+    await expect(gridRows(page).first()).toContainText(`${token} Quiet`);
 
     // The link opens the Task Queue with the type filter: the address carries `type=<id>` and the open statuses.
     await cell('Busy').getByRole('link').click();

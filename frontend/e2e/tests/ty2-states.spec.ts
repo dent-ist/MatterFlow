@@ -8,7 +8,7 @@ import { uid } from '../support/seed';
 
 /**
  * WP-TY2 list states of the Task Types administration (#370): the skeleton has the table's columns and the list loads without a layout
- * shift, a failure is one message with the reference and Retry, the first-run text has no second "New" button, and a list without a
+ * shift, a failure is one message with the reference and Retry, the first-run text offers the same "New" button as the header, and a list without a
  * match offers Clear filters. Screenshots go to E2E_SCREENSHOTS (docs/ux/task-types-review/fixes/ty2-shell).
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
@@ -156,7 +156,7 @@ test.describe('list loading, error and empty states follow the grid-body pattern
       }
     });
 
-    test(`${kind}: the first-run text has no second "New" button under the header's one, and no-match offers Clear filters`, async ({
+    test(`${kind}: the first-run text offers the same "New" button as the header (spec 15.3) and no link, and no-match offers Clear filters`, async ({
       page,
     }) => {
       await page.route(LIST_API[kind], (route) =>
@@ -171,12 +171,13 @@ test.describe('list loading, error and empty states follow the grid-body pattern
         await page.goto(info.list);
         const empty = page.locator('[data-empty="none"]');
         await expect(empty).toBeVisible();
-        await expect(empty.locator('a, button')).toHaveCount(0);
-        // The one way to create is the header's button.
+        // A first-use admin list shows the header's "New <Thing>" button once more in its body (spec 15.3, D-51): the only control in the block.
+        const newName = /New (task type|workflow|step)$/i; // not anchored at the start: the icon glyph is part of the name
+        await expect(empty.locator('a')).toHaveCount(0);
+        await expect(empty.locator('button')).toHaveCount(1);
+        await expect(empty.getByRole('button', { name: newName })).toBeVisible();
         await expect(
-          page
-            .locator('mf-page-header')
-            .getByRole('button', { name: /New (task type|workflow|step)/ }),
+          page.locator('mf-page-header').getByRole('button', { name: newName }),
         ).toBeVisible();
         if (axeAvailable()) expect(await axeViolations(page), `empty at ${size.width}`).toEqual([]);
         await noSideScroll(page, `${kind} empty at ${size.width}`);

@@ -229,8 +229,8 @@ test.describe('the list says what the default Status hides and Status sorts (#36
       await expect(page).toHaveURL(/sort=status/);
       await expect(header).toHaveAttribute('aria-sort', 'ascending');
       const order = () =>
-        dataRows(page).evaluateAll((trs) => trs.map((tr) => tr.getAttribute('data-row')));
-      const active = rows.filter((r) => r.active).map((r) => r.name);
+        dataRows(page).evaluateAll((trs) => trs.map((tr) => tr.getAttribute('data-record-id')));
+      const active = rows.filter((r) => r.active).map((r) => String(r.id));
       await expect.poll(async () => (await order()).slice(0, 2).sort()).toEqual(active.sort());
       await header.getByRole('button').click();
       await expect(header).toHaveAttribute('aria-sort', 'descending');

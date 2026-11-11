@@ -1,5 +1,6 @@
 import { Page } from '@playwright/test';
 import { expect, test } from '../support/fixtures';
+import { ci } from '../support/text';
 import { atEverySize } from '../support/screens';
 import { uid } from '../support/seed';
 
@@ -33,12 +34,12 @@ const ROUTES: DesignerRoute[] = [
   {
     key: 'asset-type-form',
     noun: 'asset type',
-    title: 'Asset Type',
+    title: 'Asset type',
     url: '/admin/asset-types/99999999/form',
     api: '**/api/v1/asset-types/99999999',
     method: 'GET',
     list: 'Asset Types',
-    crumbs: ['Administration', 'Asset Types', 'Asset Type'],
+    crumbs: ['Administration', 'Asset Types', 'Asset type'],
     listUrl: /\/admin\/asset-types$/,
   },
   {
@@ -162,7 +163,7 @@ test.describe('Designer not found, no access and failure states (#541)', () => {
     // The Matter form is a singleton the whole suite shares: depending on what earlier specs left (published, or a draft in progress) the
     // bar offers Create new draft, Open draft or Publish. Any of them proves the designer drew its action bar after Retry.
     await expect(
-      page.getByRole('button', { name: /^(Create new draft|Open draft|Publish)/ }).first(),
+      page.getByRole('button', { name: ci(/^(Create new draft|Open draft|Publish)/) }).first(),
     ).toBeVisible();
   });
 

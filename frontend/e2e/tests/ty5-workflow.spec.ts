@@ -5,6 +5,7 @@ import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { Setup, build } from '../support/ty-workflow';
 import { uid } from '../support/seed';
+import { ci } from '../support/text';
 
 /**
  * WP-TY5 Workflow record page (epic #352): the record header, summary strip and tabs (#387, #388), the Task types tab (#389), the
@@ -231,7 +232,7 @@ test.describe('Workflow record page (WP-TY5)', () => {
 
       // Row menu of the published version while a draft exists: Create draft is disabled with its reason, Open draft v3 is offered, Retire works.
       await page.getByRole('button', { name: 'Actions for v2' }).click();
-      const create = page.getByRole('menuitem', { name: /Create draft from this version/ });
+      const create = page.getByRole('menuitem', { name: ci(/Create draft from this version/) });
       await expect(create).toHaveAttribute('aria-disabled', 'true');
       await expect(page.getByRole('menuitem', { name: 'Open draft v3' })).toBeVisible();
       await expect(page.getByRole('menuitem', { name: 'Retire v2' })).toBeVisible();

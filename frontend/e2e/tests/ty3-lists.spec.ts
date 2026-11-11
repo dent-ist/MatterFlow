@@ -108,7 +108,8 @@ test.describe('Row overflow menu on the three lists (#355)', () => {
         const box = (await button.boundingBox())!;
         expect(box.x, key).toBeGreaterThanOrEqual(wrap.x - 1);
         expect(box.x + box.width, key).toBeLessThanOrEqual(wrap.x + wrap.width + 1);
-        expect(box.width, key).toBeGreaterThanOrEqual(44);
+        // The row menu is an icon-only quiet button with a 36 px target in a 44 px row (theme guide, grid actions column, UI2).
+        expect(box.width, key).toBeGreaterThanOrEqual(36);
         expect(
           await page.evaluate(
             () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
@@ -290,40 +291,11 @@ test.describe('Row overflow menu on the three lists (#355)', () => {
         }
         await page.setViewportSize({ width: size.w, height: size.h });
 
-        // Below 640 px the lists are cards (#374, #375): the 44 px rule is the table's; the cards keep the tooltips, the no-scroll and axe.
-        const cardsOnly = size.w < 640;
         await page.goto(`/admin/workflows?name=${token}`);
         for (const name of [longName, plain.name]) {
           const row = rowOf(page, name);
           await expect(row).toBeVisible();
-          if (!cardsOnly) expectRow44((await row.boundingBox())!.height, name);
-        }
-        if (cardsOnly) {
-          await expect(rowOf(page, longName).locator('a[data-card-name]')).toHaveAttribute(
-            'title',
-            longName,
-          );
-          expect(
-            await page.evaluate(
-              () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
-            ),
-          ).toBe(true);
-          expect(await axeViolations(page), 'workflows cards axe').toEqual([]);
-          await shot(page, 'workflows-long', size.w);
-          await page.goto(`/admin/steps?title=${token}`);
-          await expect(rowOf(page, longTitle)).toBeVisible();
-          await expect(rowOf(page, longTitle).locator('a[data-card-name]')).toHaveAttribute(
-            'title',
-            longTitle,
-          );
-          expect(
-            await page.evaluate(
-              () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
-            ),
-          ).toBe(true);
-          expect(await axeViolations(page), 'steps cards axe').toEqual([]);
-          await shot(page, 'steps-long', size.w);
-          return;
+          expectRow44((await row.boundingBox())!.height, name);
         }
         const nameLink = rowOf(page, longName).locator('a.pg-name');
         await expect(nameLink).toHaveAttribute('title', longName);
@@ -356,21 +328,26 @@ test.describe('Row overflow menu on the three lists (#355)', () => {
         } else {
           await expect(stepRow.locator('[data-tag]')).toHaveCount(0);
         }
-        const headers = await page.locator('thead tr:first-child th').allTextContents();
-        if (size.w >= 1600) {
-          expect(headers).toContain('Description');
-          await expect(stepRow.locator('td.ad-desc .pg-clip')).toHaveAttribute(
-            'title',
-            longDescription,
-          );
-        } else {
-          expect(headers).not.toContain('Description');
-        }
+        const headers = (await page.locator('thead tr:first-child th').allTextContents()).map((h) =>
+          h.trim(),
+        );
+        // The Description column shows at both desktop sizes (it used to wait for 1600 px).
+        expect(headers).toContain('Description');
+        await expect(stepRow.locator('td.ad-desc .pg-clip')).toHaveAttribute(
+          'title',
+          longDescription,
+        );
         // Title is the spring: at least 240 px, and the widest column.
         const titleBox = (await stepRow.locator('td.ad-spring').boundingBox())!;
         expect(titleBox.width).toBeGreaterThanOrEqual(240);
         if (size.w >= 1366) {
-          for (const other of await stepRow.locator('td:not(.ad-spring)').all()) {
+          // At 1366 the Description column takes room from Title and the Tags column (two chips and "+n") is wider than the 240 px Title; from 1600 px Title is
+          // the widest again.
+          const others =
+            size.w >= 1600
+              ? 'td:not(.ad-spring)'
+              : 'td:not(.ad-spring):not(.ad-desc):not(.ad-tags)';
+          for (const other of await stepRow.locator(others).all()) {
             expect((await other.boundingBox())!.width).toBeLessThanOrEqual(titleBox.width);
           }
         }

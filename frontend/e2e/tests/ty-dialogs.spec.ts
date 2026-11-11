@@ -102,10 +102,12 @@ test.describe('Dialog wording and focus (#362)', () => {
     await expect(d.getByLabel('Version Note')).toBeFocused();
     await atEverySize(page, 'dialog-form-publish');
     await d.getByRole('button', { name: 'Publish v2', exact: true }).click();
-    await expect(page.locator('[data-status]')).toContainText('Published v2');
+    await expect(page.locator('[data-page-title]')).toContainText('Published v2');
 
     await page.getByRole('button', { name: 'Retire Version' }).click();
-    await expect(dialog(page).getByRole('button', { name: 'Retire v2' })).toBeFocused();
+    await expect(
+      dialog(page).getByRole('button', { name: 'Retire v2', exact: true }),
+    ).toBeFocused();
     await expect(dialog(page).getByRole('button', { name: 'Cancel' })).toBeVisible();
     await atEverySize(page, 'dialog-form-retire');
     await page.keyboard.press('Escape');

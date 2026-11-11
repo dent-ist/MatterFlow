@@ -156,27 +156,17 @@ test.describe('Workflows columns (#376, #377)', () => {
     expect(bare.workflow.workflowDefinitionId).toBeGreaterThan(0);
   });
 
-  test('the columns drop in a fixed order: Last published below 1366, Task types below 1200, Steps below 900; phone cards say the facts; permissions', async ({
+  test('every column shows at 1366 and 1920 (the narrower windows that dropped Last published, Task types and Steps went with the desktop-only rule); permissions', async ({
     page,
     seed,
     asUser,
   }) => {
     const all = ['Name', 'Versions', 'Steps', 'Task Types', 'Last Published', 'Status', 'Actions'];
-    const expected: [number, string[]][] = [
-      [1920, all],
-      [1366, all],
-      [1280, all.filter((h) => h !== 'Last Published')],
-      [1200, all.filter((h) => h !== 'Last Published')],
-      [1180, ['Name', 'Versions', 'Steps', 'Status', 'Actions']],
-      [1100, ['Name', 'Versions', 'Steps', 'Status', 'Actions']],
-      [1000, ['Name', 'Versions', 'Steps', 'Status', 'Actions']],
-      [900, ['Name', 'Versions', 'Steps', 'Status', 'Actions']],
-    ];
-    for (const [width, names] of expected) {
-      await page.setViewportSize({ width, height: 900 });
+    for (const size of SIZES) {
+      await page.setViewportSize(size);
       await page.goto('/admin/workflows');
       await expect(gridRows(page).first()).toBeVisible();
-      expect(await heads(page), `at ${width}`).toEqual(names);
+      expect(await heads(page), `at ${size.width}`).toEqual(all);
     }
     const role = await seed.role(['Workflow.Manage', 'Task.View'], 'Workflow only');
     const wf = await asUser((await seed.user([role.name], 'ty3w-wf')).username);
@@ -190,11 +180,7 @@ test.describe('Workflows columns (#376, #377)', () => {
 });
 
 test.describe('Steps Inputs column (#378)', () => {
-  test('Draft (a neutral badge), Published or None; hidden below 1024 px', async ({
-    page,
-    seed,
-    admin,
-  }) => {
+  test('Draft (a neutral badge), Published or None', async ({ page, seed, admin }) => {
     const token = uid();
     const drafted = await admin.post('/api/v1/step-definitions', {
       title: `${token} Drafted`,
@@ -241,8 +227,8 @@ test.describe('Steps Inputs column (#378)', () => {
     if (axeAvailable()) expect(await axeViolations(page), 'inputs column').toEqual([]);
 
     // 44 px rows, no sideways scroll at the table widths.
-    for (const width of [1024, 1280, 1366, 1920]) {
-      await page.setViewportSize({ width, height: 900 });
+    for (const { width, height } of SIZES) {
+      await page.setViewportSize({ width, height });
       await page.goto(`/admin/steps?title=${token}`);
       await expect(gridRows(page).first()).toBeVisible();
       for (const r of await gridRows(page).all()) {

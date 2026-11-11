@@ -142,7 +142,10 @@ test.describe('FD2 and FD3: Versions dialog, long names and permissions', () => 
     await page.getByRole('button', { name: 'Add Text' }).click();
     await openVersionsDrawer(page);
     await dialog.getByRole('button', { name: 'v1' }).click();
-    await expect(page.getByRole('dialog', { name: /Discard/ })).toBeVisible();
+    const leave = page.getByRole('dialog', { name: 'Unsaved Changes' });
+    await expect(leave).toBeVisible();
+    await expect(leave).toContainText('discards them');
+    await expect(leave.getByRole('button', { name: 'Discard Changes' })).toBeVisible();
     await page.getByRole('button', { name: 'Keep Editing' }).click();
     await expect(badge(page)).toHaveText('Draft v2');
     await expect(page.locator('[data-dirty]')).toBeVisible();
@@ -153,7 +156,7 @@ test.describe('FD2 and FD3: Versions dialog, long names and permissions', () => 
     seed,
     admin,
   }) => {
-    await page.setViewportSize({ width: 375, height: 812 });
+    await page.setViewportSize({ width: 1366, height: 768 });
     const world = await typeWorld(seed, admin, {
       published: true,
       name: `E2E ${'Very long task type name '.repeat(3)}${Date.now()}`,

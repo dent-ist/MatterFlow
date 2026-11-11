@@ -294,7 +294,7 @@ test.describe('Step record page', () => {
       await expect(page.locator('[data-footer]')).toHaveCount(0);
       await page.locator('#step-description').fill('Edited description');
       await expect(page.locator('[data-footer]')).toBeVisible();
-      await expect(page.locator('[data-footer] button')).toHaveText(['Save Changes', 'Cancel']);
+      await expect(page.locator('[data-footer] button')).toHaveText(['Cancel', 'Save Changes']);
       await page.locator('[data-cancel]').click();
       await expect(page.locator('#step-description')).toHaveValue('');
       await expect(page.locator('[data-footer]')).toHaveCount(0);
@@ -581,7 +581,7 @@ test.describe('Step record page', () => {
       await page.setViewportSize({ width: 1366, height: 768 });
       await openStep(page, step.id);
       await page.locator('#step-title').fill(`${step.title} x`);
-      await expect(page.locator('[data-footer] button')).toHaveText(['Save Changes', 'Cancel']);
+      await expect(page.locator('[data-footer] button')).toHaveText(['Cancel', 'Save Changes']);
       await page.locator('[data-cancel]').click();
       await menuItem(page, 'Deactivate');
       const dialog = page.getByRole('dialog', { name: 'Deactivate Step' });
@@ -696,9 +696,9 @@ test.describe('Step record page', () => {
       await expect(onlyPage.locator('[data-used-link]')).toHaveCount(1);
       await onlyPage.waitForTimeout(900);
       await expect(onlyPage.locator('[data-toast]')).toHaveCount(0);
-      await onlyPage.setViewportSize({ width: 375, height: 812 });
-      await clean(onlyPage, 'workflow only at 375');
-      await shot(onlyPage, 'perm-workflow-only', 375);
+      await onlyPage.setViewportSize({ width: 1366, height: 768 });
+      await clean(onlyPage, 'workflow only at 1366');
+      await shot(onlyPage, 'perm-workflow-only', 1366);
 
       // TaskType.Manage only and Task.View only: the 403 page (the route needs Workflow.Manage).
       const typeOnly = await seed.role(['TaskType.Manage', 'Task.View'], 'Type only');

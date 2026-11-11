@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { Page } from '@playwright/test';
 import { axeAvailable, axeViolations } from '../support/axe';
-import { seedMix } from '../support/admin-lists';
+import { ADMIN_LIST_PAGE_SIZE, seedMix } from '../support/admin-lists';
 import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
 
@@ -35,13 +35,13 @@ async function noSideScroll(page: Page, what: string): Promise<void> {
 
 const tab = (page: Page, key: string) => page.locator(`[role="tab"][data-tab="${key}"]`);
 const chip = (page: Page, key: string) => page.locator(`[data-strip-item="${key}"]`);
-/** The number in a strip chip ("Not usable 3" is 3). */
+/** The number in a strip chip ("Not usable 3" is 3; a thousand and more has a comma, "1,132"). */
 const chipCount = async (page: Page, key: string): Promise<number> =>
-  Number((await chip(page, key).locator('.n').textContent())!.trim());
-/** The total of the pager ("Showing 1-25 of 61 active" is 61). */
+  Number((await chip(page, key).locator('.n').textContent())!.trim().replace(/,/g, ''));
+/** The total of the pager ("Showing 1-50 of 61 active" is 61). */
 const pagerTotal = async (page: Page): Promise<number> => {
   const text = (await page.locator('mf-pager').textContent())!;
-  return Number(/of (\d+)/.exec(text)![1]);
+  return Number(/of ([\d,]+)/.exec(text)![1].replace(/,/g, ''));
 };
 
 /** The one-row request behind a tab count (no filter, no `isActive`: the hidden-count request has one). */
@@ -117,7 +117,7 @@ test.describe('tab counts (#364)', () => {
       (r) =>
         new URL(r.url()).pathname === '/api/v1/workflows' &&
         query(r.url()).has('name') &&
-        query(r.url()).get('pagesize') === '25' &&
+        query(r.url()).get('pagesize') === String(ADMIN_LIST_PAGE_SIZE) &&
         r.request().method() === 'GET',
     );
     await page
@@ -231,7 +231,7 @@ test.describe('health strips (#367, #368)', () => {
 
     const strip = page.getByRole('group', { name: 'Task types summary' });
     await expect(strip).toBeVisible();
-    await expect(chip(page, 'inactive').locator('.n')).toHaveText(/^\d+$/);
+    await expect(chip(page, 'inactive').locator('.n')).toHaveText(/^[\d,]+$/);
     for (const key of ['active', 'notUsable', 'formDraft', 'inactive'] as const) {
       expect(await chipCount(page, key), key).toBe(expected[key]);
     }
@@ -298,7 +298,7 @@ test.describe('health strips (#367, #368)', () => {
     const answer = page.waitForResponse(
       (r) =>
         new URL(r.url()).pathname === '/api/v1/workflows' &&
-        query(r.url()).get('pagesize') === '25' &&
+        query(r.url()).get('pagesize') === String(ADMIN_LIST_PAGE_SIZE) &&
         r.request().method() === 'GET',
     );
     await page.setViewportSize(SIZES[0]);
@@ -306,7 +306,7 @@ test.describe('health strips (#367, #368)', () => {
     const summary = ((await (await answer).json()) as { summary: Summary }).summary;
     const strip = page.getByRole('group', { name: 'Workflows summary' });
     await expect(strip).toBeVisible();
-    await expect(chip(page, 'inactive').locator('.n')).toHaveText(/^\d+$/);
+    await expect(chip(page, 'inactive').locator('.n')).toHaveText(/^[\d,]+$/);
     expect(await chipCount(page, 'published')).toBe(summary.published);
     expect(await chipCount(page, 'draft')).toBe(summary.draftInProgress);
     expect(await chipCount(page, 'notPublished')).toBe(summary.notPublished);
@@ -356,14 +356,14 @@ test.describe('health strips (#367, #368)', () => {
     const answer = page.waitForResponse(
       (r) =>
         new URL(r.url()).pathname === '/api/v1/step-definitions' &&
-        query(r.url()).get('pagesize') === '25' &&
+        query(r.url()).get('pagesize') === String(ADMIN_LIST_PAGE_SIZE) &&
         r.request().method() === 'GET',
     );
     await page.setViewportSize(SIZES[0]);
     await page.goto(`/admin/steps?title=${token}`);
     const summary = ((await (await answer).json()) as { summary: Summary }).summary;
     await expect(page.getByRole('group', { name: 'Steps summary' })).toBeVisible();
-    await expect(chip(page, 'inactive').locator('.n')).toHaveText(/^\d+$/);
+    await expect(chip(page, 'inactive').locator('.n')).toHaveText(/^[\d,]+$/);
     expect(await chipCount(page, 'active')).toBe(summary.active);
     expect(await chipCount(page, 'notUsed')).toBe(summary.notUsed);
     expect(await chipCount(page, 'inputsDraft')).toBe(summary.inputsInDraft);

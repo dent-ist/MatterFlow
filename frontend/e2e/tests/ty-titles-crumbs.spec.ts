@@ -15,9 +15,10 @@ const SIZES = [
   { width: 1920, height: 1080 },
 ] as const;
 
-async function atEverySize(page: Page, name: string): Promise<void> {
+async function atEverySize(page: Page, name: string, settle?: () => Promise<void>): Promise<void> {
   for (const size of SIZES) {
     await page.setViewportSize(size);
+    if (settle) await settle();
     if (axeAvailable()) expect(await axeViolations(page), `${name} at ${size.width}`).toEqual([]);
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -101,7 +102,7 @@ test.describe('Document titles and crumb targets (#359, #360)', () => {
     await atEverySize(page, 'workflow-long-crumb');
   });
 
-  test('the crumb links of the version page and the designer pages meet the 24 px target at both desktop sizes', async ({
+  test('the crumb links of the version page and the designer pages meet the 24 px target rule (axe target size) at both desktop sizes', async ({
     page,
     seed,
   }) => {
@@ -113,17 +114,25 @@ test.describe('Document titles and crumb targets (#359, #360)', () => {
         `/api/v1/workflows/${wf.workflowDefinitionId}`,
       )
     ).versions[0].workflowVersionId;
+    // The crumb links are 16 px inline text links (UI2), no longer 24 px boxes: the 24 px rule (WCAG 2.5.8, #360) is met by the space around each link, which is
+    // what axe's target-size rule measures. So the check is that rule on the crumb trail itself, with a trail to measure.
+    const crumbTargets = async (what: string): Promise<void> => {
+      const crumb = 'nav[aria-label="Breadcrumb"]';
+      expect(
+        await page.locator(`${crumb} a:visible`).count(),
+        `${what}: crumb links`,
+      ).toBeGreaterThan(0);
+      if (axeAvailable()) {
+        const found = await axeViolations(page, crumb);
+        expect(found, `${what}: crumb link target size`).toEqual([]);
+      }
+    };
     await page.goto(`/admin/workflows/${wf.workflowDefinitionId}/versions/${versionId}`);
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Crumb flow');
-    await atEverySize(page, 'version-crumb');
+    await atEverySize(page, 'version-crumb', () => crumbTargets('version page'));
     await page.goto(`/admin/task-types/${tt.id}/form`);
     await expect(page.getByRole('heading', { level: 1 })).toContainText(' Form');
-    await atEverySize(page, 'form-crumb');
-    await page.setViewportSize({ width: 375, height: 812 });
-    for (const link of await page.locator('nav[aria-label="Breadcrumb"] a').all()) {
-      const box = (await link.boundingBox())!;
-      expect(box.height, 'crumb link height').toBeGreaterThanOrEqual(24);
-    }
+    await atEverySize(page, 'form-crumb', () => crumbTargets('form page'));
   });
 
   test('permission variants: each manager sees the record title on the pages they may open', async ({
