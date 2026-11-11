@@ -274,8 +274,9 @@ export class RecordCell {
     .pg-table.tt th.rg-select input {
       margin: 0;
     }
-    /* A group header row (#1245): 36 px, under the rows above it, the toggle is a text button. */
-    .pg-table .rg-group th {
+    /* A group header row (#1245): 36 px, under the rows above it, the toggle is a text button. The class tt is in the selector: the grid frame's own tt heading rule (40 px heading,
+       upper case) has the same weight otherwise and the load order of the two stylesheets decided, so the row came out 40 px. */
+    .pg-table.tt .rg-group th {
       height: var(--mf-grid-group-h);
       padding: 0 var(--mf-s2);
       border-bottom: 1px solid var(--mf-border-strong);

@@ -7,7 +7,6 @@
   max-width: 100vw;
   height: 100vh;
   max-height: 100vh;
-  margin: 0;
   border-radius: 0;
   transform: none !important;
   will-change: auto !important;
@@ -17,6 +16,12 @@
   --p-dialog-content-padding: 0;
   --p-dialog-footer-padding: var(--mf-s3) var(--mf-s4);
   --p-dialog-footer-gap: var(--mf-s2);
+}
+
+/* PrimeNG gives a docked dialog a margin with the same specificity (`.p-dialog-right .p-dialog`); this lazy stylesheet can load before it and lose, which left
+   a 14 px gap beside the drawer. The mask in the selector wins whatever the order. */
+.p-dialog-mask .mf-drawer.p-dialog {
+  margin: 0;
 }
 
 .mf-drawer--wide.p-dialog {
