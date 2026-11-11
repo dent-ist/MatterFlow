@@ -162,7 +162,7 @@ test.describe('Workflow version page: sticky action bar (VP1, #357)', () => {
     const dialog = page.getByRole('dialog');
     await expect(dialog.locator('[data-diff]')).toBeVisible();
     // Focus starts on the first control of the dialog (Back to draft); Tab reaches Publish.
-    await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeFocused();
+    await expect(dialog.getByRole('button', { name: 'Cancel', exact: true })).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(dialog.getByRole('button', { name: /^Publish v/ })).toBeFocused();
     await page.keyboard.press('Enter');

@@ -73,13 +73,13 @@ test.describe('Ordered workflow rules (SCN-010, SCN-011, SCN-012, SCN-013)', () 
     );
 
     await dialog.getByRole('textbox', { name: /Comment/ }).fill('   ');
-    await dialog.getByRole('button', { name: 'Skip Step' }).click();
+    await dialog.getByRole('button', { name: 'Skip Step', exact: true }).click();
     await expect(dialog.locator('[data-skip-error]')).toHaveText(
       'Add a comment to skip this step.',
     );
 
     await dialog.getByRole('textbox', { name: /Comment/ }).fill('Data already validated upstream');
-    await dialog.getByRole('button', { name: 'Skip Step' }).click();
+    await dialog.getByRole('button', { name: 'Skip Step', exact: true }).click();
     await expect(dialog).toBeHidden();
     await expect(step.state).toHaveText('Skipped');
     await expect(step.root.locator('[data-skip-comment]')).toContainText(
@@ -267,7 +267,7 @@ test.describe('Completing a task with open steps (addendum K)', () => {
     await detail.open(task.taskId);
     await detail.showSection('Workflow');
     await detail.completeTaskButton.click();
-    await detail.dialog.getByRole('button', { name: 'Cancel' }).click();
+    await detail.dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
     await expect(detail.dialog).toBeHidden();
 
     await detail.expectStatus('New');
