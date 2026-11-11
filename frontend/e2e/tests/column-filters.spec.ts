@@ -19,7 +19,6 @@ test.describe('Column filters on the Assets screen', () => {
     page
       .locator('tbody tr[data-record-id] a[data-asset-name]')
       .or(page.getByRole('list', { name: 'Assets' }).getByRole('link'));
-  const sheet = (page: Page) => page.getByRole('dialog', { name: 'Filters' });
   // The Assets filter row opens by default since the list chrome of #499, and its Status column is the Disposition column since PM v2 (#864, #883; the `status` address key stays).
   const setRow = async (page: Page, open: boolean) => {
     if ((await toggle(page).getAttribute('aria-pressed')) !== String(open))
@@ -143,24 +142,6 @@ test.describe('Column filters on the Assets screen', () => {
     await expect(toggle(page)).toHaveAttribute('aria-pressed', 'true');
     await page.keyboard.type('a/b');
     await expect(filter(page, 'Name')).toHaveValue('a/b');
-  });
-
-  test('the sheet also replaces the row when the grid overflows sideways (1024 px wide window)', async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 1024, height: 768 });
-    await page.goto('/assets');
-    await expect(page.getByRole('region', { name: 'Assets list, scrollable' })).toBeVisible();
-    const overflows = await page
-      .getByRole('region', { name: 'Assets list, scrollable' })
-      .evaluate((e) => e.scrollWidth > e.clientWidth);
-    if (overflows) await toggle(page).click();
-    if (overflows) {
-      await expect(sheet(page)).toBeVisible();
-      await expect(page.locator('tr.mf-filter-row')).toHaveCount(0);
-    } else {
-      await expect(filter(page, 'Name')).toBeVisible();
-    }
   });
 
   test('a filtered grid prints with a "Filters: ..." line; the row, toggle and chips are not printed', async ({

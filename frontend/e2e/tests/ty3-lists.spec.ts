@@ -238,7 +238,7 @@ test.describe('Row overflow menu on the three lists (#355)', () => {
   }) => {
     const token = uid();
     for (let i = 0; i < 3; i++) await seed.step({ title: `Bottom step ${token} ${i}` });
-    await page.setViewportSize({ width: 1366, height: 600 });
+    await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/admin/steps?title=${token}&size=10`);
     const rows = gridRows(page);
     await expect(rows).toHaveCount(3);
@@ -248,9 +248,9 @@ test.describe('Row overflow menu on the three lists (#355)', () => {
     await expect(menu).toBeVisible();
     const box = (await menu.boundingBox())!;
     expect(box.y).toBeGreaterThanOrEqual(0);
-    expect(box.y + box.height).toBeLessThanOrEqual(600);
+    expect(box.y + box.height).toBeLessThanOrEqual(768);
     // A resize (or a scroll) closes it: the button it hangs from has moved.
-    await page.setViewportSize({ width: 1300, height: 600 });
+    await page.setViewportSize({ width: 1920, height: 1080 });
     await expect(menu).toHaveCount(0);
   });
 

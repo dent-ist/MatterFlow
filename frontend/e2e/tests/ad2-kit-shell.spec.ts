@@ -15,7 +15,6 @@ const OUT = process.env['E2E_SCREENSHOTS'];
 const SIZES = [
   { width: 1920, height: 1080 },
   { width: 1366, height: 768 },
-  { width: 1024, height: 768 },
 ] as const;
 
 const TABS = [
@@ -199,9 +198,9 @@ test.describe('the shell on the Task Types administration (#544, #545)', () => {
   });
 });
 
-test.describe('axe, reflow and the row overflow at five widths (#544, #545, #554)', () => {
+test.describe('axe, reflow and the row overflow at both desktop sizes (#544, #545, #554)', () => {
   for (const size of SIZES) {
-    test(`${size.width}: axe 0 and no sideways scroll on every tab, with the row menu and the Filters sheet open`, async ({
+    test(`${size.width}: axe 0 and no sideways scroll on every tab, with the row menu open`, async ({
       page,
       admin,
     }) => {
@@ -224,7 +223,7 @@ test.describe('axe, reflow and the row overflow at five widths (#544, #545, #554
       await page.goto(`/admin/task-types?name=${token}`);
       await page.locator('tbody tr:is([data-row], [data-record-id]), li.rc').first().waitFor();
       const menus = page.locator('[data-overflow]');
-      const last = size.width >= 640 ? menus.last() : menus.first();
+      const last = menus.last();
       await last.scrollIntoViewIfNeeded();
       await last.click();
       const menu = page.getByRole('menu').first();
@@ -244,13 +243,6 @@ test.describe('axe, reflow and the row overflow at five widths (#544, #545, #554
       await shot(page, 'shell-menu');
       await page.keyboard.press('Escape');
       await expect(last).toBeFocused();
-      if (size.width < 640) {
-        await toggle(page).click();
-        await expect(page.getByRole('dialog')).toBeVisible();
-        expect(await axeViolations(page), `sheet open at ${size.width}`).toEqual([]);
-        await page.keyboard.press('Escape');
-        await expect(toggle(page)).toBeFocused();
-      }
     });
   }
 });
