@@ -136,7 +136,7 @@ test.describe('Matter header (MD-01)', () => {
     await expect(page.locator('[data-summary-details]')).toContainText('Inactive');
   });
 
-  test('every tab in order; a view-only user gets no New menu and no empty menus', async ({
+  test('seven tabs in order; a view-only user gets no New menu and no empty menus', async ({
     page,
     seed,
     asUser,

@@ -122,7 +122,7 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     await expect(page.locator('[data-activities-tab]')).toBeVisible();
   });
 
-  test('Matter: every tab of the registry; Summary has the facts and Edit, More actions has Set inactive', async ({
+  test('Matter: seven tabs; Summary has the facts and Edit, More actions has Set inactive', async ({
     page,
     seed,
   }) => {
