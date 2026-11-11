@@ -123,7 +123,13 @@ test.describe('Priorities, Status Labels and Note Tags', () => {
     const label = `QA P ${uniq()}`;
     await page.goto('/admin/lists/priorities');
     await expect(page.locator('[data-list-body] tbody tr').first()).toBeVisible();
-    const before = await count(page, 'Priorities');
+    // Other specs add and remove priorities at the same time in the same database, so the catalogue's number is compared with the server's active count
+    // of the moment, not with a number read earlier.
+    const activeOnServer = async () =>
+      (await admin.get('/api/v1/priorities')).filter((p: { isActive: boolean }) => p.isActive)
+        .length;
+    const countMatchesServer = () =>
+      expect.poll(async () => (await count(page, 'Priorities')) - (await activeOnServer())).toBe(0);
     await page.getByRole('button', { name: 'New Priority' }).click();
     await dlg(page).locator('#priority-label').fill(label);
     await dlg(page)
@@ -132,7 +138,7 @@ test.describe('Priorities, Status Labels and Note Tags', () => {
     await expect(dlg(page)).toHaveCount(0);
     await expect(rowOf(page, label)).toBeVisible();
     await expect(rowOf(page, label).locator('td').filter({ hasText: /\S/ }).nth(2)).not.toBeEmpty();
-    await expect.poll(() => count(page, 'Priorities')).toBe(before + 1);
+    await countMatchesServer();
 
     const original = (await admin.get('/api/v1/priorities')).find(
       (p: { isDefault: boolean }) => p.isDefault,
@@ -154,7 +160,7 @@ test.describe('Priorities, Status Labels and Note Tags', () => {
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await dlg(page).locator('[data-confirm-primary]').click();
     await expect(rowOf(page, label)).toHaveCount(0);
-    await expect.poll(() => count(page, 'Priorities')).toBe(before);
+    await countMatchesServer();
   });
 
   test('Priorities: a duplicate label is refused with the editor message', async ({
@@ -391,6 +397,9 @@ test.describe('guard, keyboard and catalogue', () => {
         if (perms.length === 1 && perms[0] !== 'Priority.Manage')
           await expect(p).toHaveURL(/\/admin\/lists\/(?!priorities)/);
       }
+      // Axe only on a settled page: while the list loads its buttons are disabled and a transition makes their contrast read 1.95:1.
+      await p.waitForLoadState('networkidle');
+      await expect(p.locator('[data-list-body] tbody [data-loading]')).toHaveCount(0);
       if (axeAvailable()) expect(await axeViolations(p), perms.join()).toEqual([]);
       await p.close();
     }

@@ -97,6 +97,11 @@ for (const size of SIZES) {
       await page.goto('/admin/lists/priorities?edit=new');
       await expect(page.getByRole('dialog')).toBeVisible();
       await snap(page, 'dialog-priority-new');
+      // The starter configuration seeds no note tags: a fresh database shows the empty state, so the test adds its own tag first.
+      await admin.post('/api/v1/note-tags', {
+        name: `QA Tag ${Date.now() % 100000}`,
+        colourKey: null,
+      });
       await page.goto('/admin/lists/note-tags');
       await expect(page.locator('[data-note-tag-row]').first()).toBeVisible();
       await page.getByRole('button', { name: 'New Tag' }).click();

@@ -32,7 +32,7 @@ test.describe('New priority and Edit priority (#609)', () => {
   }) => {
     const name = `ad3 new ${uid().slice(0, 5)}`;
     await page.setViewportSize(SIZES[1]);
-    await page.goto('/admin/priorities');
+    await page.goto('/admin/lists/priorities');
     try {
       const opener = page.getByRole('button', { name: 'New Priority' });
       await opener.click();
@@ -69,7 +69,7 @@ test.describe('New priority and Edit priority (#609)', () => {
     ];
     const renamed = `${made.label} renamed`;
     await page.setViewportSize(SIZES[1]);
-    await page.goto('/admin/priorities');
+    await page.goto('/admin/lists/priorities');
     try {
       // A reorder list looks like a record grid: the grip is visible at rest (D-44o) and the priority is the flag of the task grids.
       await expect(rowOf(page, made.label).locator('[data-grip]')).toBeVisible();
@@ -78,7 +78,7 @@ test.describe('New priority and Edit priority (#609)', () => {
       await link.click();
       await expect(dialog(page, 'Edit Priority')).toBeVisible();
       await expect(label(page)).toHaveValue(made.label);
-      await expect(page.locator('#priority-color')).toHaveValue('low');
+      await expect(page.locator('#priority-color')).toHaveAttribute('data-value', 'low');
 
       // Changing the color changes the preview, not the row.
       await dropdownById(page, 'priority-color').selectOption('critical');
@@ -106,7 +106,7 @@ test.describe('New priority and Edit priority (#609)', () => {
   }) => {
     const unique = `ad3 inv ${uid().slice(0, 5)}`;
     await page.setViewportSize(SIZES[1]);
-    await page.goto('/admin/priorities');
+    await page.goto('/admin/lists/priorities');
     await page.getByRole('button', { name: 'New Priority' }).click();
     await dialog(page).getByRole('button', { name: 'Add Priority' }).click();
     await expect(dialog(page).locator('[data-summary]')).toContainText('Enter a name.');
@@ -153,7 +153,7 @@ test.describe('New priority and Edit priority (#609)', () => {
     const long = `ad3 long ${uid().slice(0, 5)} `.padEnd(46, 'x');
     expect(long.length).toBe(46);
     await page.setViewportSize(SIZES[1]);
-    await page.goto('/admin/priorities?edit=new');
+    await page.goto('/admin/lists/priorities?edit=new');
     try {
       await label(page).fill(long);
       await expect(page.locator('#priority-label-count')).toContainText('46 / 50');
@@ -176,7 +176,7 @@ test.describe('New priority and Edit priority (#609)', () => {
     page,
   }) => {
     await page.setViewportSize(SIZES[1]);
-    await page.goto('/admin/priorities');
+    await page.goto('/admin/lists/priorities');
     const opener = page.getByRole('button', { name: 'New Priority' });
     await opener.click();
     await expect(label(page)).toBeFocused();
@@ -205,7 +205,7 @@ test.describe('New priority and Edit priority (#609)', () => {
     page,
   }) => {
     await page.setViewportSize(SIZES[1]);
-    await page.goto('/admin/priorities');
+    await page.goto('/admin/lists/priorities');
     const link = rowOf(page, 'Critical').locator('[data-edit]');
     await link.focus();
     await page.keyboard.press('Enter');
@@ -226,7 +226,7 @@ test.describe('New priority and Edit priority (#609)', () => {
     page,
   }) => {
     await page.setViewportSize(SIZES[1]);
-    await page.goto('/admin/priorities');
+    await page.goto('/admin/lists/priorities');
     const menu = rowOf(page, 'Critical').getByRole('button', { name: /^Actions for / });
     await openRowMenu(page, menu);
     await page.getByRole('menuitem', { name: 'Edit Priority' }).click();
@@ -244,7 +244,7 @@ test.describe('New priority and Edit priority (#609)', () => {
     }) => {
       test.skip(!axeAvailable(), 'axe-core is not available');
       await page.setViewportSize(size);
-      await page.goto('/admin/priorities?edit=new');
+      await page.goto('/admin/lists/priorities?edit=new');
       await expect(dialog(page)).toBeVisible();
       await dropdownById(page, 'priority-color').selectOption('custom');
       await page.locator('#priority-custom').fill('#808080');
@@ -267,12 +267,12 @@ test.describe('New priority and Edit priority (#609)', () => {
     const viewer = await asUser(
       (await personas.create({ permissions: ['Task.View'], label: 'ad3-v' })).username,
     );
-    await viewer.goto('/admin/priorities?edit=new');
+    await viewer.goto('/admin/lists/priorities?edit=new');
     await expect(viewer.getByRole('heading', { name: "You don't have access." })).toBeVisible();
     const manager = await asUser(
       (await personas.create({ permissions: ['Priority.Manage'], label: 'ad3-m' })).username,
     );
-    await manager.goto('/admin/priorities');
+    await manager.goto('/admin/lists/priorities');
     await manager.getByRole('button', { name: 'New Priority' }).click();
     await expect(dialog(manager)).toBeVisible();
   });
