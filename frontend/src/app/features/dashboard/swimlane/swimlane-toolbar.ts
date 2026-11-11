@@ -140,7 +140,7 @@ export interface Option {
                   (click)="pickDays(d)"
                 >
                   <i class="pi" [class.pi-check]="v.days === d" aria-hidden="true"></i>
-                  {{ d }} days
+                  {{ d }} Days
                 </button>
               }
             </div>

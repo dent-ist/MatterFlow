@@ -112,6 +112,14 @@ test.describe('Summary v4', () => {
     await page.goto(`/dashboard?card=unassigned&q=${tag}`);
     const row = page.locator('mf-dash-grid [data-task]').first();
     await expect(row).toBeVisible();
+    // The summary is served from a 15 second server cache: a read made just after an earlier test may not hold the task seeded above. Refresh reads it again.
+    await page.locator('[data-refresh]').click();
+    await expect(page.locator('[data-refresh]')).toBeEnabled();
+    await expect
+      .poll(async () =>
+        Number(await card(page, 'unassigned').locator('[data-card-count]').innerText()),
+      )
+      .toBeGreaterThan(0);
     const before = Number(await card(page, 'unassigned').locator('[data-card-count]').innerText());
 
     const assign = row.getByRole('button', { name: 'Unassigned: assign this task' });
@@ -166,8 +174,9 @@ test.describe('Summary v4', () => {
     await page.goto('/dashboard');
     const battery = page.locator('[data-battery]');
     await expect(battery).toBeVisible();
-    await expect(battery.locator('[data-battery-big]')).toHaveText(
-      /\d+%|After hours|Everyone out|No workers/,
+    // On an empty database nobody takes work yet: the card says so (`[data-battery-empty]`) instead of drawing the percentage.
+    await expect(battery.locator('[data-battery-big], [data-battery-empty]')).toHaveText(
+      /\d+%|After hours|Everyone out|No one in this scope takes work yet/,
     );
     const people = battery.getByRole('button', { name: 'People' });
     if (await people.count()) {
@@ -192,7 +201,7 @@ test.describe('Summary v4', () => {
     const world = await seed.world();
     await seed.task(world, { title: `Gauge ${uid()}` });
     await page.goto('/dashboard');
-    const gauge = page.locator('[data-compact-gauge]');
+    const gauge = page.locator('[data-gauge]');
     await expect(gauge).toBeVisible();
     await expect(gauge.locator('[data-gauge-badge]')).toContainText(/Level \d|Normal|All clear/);
     await gauge.getByRole('button', { name: /Show them, longest waiting first/ }).click();

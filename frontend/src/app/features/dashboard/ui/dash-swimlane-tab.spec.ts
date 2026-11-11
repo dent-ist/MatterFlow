@@ -1275,6 +1275,8 @@ describe('DashSwimlaneTab', () => {
       expect(c.tagName).toBe('SPAN');
       expect(c.hasAttribute('href')).toBe(false);
       expect(c.hasAttribute('title')).toBe(false);
+      // A span may only carry an aria-label with a role that allows it (axe aria-prohibited-attr, #1365).
+      expect(c.getAttribute('role')).toBe('img');
       expect(c.getAttribute('aria-label')).toMatch(/^\d+ New tasks match the search$/);
       expect(c.className).not.toContain('count--caveat');
       // The note of a capped lane still opens the queue with the search.
@@ -1294,6 +1296,8 @@ describe('DashSwimlaneTab', () => {
       expect(document.activeElement).toBe(items[0]);
       // Density x2, Done window x3, Only mine (no group: no Expand or Collapse all).
       expect(items.length).toBe(6);
+      // Menu items are Title Case (D-20, #1366): "7 Days", not "7 days".
+      expect(items.slice(2, 5).map((i) => text(i))).toEqual(['7 Days', '14 Days', '30 Days']);
       expect(items[0].getAttribute('role')).toBe('menuitemradio');
       expect(items[0].getAttribute('aria-checked')).toBe('true');
       key(items[0], 'ArrowDown');

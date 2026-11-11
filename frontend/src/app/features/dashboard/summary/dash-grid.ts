@@ -609,6 +609,9 @@ export class DashGrid {
     this.filters.clear();
   }
 
+  /** Tasks whose optimistic assignment is on screen and not yet answered by the server. */
+  private readonly optimisticAssign = new Set<number>();
+
   /**
    * An inline edit changed a row (the Assign pick: first the optimistic row, then the server's, or the old row again after a failure). A committed assignment (a new row version
    * with a person on it) takes the task out of a grid that lists unassigned tasks, and tells the page to refresh the cards, the gauge and the battery; any other change shows in place.
@@ -619,7 +622,16 @@ export class DashGrid {
     if (index < 0) return;
     const before = rows[index];
     const committed = row.rowVersion !== before.rowVersion;
-    const nowAssigned = !!row.assignedUser && !before.assignedUser && committed;
+    // The inline assign emits twice: the optimistic row (a person, the old row version), then the server's row (a new version). By the second call the
+    // grid already holds the optimistic row, so "was unassigned" is remembered from the first (#1363); a failure puts the old row back and forgets it.
+    const wasUnassigned = !before.assignedUser || this.optimisticAssign.has(row.taskId);
+    if (!committed) {
+      if (row.assignedUser && !before.assignedUser) this.optimisticAssign.add(row.taskId);
+      else if (!row.assignedUser) this.optimisticAssign.delete(row.taskId);
+    } else {
+      this.optimisticAssign.delete(row.taskId);
+    }
+    const nowAssigned = !!row.assignedUser && wasUnassigned && committed;
     const leaves = nowAssigned && this.card() === 'unassigned';
     if (leaves) {
       this.rows.set(rows.filter((r) => r.taskId !== row.taskId));

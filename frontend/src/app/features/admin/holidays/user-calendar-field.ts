@@ -8,6 +8,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { AuthStore } from '../../../core/auth/auth.store';
 import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { calendarDayInZone } from '../../../core/time/time';
 import { ApiError } from '../../../core/http/api-error';
@@ -20,7 +21,7 @@ import { HolidayCalendar, PreviewRow } from './holiday-contract';
 /**
  * The "Holiday calendar" field of a person (epic #1074, CAL-06; User.Manage), in the Availability section of the user drawer. A person has ONE calendar: their own choice, else their
  * pod's default, else the firm default; the first option says which one applies now. A choice is saved at once. Under it the next holidays of the calendar in force, so the effect is
- * visible. Without User.Manage the field is read-only text.
+ * visible. The drawer shows the field only to a person with User.Manage; the list of calendars is open to User.Manage, the preview of next holidays needs Settings.Manage.
  */
 @Component({
   selector: 'mf-user-calendar-field',
@@ -108,6 +109,7 @@ export class UserCalendarField {
 
   private readonly api = inject(HOLIDAY_API);
   private readonly notify = inject(NotificationService);
+  private readonly auth = inject(AuthStore);
   private readonly clock = inject(Clock);
   private readonly zone = inject(USER_TIME_ZONE);
   protected readonly state = signal<UserCalendar | null>(null);
@@ -155,16 +157,28 @@ export class UserCalendarField {
     }
   }
 
+  /**
+   * The next holidays of the calendar in force. The preview is a Settings.Manage read (the list of calendars is also open to User.Manage, #1362), so a person who only manages users
+   * sees the picker without this list and no refused request is made; a failed preview never blanks the field.
+   */
   private async loadNext(s: UserCalendar): Promise<void> {
-    if (s.effectiveCalendarId === null) {
+    if (s.effectiveCalendarId === null || !this.auth.has('Settings.Manage')) {
       this.next.set([]);
       return;
     }
+    try {
+      await this.readNext(s.effectiveCalendarId);
+    } catch {
+      this.next.set([]);
+    }
+  }
+
+  private async readNext(calendarId: number): Promise<void> {
     const d = calendarDayInZone(this.clock.now(), this.zone);
     const today = `${d.year}-${String(d.month).padStart(2, '0')}-${String(d.day).padStart(2, '0')}`;
     const rows = [
-      ...(await this.api.preview(s.effectiveCalendarId, d.year)),
-      ...(await this.api.preview(s.effectiveCalendarId, d.year + 1)),
+      ...(await this.api.preview(calendarId, d.year)),
+      ...(await this.api.preview(calendarId, d.year + 1)),
     ];
     this.next.set(rows.filter((r) => r.date >= today).slice(0, 3));
   }

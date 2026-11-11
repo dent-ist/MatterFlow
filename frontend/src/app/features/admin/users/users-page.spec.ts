@@ -757,6 +757,22 @@ describe('UsersPage', () => {
       expect(sections()).toEqual(['access', 'pods', 'availability', 'profile']);
     });
 
+    it('offers the Holiday Calendar field to a person with User.Manage and leaves it out of a read-only drawer (#1362)', async () => {
+      await create('User.View', 'User.Manage');
+      await chooseStatus('active');
+      await openRow(2);
+      expect(document.querySelector('mf-user-calendar-field')).not.toBeNull();
+    });
+
+    it('has no Holiday Calendar field in the drawer of a person with User.View only (the reads need User.Manage)', async () => {
+      await create('User.View');
+      await chooseStatus('active');
+      await openRow(2);
+      expect(document.querySelector('[data-section="availability"]')).not.toBeNull();
+      expect(document.querySelector('mf-user-calendar-field')).toBeNull();
+      expect(document.body.textContent).not.toContain('Holiday Calendar');
+    });
+
     it('lists each role with its description and permission count, the name clamped with a tooltip', async () => {
       await create('User.View', 'User.Manage');
       await chooseStatus('active');

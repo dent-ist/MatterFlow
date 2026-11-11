@@ -69,7 +69,7 @@
 | Audit Logs | Audit | `AuditEvent` | `/audit/search`, `/audit/facets`, `/audit/events` | `/admin/audit`; `admin/audit/` | `Audit.View` | `Audit/`; e2e `ad7-audit` |
 | Settings: Branding | Configuration | `AppSetting` | `/admin/settings/branding`, `/branding` | `/admin/settings`; `admin/settings/` | `Settings.Manage` | `Settings/`; e2e `app-settings` |
 | Settings: Dashboard | Configuration | `AppSetting` | `/admin/settings/dashboard` | `admin/settings/dashboard-settings.ts` | `Settings.Manage` | |
-| Settings: Holidays | Identity, Configuration | `HolidayCalendar`, `Holiday`, `AppSetting` | `/admin/holiday-calendars`, `/admin/settings/holidays`, `/admin/settings/calendar`, `/users/{id}/holiday-calendar` | `admin/holidays/` | `Settings.Manage` (user calendar: `User.Manage`) | e2e `admin-holidays` |
+| Settings: Holidays | Identity, Configuration | `HolidayCalendar`, `Holiday`, `AppSetting` | `/admin/holiday-calendars`, `/admin/settings/holidays`, `/admin/settings/calendar`, `/users/{id}/holiday-calendar` | `admin/holidays/` | `Settings.Manage` (the list of calendars is also open to `User.Manage`, #1362; user calendar: `User.Manage`) | e2e `admin-holidays` |
 
 ## Cross-cutting features
 

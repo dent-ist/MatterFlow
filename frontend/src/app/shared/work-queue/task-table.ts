@@ -464,21 +464,23 @@ const LONG_PRESS_MS = 500;
                         }
                       }
                       @case ('assignee') {
-                        @if (dash() && !row.assignedUser && editable('assignee', row)) {
-                          <!-- Dashboard Summary: "Unassigned" with the chevron is the one control, like an assigned row; it opens the people picker (state and load of each person). -->
+                        @if (editable('assignee', row)) {
+                          <!--
+                            One editor for the cell, whether or not the row has an assignee yet. Dashboard Summary: "Unassigned" with the chevron is the one control and its picker shows the state and
+                            load of each person. The optimistic row of an Assign pick gives the row an assignee at once; a second editor for "assigned" rows would replace this one while its request is
+                            still running, and the server's answer (the commit the grid acts on, #1363) would be emitted by a destroyed component and lost.
+                          -->
                           <mf-row-edit
                             field="assignee"
                             [row]="row"
-                            [showStates]="true"
-                            conflictMessage="This task was changed by someone else. The row was reloaded."
-                            (rowChange)="rowChange.emit($event)"
-                          />
-                        } @else if (editable('assignee', row)) {
-                          <mf-row-edit
-                            field="assignee"
-                            [row]="row"
-                            [selfAssign]="true"
-                            [assignLink]="assignLink()"
+                            [showStates]="dash() && !row.assignedUser"
+                            [selfAssign]="!dash() || !!row.assignedUser"
+                            [assignLink]="(!dash() || !!row.assignedUser) && assignLink()"
+                            [conflictMessage]="
+                              dash()
+                                ? 'This task was changed by someone else. The row was reloaded.'
+                                : 'Someone else changed this task. The row was refreshed.'
+                            "
                             (rowChange)="rowChange.emit($event)"
                           />
                         } @else if (row.assignedUser; as user) {

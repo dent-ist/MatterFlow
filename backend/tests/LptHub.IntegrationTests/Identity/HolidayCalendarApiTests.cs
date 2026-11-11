@@ -10,7 +10,7 @@ namespace LptHub.IntegrationTests.Identity;
 
 /// <summary>
 /// Holiday calendars (Dashboard Calendar, epic #1074, issue #1078): calendars and holiday rules with validation, the preview of a year (US federal days of 2026 and 2027 with observed days), the paste import with a dry run,
-/// the firm and pod defaults, the calendar of a person and the calendar settings (thresholds). Everything here needs Settings.Manage (the person's calendar needs User.Manage).
+/// the firm and pod defaults, the calendar of a person and the calendar settings (thresholds). Everything here needs Settings.Manage, except that the list of calendars is also open to User.Manage (the picker of the user drawer, #1362) and the person's calendar needs User.Manage.
 /// </summary>
 [Collection(SqlServerCollection.Name)]
 public sealed class HolidayCalendarApiTests(SqlServerFixture sql) : IAsyncLifetime
@@ -19,6 +19,8 @@ public sealed class HolidayCalendarApiTests(SqlServerFixture sql) : IAsyncLifeti
     private TaskHarness _h = null!;
     private HttpClient _admin = null!;
     private HttpClient _plain = null!;
+    private HttpClient _nobody = null!;
+    private HttpClient _usersOnly = null!;
 
     public async Task InitializeAsync()
     {
@@ -26,6 +28,8 @@ public sealed class HolidayCalendarApiTests(SqlServerFixture sql) : IAsyncLifeti
         _h = new TaskHarness(_factory);
         _admin = _h.Admin;
         _plain = await _h.UserWithAsync(@"KE\plain", "Task.View", "Pod.View", "User.Manage");
+        _nobody = await _h.UserWithAsync(@"KE\nobody", "Task.View", "Pod.View", "User.View");
+        _usersOnly = await _h.UserWithAsync(@"KE\usersonly", "User.View", "User.Manage");
     }
 
     public async Task DisposeAsync() => await _factory.DisposeAsync();
@@ -52,11 +56,38 @@ public sealed class HolidayCalendarApiTests(SqlServerFixture sql) : IAsyncLifeti
     [Fact]
     public async Task Only_Settings_Manage_reaches_the_holiday_administration()
     {
-        (await _plain.GetAsync("/api/v1/admin/holiday-calendars")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
-        (await _plain.PostAsJsonAsync("/api/v1/admin/holiday-calendars", new { name = "X", appliesToEveryone = false })).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
-        (await _plain.GetAsync("/api/v1/admin/settings/holidays")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
-        (await _plain.GetAsync("/api/v1/admin/settings/calendar")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        // Neither Settings.Manage nor User.Manage: even the list is refused (User.View is not enough).
+        (await _nobody.GetAsync("/api/v1/admin/holiday-calendars")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await _nobody.PostAsJsonAsync("/api/v1/admin/holiday-calendars", new { name = "X", appliesToEveryone = false })).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await _nobody.GetAsync("/api/v1/admin/settings/holidays")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await _nobody.GetAsync("/api/v1/admin/settings/calendar")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         (await _admin.GetAsync("/api/v1/admin/holiday-calendars")).StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task User_Manage_reads_the_list_of_calendars_and_nothing_else_of_the_administration()
+    {
+        // Owner decision (#1362): whoever may give a person a calendar can see the calendars to choose from; every other read and every write stays on Settings.Manage.
+        var created = await CalendarAsync("Chicago office");
+        var id = created.GetProperty("calendarId").GetInt32();
+
+        foreach (var client in new[] { _usersOnly, _plain })
+        {
+            var list = await client.GetAsync("/api/v1/admin/holiday-calendars");
+            list.StatusCode.ShouldBe(HttpStatusCode.OK);
+            (await JsonAsync(list)).EnumerateArray().Select(c => c.GetProperty("name").GetString()).ShouldContain("Chicago office");
+
+            (await client.PostAsJsonAsync("/api/v1/admin/holiday-calendars", new { name = "Mine", appliesToEveryone = false })).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+            (await client.PutAsJsonAsync($"/api/v1/admin/holiday-calendars/{id}", new { name = "Mine", colourKey = "blue", appliesToEveryone = false, isActive = true, rowVersion = created.GetProperty("rowVersion").GetString() })).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+            (await client.DeleteAsync($"/api/v1/admin/holiday-calendars/{id}")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+            (await client.GetAsync($"/api/v1/admin/holiday-calendars/{id}")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+            (await client.GetAsync($"/api/v1/admin/holiday-calendars/{id}/holidays")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+            (await client.PostAsJsonAsync($"/api/v1/admin/holiday-calendars/{id}/holidays", Rule("Founders Day", "FIXED", month: 3, day: 1))).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+            (await client.GetAsync($"/api/v1/admin/holiday-calendars/{id}/preview?year=2026")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+            (await client.GetAsync("/api/v1/admin/settings/holidays")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+            (await client.PutAsJsonAsync("/api/v1/admin/settings/holidays", new { })).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+            (await client.GetAsync("/api/v1/admin/settings/calendar")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        }
     }
 
     [Fact]

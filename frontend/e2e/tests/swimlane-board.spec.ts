@@ -190,7 +190,7 @@ test.describe('Swimlane board (WP9a)', () => {
       /Comfortable/,
       /Compact/,
       /7 Days/,
-      /14 days/,
+      /14 Days/,
       /30 Days/,
     ]);
     await expect(menu.getByRole('menuitemcheckbox', { name: 'Only Mine' })).toBeVisible();
