@@ -2,6 +2,7 @@ import { Page } from '@playwright/test';
 import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
 import { openMatterDetails } from '../support/matter-details';
+import { matterTabPatterns } from '../support/app-counts';
 
 /** The Client, Matter and Project detail pages: Client and Matter have Details as their first tab, Project has Tasks (n) and Details tabs (WP4); the Activity drawer (docs/ux/detail-layout). */
 test.describe('Detail pages: main area, Details panel and Activity drawer', () => {
@@ -121,7 +122,7 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     await expect(page.locator('[data-activities-tab]')).toBeVisible();
   });
 
-  test('Matter: seven tabs; Summary has the facts and Edit, More actions has Set inactive', async ({
+  test('Matter: every tab of the registry; Summary has the facts and Edit, More actions has Set inactive', async ({
     page,
     seed,
   }) => {
@@ -131,15 +132,7 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto(`/matters/${world.matter.matterId}`);
 
-    await expect(page.getByRole('tab')).toHaveText([
-      /Summary/,
-      /Tasks/,
-      /Projects/,
-      /Assets/,
-      /Productions/,
-      /Notes/,
-      /Activities/,
-    ]);
+    await expect(page.getByRole('tab')).toHaveText(matterTabPatterns());
     await expect(panel(page)).toHaveCount(0);
     await openMatterDetails(page);
     const details = page.getByRole('tabpanel');

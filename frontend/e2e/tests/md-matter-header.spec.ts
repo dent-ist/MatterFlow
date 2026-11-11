@@ -2,10 +2,11 @@ import { Page } from '@playwright/test';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
+import { matterTabPatterns } from '../support/app-counts';
 
 /**
  * The Matter page header of the Matter detail redesign (MD-01, #1002): breadcrumb `Matters > number` with a copy button, the title `Client > Matter name`,
- * one subtitle line with the CM number and the Active, Sensitive and AI chips, the New and More actions menus, and the seven tabs. Replaces the Matter cases of
+ * one subtitle line with the CM number and the Active, Sensitive and AI chips, the New and More actions menus, and the tabs. Replaces the Matter cases of
  * wp3-record-header.spec.ts, which tested the shared record header the Matter page no longer uses.
  */
 const MATTER_150 =
@@ -135,22 +136,14 @@ test.describe('Matter header (MD-01)', () => {
     await expect(page.locator('[data-summary-details]')).toContainText('Inactive');
   });
 
-  test('seven tabs in order; a view-only user gets no New menu and no empty menus', async ({
+  test('every tab in order; a view-only user gets no New menu and no empty menus', async ({
     page,
     seed,
     asUser,
   }) => {
     const world = await seed.world();
     await page.goto(`/matters/${world.matter.matterId}`);
-    await expect(page.getByRole('tab')).toHaveText([
-      /Summary/,
-      /Tasks/,
-      /Projects/,
-      /Assets/,
-      /Productions/,
-      /Notes/,
-      /Activities/,
-    ]);
+    await expect(page.getByRole('tab')).toHaveText(matterTabPatterns());
     const reader = await seed.role(['Matter.View', 'Client.View'], 'E2E header reader');
     const viewer = await seed.user([reader.name], 'header-reader');
     const page2 = await asUser(viewer.username);

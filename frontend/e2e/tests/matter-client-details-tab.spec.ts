@@ -4,6 +4,7 @@ import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
 import { openMatterDetails } from '../support/matter-details';
+import { matterTabPatterns } from '../support/app-counts';
 
 /**
  * Matter and Client detail pages (#244): Details is the first tab and the default, the old right-hand Details panel is gone, the
@@ -39,15 +40,18 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/matters/${world.matter.matterId}`);
 
-    await expect(page.getByRole('tab')).toHaveText([
-      /^\s*Summary\s*$/,
-      /^\s*Tasks/,
-      /^\s*Projects/,
-      /^\s*Assets \(0\)\s*$/,
-      /^\s*Productions\s*$/,
-      /^\s*Notes\s*$/,
-      /^\s*Activities\s*$/,
-    ]);
+    await expect(page.getByRole('tab')).toHaveText(
+      matterTabPatterns({
+        summary: /^\s*Summary\s*$/,
+        tasks: /^\s*Tasks/,
+        projects: /^\s*Projects/,
+        assets: /^\s*Assets \(0\)\s*$/,
+        productions: /^\s*Productions\s*$/,
+        notes: /^\s*Notes\s*$/,
+        team: /^\s*Team/,
+        activities: /^\s*Activities\s*$/,
+      }),
+    );
     await expect(tab(page, 'Summary')).toHaveAttribute('aria-selected', 'true');
     await expect(tab(page, 'Summary')).toHaveAttribute('tabindex', '0');
     await expect(tab(page, /^Tasks/)).toHaveAttribute('tabindex', '-1');

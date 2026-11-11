@@ -2,6 +2,7 @@ import { Page } from '@playwright/test';
 import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
 import { filterDropdown } from '../support/dropdown';
+import { ASSETS_LIST_COLUMN_COUNT } from '../support/app-counts';
 
 /**
  * The Assets list (docs/ux/assets-screen, filters part; the master-detail panel was replaced by the record page, docs/ux/assets-review):
@@ -44,7 +45,7 @@ test.describe('Assets list: column filters and the record page link', () => {
     const columns = ['Type', 'Matter', 'External Reference', 'Disposition'];
     const headers = grid.locator('thead tr:first-child th');
     // The admin sees the selection column, Size and Linked tasks (no filter of their own): the cells under them are empty, the other five columns have a control.
-    await expect(headers).toHaveCount(8);
+    await expect(headers).toHaveCount(ASSETS_LIST_COLUMN_COUNT);
     const position = [1, 3, 6, 7];
     const headerBottom = (await headers.first().boundingBox())!;
     for (let i = 0; i < columns.length; i++) {

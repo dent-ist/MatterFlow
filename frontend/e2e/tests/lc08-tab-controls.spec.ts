@@ -4,6 +4,7 @@ import { Locator, Page } from '@playwright/test';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
+import { MATTER_TAB_COUNT } from '../support/app-counts';
 
 /**
  * The Matter detail tab controls (epic #1037, LC-08 #1051; theme guide 11.2): one tab strip (icon, label, count) and, in every tab that lists things, one
@@ -57,9 +58,9 @@ test.describe('Matter detail tab controls (LC-08)', () => {
     for (const t of TABS) {
       await page.goto(`/matters/${matterId}?tab=${t.key}`);
       const tabs = page.getByRole('tab');
-      await expect(tabs).toHaveCount(7);
+      await expect(tabs).toHaveCount(MATTER_TAB_COUNT);
       // The strip is the shared one: every tab has its icon, the selected one is marked.
-      await expect(tabs.locator('i.tab__icon')).toHaveCount(7);
+      await expect(tabs.locator('i.tab__icon')).toHaveCount(MATTER_TAB_COUNT);
       await expect(page.locator(`[role="tab"][data-tab="${t.key}"]`)).toHaveAttribute(
         'aria-selected',
         'true',

@@ -5,6 +5,7 @@ import { Json } from '../support/api';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { Seeder, uid } from '../support/seed';
+import { MATTER_TAB_KEYS } from '../support/app-counts';
 
 /**
  * Clients UX epic, WP13 keyboard and focus (#281 focus returns to the row on Back, #282 the copy button is not a Tab stop of its own,
@@ -544,7 +545,7 @@ const RECORDS: RecordPage[] = [
   {
     kind: 'matter',
     url: () => `/matters/${data.m28.matterId}`,
-    tabs: ['summary', 'tasks', 'projects', 'assets', 'productions', 'notes', 'activities'],
+    tabs: [...MATTER_TAB_KEYS],
     state: /Set Inactive/,
   },
   {

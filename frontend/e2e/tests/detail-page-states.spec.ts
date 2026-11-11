@@ -5,6 +5,7 @@ import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { Json } from '../support/api';
 import { uid } from '../support/seed';
+import { MATTER_TAB_COUNT, matterTabTexts } from '../support/app-counts';
 
 /**
  * Detail-page bugs and states (WP1, #246 to #250): the load failures and the skeleton of the Client, Matter and Project pages, the
@@ -247,7 +248,9 @@ test.describe('Detail pages: loading skeleton (#247)', () => {
       await expect(skeleton).toHaveAttribute('aria-busy', 'true');
       await expect(skeleton.locator('[role=status]')).toHaveText(`Loading ${kind}`);
       await expect(page.locator('nav[aria-label=Breadcrumb] a:visible').first()).toBeVisible();
-      await expect(skeleton.locator('[role=tab]')).toHaveCount(kind === 'matter' ? 7 : 2);
+      await expect(skeleton.locator('[role=tab]')).toHaveCount(
+        kind === 'matter' ? MATTER_TAB_COUNT : 2,
+      );
       await expect(skeleton.locator('.rk__row')).toHaveCount(5);
       const rowHeight = await skeleton
         .locator('.rk__row')
@@ -259,15 +262,9 @@ test.describe('Detail pages: loading skeleton (#247)', () => {
         await expect(skeleton.locator('[role=tab]')).toHaveText(['Tasks (--)', 'Details']);
       }
       if (kind === 'matter') {
-        await expect(skeleton.locator('[role=tab]')).toHaveText([
-          'Summary',
-          'Tasks (--)',
-          'Projects (--)',
-          'Assets (--)',
-          'Productions',
-          'Notes',
-          'Activities',
-        ]);
+        await expect(skeleton.locator('[role=tab]')).toHaveText(
+          matterTabTexts({ tasks: ' (--)', projects: ' (--)', assets: ' (--)', team: ' (--)' }),
+        );
       }
       await shot(page, `${kind}-loading`);
       await page.waitForTimeout(300);
