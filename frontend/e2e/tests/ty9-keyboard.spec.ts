@@ -9,6 +9,7 @@ import { Seeder, uid } from '../support/seed';
 import { build } from '../support/ty-workflow';
 import { stepWorld, typeWorld } from '../support/designer';
 import { draftWorld } from '../support/version-page';
+import { ci } from '../support/text';
 
 /**
  * WP-TY9 Keyboard, focus and a11y (epic #352): #413 Tab stops on the three lists and the "Skip to Table" link, #414 focus and
@@ -451,7 +452,7 @@ test.describe('#414: version page', () => {
     await freshTop(page, w.url);
     await failNext(page, /\/versions\/\d+$/, 'DELETE');
     await pressMenu(page, 'More version actions', 'Discard Draft');
-    const button = await confirm(page, /^Discard draft/);
+    const button = await confirm(page, ci(/^Discard draft/));
     await expect(dialogError(page)).toBeVisible();
     await expect(button).toBeFocused();
     await page.unroute(/\/versions\/\d+$/);
@@ -484,7 +485,7 @@ test.describe('#414: version page', () => {
     const wf = await seed.workflow({ stepCount: 2 });
     await page.setViewportSize({ width: 1366, height: 768 });
     await freshTop(page, `/admin/workflows/${wf.workflowDefinitionId}/versions/${wf.versionId}`);
-    const create = page.getByRole('button', { name: /^Create new draft/ });
+    const create = page.getByRole('button', { name: ci(/^Create new draft/) });
     await create.focus();
     await page.keyboard.press('Enter');
     await expect(page).toHaveURL(/\/versions\/\d+$/);

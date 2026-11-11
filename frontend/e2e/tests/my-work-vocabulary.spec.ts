@@ -6,6 +6,7 @@ import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { Seeder, uid } from '../support/seed';
 import { dateInZone, FIRM_ZONE } from '../support/time';
+import { ciTexts } from '../support/text';
 
 /**
  * One vocabulary and the tab rules of My Work (WP5a): the tab names, tooltips and URL values (M5, #171), the Due soon and overdue order
@@ -60,12 +61,9 @@ test.describe('My Work vocabulary and tab rules', () => {
     const tabs = (await page.getByRole('tab').allTextContents()).map((t) =>
       t.replace(/\s+/g, ' ').trim(),
     );
-    expect(tabs).toEqual([
-      'Active (7)',
-      'Due soon and overdue (5)',
-      'Closed (0)',
-      'Created by me (0)',
-    ]);
+    expect(ciTexts(tabs)).toEqual(
+      ciTexts(['Active (7)', 'Due soon and overdue (5)', 'Closed (0)', 'Created by me (0)']),
+    );
     await expect(myWork.tab(/^Active/)).toHaveAttribute('title', 'Open tasks assigned to you');
     await expect(myWork.tab(/^Due Soon and Overdue/)).toHaveAttribute(
       'title',

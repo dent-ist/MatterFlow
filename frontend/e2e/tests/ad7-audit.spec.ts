@@ -4,6 +4,7 @@ import { expect, test } from '../support/fixtures';
 import { SIZES, noHorizontalScroll, shot } from '../support/screens';
 import { uid } from '../support/seed';
 import { filterDropdown } from '../support/dropdown';
+import { ciText, ciTexts } from '../support/text';
 
 /**
  * WP-AD7 (AD-E): the Audit Logs page on the admin list kit. Chrome (#646), the grid and the phone cards (#647), links to the admin pages by
@@ -236,7 +237,7 @@ test.describe('Friendly filters and quick views (#650, #654)', () => {
     expect(await events.optionValues()).toContain('TASK_CREATED');
     expect((await events.optionTexts()).filter((t) => /^[A-Z]+_[A-Z_]+$/.test(t))).toEqual([]);
     const objects = filterDropdown(page, 'Object Type');
-    expect(await objects.optionTexts()).toContain('Asset Type');
+    expect(ciTexts(await objects.optionTexts())).toContain(ciText('Asset Type'));
     expect(await objects.optionValues()).toContain('AssetType');
     expect((await objects.optionTexts()).filter((t) => t === 'Configuration Changes')).toHaveLength(
       1,

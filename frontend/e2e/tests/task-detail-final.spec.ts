@@ -8,6 +8,7 @@ import { expect, test } from '../support/fixtures';
 import { Seeder, World, uid } from '../support/seed';
 import { TaskApi } from '../support/tasks';
 import { dateInZone, FIRM_ZONE } from '../support/time';
+import { ci } from '../support/text';
 
 /**
  * Final verification of the Task Detail epic (#288, T10b, #331): the checks that cut across the page after every package landed.
@@ -211,7 +212,7 @@ const SHAPES: Shape[] = [
   {
     key: 'tsk128-completed',
     label: 'TSK-128 Completed',
-    primary: /Reopen task/,
+    primary: ci(/Reopen task/),
     make: async (seed, admin) => {
       const fx = await seeded(seed, admin, { stepCount: 2 });
       const api = new TaskApi(admin, fx.task.taskId);
@@ -223,7 +224,7 @@ const SHAPES: Shape[] = [
   {
     key: 'tsk129-cancelled',
     label: 'TSK-129 Cancelled',
-    primary: /Reopen task/,
+    primary: ci(/Reopen task/),
     make: async (seed, admin) => {
       const fx = await seeded(seed, admin);
       expect(

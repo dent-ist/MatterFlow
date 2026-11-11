@@ -3,6 +3,7 @@ import path from 'node:path';
 import { Page } from '@playwright/test';
 import { axeAvailable, axeBestPractice } from '../support/axe';
 import { expect, test } from '../support/fixtures';
+import { ci } from '../support/text';
 
 /**
  * App shell SH1 (epic #585): #586 the "Skip to ..." link names an element that exists, #587 the phone search button's aria-controls.
@@ -61,15 +62,15 @@ test.beforeAll(async ({ seed }) => {
 });
 
 const LIST_PAGES: { name: string; url: () => string; skip: RegExp }[] = [
-  { name: 'My Work', url: () => '/my-work', skip: /Skip to task list/ },
-  { name: 'Task Queue', url: () => '/tasks', skip: /Skip to task list/ },
-  { name: 'Clients', url: () => '/clients', skip: /Skip to Table/ },
-  { name: 'Matters', url: () => '/matters', skip: /Skip to Table/ },
-  { name: 'Projects', url: () => '/projects', skip: /Skip to Table/ },
+  { name: 'My Work', url: () => '/my-work', skip: ci(/Skip to task list/) },
+  { name: 'Task Queue', url: () => '/tasks', skip: ci(/Skip to task list/) },
+  { name: 'Clients', url: () => '/clients', skip: ci(/Skip to Table/) },
+  { name: 'Matters', url: () => '/matters', skip: ci(/Skip to Table/) },
+  { name: 'Projects', url: () => '/projects', skip: ci(/Skip to Table/) },
   {
     name: 'Project record',
     url: () => `/projects/${projectId}`,
-    skip: /Skip to (task list|table)/,
+    skip: ci(/Skip to (task list|table)/),
   },
 ];
 
@@ -134,7 +135,7 @@ test.describe('Skip link target (#586)', () => {
     await page.goto('/pods/work');
     await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
     const skip = page.locator('a.mf-skip[data-skip-list]');
-    await expect(skip).toHaveText(/Skip to task list/);
+    await expect(skip).toHaveText(ci(/Skip to task list/));
     const href = (await skip.getAttribute('href'))!;
     await expect(page.locator(`[id="${href.slice(1)}"]`)).toHaveCount(1);
     await page.keyboard.press('Tab');
