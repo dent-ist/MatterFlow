@@ -155,6 +155,7 @@ test.describe('Workflow version page: sticky action bar (VP1, #357)', () => {
     await expect(page.getByRole('dialog', { name: 'Discard Draft' })).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(more).toBeFocused();
+    await expect(page.getByRole('dialog')).toHaveCount(0); // the Discard Draft dialog is gone before the Publish dialog opens
 
     // Publish with the keyboard.
     await page.getByRole('button', { name: 'Publish...' }).focus();

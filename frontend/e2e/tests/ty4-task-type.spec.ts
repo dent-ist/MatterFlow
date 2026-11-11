@@ -780,7 +780,7 @@ test.describe('Task Type record page', () => {
       const published = await make('published');
       await page.goto(`/admin/task-types/${published}?tab=form`);
       await expect(page.locator('[data-form-published]')).toHaveText(
-        /Published v1\s*·\s*,\s*3 fields\s*·\s*,\s*last published [A-Z][a-z]{2} \d{1,2}, \d{4}/,
+        /Published v1\s*·\s*,\s*3 fields\s*·\s*,\s*last published \d{2}\/\d{2}(\/\d{4})?\s*$/, // the numeric date of the app: MM/DD, with the year when it is not this one
       );
       await expect(page.locator('[data-form-draft]')).toHaveCount(0);
       await expect(page.locator('[data-strip-item=form]')).toContainText('Published v1');

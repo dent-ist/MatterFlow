@@ -69,14 +69,15 @@ test.describe('Task type icons and the type-first Create Task', () => {
     await create.changeType.click();
     const dialog = page.getByRole('dialog', { name: 'Change task type' });
     await expect(dialog).toContainText('clears the request details');
-    await dialog.getByRole('button', { name: 'Keep' }).click();
+    // The dialog's two buttons are Cancel (keeps the type and the details) and Change Task Type.
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
     await expect(create.typeChip).toBeVisible();
     await expect(create.field('workspace').getByRole('textbox')).toHaveValue('WS-1');
 
     await create.changeType.click();
     await page
       .getByRole('dialog', { name: 'Change task type' })
-      .getByRole('button', { name: 'Change' })
+      .getByRole('button', { name: 'Change Task Type', exact: true })
       .click();
     await expect(create.chooser).toBeVisible();
   });

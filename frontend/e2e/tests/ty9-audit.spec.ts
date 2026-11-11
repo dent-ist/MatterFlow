@@ -337,7 +337,11 @@ const SCENARIOS: Scenario[] = [
     open: (p) => viaMenu('More version actions', /^Retire/)(p),
   },
   { name: 'designer: publish dialog', url: () => world.type.url, open: button('Publish...', true) },
-  { name: 'designer: versions dialog', url: () => world.type.url, open: button(/^Versions/) },
+  {
+    name: 'designer: versions dialog',
+    url: () => world.type.url,
+    open: viaMenu('More actions', /^Versions/),
+  },
   {
     name: 'designer: palette sheet',
     url: () => world.type.url,

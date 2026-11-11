@@ -118,8 +118,8 @@ test.describe('Custom Fields designer (Client, Matter, Project)', () => {
         const world = await customFieldWorld(admin, object);
         await page.setViewportSize({ width: size.w, height: size.h });
         await page.goto(world.url);
-        const label = `${object[0].toUpperCase()}${object.slice(1)} custom fields`;
-        // The object is named by what it is, "Matter custom fields" (#645), without the "Form:" of the other owners.
+        const label = `${object[0].toUpperCase()}${object.slice(1)} Custom Fields`;
+        // The object is named by what it is, "Matter Custom Fields" (#645), without the "Form:" of the other owners.
         await expect(page.getByRole('heading', { level: 1 })).toContainText(label);
         await expect(page.getByRole('heading', { level: 1 })).not.toContainText('Form:');
         await expect(page.locator('[data-page-actions]')).toBeVisible();
