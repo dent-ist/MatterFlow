@@ -172,8 +172,8 @@ test.describe('Dashboard Breakdowns', () => {
     expect(await stroke('Normal')).toBe('solid 1px');
     expect(await stroke('Low')).toBe('solid 2px');
     // Bars -> pie -> table.
-    await priority.getByRole('button', { name: /View as pie/ }).click();
-    await priority.getByRole('button', { name: /View as Table/ }).click();
+    await priority.getByRole('button', { name: 'Pie', exact: true }).click();
+    await priority.getByRole('button', { name: 'Table', exact: true }).click();
     await expect(priority.locator('thead th')).toHaveText([
       'Priority',
       'Tasks',
@@ -374,8 +374,9 @@ test.describe('Dashboard Breakdowns', () => {
         }
       }
       // Back to bars for the next size.
-      while ((await priority.locator('.bars').count()) === 0)
-        await priority.locator('[data-view="pie"]').click();
+      // The view switch is a segmented control (Bars, Pie, Table), not a button that cycles.
+      await priority.locator('[data-view="bars"]').click();
+      await expect(priority.locator('.bars')).toBeVisible();
     }
   });
 

@@ -111,7 +111,8 @@ test.describe('By task type (C1, #134)', () => {
     const drawer = page.locator('[data-coverage-drawer]');
     await expect(drawer.locator('[data-coverage-tasks] li')).toHaveCount(3);
     await expect(page.getByRole('button', { name: 'Close completed tasks' })).toBeFocused();
-    await expect(drawer.locator('[data-open-queue]')).toHaveAttribute(
+    // The link sits in the header actions of the drawer, beside Close (not inside the list body).
+    await expect(page.getByRole('link', { name: 'Open in Task Queue' })).toHaveAttribute(
       'href',
       new RegExp(`type=${cov.typeIds.production}`),
     );
