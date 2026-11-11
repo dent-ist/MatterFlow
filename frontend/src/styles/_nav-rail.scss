@@ -61,6 +61,13 @@
   user-select: text;
 }
 
+/* In forced-colors mode the navy of the panel is dropped, so the light version text takes the system text colour (it follows the rule above to win by order). */
+@media (forced-colors: active) {
+  .mf-nav-version {
+    color: CanvasText;
+  }
+}
+
 @media (min-width: 640px) and (max-width: 1099px) {
   .mf-nav-version {
     padding-inline: 0;
