@@ -123,3 +123,32 @@ export async function userStateCount(page: Page, key: string): Promise<number> {
   await page.keyboard.press('Escape');
   return Number(n);
 }
+
+/**
+ * The View dropdown over the Tasks grid of a Matter or a Project (MD-04: the five count chips became one dropdown, `#st-view`). It lists Open, Overdue, Due Soon,
+ * ASAP and On Hold, each with its number; the keys are the ones the chips had (`open`, `overdue`, `dueSoon`, `asap`, `onHold`).
+ */
+export const viewDropdown = (scope: Page | Locator): Dropdown => dropdownById(scope, 'st-view');
+
+/** The numbers of the View dropdown by key (opens the list, reads it, closes it). Keys the viewer has no option for are left out. */
+export async function viewCounts(scope: Page | Locator): Promise<Record<string, number>> {
+  const button = scope.locator('button#st-view');
+  const page = button.page();
+  await expect(async () => {
+    if ((await button.getAttribute('aria-expanded')) !== 'true') await button.click();
+    await expect(page.locator('.dd-panel [role="listbox"]')).toBeVisible({ timeout: 3000 });
+  }).toPass({ timeout: 20_000 });
+  const rows = await page
+    .locator('.dd-panel [role="option"]')
+    .evaluateAll((els) =>
+      els.map((e) => [
+        e.getAttribute('data-value') ?? '',
+        e.querySelector('.n')?.textContent ?? '',
+      ]),
+    );
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.dd-panel')).toHaveCount(0);
+  const out: Record<string, number> = {};
+  for (const [key, n] of rows) if (key && n.trim() !== '') out[key] = Number(n.trim());
+  return out;
+}

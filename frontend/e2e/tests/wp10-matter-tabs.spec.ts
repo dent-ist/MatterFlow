@@ -161,7 +161,7 @@ test.describe('WP10 matter tabs', () => {
       await page.setViewportSize({ width: 1366, height: 768 });
       await page.goto(projectsUrl(w.big));
       await ready(page);
-      expect(await tabTexts(page)).toEqual(['Summary', 'Tasks (4)', 'Projects (40)', 'Assets (0)']);
+      expect(await tabTexts(page)).toEqual(['Summary', 'Tasks (4)', 'Projects (40)', 'Assets (0)', 'Team (0)']);
       const table = page.locator(PROJECT_TABLE);
       await expect(table.locator('thead th')).toHaveText([
         'Name',
@@ -291,7 +291,8 @@ test.describe('WP10 matter tabs', () => {
       const frame = (await tab.locator('.mf-scroll-area').first().boundingBox())!;
       const widths = await tab
         .locator('thead th')
-        .evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().width)));
+        .evaluateAll((els) => els.map((e) => e.getBoundingClientRect().width));
+      // Unrounded widths: the sum of per-column rounded widths can be a pixel over the frame.
       expect(widths.reduce((a, b) => a + b, 0)).toBeLessThanOrEqual(Math.ceil(frame.width));
       // Sorting by Open Tasks puts the busiest project first.
       await tab.locator('th[data-col="openTasks"] button').click();
@@ -348,7 +349,7 @@ test.describe('WP10 matter tabs', () => {
       await page.goto(assetsUrl(w.assets));
       await ready(page);
       // 6 assets, 5 shown (Active is the default Status) and the pager says why.
-      expect(await tabTexts(page)).toEqual(['Summary', 'Tasks (0)', 'Projects (0)', 'Assets (6)']);
+      expect(await tabTexts(page)).toEqual(['Summary', 'Tasks (0)', 'Projects (0)', 'Assets (6)', 'Team (0)']);
       const rows = page.locator('mf-matter-assets tbody tr:not(.gb-state)');
       await expect(rows).toHaveCount(5);
       await expect(page.locator('mf-matter-assets [data-hidden], mf-pager')).toContainText(
@@ -401,7 +402,7 @@ test.describe('WP10 matter tabs', () => {
       });
       await page.goto(projectsUrl(w.big));
       await ready(page);
-      expect(await tabTexts(page)).toEqual(['Summary', 'Tasks', 'Projects (40)']);
+      expect(await tabTexts(page)).toEqual(['Summary', 'Tasks', 'Projects (40)', 'Team (0)']);
       await expect(page.locator(`${PROJECT_TABLE} thead th`)).toHaveText(['Name', 'Status']);
       await expect(page.locator('[data-count]')).toHaveCount(0);
       expect(await projectNames(page)).toHaveLength(33);
@@ -429,7 +430,7 @@ test.describe('WP10 matter tabs', () => {
       });
       await page.goto(assetsUrl(w.empty));
       await ready(page);
-      expect(await tabTexts(page)).toEqual(['Summary', 'Tasks (0)', 'Assets (0)']);
+      expect(await tabTexts(page)).toEqual(['Summary', 'Tasks (0)', 'Assets (0)', 'Team (0)']);
       await expect(page.locator('mf-matter-assets [data-empty=none]')).toBeVisible();
       await expect(page.locator('[data-empty-new-asset]')).toHaveCount(0);
       await expect(page.getByRole('button', { name: 'New asset' })).toHaveCount(0);

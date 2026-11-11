@@ -60,7 +60,7 @@ test.describe('Matters list: columns and resize (MD-21)', () => {
         Array.from(document.querySelectorAll('thead tr:first-child th'))
           .find((h) => h.textContent?.trim() === t)!
           .getBoundingClientRect().width;
-      return { name: widthOf('Name'), client: widthOf('Client'), cm: widthOf('CM Number') };
+      return { name: widthOf('Matter Name'), client: widthOf('Client'), cm: widthOf('CM Number') };
     });
     expect(w.name).toBeGreaterThan(w.cm);
     expect(w.client).toBeGreaterThan(110);
@@ -174,7 +174,8 @@ test.describe('Matter detail tabs: Summary, Projects, Assets, Productions, butto
     const production = await look(create);
     await page.goto(`/matters/${world.matter.matterId}?tab=projects`);
     const project = await look(page.getByRole('button', { name: /New Project/ }).first());
-    expect(production.height).toBe(32);
+    expect(production.height).toBe(36); // the 36 px control height of the shared theme (UI2)
+    expect(production.height).toBe(project.height);
     expect(production.font).toBe(project.font);
     expect(production.radius).toBe(project.radius);
     await page.goto(`/matters/${world.matter.matterId}?tab=productions`);
@@ -184,7 +185,7 @@ test.describe('Matter detail tabs: Summary, Projects, Assets, Productions, butto
 });
 
 test.describe('Shared grid: Columns menu, reorder and row hover (MD-28, MD-29)', () => {
-  test('Tasks tab: move Due left by keyboard, add Progress and hide Project, reload keeps it, Reset restores', async ({
+  test('Tasks tab: move Due left by keyboard, add Progress and Project, reload keeps it, Reset restores', async ({
     page,
     seed,
   }) => {
@@ -198,8 +199,9 @@ test.describe('Shared grid: Columns menu, reorder and row hover (MD-28, MD-29)',
         t.trim(),
       );
     await expect(page.locator('mf-task-table tbody tr[data-task]').first()).toBeVisible();
-    expect(await heads()).toContain('Project'); // a default column (MD-29)
-    expect(await heads()).not.toContain('Progress'); // off by default so Status and Priority stay whole at 1366 (#1154)
+    // Project and Progress are optional columns of the Tasks tab: the tab is already inside one matter, and Status and Priority stay whole at 1366 (#1154).
+    expect(await heads()).not.toContain('Project');
+    expect(await heads()).not.toContain('Progress');
 
     await page.locator('[data-grid-columns]').click();
     const panel = page.locator('[data-grid-columns-panel]');
@@ -207,11 +209,11 @@ test.describe('Shared grid: Columns menu, reorder and row hover (MD-28, MD-29)',
     await page.keyboard.press('Enter');
     await expect(panel.locator('[data-move="due:left"]')).toBeFocused();
     await panel.locator('[data-column="steps"]').check();
-    await panel.locator('[data-column="project"]').uncheck();
+    await panel.locator('[data-column="project"]').check();
     await page.keyboard.press('Escape');
     const after = await heads();
     expect(after).toContain('Progress');
-    expect(after).not.toContain('Project');
+    expect(after).toContain('Project');
     expect(after.indexOf('Due')).toBeLessThan(after.indexOf('Assignee'));
     await shot(page, 'tasks-columns-1366x768');
 
@@ -226,11 +228,11 @@ test.describe('Shared grid: Columns menu, reorder and row hover (MD-28, MD-29)',
       'Ref',
       'Type',
       'Title',
-      'Project',
       'Priority',
       'Assignee',
       'Due',
       'Status',
+      'Actions',
     ]);
     await axeClean(page, 'tasks tab with the Columns menu');
   });
@@ -271,10 +273,10 @@ test.describe('Shared grid: Columns menu, reorder and row hover (MD-28, MD-29)',
     await page.locator('[data-grid-columns]').click();
     await page.locator('[data-move="client:left"]').click();
     await page.keyboard.press('Escape');
-    expect((await heads()).slice(0, 3)).toEqual(['CM Number', 'Client', 'Name']);
+    expect((await heads()).slice(0, 3)).toEqual(['CM Number', 'Client', 'Matter Name']);
     await page.reload();
     await expect(page.locator('tbody tr').first()).toBeVisible();
-    expect((await heads()).slice(0, 3)).toEqual(['CM Number', 'Client', 'Name']);
+    expect((await heads()).slice(0, 3)).toEqual(['CM Number', 'Client', 'Matter Name']);
     await axeClean(page, 'matters list after a reorder');
   });
 });

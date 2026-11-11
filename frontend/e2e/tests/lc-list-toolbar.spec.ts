@@ -52,9 +52,17 @@ test.describe('List toolbar on Clients (record list)', () => {
     await expect(page.locator('[data-reset-sort]')).toHaveCount(0);
 
     // Sort by Name from the header: the line names it; Reset sort brings the default back.
-    await page.getByRole('columnheader', { name: /^Name/ }).getByRole('button').click();
+    await page
+      .getByRole('columnheader', { name: /^Client Name/ })
+      .getByRole('button')
+      .click();
     await expect(page).toHaveURL(/sort=name/);
-    await expect(page.locator('[data-sorted-text]')).toHaveText('Sorted by Name, A to Z');
+    // The line is short; the full sentence with the direction is its tooltip (LC-01).
+    await expect(page.locator('[data-sorted-text]')).toHaveText('Sorted by Client Name');
+    await expect(page.locator('[data-sorted-text]')).toHaveAttribute(
+      'title',
+      'Sorted by Client Name, A to Z',
+    );
     await page.locator('[data-reset-sort]').click();
     await expect(page).not.toHaveURL(/sort=/);
     await expect(page.locator('[data-sorted-text]')).toContainText('Client Number');

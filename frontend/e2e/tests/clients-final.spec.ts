@@ -4,6 +4,8 @@ import { Locator, Page } from '@playwright/test';
 import { ADMIN_USER, Api, Json } from '../support/api';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
+import { viewCounts, viewDropdown } from '../support/dropdown';
+import { showMatterColumns } from '../support/matter-columns';
 import { Seeder, uid } from '../support/seed';
 import { TaskApi } from '../support/tasks';
 import { FIRM_ZONE, dateInZone } from '../support/time';
@@ -539,6 +541,9 @@ test.describe('Clients final verification (#287)', () => {
         const region = who.getByRole('region', { name: `${grid}, scrollable` });
         const row = region.locator('tbody tr', { hasText: nameText });
         await expect(row).toBeVisible();
+        // Open Tasks and Overdue are optional columns of the Matters list (epic #1298): turn them on through the Columns menu.
+        if (person.tasks && grid === 'Matters list')
+          await showMatterColumns(who, 'Open Tasks', 'Overdue');
         if (!person.tasks) {
           await expect(row.locator('[data-count]')).toHaveCount(0);
           continue;
@@ -562,7 +567,7 @@ test.describe('Clients final verification (#287)', () => {
         await who.goto(`/matters/${c.matter.matterId}`);
         await expect(who.locator('mf-matter-health-strip [data-strip]')).toHaveCount(0);
         await who.goto(`/projects/${c.project.projectId}`);
-        await expect(who.locator('mf-scoped-tasks [data-strip]')).toHaveCount(0);
+        await expect(who.locator('mf-scoped-tasks button#st-view')).toHaveCount(0);
         return;
       }
       await expect(clientStrip).toBeVisible();
@@ -578,22 +583,20 @@ test.describe('Clients final verification (#287)', () => {
 
       // The matter overview's own count strip (mf-matter-health-strip, #816) was removed with the Summary rebuild (D-44f); the toggle strip over the Tasks grid remains.
       await who.goto(`/matters/${c.matter.matterId}?tab=tasks`);
-      const tasksStrip = who.locator('mf-scoped-tasks [data-strip]');
-      await expect(tasksStrip).toBeVisible();
-      expect(await strip(tasksStrip)).toMatchObject({
+      await expect(viewDropdown(who.locator('mf-scoped-tasks'))).toBeVisible();
+      expect(await viewCounts(who.locator('mf-scoped-tasks'))).toMatchObject({
         open: matterQueue.open,
         overdue: matterQueue.overdue,
       });
-      await tasksStrip.locator('[data-strip-item="overdue"]').click();
+      await viewDropdown(who.locator('mf-scoped-tasks')).selectOption('overdue');
       await expect(who.locator('mf-scoped-tasks [data-range]')).toContainText(
         `of ${matterQueue.overdue}`,
       );
 
       // Project Tasks strip and the tab count.
       await who.goto(`/projects/${c.project.projectId}`);
-      const projectStrip = who.locator('mf-scoped-tasks [data-strip]');
-      await expect(projectStrip).toBeVisible();
-      expect(await strip(projectStrip)).toMatchObject({
+      await expect(viewDropdown(who.locator('mf-scoped-tasks'))).toBeVisible();
+      expect(await viewCounts(who.locator('mf-scoped-tasks'))).toMatchObject({
         open: projectQueue.open,
         overdue: projectQueue.overdue,
       });
@@ -663,7 +666,11 @@ test.describe('Clients final verification (#287)', () => {
     await page.goto(`/clients?name=${data.token}`);
     await expect(page.locator('main table tbody tr td a').first()).toBeVisible();
     await context.setOffline(true);
-    await page.getByRole('columnheader', { name: /^Name/ }).getByRole('button').first().click();
+    await page
+      .getByRole('columnheader', { name: /^Client Name/ })
+      .getByRole('button')
+      .first()
+      .click();
     // The offline banner has its own Retry (it belongs to the whole app); this one is the list's.
     const retry = page
       .getByLabel('Clients list, scrollable')
@@ -695,7 +702,8 @@ test.describe('Clients final verification (#287)', () => {
       let n = 0;
       for (n = 1; n <= 80; n++) {
         await page.keyboard.press('Tab');
-        if (await page.evaluate(() => !!document.activeElement?.matches('tbody a.pg-name'))) break;
+        if (await page.evaluate(() => !!document.activeElement?.matches('tbody a[data-row-list]')))
+          break;
       }
       stops[key] = n;
       expect(n, `${key}: Tab stops to the first row`).toBeLessThanOrEqual(60);
