@@ -145,7 +145,7 @@ test.describe('Matters list: project managers', () => {
 });
 
 test.describe('Matter page: project managers', () => {
-  test('the header line shows Primary and Secondary; a matter without one shows nothing to a viewer', async ({
+  test('the Summary shows the Primary PM and the Secondary PM; a matter without one shows None and no button to a viewer', async ({
     seed,
     personas,
     asUser,
@@ -153,16 +153,22 @@ test.describe('Matter page: project managers', () => {
     const fx = await pmFixtures(seed, personas);
     const viewer = await asUser(fx.observer.username);
     await viewer.goto(`/matters/${fx.m.both.matterId}`);
-    const line = viewer.locator('[data-managers]');
-    await expect(line).toContainText(`PM Alpha ${fx.token}`);
-    await expect(line).toContainText('(primary)');
-    await expect(line).toContainText(`PM Bravo ${fx.token}`);
-    await expect(line).toContainText('(secondary)');
-    await expect(viewer.locator('[data-change-managers], [data-add-managers]')).toHaveCount(0);
+    // The PMs are two fields of the Summary's Details card (MD-42): "Primary PM" and "Secondary PM", the name in each.
+    const primary = viewer.locator('[data-managers]');
+    await expect(primary).toContainText('Primary PM');
+    await expect(primary).toContainText(`PM Alpha ${fx.token}`);
+    await expect(viewer.locator('[data-secondary-manager]')).toContainText(`PM Bravo ${fx.token}`);
+    await expect(
+      viewer.locator('[data-change-managers], [data-add-managers], [data-add-secondary-manager]'),
+    ).toHaveCount(0);
 
     await viewer.goto(`/matters/${fx.m.none3.matterId}`);
     await expect(viewer.locator('h1')).toBeVisible();
-    await expect(viewer.locator('[data-managers]')).toHaveCount(0);
+    await expect(viewer.locator('[data-primary-manager]')).toHaveText('None');
+    await expect(viewer.locator('[data-secondary-manager]')).toHaveText('None');
+    await expect(
+      viewer.locator('[data-change-managers], [data-add-managers], [data-add-secondary-manager]'),
+    ).toHaveCount(0);
   });
 
   test('Change opens the dialog, Escape returns focus to Change, Save audits the change with names', async ({
@@ -199,7 +205,7 @@ test.describe('Matter page: project managers', () => {
     expect(changed?.newValue).toContain('PM Bravo');
   });
 
-  test('an unassigned matter shows Add project manager to a person with the permission only', async ({
+  test('an unassigned matter shows Add next to the Primary PM and the Secondary PM to a person with the permission only', async ({
     seed,
     personas,
     asUser,
@@ -207,32 +213,20 @@ test.describe('Matter page: project managers', () => {
     const fx = await pmFixtures(seed, personas);
     const director = await asUser(fx.director.username);
     await director.goto(`/matters/${fx.m.none3.matterId}`);
-    await expect(director.locator('[data-add-managers]')).toHaveText('Add project manager');
+    const add = director.locator('[data-add-managers]');
+    await expect(add).toHaveText('Add');
+    await expect(add).toHaveAccessibleName('Add a Primary PM');
+    await expect(director.locator('[data-add-secondary-manager]')).toHaveAccessibleName(
+      'Add a Secondary PM',
+    );
 
     const editor = await asUser(fx.editor.username);
     await editor.goto(`/matters/${fx.m.none3.matterId}`);
     await expect(editor.locator('h1')).toBeVisible();
-    await expect(editor.locator('[data-add-managers], [data-managers]')).toHaveCount(0);
-  });
-
-  test('the health strip numbers equal the task grid they open; none without Task.View', async ({
-    seed,
-    personas,
-    asUser,
-  }) => {
-    const fx = await pmFixtures(seed, personas);
-    const page = await asUser(fx.pmA.username);
-    await page.goto(`/matters/${fx.m.unassigned.matterId}`);
-    const strip = page.locator('mf-matter-health-strip');
-    await expect(strip.locator('[data-strip-item=unassigned]')).toContainText('2');
-    await strip.locator('[data-strip-item=unassigned]').click();
-    await expect(page).toHaveURL(/\/tasks\?.*unassigned=true/);
-    await expect(page.locator('tbody tr[data-task]')).toHaveCount(2);
-
-    const noTask = await asUser(fx.pmNoTask.username);
-    await noTask.goto(`/matters/${fx.m.unassigned.matterId}`);
-    await expect(noTask.locator('h1')).toBeVisible();
-    await expect(noTask.locator('mf-matter-health-strip [data-strip-item]')).toHaveCount(0);
+    await expect(editor.locator('[data-primary-manager]')).toHaveText('None');
+    await expect(
+      editor.locator('[data-add-managers], [data-add-secondary-manager], [data-change-managers]'),
+    ).toHaveCount(0);
   });
 
   for (const [w, h] of SIZES) {

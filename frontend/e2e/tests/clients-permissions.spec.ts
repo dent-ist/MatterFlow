@@ -4,6 +4,7 @@ import { Page } from '@playwright/test';
 import { Json } from '../support/api';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
+import { showMatterColumns, showTaskTabColumns } from '../support/matter-columns';
 import { Seeder, uid } from '../support/seed';
 import { dateInZone, FIRM_ZONE } from '../support/time';
 
@@ -214,6 +215,8 @@ test.describe('#285: permission matrix, no dead links', () => {
           (await links(page, 'a[href^="/clients/"]')) > 0,
           'client links in the Matters list',
         ).toBe(has(role, 'Client.View'));
+        // Open Tasks is an optional column of the Matters list (epic #1298): turn it on, where the person may have it, then look.
+        if (has(role, 'Task.View')) await showMatterColumns(page, 'Open Tasks');
         expect((await links(page, 'th:has-text("Open Tasks")')) > 0, 'Open tasks column').toBe(
           has(role, 'Task.View'),
         );
@@ -245,6 +248,8 @@ test.describe('#285: permission matrix, no dead links', () => {
         await visit(`/matters/${m.matterId}?tab=tasks`, 'matter tasks');
         if (has(role, 'Task.View')) {
           await expect(page.locator('#mf-main tr[data-task]').first()).toBeVisible();
+          // Project is an optional column of the Tasks tab (the tab is inside one matter already): turn it on, where the person may have it.
+          if (has(role, 'Project.View')) await showTaskTabColumns(page, 'project');
           expect(
             (await links(page, 'mf-project-cell a')) > 0,
             'project links in the Tasks grid',

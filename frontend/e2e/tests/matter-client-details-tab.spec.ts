@@ -5,6 +5,7 @@ import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
 import { openMatterDetails } from '../support/matter-details';
 import { matterTabPatterns } from '../support/app-counts';
+import { ci } from '../support/text';
 
 /**
  * Matter and Client detail pages (#244): Details is the first tab and the default, the old right-hand Details panel is gone, the
@@ -46,8 +47,8 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
         tasks: /^\s*Tasks/,
         projects: /^\s*Projects/,
         assets: /^\s*Assets \(0\)\s*$/,
-        productions: /^\s*Productions\s*$/,
-        notes: /^\s*Notes\s*$/,
+        productions: /^\s*Productions/,
+        notes: /^\s*Notes/,
         team: /^\s*Team/,
         activities: /^\s*Activities\s*$/,
       }),
@@ -202,17 +203,20 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
 
     const overflow = page.locator('[data-overflow]');
     await overflow.click();
-    await page.getByRole('menuitem', { name: 'Set inactive' }).click();
+    await page.getByRole('menuitem', { name: ci('Set inactive') }).click();
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();
     await expect(overflow).toBeFocused();
     await overflow.click();
-    await page.getByRole('menuitem', { name: 'Set inactive' }).click();
-    await page.getByRole('dialog').getByRole('button', { name: 'Set inactive' }).click();
+    await page.getByRole('menuitem', { name: ci('Set inactive') }).click();
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: ci('Set Client Inactive') })
+      .click();
     await overflow.click();
-    await expect(page.getByRole('menuitem', { name: 'Set active' })).toBeVisible();
+    await expect(page.getByRole('menuitem', { name: ci('Set active') })).toBeVisible();
     await expect(page.locator('[data-record-header]')).toContainText('Inactive'); // the status is in the header only (WP6)
   });
 

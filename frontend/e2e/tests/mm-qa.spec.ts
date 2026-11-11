@@ -202,7 +202,7 @@ test.describe('My Matters QA: calendar item permissions', () => {
     await dialog.getByLabel('Court hearing').check({ force: true });
     await dialog.getByLabel('Title').fill('Should be refused');
     await dialog.getByLabel('Date').fill(inDays(2));
-    await dialog.getByRole('button', { name: 'Add item' }).click();
+    await dialog.getByRole('button', { name: 'Add Event', exact: true }).click();
     // Either the dialog stays with a message in words, or a toast says it was refused; the item never appears.
     await expect(
       page

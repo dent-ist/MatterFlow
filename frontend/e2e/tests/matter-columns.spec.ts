@@ -4,6 +4,8 @@ import { Locator, Page } from '@playwright/test';
 import { MyWorkPage, PodWorkPage, TaskQueuePage } from '../pages/queues.pages';
 import { Api } from '../support/api';
 import { axeAvailable, axeViolations } from '../support/axe';
+import { TASK_TITLE_MIN_WIDTH } from '../support/app-counts';
+import { ci } from '../support/text';
 import { expect, test } from '../support/fixtures';
 import { Seeder, uid } from '../support/seed';
 
@@ -263,7 +265,7 @@ test.describe('Matter Number and Matter Name: defaults on every list (#348)', ()
     await axeClean(page, 'no Matter.View');
   });
 
-  test('LC-09: no width drops a column; Matter Name, Project, Progress and the Matter Number stay, the grid frame scrolls sideways and the Title keeps its 160 px', async ({
+  test('LC-09: no width drops a column; Matter Name, Project, Progress and the Matter Number stay, the grid frame scrolls sideways and the Title keeps its minimum width', async ({
     seed,
     asUser,
   }) => {
@@ -294,14 +296,14 @@ test.describe('Matter Number and Matter Name: defaults on every list (#348)', ()
         'Status',
       ]),
     );
-    expect(await width(page, 'title')).toBeGreaterThanOrEqual(160);
+    expect(await width(page, 'title')).toBeGreaterThanOrEqual(TASK_TITLE_MIN_WIDTH);
     expect(await scrolls()).toBe(true);
     expect(await noPageScroll(page)).toBe(true);
     await shot(page, 'task-queue-narrow-1366x768');
     await page.setViewportSize({ width: 1440, height: 900 });
     await expect(th(page, 'matter')).toBeVisible();
     await expect(th(page, 'matterName')).toBeVisible();
-    expect(await width(page, 'title')).toBeGreaterThanOrEqual(160);
+    expect(await width(page, 'title')).toBeGreaterThanOrEqual(TASK_TITLE_MIN_WIDTH);
     await shot(page, 'task-queue-1440x900');
     // My Work at 1366 keeps every column too.
     await page.setViewportSize({ width: 1366, height: 768 });
@@ -313,7 +315,7 @@ test.describe('Matter Number and Matter Name: defaults on every list (#348)', ()
     expect(keys).toContain('CM Number');
     expect(keys).toContain('Progress');
     expect(keys).toContain('Matter Name');
-    expect(await width(page, 'title')).toBeGreaterThanOrEqual(160);
+    expect(await width(page, 'title')).toBeGreaterThanOrEqual(TASK_TITLE_MIN_WIDTH);
     await axeClean(page, 'narrow My Work');
   });
 });
@@ -523,7 +525,7 @@ test.describe('Columns panel, header menu, resize and fit for Matter Name (#348)
     await expect(th(page, 'matterName')).toBeVisible();
     await expect(th(page, 'matter')).toBeVisible();
     // Reset columns after showing it returns the default (hidden).
-    await panel.getByRole('button', { name: /Reset columns/ }).click();
+    await panel.getByRole('button', { name: ci('Reset columns') }).click();
     await expect(th(page, 'matterName')).toHaveCount(0);
     await check.check();
 
@@ -646,6 +648,7 @@ test.describe('Compact density and print (#348)', () => {
     await expect(page.locator('[data-task]')).toHaveCount(3);
     for (const r of await page.locator('[data-task]').all())
       expect((await r.boundingBox())!.height).toBeCloseTo(36, 0);
+    await showColumns(page, 'Matter Name'); // off by default on the global lists (D-43a, #1230)
     await expect(page.locator('td[data-col="matterName"] .mn').first()).toBeVisible();
     await expect(page.locator('td[data-col="matter"] [data-matter-name]')).toHaveCount(0);
     await shot(page, 'task-queue-compact-1920x1080');

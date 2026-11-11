@@ -11,3 +11,15 @@ export async function showMatterColumns(page: Page, ...names: string[]): Promise
   for (const name of names) await page.getByLabel(name, { exact: true }).check();
   await columns.click();
 }
+
+/**
+ * The Tasks tab of a Matter or a Project shows Ref, Type, Title, Priority, Assignee, Due and Status by default; Project (matter tab only) and Progress are optional
+ * (the tab is already inside one record, and Status and Priority stay whole at 1366, #1154). This turns the named columns on through the Columns menu by their keys
+ * (`project`, `steps`); the choice is remembered in the browser.
+ */
+export async function showTaskTabColumns(page: Page, ...keys: string[]): Promise<void> {
+  await page.locator('[data-grid-columns]').click();
+  const panel = page.locator('[data-grid-columns-panel]');
+  for (const key of keys) await panel.locator(`[data-column="${key}"]`).check();
+  await page.keyboard.press('Escape');
+}

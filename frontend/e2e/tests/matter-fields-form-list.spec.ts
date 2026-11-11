@@ -1,4 +1,5 @@
 import { axeAvailable, axeViolations } from '../support/axe';
+import { dropdownById } from '../support/dropdown';
 import { expect, test } from '../support/fixtures';
 import { SIZES } from '../support/labels';
 import { uid } from '../support/seed';
@@ -42,10 +43,8 @@ test.describe('Matter fields: dialog, list and Matter Lists (#1301)', () => {
 
     await dialog.locator('#matter-dms-path').fill('\\\\fs01\\dms\\Matters\\1234');
     await dialog.locator('#matter-dfs-path').fill('https://dfs.example.com/m/1234');
-    await dialog.locator('#matter-type').click();
-    await page.getByRole('option', { name: `Type ${token}` }).click();
-    await dialog.locator('#matter-state').click();
-    await page.getByRole('option', { name: `State ${token}` }).click();
+    await dropdownById(dialog, 'matter-type').selectOption({ label: `Type ${token}` });
+    await dropdownById(dialog, 'matter-state').selectOption({ label: `State ${token}` });
     if (axeAvailable()) expect(await axeViolations(page), 'Edit Matter dialog').toEqual([]);
     await dialog.getByRole('button', { name: 'Save Changes' }).click();
     await expect(page.locator('[data-summary-details] [data-matter-type]')).toHaveText(

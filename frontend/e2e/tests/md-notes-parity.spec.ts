@@ -3,6 +3,7 @@ import { axeAvailable, axeViolations } from '../support/axe';
 import { dropdownByAttr } from '../support/dropdown';
 import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
+import { ci } from '../support/text';
 
 /**
  * The Notes tab against the approved mockup (MD-27, #1031; docs/ux/matter-detail/notes-parity.md): one card with the header row, notes grouped by tag, a splitter,
@@ -48,12 +49,12 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await expect(page.locator('[data-notes-head]')).toHaveCount(0);
     const controls = page.locator('[data-notes-list] [data-notes-controls]');
     await expect(controls.getByRole('searchbox')).toBeVisible();
-    await expect(controls.getByRole('button', { name: /View options/ })).toBeVisible();
+    await expect(controls.getByRole('button', { name: ci(/View options/) })).toBeVisible();
     for (const v of ['By Tag', 'Latest First', 'Templates'])
       await expect(controls.getByRole('button', { name: v, exact: true })).toBeVisible();
     await expect(controls.locator('[data-new-note]')).toBeVisible();
     // view options: sort, tags filter (as a removable chip) and collapse all
-    await controls.getByRole('button', { name: /View options/ }).click();
+    await controls.getByRole('button', { name: ci(/View options/) }).click();
     const vo = page.locator('[data-view-options-menu]');
     await expect(vo.getByRole('menuitemradio')).toHaveCount(4);
     await vo.getByRole('menuitemcheckbox', { name: /Untagged/ }).click();
@@ -74,10 +75,10 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     const first = page.locator('[data-group]').first();
     await first.locator('h3 button').click();
     await expect(first.locator('h3 button')).toHaveAttribute('aria-expanded', 'false');
-    await page.getByRole('button', { name: /View options/ }).click();
+    await page.getByRole('button', { name: ci(/View options/) }).click();
     await page.locator('[data-toggle-all]').click();
     await expect(page.locator('[data-group] h3 button[aria-expanded="true"]')).toHaveCount(0);
-    await page.getByRole('button', { name: /View options/ }).click();
+    await page.getByRole('button', { name: ci(/View options/) }).click();
     await page.locator('[data-toggle-all]').click();
     await expect(page.locator('[data-group] h3 button[aria-expanded="false"]')).toHaveCount(0);
   });

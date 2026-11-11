@@ -94,12 +94,13 @@ test('Tasks tab at 1366x768: columns fit and the cells show what they should', a
   await expect(bar).toHaveAttribute('aria-valuemax', /^[1-9]\d*$/);
   await expect(bar).toHaveAttribute('aria-label', /^\d+ of \d+ steps$/);
   expect((await bar.boundingBox())!.height).toBeLessThanOrEqual(26);
+  // The tip is hidden from the accessibility tree on purpose (the bar's aria-describedby reads it), so it is found by its role attribute, not by getByRole.
   await bar.hover();
-  await expect(page.getByRole('tooltip')).toHaveText(/^\d+ of \d+ steps$/);
+  await expect(page.locator('[role=tooltip]')).toHaveText(/^\d+ of \d+ steps$/);
   await page.mouse.move(0, 0);
-  await expect(page.getByRole('tooltip')).toHaveCount(0);
+  await expect(page.locator('[role=tooltip]')).toHaveCount(0);
   await bar.focus();
-  await expect(page.getByRole('tooltip')).toHaveText(/^\d+ of \d+ steps$/);
+  await expect(page.locator('[role=tooltip]')).toHaveText(/^\d+ of \d+ steps$/);
   void project;
 });
 
