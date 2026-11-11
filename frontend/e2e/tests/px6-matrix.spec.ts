@@ -27,7 +27,6 @@ interface Facts {
   switchOnMatters: boolean;
   switchOnAssets: boolean;
   tabs: string[];
-  overviewSections: string[];
   headerMenu: string[];
   api: Record<string, number>;
 }
@@ -57,17 +56,15 @@ async function collectUi(page: Page, fx: PmFixtures): Promise<Omit<Facts, 'api'>
   await page.goto(`/matters/${fx.m.primary.matterId}`);
   await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
   await page.waitForLoadState('networkidle');
-  const overviewSections = await page
-    .locator('[data-matter-overview] [data-section]')
-    .evaluateAll((els) => els.map((e) => e.getAttribute('data-section') ?? ''));
   let headerMenu: string[] = [];
-  const overflow = page.locator('mf-record-header [data-overflow]');
+  // The matter header has the Create menu too (also a `data-overflow`): the header menu here is More actions.
+  const overflow = page.locator('mf-matter-header [data-overflow][aria-label^="More actions"]');
   if ((await overflow.count()) > 0) {
     await overflow.click();
     headerMenu = (await page.locator('[role=menuitem]').allInnerTexts()).map((t) => t.trim());
     await page.keyboard.press('Escape');
   }
-  return { landing, menu, switchOnMatters, switchOnAssets, tabs, overviewSections, headerMenu };
+  return { landing, menu, switchOnMatters, switchOnAssets, tabs, headerMenu };
 }
 
 async function collectApi(who: Api, fx: PmFixtures): Promise<Record<string, number>> {
@@ -96,7 +93,7 @@ const PM_ROLE_MENU = [...PM_MENU, 'Reports'];
 const FOUR_TABS = ['Overview', 'Calendar', 'Assets', 'Metrics', 'Activity']; // the five tabs of the UI update (epic #953); Metrics holds Breakdown and Data
 
 test.describe('Permission matrix of the Project Manager views', () => {
-  test('Project Manager (holds Matter.AssignManagers): the short menu, the switch, five tabs, the full Overview and header menu, every endpoint', async ({
+  test('Project Manager (holds Matter.AssignManagers): the short menu, the switch, five tabs, the header menu, every endpoint', async ({
     seed,
     personas,
     asUser,
@@ -108,9 +105,6 @@ test.describe('Permission matrix of the Project Manager views', () => {
     expect(ui.menu).toEqual(PM_ROLE_MENU);
     expect(ui.switchOnMatters && ui.switchOnAssets).toBe(true);
     expect(ui.tabs).toEqual(FOUR_TABS);
-    expect(ui.overviewSections).toEqual(
-      expect.arrayContaining(['health', 'status', 'deadlines', 'people', 'assets', 'activity']),
-    );
     expect(ui.headerMenu.join('|')).toMatch(/New Task|Bulk Update/);
     expect(ui.headerMenu.join('|')).toMatch(/Add Comment/);
     const api = await Api.as(fx.pmA.username);
@@ -152,8 +146,6 @@ test.describe('Permission matrix of the Project Manager views', () => {
     expect(ui.menu).not.toContain('My Matters');
     expect(ui.menu).not.toContain('Task Queue');
     expect(ui.tabs).toEqual([]);
-    expect(ui.overviewSections).not.toContain('status');
-    expect(ui.overviewSections).not.toContain('deadlines');
     expect(ui.headerMenu).toEqual([]);
     const api = await Api.as(fx.pmNoTask.username);
     const status = await collectApi(api, fx);
@@ -414,7 +406,7 @@ test.describe('Keyboard: Tab stops of the new areas (existing keys only)', () =>
     await expect(page.locator('[role=tab][aria-selected=true]')).toHaveText(/Overview/);
   });
 
-  test('matter Overview and the header menu: stops listed, the menu opens with Enter, Esc closes it and the button has focus again', async ({
+  test('matter Summary and the header menu: stops listed, the menu opens with Enter, Esc closes it and the button has focus again', async ({
     seed,
     personas,
     asUser,
@@ -423,13 +415,14 @@ test.describe('Keyboard: Tab stops of the new areas (existing keys only)', () =>
     const page = await asUser(fx.pmA.username);
     await page.setViewportSize(SIZES[0]);
     await page.goto(`/matters/${fx.m.primary.matterId}`);
-    await expect(page.locator('[data-matter-overview] [data-section="health"]')).toBeVisible();
+    // The Summary (MD-42) replaced the Overview and its sections: wait for its Details card.
+    await expect(page.locator('[data-summary-details]')).toBeVisible();
     await page.waitForLoadState('networkidle');
     const result = await tabStops(page, 'h1', 'main, mf-fixed-page', 60);
     evidence('matter-overview', '1366', result);
     expectGoodStops('matter overview', { stops: result.stops, left: true }, 5);
 
-    const overflow = page.locator('mf-record-header [data-overflow]');
+    const overflow = page.locator('mf-matter-header [data-overflow][aria-label^="More actions"]');
     await overflow.focus();
     await page.keyboard.press('Enter');
     await expect(page.locator('[role=menuitem]').first()).toBeVisible();

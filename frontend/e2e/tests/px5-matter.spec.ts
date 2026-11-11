@@ -31,11 +31,11 @@ test.describe('Quick actions per matter', () => {
 
     // Add comment: choose the task, write, post through the task comment API.
     await page.locator('[data-action=add-comment]').click();
-    const dialog = page.locator('p-dialog');
+    const dialog = page.getByRole('dialog', { name: 'Add Comment' });
     await expect(dialog.locator('[data-task-list] label')).toHaveCount(2);
     await dialog.locator('[data-task-list] label', { hasText: 'Second open task' }).click();
     await dialog.locator('[data-comment-text]').fill('Quick note from the project manager');
-    await dialog.getByRole('button', { name: 'Add Comment' }).click();
+    await dialog.getByRole('button', { name: 'Add Comment', exact: true }).click();
     await expect(toasts(page).first()).toContainText('Comment posted');
     await page.goto(`/tasks/${second.taskId}`);
     await expect(page.locator('main')).toContainText('Quick note from the project manager');
@@ -84,7 +84,9 @@ test.describe('Quick actions per matter', () => {
     // Add comment from the row; Cancel returns focus to the row's menu button.
     await rowMenu.click();
     await page.locator('[data-action=add-comment]').click();
-    await expect(page.locator('p-dialog [data-task-list] label')).toHaveCount(1);
+    await expect(
+      page.getByRole('dialog', { name: 'Add Comment' }).locator('[data-task-list] label'),
+    ).toHaveCount(1);
     await page.getByRole('button', { name: 'Cancel' }).click();
     await expect(page.locator('[data-comment-text]')).toHaveCount(0);
     await expect(rowMenu).toBeFocused();
@@ -149,7 +151,9 @@ test.describe('Quick actions per matter', () => {
         .click({ position: { x: 2, y: 2 }, force: true });
       await row.locator('[data-overflow]').click();
       await page.locator('[data-action=add-comment]').click();
-      await expect(page.locator('p-dialog [data-task-list] label').first()).toBeVisible();
+      await expect(
+        page.getByRole('dialog', { name: 'Add Comment' }).locator('[data-task-list] label').first(),
+      ).toBeVisible();
       expect(await axeViolations(page), `comment dialog at ${size.width}`).toEqual([]);
       await page.getByRole('button', { name: 'Cancel' }).click();
     }
