@@ -3,6 +3,7 @@ import { CreateTaskPage } from '../pages/create-task.page';
 import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
 import { filterDropdown } from '../support/dropdown';
+import { ci } from '../support/text';
 
 /** Fixes of the UX / QA review round 4 (docs/ux/review-round-4.md, section "Round 4 fixes"). */
 
@@ -197,15 +198,16 @@ test.describe('Round 4: task type icons', () => {
     await page.goto(`/admin/task-types/${world.taskType.id}`);
     const trigger = page.locator('[data-icon-trigger]');
     // UXR4-11: the accessible name holds the visible words "Document" and "Change Icon".
-    await expect(trigger).toHaveAccessibleName(/Icon.*Document.*Change icon/);
+    await expect(trigger).toHaveAccessibleName(ci(/Icon.*Document.*Change icon/));
     await trigger.click();
     const dialog = page.getByRole('dialog', { name: 'Choose an Icon' });
     await expect(dialog).toBeVisible();
 
     const scroll = dialog.locator('[data-icon-scroll]');
+    // The grid area is 90% of the window less the dialog's own parts (24.5 rem, #1217): 377 px at 1280x800, so well over a third of the window.
     await expect
       .poll(async () => (await scroll.boundingBox())!.height, { message: 'grid area height' })
-      .toBeGreaterThan(400);
+      .toBeGreaterThan(370);
     const categories = dialog.getByRole('group', { name: 'Show category' });
     await expect(categories.getByRole('button')).toHaveCount(13); // All and the 12 categories
     await categories.getByRole('button', { name: /^Production/ }).click();
@@ -478,19 +480,25 @@ test.describe('Round 4: queues, wording and accessibility', () => {
     );
     const task = await seed.task(world, { dueDate: today });
     await page.goto(`/tasks/${task.taskId}`);
-    await expect(page.locator('[data-due]')).toContainText('Due Today');
-    await expect(page.locator('[data-due]')).not.toContainText('Due Soon');
+    // The tile says it in a sentence ("Due today"): the wording is the queues', the letter case is the sentence case of D-20.
+    await expect(page.locator('[data-due]')).toContainText(ci.part('Due Today'));
+    await expect(page.locator('[data-due]')).not.toContainText(ci.part('Due Soon'));
 
     await page.goto(`/tasks?q=${encodeURIComponent(task.taskNumber)}`);
-    // A link with a filter and no status asks for every status: the filter and "Status: All" are the two filters it carries.
+    // A link with a filter and no status asks for every status: "Status: All" is the one filter the button counts (the search text sits in the Search box, LC-01).
     await expect(page.getByRole('button', { name: /^Filters/ })).toHaveText(
-      /^\s*Filters\s*\(2\)\s*$/,
+      /^\s*Filters\s*\(1\)\s*$/,
     );
     await expect(page.getByRole('searchbox', { name: 'Search tasks', exact: true })).toHaveValue(
       task.taskNumber,
     );
-    // The column is on screen, so the filter is in the row and there is no chip for it.
-    await expect(page.getByRole('list', { name: 'Active filters' })).toHaveCount(0);
+    // The Title / Ref text is the Search box, never a chip; the one chip is "Status: All" (the lists show every chip while the row is open, LC-01).
+    await expect(page.getByRole('list', { name: 'Active filters' })).toHaveText(
+      /^\s*Status: All\s*$/,
+    );
+    await expect(page.getByRole('list', { name: 'Active filters' })).not.toContainText(
+      task.taskNumber,
+    );
   });
 
   test('UXR4-19: My Work tabs stay on one row at 375 px and the near-empty line sits under the last row', async ({
@@ -533,9 +541,11 @@ test.describe('Round 4: queues, wording and accessibility', () => {
   }) => {
     const world = await seed.world();
     const task = await seed.task(world);
+    const project = await seed.project(world.matter);
+    // The Matter page has no Activity drawer any more (its Activities is a tab since UI2 #1269); the Project page keeps its drawer.
     for (const path of [
       `/clients/${world.client.clientId}`,
-      `/matters/${world.matter.matterId}`,
+      `/projects/${project.projectId}`,
       `/tasks/${task.taskId}`,
     ]) {
       await page.goto(path);
