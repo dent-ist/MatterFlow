@@ -41,7 +41,8 @@ jobs:
     name: e2e (${{ matrix.name }})
     # Pull requests only run when labeled `e2e`; dispatch and schedule always run.
     if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'e2e')
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest is 26.04 and Playwright 1.56 has no Chromium build for it.
+    runs-on: ubuntu-24.04
     timeout-minutes: 40
     strategy:
       fail-fast: false # a failed shard must not hide the verdict of the others
