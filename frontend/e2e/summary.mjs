@@ -2,7 +2,10 @@
 // Markdown summary of one Playwright JSON report for the job summary of GitHub Actions (E2E B0, #1357):
 // passed / failed / flaky / skipped / did not run, the failed and flaky tests, and the slowest 10 tests.
 //
-//   node e2e/summary.mjs <results.json> [title]      writes to $GITHUB_STEP_SUMMARY when it is set, else to the console
+//   node e2e/summary.mjs <results.json> [title]      writes the Markdown to $GITHUB_STEP_SUMMARY when it is set, else to the console
+//
+// Besides the Markdown, ONE plain line per job always goes to stdout, so the job log carries the counts and nobody has to open the summary page:
+//   [e2e-summary] <title>: <n> tests, <p> passed, <f> failed, <k> flaky, <s> skipped, <d> did not run
 //
 // "Did not run" is a test with no attempt at all (Playwright stops the rest of a serial group after its first failure, or the run was cut off by
 // the step limit); "skipped" is a test that started and skipped itself (test.skip).
@@ -40,6 +43,7 @@ try {
 }
 
 const lines = [];
+let oneLine = `[e2e-summary] ${title}: no JSON report at ${file} (the run stopped before Playwright wrote it)`;
 if (report === null) {
   lines.push(`### ${title}`, '', `No JSON report at \`${file}\` (the run stopped before Playwright wrote it, for example at the step time limit).`, '');
 } else {
@@ -52,6 +56,7 @@ if (report === null) {
     else if (t.attempts === 0) count.didNotRun++;
     else count.skipped++;
   }
+  oneLine = `[e2e-summary] ${title}: ${tests.length} tests, ${count.passed} passed, ${count.failed} failed, ${count.flaky} flaky, ${count.skipped} skipped, ${count.didNotRun} did not run`;
   const minutes = ((report.stats?.duration ?? 0) / 60000).toFixed(1);
   const cell = (s) => s.replace(/\|/g, '\\|').replace(/\s+/g, ' ').slice(0, 170);
   lines.push(
@@ -86,5 +91,10 @@ if (report === null) {
 }
 
 const text = lines.join('\n');
-if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, text + '\n');
-else console.log(text);
+if (process.env.GITHUB_STEP_SUMMARY) {
+  fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, text + '\n');
+  console.log(oneLine);
+} else {
+  console.log(text);
+  console.log(oneLine);
+}
