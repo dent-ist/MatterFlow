@@ -45,13 +45,16 @@ function reasonOf(error: unknown): string {
     .vm__summary::-webkit-details-marker {
       display: none;
     }
-    /* The surface is the shared menu (mf-menu, D-36); only where it opens is here. */
+    /* The surface is the shared menu (mf-menu, D-36). The menu lives inside the Options menu, whose own panel scrolls (overflow) and would clip a flyout
+       that sticks out of it (the apply buttons ended under the grid, #1359): it opens in the flow, under its entry, and the Options panel grows with it. */
     .vm__panel {
-      position: absolute;
-      z-index: 30;
-      top: calc(100% + 2px);
-      right: 0;
-      width: 360px;
+      position: static;
+      width: auto;
+      min-width: 0;
+      max-height: none;
+      margin-top: 2px;
+      overflow: visible;
+      box-shadow: none;
     }
     .vm__hint {
       margin: 0 0 var(--mf-s2);

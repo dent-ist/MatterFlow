@@ -58,6 +58,11 @@ test.describe('Saved views (#880)', () => {
     seed,
     admin,
   }) => {
+    // The views belong to the signed-in person (here the shared System Admin): start from none, whatever an earlier run or test left.
+    const before = await admin.get('/api/v1/me/views?surface=task-queue');
+    for (const v of before.items.filter((x: { name: string | null }) => x.name !== null)) {
+      await admin.delete(`/api/v1/me/views/${v.id}`);
+    }
     const world = await seed.world();
     await seed.task(world);
     await page.goto(`/tasks?matter=${world.matter.matterId}&status=NEW`);
