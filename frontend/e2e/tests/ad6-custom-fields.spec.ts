@@ -188,7 +188,7 @@ test.describe('Custom Fields list (#644)', () => {
 
 test.describe('Custom Fields designer entry (#645)', () => {
   for (const o of OBJECTS) {
-    test(`${o.label}: crumb Administration > Custom Fields > ${o.label}, title and H1 "${o.label} custom fields", Back puts focus on the Object link`, async ({
+    test(`${o.label}: crumb Administration > Custom Fields > ${o.label}, title and H1 "${o.label} Custom Fields", Back puts focus on the Object link`, async ({
       page,
     }) => {
       await page.setViewportSize({ width: 1366, height: 768 });
@@ -200,11 +200,17 @@ test.describe('Custom Fields designer entry (#645)', () => {
         `${o.label} Custom Fields`,
       );
       await expect(page.getByRole('heading', { level: 1 })).not.toContainText('Form:');
-      await expect(crumbs(page)).toHaveText([
-        /Administration/,
-        /Custom Fields/,
-        new RegExp(`^\\s*>?\\s*${o.label}\\s*$`),
-      ]);
+      // The record header draws the current crumb twice: the short text for the eye (aria-hidden) and the full text for a screen reader.
+      await expect(crumbs(page)).toHaveCount(3);
+      await expect(crumbs(page).nth(0)).toHaveText('Administration');
+      await expect(crumbs(page).nth(1)).toHaveText('Custom Fields');
+      await expect(crumbs(page).nth(2).locator('[data-crumb-current] .mf-sr-only')).toHaveText(
+        o.label,
+      );
+      await expect(crumbs(page).nth(2).locator('[data-crumb-current]')).toHaveAttribute(
+        'aria-current',
+        'page',
+      );
       await shot(page, `custom-fields-designer-${o.key}`);
 
       await crumbs(page).filter({ hasText: 'Custom Fields' }).getByRole('link').click();
