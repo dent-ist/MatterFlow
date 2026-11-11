@@ -3,6 +3,7 @@ import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
 import { filterDropdown } from '../support/dropdown';
+import { shownName } from '../support/text';
 
 /**
  * Regression tests of the UX re-review of the inline column filters (epic #75, docs/ux/column-filters/re-review-2026-10-20.md):
@@ -29,18 +30,20 @@ test.describe('Column filters re-review', () => {
   test('an empty filtered list shows one Clear filters, never two (RR-02)', async ({ page }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
     const none = `${uid()}-none`;
-    for (const url of [
-      `/tasks?q=${none}`,
-      `/my-work?q=${none}`,
-      `/assets?name=${none}`,
-      `/admin/task-types?name=${none}`,
-      `/admin/asset-types?name=${none}`,
-      `/admin/audit?q=${none}`,
-      `/clients?name=${none}`,
-      `/admin/pods?name=${none}`,
-    ]) {
+    const noMatch = /match these filters/;
+    // Assets filters by a search box ("Searches as you type"), so its empty state names the search: No results for "...".
+    for (const [url, text] of [
+      [`/tasks?q=${none}`, noMatch],
+      [`/my-work?q=${none}`, noMatch],
+      [`/assets?name=${none}`, new RegExp(`No results for .${none}.`)],
+      [`/admin/task-types?name=${none}`, noMatch],
+      [`/admin/asset-types?name=${none}`, noMatch],
+      [`/admin/audit?q=${none}`, noMatch],
+      [`/clients?name=${none}`, noMatch],
+      [`/admin/pods?name=${none}`, noMatch],
+    ] as const) {
       await page.goto(url);
-      await expect(page.getByText(/match these filters/), url).toBeVisible();
+      await expect(page.getByText(text), url).toBeVisible();
       await expect(clearButtons(page), url).toHaveCount(1);
     }
     // The count comes back with the bar's button when the list is not empty: Clear filters is the bar's then.
@@ -69,7 +72,7 @@ test.describe('Column filters re-review', () => {
     }
     // The action is never out of sight.
     const open = rows
-      .filter({ hasText: a.username })
+      .filter({ hasText: shownName(a.username) })
       .getByRole('button', { name: /^Actions for / });
     await expect(open).toBeVisible();
     const regionBox = (await region.boundingBox())!;
