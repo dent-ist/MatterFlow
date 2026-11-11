@@ -35,8 +35,8 @@ test.describe('Search results grids and cards (WP-SR3, WP-SR4)', () => {
     await expect(page.locator('[data-section=project] [data-hit-row]')).toHaveCount(1);
     await expect(page.locator('[data-section=project] [data-see-all]')).toHaveCount(0);
     await expect(page.getByText('Show More')).toHaveCount(0);
-    // The heading counts are the tab counts.
-    await expect(page.getByRole('region', { name: 'Assets (58)' })).toBeVisible();
+    // The heading counts are the tab counts (the heading is the type and a count chip: "Assets 58").
+    await expect(page.getByRole('region', { name: /^Assets\s+58$/ })).toBeVisible();
     await expect(tab(page, /^Assets, 58 results/)).toBeVisible();
 
     const seeAll = page.locator('[data-section=asset] [data-see-all]');
@@ -49,7 +49,7 @@ test.describe('Search results grids and cards (WP-SR3, WP-SR4)', () => {
     await expect(page).toHaveTitle('Search Results: Assets - LPT Hub');
   });
 
-  test('a type tab: 44 px rows at 1366 and 1920, the name is the only link, assets show Type and Matter number, page 3 by pager and by URL', async ({
+  test('a type tab: 44 px rows at 1366 and 1920, the name is the only link, assets show Type and CM Number, page 3 by pager and by URL', async ({
     page,
     seed,
   }) => {
@@ -73,7 +73,7 @@ test.describe('Search results grids and cards (WP-SR3, WP-SR4)', () => {
       await expect(page.getByRole('columnheader')).toHaveText([
         'Name',
         'Type',
-        'Matter Number',
+        'CM Number',
         'Size',
         'Disposition',
       ]);

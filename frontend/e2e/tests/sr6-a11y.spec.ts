@@ -120,6 +120,8 @@ test.describe('Search keyboard, focus and announcements (WP-SR6)', () => {
         await page.goto('/dashboard');
         const box = page.getByRole('combobox', { name: /^Search / });
         const button = page.getByTestId('search-button');
+        // The header draws the box or, on a narrow window, the button behind it: wait for one of them, or the click below lands on a button that is not there yet.
+        await box.or(button).first().waitFor({ state: 'visible' });
         if (!(await box.isVisible())) await button.click();
         await box.fill(w.token);
         await expect(page.locator('[data-search-panel] [data-view-all]')).toBeVisible();
