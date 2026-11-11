@@ -403,8 +403,9 @@ test.describe('T4: dialog wording (M3, #305)', () => {
     await detail.open(task.taskId);
     await detail.chooseAction('REOPEN');
     await expect(detail.dialog.locator('[data-reopen-body]')).toContainText('no reason is needed');
-    await expect(detail.dialog.getByRole('button', { name: 'Keep' })).toBeVisible();
-    await detail.dialog.getByRole('button', { name: 'Reopen' }).click();
+    // The dialog's other button is the shared "Cancel" (it was "Keep" once); the confirm button reads "Reopen Task".
+    await expect(detail.dialog.getByRole('button', { name: 'Cancel', exact: true })).toBeVisible();
+    await detail.dialog.getByRole('button', { name: 'Reopen Task', exact: true }).click();
     await detail.expectStatus('In Progress');
   });
 
