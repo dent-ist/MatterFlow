@@ -54,7 +54,6 @@ function reasonOf(error: unknown): string {
       max-height: none;
       margin-top: 2px;
       overflow: visible;
-      box-shadow: none;
     }
     .vm__hint {
       margin: 0 0 var(--mf-s2);
