@@ -28,3 +28,9 @@ export const ciText = (text: string): string => text.replace(/\s+/g, ' ').trim()
 
 /** The list of texts in `ciText` form, to compare lists of labels (`expect(ciTexts(await tabs.allTextContents())).toEqual(ciTexts(['Due soon', ...]))`). */
 export const ciTexts = (texts: readonly string[]): string[] => texts.map(ciText);
+
+/**
+ * The name a person is shown by: the account name without its domain (`ke\kekim` is "kekim", the content rules of #1347). A spec that looks for a person by what the
+ * screen prints uses this; the full account name is only for signing in and for the API.
+ */
+export const shownName = (username: string): string => username.replace(/^.*\\/, '');

@@ -78,6 +78,25 @@ export function asDropdown(button: Locator): Dropdown {
   });
 }
 
+/**
+ * Chooses a value with the keyboard only, the way a person does: Down on the button opens the list, Home (or Down, from a search box) goes to the first item, Down walks to the item (one
+ * press per step, so the walk is the same every time), Enter chooses. The values come from the list itself, so the walk does not depend on how many items it has.
+ */
+export async function chooseWithKeyboard(button: Dropdown, value: string): Promise<void> {
+  const page: Page = button.page();
+  const values = await button.optionValues();
+  const to = values.indexOf(value);
+  expect(to, `the list offers ${value}: ${JSON.stringify(values)}`).toBeGreaterThanOrEqual(0);
+  await button.focus();
+  await page.keyboard.press('ArrowDown');
+  await expect(page.locator('.dd-panel [role="listbox"]')).toBeVisible();
+  // A long list opens with the focus in its search box, where Down goes to the first item; a short one opens on the chosen item, where Home goes to the first.
+  const inSearch = await page.evaluate(() => document.activeElement?.tagName === 'INPUT');
+  if (!inSearch) await page.keyboard.press('Home');
+  for (let i = 0; i < to + (inSearch ? 1 : 0); i++) await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
+}
+
 /** The dropdown with this accessible label ("Scope", "Period", "Rows per page"), found in `scope` (a page or a region). */
 export const labelledDropdown = (scope: Page | Locator, label: string): Dropdown =>
   asDropdown(scope.getByRole('button', { name: new RegExp(`^${escape(label)}:`) }));

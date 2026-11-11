@@ -1,4 +1,4 @@
-import {} from '../support/dropdown';
+import { chooseWithKeyboard } from '../support/dropdown';
 import fs from 'node:fs';
 import path from 'node:path';
 import { Locator, Page } from '@playwright/test';
@@ -121,19 +121,12 @@ test.describe('Pod Work first release', () => {
       const pw = new PodWorkPage(page);
       await page.goto(`/pods/work?podId=${fx.busy.podId}`);
       await expect(pw.podSelect).toBeVisible();
-      await pw.podSelect.focus();
-      // The shared dropdown: Down opens the list on the chosen pod, End chooses the last pod with Enter (Home when this one is the last).
-      await page.keyboard.press('ArrowDown');
-      await page.keyboard.press('End');
-      await page.keyboard.press('Enter');
-      if (new URL(page.url()).searchParams.get('podId') === String(fx.busy.podId)) {
-        await page.keyboard.press('ArrowDown');
-        await page.keyboard.press('Home');
-        await page.keyboard.press('Enter');
-      }
-      await expect
-        .poll(() => new URL(page.url()).searchParams.get('podId'))
-        .not.toBe(String(fx.busy.podId));
+      // The shared dropdown, by keyboard: Down opens the list on the chosen pod, Down or Up walk to another pod, Enter chooses.
+      const pods = await pw.podSelect.optionValues();
+      expect(pods.length, 'the lead sees more than one pod').toBeGreaterThan(1);
+      const other = pods.find((v) => v !== String(fx.busy.podId))!;
+      await chooseWithKeyboard(pw.podSelect, other);
+      await expect.poll(() => new URL(page.url()).searchParams.get('podId')).toBe(other);
       const now = new URL(page.url()).searchParams.get('podId');
       await page.reload();
       await expect(pw.podSelect).toHaveAttribute('data-value', now!);
@@ -246,10 +239,14 @@ test.describe('Pod Work first release', () => {
         .getByRole('tablist', { name: 'Pod Work views' })
         .getByRole('tab')
         .evaluateAll((tabs) => tabs.map((t) => (t.textContent ?? '').replace(/\s+/g, ' ').trim()));
-    const numbers = async (page: Page) => ({
-      strip: await strip(page),
-      tabs: await tabCounts(page),
-    });
+    // The numbers are read once they have arrived: while they load the strip and the tab counts show "--".
+    const numbers = async (page: Page) => {
+      await expect.poll(async () => (await strip(page)).includes('--')).toBe(false);
+      await expect
+        .poll(async () => (await tabCounts(page)).some((t) => t.includes('--')))
+        .toBe(false);
+      return { strip: await strip(page), tabs: await tabCounts(page) };
+    };
 
     test('after Assign to me and after Undo the strip and the tabs equal a fresh reload', async ({
       seed,

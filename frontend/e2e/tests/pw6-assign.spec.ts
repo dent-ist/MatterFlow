@@ -4,6 +4,7 @@ import { Page } from '@playwright/test';
 import { PodWorkPage } from '../pages/queues.pages';
 import { axeAvailable, axeBestPractice } from '../support/axe';
 import { expect, test } from '../support/fixtures';
+import { shownName } from '../support/text';
 
 /**
  * Pod Work, assign flow (epic #546, package WP-PW6): W13 (#572), the cross-pod assignment rule of UAT-S04-4. The finding: the assignee
@@ -70,12 +71,20 @@ test.describe('Pod Work assign flow', () => {
           .getByRole('button', { name: new RegExp(`change assignee of ${task.taskNumber}`) })
           .click();
         const menu = page.locator('.im-pop');
-        await expect(menu.getByRole('menuitemradio', { name: member.username })).toBeVisible();
-        await expect(menu.getByRole('menuitemradio', { name: outsider.username })).toHaveCount(0);
+        await expect(
+          menu.getByRole('menuitemradio', { name: shownName(member.username) }),
+        ).toBeVisible();
+        await expect(
+          menu.getByRole('menuitemradio', { name: shownName(outsider.username) }),
+        ).toHaveCount(0);
 
         // Searching for the outsider by name finds nobody: the list is the pod's members.
-        await menu.getByRole('textbox', { name: 'Search People' }).fill(outsider.username);
-        await expect(menu.getByRole('menuitemradio', { name: outsider.username })).toHaveCount(0);
+        await menu
+          .getByRole('textbox', { name: 'Search People' })
+          .fill(shownName(outsider.username));
+        await expect(
+          menu.getByRole('menuitemradio', { name: shownName(outsider.username) }),
+        ).toHaveCount(0);
         await menu.getByRole('textbox', { name: 'Search People' }).fill('');
         await shot(page, `picker-members-only-${size.name}`);
 
