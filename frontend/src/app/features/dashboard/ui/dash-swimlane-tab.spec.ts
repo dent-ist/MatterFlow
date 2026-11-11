@@ -1296,6 +1296,8 @@ describe('DashSwimlaneTab', () => {
       expect(document.activeElement).toBe(items[0]);
       // Density x2, Done window x3, Only mine (no group: no Expand or Collapse all).
       expect(items.length).toBe(6);
+      // Menu items are Title Case (D-20, #1366): "7 Days", not "7 days".
+      expect(items.slice(2, 5).map((i) => text(i))).toEqual(['7 Days', '14 Days', '30 Days']);
       expect(items[0].getAttribute('role')).toBe('menuitemradio');
       expect(items[0].getAttribute('aria-checked')).toBe('true');
       key(items[0], 'ArrowDown');
