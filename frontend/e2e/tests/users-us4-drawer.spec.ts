@@ -244,7 +244,8 @@ test.describe('#439 Access', () => {
     await expect(page.locator('[data-sysadmin-warning]')).toContainText('holds every permission');
     await expect(saved).toContainText('After you save');
     await expect(page.locator('[data-permissions-preview]')).toContainText('after you save');
-    expect(await sum()).toBeGreaterThan(savedTotal);
+    // The groups are drawn again after the preview text: read them until they are there.
+    await expect.poll(sum).toBeGreaterThan(savedTotal);
     await adminBox.uncheck();
     await expect(page.locator('[data-sysadmin-warning]')).toHaveCount(0);
     await expect(saved).toContainText('Effective permissions (');
