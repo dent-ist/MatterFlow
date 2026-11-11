@@ -60,7 +60,11 @@ test.describe('pf2-header: name, context line, status chip and ONE primary actio
           document.querySelector('main')!.getBoundingClientRect().top,
       );
       expect(top, `title top at ${size.width}`).toBeCloseTo(work, 0);
-      await expect(me.locator('[data-name]')).toHaveAttribute('title', p.displayName!);
+      // The name is the context line under the title (UI2 #1135), not a clamped title with a tooltip: a 66-character name stays inside the window.
+      const nameBox = await box(me, '[data-name]');
+      expect(nameBox.right, `name inside the window at ${size.width}`).toBeLessThanOrEqual(
+        size.width,
+      );
       await noHorizontalScroll(me);
       await axeClean(me, `long name at ${size.width}`);
       if (size.width === 1366) await shot(me, 'pf2-header-long-name');
@@ -89,6 +93,9 @@ test.describe('pf3-columns: two columns from 1100 px, one card style, one width 
       await me.setViewportSize(size);
       await me.goto('/profile');
       await expect(me.locator('[data-card="work-hours"]')).toBeVisible();
+      // The left column starts with the Out of Office list, then Work Hours and the action bar; the right column starts with Holidays.
+      const first = await box(me, '[data-absence-list]');
+      const holidays = await box(me, '[data-holiday-card]');
       const avail = await box(me, '[data-card="work-hours"]');
       const hours = await box(me, '[data-card="work-hours"]');
       const bar = await box(me, '[data-actions]');
@@ -101,7 +108,9 @@ test.describe('pf3-columns: two columns from 1100 px, one card style, one width 
         expect(account.left, `Account right of the form at ${size.width}`).toBeGreaterThanOrEqual(
           avail.right,
         );
-        expect(Math.abs(account.top - avail.top)).toBeLessThan(2);
+        expect(Math.abs(holidays.top - first.top), 'columns start level').toBeLessThan(2);
+        expect(account.top, 'Account below Holidays').toBeGreaterThanOrEqual(holidays.bottom);
+        expect(Math.abs(first.width - avail.width)).toBeLessThan(1);
         expect(Math.abs(notes.width - account.width)).toBeLessThan(1);
         expect(notes.top).toBeGreaterThanOrEqual(account.bottom);
       } else {

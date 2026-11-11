@@ -71,7 +71,7 @@ test.describe('pf5-menu-identity: the account menu starts with who and how (#580
     ]);
   });
 
-  test('a person without Task.View sees the name and Keyboard shortcuts only', async ({
+  test('a person without Task.View sees the name, My Profile (Account and My Landing Page) and Keyboard shortcuts only', async ({
     personas,
     asUser,
   }) => {
@@ -81,7 +81,7 @@ test.describe('pf5-menu-identity: the account menu starts with who and how (#580
     await menuButton(me).click();
     await expect(me.locator('[data-menu-identity] .um-id__name')).toBeVisible();
     await expect(me.locator('[data-menu-identity] [data-availability-chip]')).toHaveCount(0);
-    await expect(me.getByRole('menuitem')).toHaveText([/Keyboard Shortcuts/]);
+    await expect(me.getByRole('menuitem')).toHaveText([/My Profile/, /Keyboard Shortcuts/]);
   });
 
   test('a 66-character name is cut with an ellipsis in the row (full name as tooltip); axe and no scroll with the menu open at both desktop sizes', async ({
