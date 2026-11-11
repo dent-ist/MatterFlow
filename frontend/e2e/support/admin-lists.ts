@@ -3,6 +3,12 @@ import { Api } from './api';
 /** The three Administration lists (Task Types, Workflows, Workflow Steps) as the e2e specs of the Task Types review see them. */
 export type ListKind = 'types' | 'workflows' | 'steps';
 
+/**
+ * The page size the three lists ask the API for when the address has no `size` (the application's DEFAULT_PAGE_SIZE, shared/ui/list-query.ts; it was 25
+ * until the lists took the shared paging). A spec that waits for "the list's own request" matches `pagesize` against it.
+ */
+export const ADMIN_LIST_PAGE_SIZE = 50;
+
 export interface ListKindInfo {
   /** The tab's address. */
   list: string;

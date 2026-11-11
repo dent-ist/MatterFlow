@@ -10,7 +10,7 @@ import { gridRows, gridScroller } from '../support/grid';
 /**
  * WP-TY3 narrow-window columns of the three Administration lists (#374 Task Types, #375 Workflows and Workflow Steps): the table's columns
  * drop in a fixed order so the grid never scrolls sideways and the row menu stays in view. The phone card tests of this file were deleted
- * with the phone layout (D-82, #1268). Screenshots go to E2E_SCREENSHOTS (docs/ux/task-types-review/fixes/ty3-lists).
+ * with the phone layout (D-82, #1268); the windows under 1366 px (1024, 1280) went with them (desktop only). Screenshots go to E2E_SCREENSHOTS (docs/ux/task-types-review/fixes/ty3-lists).
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
 const SIZES = [
@@ -43,14 +43,14 @@ const tableRows = (page: Page) => gridRows(page);
 test.describe('narrow-window columns: the grid never scrolls sideways and the row menu stays in view (#374, #375)', () => {
   for (const kind of KINDS) {
     const info = LISTS[kind];
-    test(`${kind}: at 1024, 1280, 1366 and 1920 px the table fits its box, the filter row is open and the menu is on screen`, async ({
+    test(`${kind}: at 1366 and 1920 px the table fits its box, the filter row is open and the menu is on screen`, async ({
       page,
       admin,
     }) => {
       const token = uid();
       await seedMix(admin, kind, token, 4, 0);
-      for (const width of [1024, 1280, 1366, 1920]) {
-        await page.setViewportSize({ width, height: 900 });
+      for (const { width, height } of SIZES) {
+        await page.setViewportSize({ width, height });
         await page.evaluate(() => localStorage.clear()).catch(() => undefined);
         await page.goto(`${info.list}?${info.filter}=${token}`);
         await expect(tableRows(page).first()).toBeVisible();
@@ -71,7 +71,7 @@ test.describe('narrow-window columns: the grid never scrolls sideways and the ro
         await expect(page.locator(info.row)).toBeVisible();
         await noSideways(page, `${kind} at ${width}`);
         await axeClean(page, `${kind} at ${width}`);
-        if (SIZES.some((s) => s.width === width)) await shot(page, `p374-${kind}-table`);
+        await shot(page, `p374-${kind}-table`);
       }
     });
   }
