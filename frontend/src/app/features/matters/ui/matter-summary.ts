@@ -54,9 +54,9 @@ import { IntPipe } from '../../../shared/ui/number-format';
       gap: var(--mf-s3);
       min-height: 0;
     }
-    /* The strip's room is kept while it loads, so the Details card does not jump when the tiles arrive (layout shift). */
+    /* The strip's room is kept while it loads (one 52 px row, as the "No assets yet." card), so the Details card does not jump when the tiles arrive (layout shift). */
     [data-summary-assets] {
-      min-height: 3rem;
+      min-height: calc(var(--mf-ctl-h) + 2 * var(--mf-s2));
     }
     /* No assets: one 52 px card row in the place of the tile strip (D-44x): muted sentence at the left, its text action at the right. */
     .ms__no-assets {

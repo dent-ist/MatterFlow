@@ -11,6 +11,7 @@ import { RecordKind } from './record-state';
     [kind]="kind()"
     [activeTab]="tab()"
     [foldHeader]="fold()"
+    [assetStrip]="strip()"
     (retry)="retried = retried + 1"
   />`,
 })
@@ -18,6 +19,7 @@ class Host {
   readonly kind = signal<RecordKind>('client');
   readonly tab = signal('details');
   readonly fold = signal(false);
+  readonly strip = signal(false);
   retried = 0;
 }
 
@@ -94,6 +96,22 @@ describe('mf-record-skeleton (#247, #615)', () => {
       'Activities',
     ]);
     expect(el.querySelector('[role=tab][aria-selected=true]')?.textContent).toContain('Projects');
+  });
+
+  it('keeps the room of the asset strip on the matter Summary tab, only when the person sees assets (#1367)', async () => {
+    TestBed.configureTestingModule({ providers: [provideRouter([])] });
+    const fixture = TestBed.createComponent(Host);
+    fixture.componentInstance.kind.set('matter');
+    fixture.componentInstance.tab.set('summary');
+    await fixture.whenStable();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-assets-skeleton]')).toBeNull();
+    fixture.componentInstance.strip.set(true);
+    await fixture.whenStable();
+    expect(el.querySelector('[data-assets-skeleton]')).not.toBeNull();
+    fixture.componentInstance.tab.set('tasks');
+    await fixture.whenStable();
+    expect(el.querySelector('[data-assets-skeleton]')).toBeNull();
   });
 
   it('draws a project with Tasks first (count --) and Details', async () => {
