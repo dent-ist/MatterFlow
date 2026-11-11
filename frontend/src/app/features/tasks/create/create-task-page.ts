@@ -179,6 +179,8 @@ export class CreateTaskPage implements HasUnsavedChanges {
 
   // --- permissions ------------------------------------------------------------------------------
   protected readonly canCreate = computed(() => this.auth.has('Task.Create'));
+  /** The Project field asks the Projects API, so it exists only for a person who may view projects (the edit dialog does the same). */
+  protected readonly canViewProjects = computed(() => this.auth.has('Project.View'));
   protected readonly canSetPriority = computed(() => this.auth.has('Task.SetPriority'));
   protected readonly canAssign = computed(() => this.auth.has('Task.Assign'));
   protected readonly canListPods = computed(() => this.canAssign() && this.auth.has('Pod.View'));
@@ -606,7 +608,11 @@ export class CreateTaskPage implements HasUnsavedChanges {
     if (!validMatter && !validProject) return;
     try {
       let project: ProjectResponse | null = null;
-      if (validProject) project = await firstValueFrom(this.projectsApi.getProject(projectId));
+      if (validProject && this.canViewProjects()) {
+        project = await firstValueFrom(this.projectsApi.getProject(projectId));
+      }
+      // Without Project.View a project link cannot name its matter, so only a matter in the link can be used.
+      if (!project && !validMatter) return;
       const id = project ? project.matterId : matterId;
       const record = await firstValueFrom(this.mattersApi.getMatter(id));
       this.matterRecords.set(record.matterId, record);
@@ -626,6 +632,7 @@ export class CreateTaskPage implements HasUnsavedChanges {
   }
 
   private async loadProjects(matterId: number): Promise<void> {
+    if (!this.canViewProjects()) return; // no request, so no 403 toast (BUG-1 #289)
     try {
       const page = await firstValueFrom(
         this.projectsApi.listProjects(

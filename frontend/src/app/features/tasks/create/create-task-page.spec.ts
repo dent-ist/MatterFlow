@@ -53,6 +53,7 @@ const ALL: Permission[] = [
   'Task.SetPriority',
   'Pod.View',
   'Matter.View',
+  'Project.View',
 ];
 
 const aType = (overrides: Partial<TaskTypeView> = {}): TaskTypeView => ({
@@ -96,6 +97,7 @@ interface Harness {
   intake: { parseEmailText: Mock };
   users: { lookupUsers: Mock };
   pods: { listPods: Mock; getPod: Mock };
+  projects: { listProjects: Mock; getProject: Mock };
   router: Router;
 }
 
@@ -154,6 +156,10 @@ async function create(
       .fn()
       .mockReturnValue(ok({ pod: {}, members: [{ userId: 2, displayName: 'Other' }] })),
   };
+  const projects = {
+    listProjects: vi.fn().mockReturnValue(ok(pageOfProjects(aProject()))),
+    getProject: vi.fn().mockReturnValue(ok(aProject())),
+  };
   const matters = {
     getMatter: vi.fn().mockReturnValue(ok(matter)),
     listMatters: vi.fn().mockReturnValue(ok(pageOfMatters(matter))),
@@ -191,10 +197,7 @@ async function create(
       { provide: MattersClient, useValue: matters },
       {
         provide: ProjectsClient,
-        useValue: {
-          listProjects: vi.fn().mockReturnValue(ok(pageOfProjects(aProject()))),
-          getProject: vi.fn().mockReturnValue(ok(aProject())),
-        },
+        useValue: projects,
       },
       { provide: PodsClient, useValue: pods },
       { provide: UsersLookupClient, useValue: users },
@@ -211,7 +214,17 @@ async function create(
     fixture.componentRef.setInput(key, value);
   }
   await settle(fixture);
-  return { fixture, el: fixture.nativeElement, tasks, queue, intake, users, pods, router };
+  return {
+    fixture,
+    el: fixture.nativeElement,
+    tasks,
+    queue,
+    intake,
+    users,
+    pods,
+    projects,
+    router,
+  };
 }
 
 const field = <T extends HTMLElement>(h: Harness, selector: string): T =>
@@ -830,6 +843,37 @@ describe('CreateTaskPage', () => {
       await submit(h);
       expect(field(h, '#ct-description-error').textContent).toContain('20000');
       expect(h.tasks.createTask).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('a person without Project.View (BUG-1 #289)', () => {
+    const NO_PROJECT = ALL.filter((p) => p !== 'Project.View');
+
+    it('has no Project field and asks the Projects API for nothing after a Matter is chosen', async () => {
+      const h = await create({ permissions: NO_PROJECT, inputs: { matterId: '7' } });
+      await pickType(h);
+      expect(field(h, '[data-chosen]').textContent).toContain('00343-00012');
+      expect(field(h, '#ct-project')).toBeNull();
+      expect(h.projects.listProjects).not.toHaveBeenCalled();
+      expect(h.projects.getProject).not.toHaveBeenCalled();
+    });
+
+    it('prefills the Matter of a link, never the Project', async () => {
+      const h = await create({
+        permissions: NO_PROJECT,
+        inputs: { matterId: '7', projectId: '3' },
+      });
+      await pickType(h);
+      expect(h.projects.getProject).not.toHaveBeenCalled();
+      expect(h.projects.listProjects).not.toHaveBeenCalled();
+      expect(field(h, '[data-chosen]').textContent).toContain('00343-00012');
+    });
+
+    it('still shows the Project field and its list to a person who may view projects', async () => {
+      const h = await create({ inputs: { matterId: '7' } });
+      await pickType(h);
+      expect(field(h, '#ct-project')).not.toBeNull();
+      expect(h.projects.listProjects).toHaveBeenCalled();
     });
   });
 
