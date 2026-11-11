@@ -1,4 +1,5 @@
 import { MATTER_TABS, MatterTabKey } from '../../src/app/features/matters/ui/matter-tabs';
+import { WORK_COLUMNS } from '../../src/app/shared/work-queue/column-prefs';
 
 /**
  * Counts of the application that many specs used to hard-code (7 tabs became 8 with the Team tab, 8 columns became 9 with the asset numbering: about twelve files
@@ -36,3 +37,9 @@ export function matterTabTexts(suffix: Partial<Record<MatterTabKey, string>> = {
  * `src/app/features/assets/pages/assets-list-page.ts`), so this number is a constant and `app-counts.spec.ts` checks it against the real page.
  */
 export const ASSETS_LIST_COLUMN_COUNT = 9;
+
+/**
+ * The width the Title column of every task grid keeps however narrow the window is (it is the spring of the grid; the Type chip and name took room from it in
+ * UI2 #1232, so it is 120 px, no longer 160). Read from the column registry the grids use.
+ */
+export const TASK_TITLE_MIN_WIDTH: number = WORK_COLUMNS.find((c) => c.key === 'title')!.minWidth;

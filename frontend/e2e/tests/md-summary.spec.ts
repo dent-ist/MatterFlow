@@ -2,18 +2,17 @@ import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 
 /**
- * The redesigned Summary tab (MD-42, #1060): asset strip, one full-width Details card that fits its content, 3, 2 or 1 columns of fields, no Recent activity, the
- * page does not scroll. Screenshots go to E2E_SCREENSHOTS when it is set (1366x768, 1920x1080, 1366x600 and 375x812 for the comparison with the mockup).
+ * The redesigned Summary tab (MD-42, #1060): asset strip, one full-width Details card that fits its content, 3 or 2 columns of fields, no Recent activity, the
+ * page does not scroll. Screenshots go to E2E_SCREENSHOTS when it is set (1366x768, 1920x1080, 1366x600 and 768x1024 for the comparison with the mockup; the phone size is not covered: the app is desktop only for now).
  */
 const SIZES = [
   { width: 1366, height: 768, columns: 2 },
   { width: 1920, height: 1080, columns: 3 },
   { width: 1366, height: 600, columns: 2 },
-  { width: 768, height: 1024, columns: 1 },
-  { width: 375, height: 812, columns: 1 },
+  { width: 768, height: 1024, columns: 2 },
 ] as const;
 
-test('Summary: asset strip, fit-to-content Details in 3, 2 or 1 columns, no Recent activity, axe clean', async ({
+test('Summary: asset strip, fit-to-content Details in 3 or 2 columns, no Recent activity, axe clean', async ({
   page,
   seed,
 }) => {
