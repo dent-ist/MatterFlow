@@ -112,6 +112,14 @@ test.describe('Summary v4', () => {
     await page.goto(`/dashboard?card=unassigned&q=${tag}`);
     const row = page.locator('mf-dash-grid [data-task]').first();
     await expect(row).toBeVisible();
+    // The summary is served from a 15 second server cache: a read made just after an earlier test may not hold the task seeded above. Refresh reads it again.
+    await page.locator('[data-refresh]').click();
+    await expect(page.locator('[data-refresh]')).toBeEnabled();
+    await expect
+      .poll(async () =>
+        Number(await card(page, 'unassigned').locator('[data-card-count]').innerText()),
+      )
+      .toBeGreaterThan(0);
     const before = Number(await card(page, 'unassigned').locator('[data-card-count]').innerText());
 
     const assign = row.getByRole('button', { name: 'Unassigned: assign this task' });
