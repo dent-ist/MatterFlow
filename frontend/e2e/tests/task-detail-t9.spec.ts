@@ -194,8 +194,9 @@ test.describe('T9 #324 and #325: where a task was opened from', () => {
     await seed.task(world, { title: `T9 dashboard other ${tag}`, assignedPodId: pod.podId });
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/dashboard?pod=${pod.podId}`);
+    // The Summary lists its tasks in the shared task grid (Dashboard v4), whose title link is the row's link.
     const link = page.locator(
-      `[data-panel="unassigned"] a.main[data-row-key="${task.taskId}"][data-row-list="dashboard-unassigned"]`,
+      `a.wt-title[data-row-key="${task.taskId}"][data-row-list="dashboard-summary"]`,
     );
     await expect(link).toBeVisible();
     await page.waitForLoadState('networkidle');

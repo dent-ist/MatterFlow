@@ -27,7 +27,7 @@ import { PAGE_SIZES, SortDirection } from './queue-filters';
 import { resultsAnnouncement } from './list-announce';
 import { PrintLine } from './print-line';
 import { TaskTable } from './task-table';
-import { DrillReturn, DrillSource } from './drill';
+import { DrillReturn, DrillSource, RecordOrigin } from './drill';
 import { CopyPart } from '../ui/copy-parts';
 import { ColumnMove } from '../ui/reorder-columns';
 
@@ -80,6 +80,8 @@ export type WorkListState = 'loading' | 'ready' | 'error';
       [newSince]="newSince()"
       [leaving]="leaving()"
       [from]="from()"
+      [origin]="origin()"
+      [rowList]="rowList()"
       [phoneCards]="true"
       [dash]="dash()"
       [reorderable]="reorderable()"
@@ -153,6 +155,9 @@ export class WorkList {
   readonly skipFocus = input<(() => boolean) | null>(null);
   /** The list the rows belong to: task links carry `?from=`, and Back from a task focuses the row that was left (M7). */
   readonly from = input<DrillSource | null>(null);
+  /** A page other than the three work lists the rows belong to (the Dashboard Summary, T9 #324): task links carry `?from=` and the exact address, and `rowList` names the list so Back focuses the link that was left. */
+  readonly origin = input<RecordOrigin | null>(null);
+  readonly rowList = input('');
   /** Instant (ms) of the previous visit; rows created after it show a "New" marker. */
   readonly newSince = input<number | null>(null);
   /** Tasks that just left the tab; their rows show muted until the page removes them. */
