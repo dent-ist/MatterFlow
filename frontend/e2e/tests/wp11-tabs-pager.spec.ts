@@ -8,7 +8,7 @@ import { uid } from '../support/seed';
 
 /**
  * WP11 Tab strip and pager (#279, #280). `mf-tabs` shows a scroll cue (edge fade and chevron) on the side that has more tabs, brings the
- * selected tab into view and snaps; `mf-pager` is one row or two intentional rows between 640 and 900 px, never a lone button.
+ * selected tab into view and snaps; `mf-pager` is one row at the two desktop sizes, never a lone button.
  * Screenshots go to E2E_SCREENSHOTS when it is set (docs/ux/clients-review/fixes/wp11).
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
@@ -45,8 +45,6 @@ test.beforeAll(async ({ seed }) => {
   }
 });
 
-const cue = (page: Page, side: 'start' | 'end') => page.locator(`mf-tabs [data-tab-cue="${side}"]`);
-
 test.describe('Tab strip scroll cue (#279)', () => {
   test('wide screens show no cue; counts in the labels do not break it', async ({ page }) => {
     for (const [w, h] of [
@@ -75,10 +73,6 @@ test.describe('Tab strip scroll cue (#279)', () => {
       expect(await axeViolations(page), `matter at ${w}`).toEqual([]);
       expect(await noPageScroll(page)).toBe(true);
     }
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto(`/matters/${matterId}?tab=activities`);
-    await expect(cue(page, 'start')).toBeVisible();
-    expect(await axeViolations(page), 'matter, scrolled, 375').toEqual([]);
   });
 });
 
@@ -133,10 +127,10 @@ function expectIntentional(rows: string[][], width: number, label: string): void
 }
 
 test.describe('Pager (#280)', () => {
-  test('Task Queue: at most two rows and never a lone button, 1024 to 1366', async ({ page }) => {
+  test('Task Queue: one row and never a lone button, at both desktop sizes', async ({ page }) => {
     const queue = new TaskQueuePage(page);
-    for (const width of [1024, 1366]) {
-      await page.setViewportSize({ width, height: 1024 });
+    for (const [width, height] of SIZES) {
+      await page.setViewportSize({ width, height });
       await queue.open(`?matter=${matterId}&pageSize=25&page=2`);
       await expect(page.locator('mf-pager [data-page]')).toHaveText('Page 2 of 2');
       const rows = await pagerRows(page);

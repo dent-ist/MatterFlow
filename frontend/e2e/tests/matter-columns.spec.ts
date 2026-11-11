@@ -300,11 +300,11 @@ test.describe('Matter Number and Matter Name: defaults on every list (#348)', ()
     expect(await scrolls()).toBe(true);
     expect(await noPageScroll(page)).toBe(true);
     await shot(page, 'task-queue-narrow-1366x768');
-    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.setViewportSize({ width: 1920, height: 1080 });
     await expect(th(page, 'matter')).toBeVisible();
     await expect(th(page, 'matterName')).toBeVisible();
     expect(await width(page, 'title')).toBeGreaterThanOrEqual(TASK_TITLE_MIN_WIDTH);
-    await shot(page, 'task-queue-1440x900');
+    await shot(page, 'task-queue-1920x1080');
     // My Work at 1366 keeps every column too.
     await page.setViewportSize({ width: 1366, height: 768 });
     const mw = new MyWorkPage(page);
@@ -499,7 +499,7 @@ test.describe('Columns panel, header menu, resize and fit for Matter Name (#348)
     const w = await world(seed, 'mc-panel', 2);
     const page = await asUser(w.me.username);
     // Wide enough for the whole standard order with a 360 px Matter Name (so nothing scrolls).
-    await page.setViewportSize({ width: 2400, height: 1200 });
+    await page.setViewportSize({ width: 1920, height: 1080 });
     const queue = new TaskQueuePage(page);
     await queue.open(`?q=${w.tag}`);
     await expect(page.locator('[data-task]').first()).toBeVisible();
@@ -662,7 +662,7 @@ test.describe('Compact density and print (#348)', () => {
   test('print: both headers and cells print on one line each', async ({ seed, asUser }) => {
     const w = await world(seed, 'mc-print', 2);
     const page = await asUser(w.me.username);
-    await page.setViewportSize({ width: 1366, height: 900 });
+    await page.setViewportSize({ width: 1366, height: 768 });
     await new TaskQueuePage(page).open(`?q=${w.tag}`);
     await expect(page.locator('[data-task]').first()).toBeVisible();
     await page.emulateMedia({ media: 'print' });

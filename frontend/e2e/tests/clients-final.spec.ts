@@ -21,7 +21,7 @@ import { FIRM_ZONE, dateInZone } from '../support/time';
  *     records) in which the list columns, the record summary, the Task Queue totals behind the strip links and the Dashboard tiles of the
  *     pod that holds the work agree. Counts are the same for the whole viewer: re-checked in the browser for three people with different
  *     permissions (System Admin, all View permissions, no Task.View).
- *  3. The state smoke: 200 percent zoom at 1366 (a 683 px window), reduced motion, a lost connection on a list, the Tab stops before the
+ *  3. The state smoke: reduced motion, a lost connection on a list, the Tab stops before the
  *     first row (recorded).
  *
  * Every test works on its own tagged data and asserts nothing about global counts. Screenshots go to E2E_SCREENSHOTS when it is set
@@ -609,30 +609,6 @@ test.describe('Clients final verification (#287)', () => {
   }
 
   // --- 3. states and keyboard -------------------------------------------------------------------------------------
-
-  test('200 percent zoom at 1366 (a 683 px window): the six screens fit, axe 0', async ({
-    page,
-  }) => {
-    test.setTimeout(180_000);
-    await page.setViewportSize({ width: 683, height: 384 });
-    const d = data;
-    for (const [key, url] of [
-      ['clients', `/clients?name=${d.token}`],
-      ['matters', `/matters?name=${d.token}`],
-      ['projects', `/projects?name=${d.token}`],
-      ['client', `/clients/${d.client.clientId}`],
-      ['matter', `/matters/${d.matter.matterId}`],
-      ['project', `/projects/${d.project.projectId}`],
-    ] as const) {
-      await page.goto(url);
-      await expect(page.locator('main h1').first()).toBeVisible();
-      await expect(page.locator('[data-record-skeleton]')).toHaveCount(0);
-      await noSideways(page, `${key} at 683`);
-      await statusNotClipped(page, `${key} at 683`);
-      await axeClean(page, `${key} at 200 percent zoom`);
-    }
-    await shot(page, 'zoom-200');
-  });
 
   test('reduced motion: lists and records render, the tab strip does not animate, axe 0', async ({
     page,

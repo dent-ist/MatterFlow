@@ -14,7 +14,7 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
   }) => {
     const client = await seed.client({ name: `Layout Client ${uid()}` });
     const matter = await seed.matter({ client, number: '00007', name: `Layout Matter ${uid()}` });
-    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/clients/${client.clientId}`);
 
     await expect(page.getByRole('heading', { level: 1 })).toContainText(client.name);
@@ -50,7 +50,7 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     const grid = (await page
       .getByRole('region', { name: 'Matters list, scrollable' })
       .boundingBox())!;
-    expect(grid.width).toBeGreaterThan(1280 - 300); // the whole page width (less the menu), not beside a panel
+    expect(grid.width).toBeGreaterThan(1366 - 300); // the whole page width (less the menu), not beside a panel
 
     // The primary action of the header (the Matters tab has its own button too until the list package drops it).
     await page.locator('[data-page-actions]').getByRole('button', { name: 'New Matter' }).click();
@@ -82,7 +82,7 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     seed,
   }) => {
     const client = await seed.client({ name: `Activity Client ${uid()}` });
-    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/clients/${client.clientId}`);
 
     const button = page.getByRole('button', { name: 'Activity' });
@@ -129,7 +129,7 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     const world = await seed.world({ sensitive: true });
     const task = await seed.task(world);
     const project = await seed.project(world.matter);
-    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/matters/${world.matter.matterId}`);
 
     await expect(page.getByRole('tab')).toHaveText(matterTabPatterns());
@@ -160,19 +160,19 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     await expect(page).not.toHaveURL(/tab=/);
   });
 
-  test('Matter at 1280 px: the Tasks grid uses the whole page width (no Details panel beside it)', async ({
+  test('Matter at 1366 px: the Tasks grid uses the whole page width (no Details panel beside it)', async ({
     page,
     seed,
   }) => {
     const world = await seed.world();
     await seed.task(world);
-    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/matters/${world.matter.matterId}?tab=tasks`);
 
     await expect(panel(page)).toHaveCount(0);
     const grid = page.locator('.wt-wrap');
     await expect(grid).toBeVisible();
-    expect((await grid.boundingBox())!.width).toBeGreaterThan(1280 - 300);
+    expect((await grid.boundingBox())!.width).toBeGreaterThan(1366 - 300);
     // Status and Due are not scrolled out of view: the table is not wider than its box.
     expect(await grid.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
   });
@@ -183,7 +183,7 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
   }) => {
     const world = await seed.world();
     const project = await seed.project(world.matter);
-    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/projects/${project.projectId}`);
 
     await expect(page.getByRole('heading', { level: 1 })).toContainText(project.name);
