@@ -135,7 +135,7 @@ test.describe('Task page: inline Due date (#664)', () => {
     await expect(page.locator(POPOVER)).toHaveCount(0);
     await expect(page.locator(TRIGGER)).toBeFocused();
     await expect(detail.due).toContainText('10/24/2030');
-    await expect(live(page)).toHaveText('Due date set to 10/24/2030 05:00 PM');
+    await expect(live(page)).toHaveText('Due date set to 10/24/2030 5:00 PM');
     await expect(page.locator(TRIGGER)).toHaveAttribute('aria-expanded', 'false');
     await shot(page, 'saved');
 
@@ -312,7 +312,7 @@ test.describe('Task page: inline Due date (#664)', () => {
     await fill(editor, 'Oct 25, 2030');
     await editor.locator('[data-due-save]').click();
     await expect(editor.locator(POPOVER)).toHaveCount(0);
-    await expect(new TaskDetailPage(editor).due).toContainText('Oct 25');
+    await expect(new TaskDetailPage(editor).due).toContainText('10/25/2030');
 
     // Closed: Cancelled keeps "Was due ..." and no menu.
     const closed = await seed.task(world, { dueDate: '2030-10-24' });

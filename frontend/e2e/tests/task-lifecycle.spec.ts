@@ -50,7 +50,8 @@ test.describe('Status changes and closed tasks', () => {
     await expect(detail.dialog).toBeHidden();
     await detail.expectStatus('On Hold');
     await expect(page.locator('[data-status-note]')).toContainText('Waiting for the client');
-    await expect(page.locator('[data-status-note]')).toContainText('ke\\kekim');
+    // The name is shown without its domain ("kekim", the content rules of #1347).
+    await expect(page.locator('[data-status-note]')).toContainText(/by kekim\b/);
 
     await detail.showSection('Workflow');
     // The status note says it once; the Workflow repeats nothing.
@@ -127,7 +128,7 @@ test.describe('Status changes and closed tasks', () => {
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
     await detail.expectStatus('Completed');
-    await expect(page.locator('[data-status-note]')).toContainText(/Completed .* by ke\\kekim/);
+    await expect(page.locator('[data-status-note]')).toContainText(/Completed .* by kekim\b/);
     await expect(page.locator('[data-readonly-note]')).toHaveCount(0);
     await expect(page.locator('[data-task-header] [data-action="edit"]')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Edit', exact: true })).toHaveCount(0);
