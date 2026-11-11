@@ -1,6 +1,7 @@
 import { axeAvailable, axeViolations } from '../support/axe';
 import { TaskQueuePage } from '../pages/queues.pages';
 import { ADMIN_USER } from '../support/api';
+import { shownName } from '../support/text';
 import { expect, test } from '../support/fixtures';
 import { dateInZone, FIRM_ZONE } from '../support/time';
 import { uid } from '../support/seed';
@@ -302,7 +303,7 @@ test.describe('Audit Logs browser (smoke)', () => {
       .filter({ hasText: `${task.taskNumber} created` });
     await expect(created).toHaveCount(1);
     // The Actor column prints the person without the domain (`kekim` for `ke\kekim`).
-    await expect(created).toContainText(ADMIN_USER.split('\\')[1]);
+    await expect(created).toContainText(shownName(ADMIN_USER));
     await created.getByRole('button', { name: /^Show details: / }).click();
     // The event code is a technical detail, behind its own disclosure (#652).
     await page.locator('tr.au-detail').getByRole('button', { name: 'Technical Details' }).click();
