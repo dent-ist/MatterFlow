@@ -234,7 +234,7 @@ test.describe('Task detail: Comments and Assets panes in the tabs', () => {
     test(`axe finds nothing at ${width} px on every tab`, async ({ page, seed, admin }) => {
       test.skip(!axeAvailable(), 'axe-core is not available');
       const task = await seedBusyTask(seed, admin);
-      await page.setViewportSize({ width, height: 800 });
+      await page.setViewportSize({ width, height: width === 1366 ? 768 : 1080 });
       const detail = new TaskDetailPage(page);
       await detail.open(task.taskId);
       for (const name of ['Workflow', 'Assets', 'Comments'] as const) {

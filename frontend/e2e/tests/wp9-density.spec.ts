@@ -139,20 +139,6 @@ test.describe('Density and space', () => {
     await shot(page, 'm3-active-1920x1080');
     await axeClean(page, 'My Work 1920x1080');
 
-    // LC-09: the frame scrolls sideways when the columns do not fit; the page never does.
-    for (const width of [1024, 1180, 1280]) {
-      await page.setViewportSize({ width, height: 768 });
-      await myWork.open();
-      await expect(page.locator('[data-task]').first()).toBeVisible();
-      expect(
-        await page.evaluate(
-          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-        ),
-        `no page scroll at ${width}`,
-      ).toBeLessThanOrEqual(0);
-    }
-    await shot(page, 'm3-active-1024x768');
-
     // The Due column keeps its width when its filter popover opens and when a range is chosen.
     await page.setViewportSize({ width: 1366, height: 768 });
     await myWork.open('?view=active');

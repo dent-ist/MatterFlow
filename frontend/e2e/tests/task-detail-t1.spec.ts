@@ -179,7 +179,7 @@ test.describe('Task detail T1: Asset references without Asset.View (BUG-1, #289)
     const user = await seed.user([role.name], 'creator');
     const page = await asUser(user.username);
     const assetRequests = trackAssetRequests(page);
-    await page.setViewportSize({ width: 1366, height: 900 });
+    await page.setViewportSize({ width: 1366, height: 768 });
 
     const create = new CreateTaskPage(page);
     await create.open();
