@@ -135,6 +135,8 @@ test.describe('Quick view counts and order (WP11)', () => {
   });
 
   test('#218: counts are not narrowed by filters and show tagged data', async ({ page, seed }) => {
+    // At 1920 the row holds All Open, Unassigned, Overdue and more; at 1366 only All Open (the others are in More), so the buttons are read at 1920.
+    await page.setViewportSize({ width: 1920, height: 1080 });
     const queue = new TaskQueuePage(page);
     await queue.open();
     await expect(view(page, 'overdue').locator('.qv-n:not([data-count-pending])')).toBeVisible();
@@ -159,7 +161,8 @@ test.describe('Quick view counts and order (WP11)', () => {
   });
 
   test('#218: a button keeps its place while the counts load', async ({ page }) => {
-    await page.setViewportSize({ width: 1366, height: 768 });
+    // At 1920 the row holds All Open, Unassigned and Overdue side by side; at 1366 only All Open (the others are in More).
+    await page.setViewportSize({ width: 1920, height: 1080 });
     let release!: () => void;
     const gate = new Promise<void>((resolve) => (release = resolve));
     await page.route(/\/api\/v1\/task-queue\?/, async (route) => {
@@ -175,7 +178,7 @@ test.describe('Quick view counts and order (WP11)', () => {
     const boxes = async () =>
       Promise.all(keys.map(async (k) => (await view(page, k).boundingBox())!));
     const loading = await boxes();
-    await shot(page, 'quick-views-loading-1366x768');
+    await shot(page, 'quick-views-loading-1920x1080');
     release();
     await expect(view(page, 'overdue').locator('.qv-n:not([data-count-pending])')).toBeVisible();
     const loaded = await boxes();
@@ -223,8 +226,11 @@ test.describe('Quick view counts and order (WP11)', () => {
     await expect(page.locator('mf-sort-note, [data-sort-note]').first()).toContainText(
       'Sorted by Closed',
     );
+    // The view's rows arrive after the heading: wait for the two tasks of this test before reading the order.
+    await expect
+      .poll(() => rowNumbers(page))
+      .toEqual(expect.arrayContaining([closed[0], closed[1]]));
     const rows = await rowNumbers(page);
-    expect(rows).toContain(closed[0]);
     expect(rows.indexOf(closed[1]), 'B closed after A, so first').toBeLessThan(
       rows.indexOf(closed[0]),
     );

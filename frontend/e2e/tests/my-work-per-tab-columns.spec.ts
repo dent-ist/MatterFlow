@@ -34,13 +34,16 @@ async function maker(seed: Seeder, label: string, codes: string[] = MAKER_RIGHTS
   return seed.user([role.name], label);
 }
 
-const headers = (page: Page) =>
-  page
+const headers = async (page: Page) => {
+  // The header row is drawn after the first answer of the list: wait for it, so a read right after a reload is not an empty list.
+  await expect(page.locator('thead tr').first().locator('th').first()).toBeVisible();
+  return page
     .locator('thead tr')
     .first()
     .locator('th')
     .allTextContents()
     .then((t) => t.map((x) => x.trim()));
+};
 
 /** Rows whose bottom edge is inside the scrolling grid box: what is on screen without scrolling. */
 async function rowsInView(page: Page): Promise<number> {
@@ -238,10 +241,15 @@ test.describe('My Work per-tab columns', () => {
     await expect(myWork.tab(/^Created by Me/)).toContainText('(');
     const assignedRow = myWork.row(`Assigned ${tag}`);
     await expect(assignedRow.locator('td[data-col="assignee"]')).toContainText(/\w/);
+    // Age is in the Columns chooser, not in the default set (D-43a, #1230): the person adds it, the choice is remembered per tab.
+    await page.getByRole('button', { name: 'Columns', exact: true }).click();
+    await page.getByLabel('Age', { exact: true }).check();
+    await page.getByRole('button', { name: 'Columns', exact: true }).click();
     await expect(assignedRow.locator('td[data-col="age"]')).toHaveText('12 d');
+    // The tooltip is the long date ("Created October 28, 2026, 3:00 PM EDT", D-60).
     await expect(assignedRow.locator('td[data-col="age"] [title]')).toHaveAttribute(
       'title',
-      /^Created [A-Z][a-z]{2} \d{1,2}, \d{4}, \d{1,2}:\d{2} [AP]M \S+$/,
+      /^Created [A-Z][a-z]+ \d{1,2}, \d{4}, \d{1,2}:\d{2} [AP]M \S+$/,
     );
     await expect(myWork.row(`Nobody ${tag}`).locator('td[data-col="assignee"]')).toContainText(
       'Unassigned',
@@ -356,7 +364,8 @@ test.describe('My Work per-tab columns', () => {
     await myWork.search(tag);
     await expect(page.locator('[data-task]')).toHaveCount(1);
     expect(await headers(page)).toEqual(['Ref', 'Type', 'Title', 'CM Number', 'Closed', 'Status']);
-    await expect(page.locator('.pi-bolt')).toHaveCount(0);
+    // The bolt is the Critical / ASAP mark of a priority or due cell; the Type column draws its own icons (a type may use a bolt), so look at the other cells.
+    await expect(page.locator('[data-task] td:not([data-col="type"]) .pi-bolt')).toHaveCount(0);
     await shot(page, 'c2-closed-1366x768');
 
     await page.getByRole('button', { name: 'Columns', exact: true }).click();

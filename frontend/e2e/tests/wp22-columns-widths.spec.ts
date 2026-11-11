@@ -195,6 +195,8 @@ test.describe('Column widths in the Columns panel (#206)', () => {
     await expect(row(page, 'status')).toHaveCount(1);
     expect(Object.values(await stored(page))[0]).toEqual({ matterName: fitted });
 
+    // Reset Columns put the default set back, and Matter Name is off in it (D-43a): tick it again to read its width input.
+    await page.getByLabel('Matter Name', { exact: true }).check();
     await expect(resetAll).not.toHaveAttribute('aria-disabled', 'true');
     await resetAll.click();
     await expect(live(page)).toHaveText('All column widths reset to the default.');

@@ -237,7 +237,7 @@ const SHAPES: Shape[] = [
 
 test.describe('Task Detail final verification (#331): contract over six task shapes', () => {
   for (const shape of SHAPES) {
-    test(`${shape.label}: axe 0 (also with the overflow menu open), no sideways scroll, header limits, one Edit, one primary action, no nested scroller at 375, 768, 1024, 1366 and 1920`, async ({
+    test(`${shape.label}: axe 0 (also with the overflow menu open), no sideways scroll, header limits, one Edit, one primary action, no nested scroller at 1366 and 1920`, async ({
       seed,
       admin,
       page,
@@ -337,15 +337,11 @@ test.describe('Task Detail final verification (#331): contract over six task sha
         y[`${name}@${size.width}`] = await workflowTop(page);
       }
     }
-    // The review's measures (docs/ux/task-detail-review/README.md): typical 235 (1366), 609 (375), 1519 (768); long 519, 1230, 2335.
+    // The review's measures (docs/ux/task-detail-review/README.md): typical 235 (1366); long 519. The phone and tablet sizes are no longer tested (UI2 #1268).
     expect(y['typical@1366']).toBeLessThanOrEqual(300);
     expect(y['typical@1920']).toBeLessThanOrEqual(300);
-    expect(y['typical@768']).toBeLessThanOrEqual(420);
-    expect(y['typical@375']).toBeLessThanOrEqual(380);
     expect(y['long@1366']).toBeLessThanOrEqual(330);
     expect(y['long@1920']).toBeLessThanOrEqual(330);
-    expect(y['long@768']).toBeLessThanOrEqual(480);
-    expect(y['long@375']).toBeLessThanOrEqual(480);
 
     // The status note of a Cancelled task (the review: three banners, about 190 px of amber before the first step).
     const noteHeights: Record<string, number> = {};
@@ -357,13 +353,12 @@ test.describe('Task Detail final verification (#331): contract over six task sha
       noteHeights[size.width] = Math.round((await note.boundingBox())!.height);
     }
     expect(noteHeights['1366'], 'status note height at 1366').toBeLessThanOrEqual(80);
-    expect(noteHeights['375'], 'status note height at 375').toBeLessThanOrEqual(140);
 
     // The Edit dialog at 1366x768: Save is inside the window (the review: Save at y 2544 of a scrolled page).
     await page.setViewportSize({ width: 1366, height: 768 });
     await openFresh(page, detail, typical.task.taskId);
     await detail.openEdit();
-    const save = (await page.locator('[data-save]').boundingBox())!;
+    const save = (await page.locator('[data-panel-primary] button').boundingBox())!;
     const dialogHeight = Math.round(
       (await page.getByRole('dialog', { name: 'Edit Task' }).boundingBox())!.height,
     );

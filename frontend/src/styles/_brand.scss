@@ -90,3 +90,10 @@
     clip-path: inset(50%);
   }
 }
+
+/* In forced-colors mode the navy behind the logo is dropped, so its light text takes the system text colour (placed last to win over the rule above). */
+@media (forced-colors: active) {
+  .mf-header .mf-logo {
+    color: CanvasText;
+  }
+}

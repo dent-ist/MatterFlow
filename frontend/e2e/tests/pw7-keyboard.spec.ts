@@ -3,6 +3,7 @@ import path from 'node:path';
 import { Locator, Page } from '@playwright/test';
 import { PodWorkPage } from '../pages/queues.pages';
 import { axeAvailable } from '../support/axe';
+import { chooseWithKeyboard } from '../support/dropdown';
 import { expect, test } from '../support/fixtures';
 import { podWorkFixtures } from '../support/pod-work-fixtures';
 import { SIZES, axeClean, pageSideScroll, shot } from '../support/pod-work-checks';
@@ -86,27 +87,15 @@ test.describe('Pod Work keyboard', () => {
     await page.locator('h1').focus();
     await tabTo(page, pw.podSelect);
     expect(await focusedHasRing(page), 'the select shows where the focus is').toBe(true);
-    // The shared dropdown: Down opens the list on the chosen pod, Home or End moves, Enter chooses and the focus returns to the button.
-    await page.keyboard.press('ArrowDown');
-    await page.keyboard.press('End');
-    await page.keyboard.press('Enter');
-    if (new URL(page.url()).searchParams.get('podId') === String(pod.podId)) {
-      await page.keyboard.press('ArrowDown');
-      await page.keyboard.press('Home');
-      await page.keyboard.press('Enter');
-    }
-    await expect
-      .poll(() => new URL(page.url()).searchParams.get('podId'))
-      .not.toBe(String(pod.podId));
+    // The shared dropdown, by keyboard: Down opens the list on the chosen pod, Down or Up walk to another pod, Enter chooses and the focus returns to the button.
+    const pods = await pw.podSelect.optionValues();
+    expect(pods.length, 'more than one pod to choose from').toBeGreaterThan(1);
+    const otherPod = pods.find((v) => v !== String(pod.podId))!;
+    await tabTo(page, pw.podSelect);
+    await chooseWithKeyboard(pw.podSelect, otherPod);
+    await expect.poll(() => new URL(page.url()).searchParams.get('podId')).toBe(otherPod);
     await expect(pw.podSelect).toBeFocused();
-    await page.keyboard.press('ArrowDown');
-    await page.keyboard.press('Home');
-    await page.keyboard.press('Enter');
-    if (new URL(page.url()).searchParams.get('podId') !== String(pod.podId)) {
-      await page.keyboard.press('ArrowDown');
-      await page.keyboard.press('End');
-      await page.keyboard.press('Enter');
-    }
+    await chooseWithKeyboard(pw.podSelect, String(pod.podId));
     await expect.poll(() => new URL(page.url()).searchParams.get('podId')).toBe(String(pod.podId));
     await expect(pw.assignToMe(free.taskNumber)).toBeVisible();
 

@@ -223,7 +223,11 @@ test.describe('Edit task sections (#350)', () => {
     await page.keyboard.type('Kay Board');
     await whenToggle(page).focus();
     await page.keyboard.press('Enter');
+    // Wait for the section to be open and drawn before the focus is moved into it (a focus() on a hidden control does nothing, and the Tab then goes elsewhere).
+    await expect(whenToggle(page)).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.locator('#td-priority')).toBeVisible();
     await page.locator('#td-priority').focus();
+    await expect(page.locator('#td-priority')).toBeFocused();
     await page.keyboard.press('Tab'); // on to Due date
     await expect(page.locator('#td-due-date')).toBeFocused();
     await page.keyboard.type('Oct 30, 2030');

@@ -157,7 +157,8 @@ test.describe('Fixed layout (#200)', () => {
       await expect(page.locator('[data-task]').first()).toBeVisible();
       const m = await measure(page);
       expect(Math.round(m.widths['due'])).toBe(152);
-      expect(Math.round(m.widths['ref'])).toBe(112);
+      // Ref is 100 px since #1240.
+      expect(Math.round(m.widths['ref'])).toBe(100);
       expect(Math.round(m.widths['matter'])).toBe(142);
       // Matter Name is off by default (D-43a, #1230): it has no column here.
       expect(m.widths['matterName'] ?? 0).toBe(0);
@@ -169,7 +170,7 @@ test.describe('Fixed layout (#200)', () => {
       await shot(page, `task-queue-long-title-${width}x${height}`);
     }
 
-    // The pause marker and a four-digit number fit in the 112 px Ref column.
+    // The pause marker and a four-digit number fit in the 100 px Ref column.
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/tasks?${base}&status=ON_HOLD`);
     const cell = page.locator('[data-task] td[data-col="ref"]').first();

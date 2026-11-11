@@ -182,7 +182,8 @@ test.describe('WP10 hold reason and colours', () => {
     await seed.task(world, { title: `Brand new ${tag}`, assignedPodId: pod.podId });
     await queue.open(`?q=${tag}`);
     const fresh = row(page, `Brand new ${tag}`).locator('[data-status="NEW"]');
-    await expect(fresh.locator('.pi-circle')).toHaveCount(1);
+    // The dot is the chip's own drawing (`.newic`), not a PrimeIcons glyph.
+    await expect(fresh.locator('.newic')).toHaveCount(1);
     expect(await css(fresh, 'background-color')).toBe(await tokenColor(page, '--mf-status-new-bg'));
     expect(await css(fresh, 'color')).toBe(await tokenColor(page, '--mf-status-new-fg'));
     await shot(page, 'new-pill-task-queue-1366x768');

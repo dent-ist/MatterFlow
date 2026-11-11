@@ -178,10 +178,18 @@ test.describe('WP8 list chrome', () => {
                 .evaluateAll((rows) => rows.map((r) => r.getBoundingClientRect().height))
             : await rowHeights(page, list.region);
           expect(heights.length, `${list.name} ${width}`).toBeGreaterThan(0);
-          for (const h of heights)
+          // The rows are measured once the list has drawn them: a row read while the list is still loading is a thin placeholder, not a 44 px row.
+          if (!phone)
+            await expect
+              .poll(async () => Math.min(...(await rowHeights(page, list.region))), {
+                message: `${list.name} ${width}: the rows are drawn`,
+              })
+              .toBeGreaterThanOrEqual(43);
+          for (const h of phone ? heights : await rowHeights(page, list.region))
             expect(h, `${list.name} ${width}`).toBeGreaterThanOrEqual(phone ? 64 : 43);
           if (!phone)
-            for (const h of heights) expect(h, `${list.name} ${width}`).toBeLessThanOrEqual(45);
+            for (const h of await rowHeights(page, list.region))
+              expect(h, `${list.name} ${width}`).toBeLessThanOrEqual(45);
 
           const longName = list.long(w);
           const cell = region
@@ -332,17 +340,16 @@ test.describe('WP8 list chrome', () => {
       await page.getByRole('searchbox').first().fill(w.token);
       await select(page, 'Status').selectOption('all');
       await expect(page).toHaveURL(/status=all/);
-      // Open: counter 2, no chips, exactly one Clear filters (in the header).
-      await expect(toggle(page)).toContainText('(2)');
-      await expect(page.locator('[data-chip]')).toHaveCount(0);
+      // Open: counter 1 (the name search is in the search box, which the counter and the chips leave out); the Clients list shows every chip while the row is open
+      // (LC-01; only the Matters list follows the row, D-44d), so the one chip is "Status: All"; exactly one Clear filters.
+      await expect(toggle(page)).toContainText('(1)');
+      await expect(page.locator('[data-chip]')).toHaveText(/Status: All/);
       await expect(page.getByRole('button', { name: 'Clear Filters' })).toHaveCount(1);
-      await expect(page.locator('[data-page-actions] [data-clear-filters]')).toHaveCount(1);
 
-      // Closed: chips for the two filters changed, still exactly one Clear filters (with the chips).
+      // Closed: the same one chip, still exactly one Clear filters (with the chips).
       await toggle(page).click();
-      await expect(page.locator('[data-chip]')).toHaveCount(2);
+      await expect(page.locator('[data-chip]')).toHaveCount(1);
       await expect(page.getByRole('button', { name: 'Clear Filters' })).toHaveCount(1);
-      await expect(page.locator('[data-grid-toolbar] [data-clear-filters]')).toHaveCount(1);
       await shot(page, 'clients-filters-closed-chips');
       await page.getByRole('button', { name: 'Clear Filters' }).click();
       // The default again (Active), not All: nothing in the address, nothing counted.

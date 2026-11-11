@@ -480,8 +480,13 @@ test.describe('Task detail: single page layout', () => {
     await button.click();
     const drawer = page.getByRole('dialog', { name: `Activity: ${task.taskNumber} ${task.title}` });
     await expect(drawer).toBeVisible();
-    const box = await drawer.boundingBox();
-    expect(box!.x + box!.width).toBeGreaterThan(1270);
+    // The drawer slides in: read its right edge until it has settled at the window's edge, not on the first frame.
+    await expect
+      .poll(async () => {
+        const box = await drawer.boundingBox();
+        return box!.x + box!.width;
+      })
+      .toBeGreaterThan(1270);
     await expect(drawer.locator(':focus')).toHaveCount(1);
     await page.keyboard.press('Escape');
     await expect(drawer).toBeHidden();

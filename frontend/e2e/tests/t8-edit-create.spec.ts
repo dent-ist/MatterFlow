@@ -69,7 +69,8 @@ async function cancelEdit(page: Page): Promise<void> {
     .then(() => discard.click())
     .catch(() => undefined);
 }
-const dialogBody = (page: Page): Locator => page.locator('.p-dialog-content');
+/** The scrolling body of the shared form dialog (the PrimeNG content box is a plain flex column around it). */
+const dialogBody = (page: Page): Locator => page.locator('[data-panel-body]');
 const requestToggle = (page: Page): Locator => page.locator('[data-request-toggle]');
 const whenToggle = (page: Page): Locator => page.locator('[data-when-toggle]');
 /** A request-form text field by number (the label also matches "Request field 10" and "(required)"). */
@@ -410,7 +411,7 @@ test.describe('T8: Edit dialog (E1 #319, #320, BUG-3 #321)', () => {
     await expect(editorPage.locator('#td-assignee')).toHaveCount(0);
     await expect(editorPage.locator('[data-locked-fields] a')).toHaveCount(0);
     await expect(editorPage.locator('[data-locked-fields]')).toContainText(world.matter.matterRef);
-    expect(await overflowX(editorPage.locator('.p-dialog-content'))).toBeLessThanOrEqual(0);
+    expect(await overflowX(dialogBody(editorPage))).toBeLessThanOrEqual(0);
     await checkPage(editorPage, 'Task.Edit without Task.Assign 1366');
     await cancelEdit(editorPage);
 
@@ -540,18 +541,18 @@ test.describe('T8: Create task page (CT1 #322, #323)', () => {
       expect(formBox.width).toBeLessThanOrEqual(721);
       if (size.width >= 1100) expect(Math.round(formBox.width)).toBe(720);
 
-      // One input width: the text inputs, the textarea and the selects are all the standard 480 px field (D-35, #1173).
+      // One input width: the text inputs and the textarea are all the standard 480 px field (D-35, #1173). A dropdown has the fixed width of its own
+      // anatomy (the widest option, at most 22 rem, D-14), so it is never wider than the field.
       const widths: number[] = [];
-      for (const loc of [
-        create.title,
-        create.requestorName,
-        create.requestorEmail,
-        create.project,
-      ]) {
+      for (const loc of [create.title, create.requestorName, create.requestorEmail]) {
         widths.push(Math.round((await loc.boundingBox())!.width));
       }
       expect(new Set(widths).size, `input widths ${widths.join(',')}`).toBe(1);
       expect(widths[0]).toBeLessThanOrEqual(481);
+      const dropdown = Math.round((await create.project.boundingBox())!.width);
+      expect(dropdown, 'the Project dropdown is not wider than the field').toBeLessThanOrEqual(
+        widths[0]!,
+      );
 
       // The Summary in the facts-strip shape: three tiles, side by side from 640 px, stacked below.
       const strip = page.locator('[data-summary-card]');

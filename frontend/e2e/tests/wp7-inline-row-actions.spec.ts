@@ -72,6 +72,14 @@ function intersects(a: { x: number; y: number; width: number; height: number }, 
   );
 }
 
+/** Progress is off in the default columns (D-43a, #1230): the person adds it from the Columns panel, and the choice is remembered. */
+async function addProgressColumn(page: Page): Promise<void> {
+  await page.getByRole('button', { name: 'Columns', exact: true }).click();
+  await page.getByLabel('Progress', { exact: true }).check();
+  await page.getByRole('button', { name: 'Columns', exact: true }).click();
+  await expect(page.locator('th[data-col="progress"]')).toBeVisible();
+}
+
 test.describe('WP7: inline row actions', () => {
   test('BUG-9: a cancelled row leaves Active after 4 seconds; the counts and the pager follow (#148)', async ({
     seed,
@@ -299,6 +307,7 @@ test.describe('WP7: inline row actions', () => {
     await page.setViewportSize({ width: 1920, height: 1080 });
     const myWork = new MyWorkPage(page);
     await myWork.open();
+    await addProgressColumn(page);
     const row = myWork.row(`Step ${token}`);
     const link = row.locator('[data-step-link]');
     await expect(link).toHaveText('1 of 2');
@@ -318,7 +327,7 @@ test.describe('WP7: inline row actions', () => {
     await expect(toggle).toBeFocused();
   });
 
-  test('M12.3: the step link is on the Workflow progress column; a task with every step resolved shows text, and a phone shows neither (#166, #196)', async ({
+  test('M12.3: the step link is on the Progress column; a task with every step resolved shows text (#166, #196)', async ({
     seed,
     asUser,
     admin,
@@ -336,19 +345,11 @@ test.describe('WP7: inline row actions', () => {
 
     await page.setViewportSize({ width: 1366, height: 768 });
     await myWork.open();
+    await addProgressColumn(page);
     await expect(myWork.row(`Open ${token}`).locator('[data-step-link]')).toBeVisible();
     await expect(myWork.row(`Done ${token}`).locator('[data-step-link]')).toHaveCount(0);
-    await expect(myWork.row(`Done ${token}`)).toContainText('All steps resolved');
-
-    // WP2 (#196) took the progress text out of the Title cell, and the Workflow progress column drops out below 1060 px: a phone row has no
-    // step link and no progress text at all (it used to fold under the title).
-    await page.setViewportSize({ width: 375, height: 812 });
-    await myWork.open();
-    await expect(myWork.row(`Open ${token}`)).toHaveCount(1);
-    await expect(myWork.row(`Open ${token}`).locator('[data-step-link]')).toHaveCount(0);
-    await expect(myWork.row(`Done ${token}`)).not.toContainText('All steps resolved');
-    await shot(page, 'step-link-375x812');
-    await pageAxe(page, 'step link 375');
+    // Every step resolved: plain text, no link ("1 of 1", the thin bar full; #1227 replaced the words "All steps resolved").
+    await expect(myWork.row(`Done ${token}`).locator('[data-progress-text]')).toHaveText('1 of 1');
   });
 
   test('A6: Complete reads "needs step inputs" and opens the task at the blocked step; a ready task confirms (#167)', async ({

@@ -1,12 +1,15 @@
 /* The drawer: the frame and the anatomy of `mf-slide-panel` (D-33, #1142). Global on purpose (ViewEncapsulation.None): the p-dialog is drawn in the page body.
    It ships with the component, so the lazy features that open a drawer carry it and the initial bundle does not. */
-.mf-drawer.p-dialog {
+/* The mask in front of the class: PrimeNG gives `.p-dialog-right .p-dialog` a 1rem margin with the same specificity and injects its styles later, so without it the
+   drawer stood 14 px away from the right edge of the window (#1359). */
+.p-dialog-mask .mf-drawer.p-dialog {
   display: flex;
   flex-direction: column;
   width: var(--mf-drawer-w);
   max-width: 100vw;
   height: 100vh;
   max-height: 100vh;
+  margin: 0;
   border-radius: 0;
   transform: none !important;
   will-change: auto !important;
@@ -18,13 +21,7 @@
   --p-dialog-footer-gap: var(--mf-s2);
 }
 
-/* PrimeNG gives a docked dialog a margin with the same specificity (`.p-dialog-right .p-dialog`); this lazy stylesheet can load before it and lose, which left
-   a 14 px gap beside the drawer. The mask in the selector wins whatever the order. */
-.p-dialog-mask .mf-drawer.p-dialog {
-  margin: 0;
-}
-
-.mf-drawer--wide.p-dialog {
+.p-dialog-mask .mf-drawer--wide.p-dialog {
   width: var(--mf-drawer-w-wide);
 }
 

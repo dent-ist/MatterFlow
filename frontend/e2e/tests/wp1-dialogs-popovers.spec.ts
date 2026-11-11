@@ -53,7 +53,7 @@ test.describe('WP1: dialogs, popovers, shortcut list', () => {
       const dialog = mine.getByRole('dialog').filter({ has: mine.locator('[data-reason-body]') });
       await expect(dialog).toBeVisible();
       const body = dialog.locator('[data-confirm-body]');
-      await expect(body).toContainText("Workflow steps can't be changed while it is on hold.");
+      await expect(body).toContainText("its workflow steps can't be changed meanwhile.");
       const m = await body.evaluate((e) => ({
         sw: e.scrollWidth,
         cw: e.clientWidth,

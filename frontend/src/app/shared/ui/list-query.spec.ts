@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ApiError } from '../../core/http/api-error';
+import { QuietRequests } from '../../core/http/interceptors';
 import {
   DEFAULT_PAGE_SIZE,
   LocalListPage,
@@ -50,6 +51,13 @@ class ServerHost extends ServerListPage<Row> {
     return this.fail ? Promise.reject(this.fail) : Promise.resolve({ items: [], total: 0 });
   }
   current = () => this.state();
+  /** Whether the side counts started while requests were marked quiet (no toast of their own). */
+  quietAtHidden: boolean[] = [];
+  private readonly probe = inject(QuietRequests);
+  protected override fetchHidden(): Promise<{ total: number }> | null {
+    this.quietAtHidden.push(this.probe.active);
+    return Promise.resolve({ total: 2 });
+  }
 }
 
 function apiError(status: number): ApiError {
@@ -72,6 +80,15 @@ describe('ServerListPage states', () => {
     expect(page.current()).toBe('loading');
     await reload;
     expect(page.current()).toBe('ready');
+  });
+});
+
+describe('ServerListPage side counts', () => {
+  it('asks for the hidden count with the toast switched off: a failed side count leaves its hint out silently', async () => {
+    TestBed.configureTestingModule({ providers: [provideRouter([])] });
+    const page = TestBed.createComponent(ServerHost).componentInstance;
+    await page.load();
+    expect(page.quietAtHidden).toEqual([true]);
   });
 });
 

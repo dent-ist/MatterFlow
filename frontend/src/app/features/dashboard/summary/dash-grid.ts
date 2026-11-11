@@ -36,6 +36,7 @@ import {
 } from '../../../shared/ui/grid-prefs';
 import { phoneCards } from '../../../shared/ui/record-card-list';
 import { ColumnMove } from '../../../shared/ui/reorder-columns';
+import { restoreRowFocus } from '../../../shared/ui/row-nav';
 import { SortedLine } from '../../../shared/ui/sorted-line';
 import { ColumnAction } from '../../../shared/work-queue/column-menu-items';
 import { ColumnWidthMap, pxToRem } from '../../../shared/work-queue/column-widths';
@@ -194,6 +195,8 @@ const OWNED_BY_CARD: Record<CardKey, readonly string[]> = {
         </mf-list-toolbar>
         <mf-work-list
           [dash]="true"
+          origin="dashboard"
+          rowList="dashboard-summary"
           [reorderable]="true"
           [rows]="rows()"
           [total]="total()"
@@ -446,6 +449,8 @@ export class DashGrid {
       const key = this.prefsKey();
       untracked(() => this.prefs.set(loadGridPrefs(key)));
     });
+    // Back from a task opened here (`?from=dashboard`, T9 #324) focuses the title link that was left.
+    restoreRowFocus('dashboard-summary', () => this.state() === 'ready');
     void this.lookups.ensureLoaded();
     this.choices.ensure();
     // A new card, filter, scope or base query starts again on the first page and the card's own order.

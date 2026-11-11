@@ -5,6 +5,7 @@ import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { Seeder, uid, World } from '../support/seed';
 import { TaskApi } from '../support/tasks';
+import { NUMERIC_STAMP } from '../support/time';
 
 /**
  * Task Detail review, package T7 "Comments, Assets and Activity at scale" (#315 C1, #316 A1 API, #317 A1 UI, #318 A2):
@@ -112,10 +113,10 @@ test.describe('T7: Comments thread (C1, #315)', () => {
     expect(await before(quick, detail.commentItems.first())).toBe(true);
     await shot(page, 'comments-48-composer-first-' + (page.viewportSize()?.width ?? 0));
 
-    // The timestamps keep their zone.
-    await expect(detail.commentItems.first().locator('time')).toHaveText(
-      /^[A-Z][a-z]{2} \d{1,2}, \d{4}, \d{1,2}:\d{2} [AP]M [A-Z]{2,5}$/,
-    );
+    // The time is the numeric stamp of D-60 ("11/10 10:26 PM"); its zone is in the tooltip, which keeps the UTC moment.
+    const stamp = detail.commentItems.first().locator('time');
+    await expect(stamp).toHaveText(NUMERIC_STAMP);
+    await expect(stamp).toHaveAttribute('title', /^\d{4}-\d{2}-\d{2}T[\d:.]+Z \(UTC\)$/);
 
     await detail.showAllComments.click();
     await expect(detail.commentItems).toHaveCount(48);

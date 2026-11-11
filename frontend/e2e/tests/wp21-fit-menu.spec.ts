@@ -344,12 +344,19 @@ test.describe('Column header menu (#207)', () => {
     await expect(item(page, 'widen')).toBeVisible();
     await page.keyboard.press('Escape');
 
-    // Widen until the maximum (Due 200 px: 8 steps of 8 px from 152 reach 200), then Widen is off.
+    // Widen until the maximum (Due 200 px: 6 steps of 8 px from 152 reach 200), then Widen is off. At most 8 tries; each one must still be on offer.
+    let widenings = 0;
     for (let i = 0; i < 8; i++) {
       await sortButton(page, 'due').focus();
       await page.keyboard.press('Shift+F10');
+      if ((await item(page, 'widen').getAttribute('aria-disabled')) === 'true') {
+        await page.keyboard.press('Escape');
+        break;
+      }
       await item(page, 'widen').click();
+      widenings++;
     }
+    expect(widenings, 'Widen was on offer from 152 px up to the maximum').toBe(6);
     expect(Math.round(await width(page, 'due'))).toBe(200);
     await sortButton(page, 'due').focus();
     await page.keyboard.press('Shift+F10');

@@ -56,7 +56,14 @@ test.describe('Tab strip scroll cue (#279)', () => {
       await page.setViewportSize({ width: w, height: h });
       await page.goto(`/matters/${matterId}`);
       await expect(page.getByRole('tab', { name: /^Tasks/ })).toBeVisible();
-      await expect(page.locator('mf-tabs [data-tab-cue]')).toHaveCount(0);
+      // The Matter page has 8 tabs: at 1920 they all fit and there is no cue. At 1366 they need about 1108 of the 1098 px, so the strip does scroll and
+      // shows the end cue; the rule is that the cue is there exactly when the strip overflows, never more, never less.
+      const overflows = await page
+        .locator('mf-tabs [role="tablist"]')
+        .evaluate((el) => el.scrollWidth > el.clientWidth + 1);
+      if (w >= 1920) expect(overflows, `the 8 tabs fit at ${w}`).toBe(false);
+      await expect(page.locator('mf-tabs [data-tab-cue]')).toHaveCount(overflows ? 1 : 0);
+      if (overflows) await expect(cue(page, 'end')).toBeVisible();
       await shot(page, `matter-tabs-no-cue-${w}x${h}`);
     }
   });

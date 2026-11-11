@@ -195,13 +195,13 @@ test.describe('Task T6: Workflow head (#310)', () => {
     await new TaskDetailPage(page).open(eight.task.taskId);
     const rows = page.locator('ol.wf__steps > li');
     await expect(rows).toHaveCount(8);
-    await page.locator('[data-filter="unresolved"]').click();
+    await page.locator('[data-filter-group] [data-key="unresolved"]').click();
     await expect(rows).toHaveCount(6);
-    await expect(page.locator('[data-filter="unresolved"]')).toHaveAttribute(
+    await expect(page.locator('[data-filter-group] [data-key="unresolved"]')).toHaveAttribute(
       'aria-pressed',
       'true',
     );
-    await page.locator('[data-filter="all"]').click();
+    await page.locator('[data-filter-group] [data-key="all"]').click();
     await expect(rows).toHaveCount(8);
     const head = await rect(page.locator('.wf__head'));
     expect(head.height, 'head with the filter at 1366').toBeLessThanOrEqual(56);
@@ -219,7 +219,7 @@ test.describe('Task T6: Workflow head (#310)', () => {
     }
     await page.setViewportSize({ width: 1366, height: 768 });
     await new TaskDetailPage(page).open(seven.task.taskId);
-    await page.locator('[data-filter="unresolved"]').click();
+    await page.locator('[data-filter-group] [data-key="unresolved"]').click();
     await check(page, 'workflow-7-unordered-filtered');
   });
 });

@@ -138,7 +138,16 @@ test.describe('Page-header contract (#600)', () => {
         return {
           rootRight: root.getBoundingClientRect().right,
           selectWidth: sel?.getBoundingClientRect().width ?? 0,
-          titleHeight: h.getBoundingClientRect().height,
+          // The lines the title WORDS are drawn on (the heading's own box also holds the count chip, so its height is not the number of lines).
+          titleLines: (() => {
+            const walker = document.createTreeWalker(h, NodeFilter.SHOW_TEXT);
+            let node: Node | null = walker.nextNode();
+            while (node && !node.textContent?.trim()) node = walker.nextNode();
+            if (!node) return 0;
+            const range = document.createRange();
+            range.selectNodeContents(node);
+            return new Set(Array.from(range.getClientRects()).map((r) => Math.round(r.top))).size;
+          })(),
           viewport: window.innerWidth,
         };
       });
@@ -148,7 +157,7 @@ test.describe('Page-header contract (#600)', () => {
       expect(header.selectWidth, `selector width at ${size.width}`).toBeLessThanOrEqual(
         22 * 16 + 1,
       );
-      expect(header.titleHeight, `title height at ${size.width}: one line`).toBeLessThanOrEqual(37);
+      expect(header.titleLines, `title lines at ${size.width}: one line`).toBe(1);
     }
   });
 
@@ -198,7 +207,9 @@ test.describe('Page-header contract (#600)', () => {
       const top = () =>
         page.evaluate(() => {
           const main = document.querySelector('main')!.getBoundingClientRect();
-          const header = document.querySelector('mf-record-header')!.getBoundingClientRect();
+          const header = document
+            .querySelector('mf-matter-header, mf-record-header, mf-page-header')!
+            .getBoundingClientRect();
           return { top: header.top - main.top, left: header.left };
         });
       await page.goto(`/matters/${matter.matterId}`);

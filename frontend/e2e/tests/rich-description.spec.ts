@@ -441,9 +441,10 @@ test.describe('Rich text description with tables (issue #80)', () => {
     const comments = page.getByRole('region', { name: 'Comments' });
     const editor = comments.getByRole('textbox', { name: 'Add a Comment' });
     await editor.click();
+    // The label reads "Add a comment" now; the `i` makes the attribute selector ignore the letter case.
     await pasteInto(
       page,
-      '[aria-label="Add a Comment"]',
+      '[aria-label="Add a Comment" i]',
       '<table class=MsoTableGrid><tr><td style="x">Disk</td><td onclick="alert(1)">2</td></tr></table>',
       'Disk 2',
     );
