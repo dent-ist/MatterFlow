@@ -5,6 +5,7 @@ import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
 import { TaskApi } from '../support/tasks';
 import { filterDropdown } from '../support/dropdown';
+import { chooseView, isPressed } from '../support/views';
 
 /**
  * Column filters on the work lists (epic #75, Batch 3, issue #78): Task Queue, My Work, Pod Work and the Tasks grids of a Matter and a
@@ -22,12 +23,6 @@ const multi = (page: Page, column: string) =>
 const chips = (page: Page) => page.getByRole('list', { name: 'Active filters' });
 const rowControl = (page: Page, key: string) =>
   page.locator(`tr[data-filter-row] [data-filter="${key}"]`);
-/** A quick view button: its name is the view's, then its count ("Overdue, 101 tasks", #218). */
-const view = (page: Page, name: string) =>
-  page
-    .getByRole('toolbar', { name: 'Quick views' })
-    .getByRole('button', { name: new RegExp(`^${name}(,|$)`) });
-
 /** The scopes of the column choice of a screen (one per tab, X1): `mf.work-columns.v2.<scope>.<userId>`. */
 const SCOPES: Record<string, string[]> = {
   queue: ['taskQueue'],
@@ -88,7 +83,11 @@ test.describe('Column filters on the work lists', () => {
       await expect(page).not.toHaveURL(/matterText=/);
       await queue.expectListed(other.title);
 
-      // Project is a default column since LC-03: its filter is in the row.
+      // Project is not one of the default columns (Ref, Type, Title, CM Number, Priority, Assignee, Due, Status): one click in Columns brings the column and its filter into the row.
+      await page.getByRole('button', { name: 'Columns', exact: true }).click();
+      await page.locator('[data-columns-panel]').getByLabel('Project', { exact: true }).check();
+      await page.keyboard.press('Escape');
+      await expect(page.locator('[data-columns-panel]')).toHaveCount(0);
       await text(page, 'Project').fill(`phase ${token}`);
       await expect(page).toHaveURL(/projectText=/);
       await queue.expectListed(withProject.title);
@@ -148,23 +147,23 @@ test.describe('Column filters on the work lists', () => {
       await seed.task(await seed.world(), { title: `Preset ${uid()}` });
       await page.goto('/tasks');
 
-      await view(page, 'Overdue').click();
+      await chooseView(page, 'overdue');
       await expect(page).toHaveURL(/overdue=true/);
-      await expect(view(page, 'Overdue')).toHaveAttribute('aria-pressed', 'true');
+      await expect.poll(() => isPressed(page, 'overdue')).toBe(true);
       // The view owns its filter: no chip repeats it and "Filters (n)" does not count it (#221).
       await expect(chips(page)).toHaveCount(0);
       await expect(toggle(page)).not.toHaveText(/\(/);
 
-      await view(page, 'Unassigned').click();
+      await chooseView(page, 'unassigned');
       await expect(page).toHaveURL(/unassigned=true/);
       await expect(page).not.toHaveURL(/overdue=/);
       await expect(rowControl(page, 'assignee')).toContainText('Unassigned');
-      await expect(view(page, 'Unassigned')).toHaveAttribute('aria-pressed', 'true');
+      await expect.poll(() => isPressed(page, 'unassigned')).toBe(true);
 
       // A filter on top of the view is an extra filter: the view stays pressed and the count is the extra ones (#221).
       await text(page, 'CM Number').fill('zzz');
       await expect(page).toHaveURL(/matterText=zzz/);
-      await expect(view(page, 'Unassigned')).toHaveAttribute('aria-pressed', 'true');
+      await expect.poll(() => isPressed(page, 'unassigned')).toBe(true);
       await expect(toggle(page)).toHaveText(/\(1\)/);
       // A change to what the view owns un-presses it, and the count follows the row.
       await rowControl(page, 'status').click();
@@ -173,13 +172,13 @@ test.describe('Column filters on the work lists', () => {
         .getByRole('button', { name: 'Clear' })
         .click();
       await page.keyboard.press('Escape');
-      await expect(view(page, 'Unassigned')).toHaveAttribute('aria-pressed', 'false');
+      await expect.poll(() => isPressed(page, 'unassigned')).toBe(false);
       await expect(toggle(page)).toHaveText(/\(3\)/);
 
       // All open is the plain link.
-      await view(page, 'All Open').click();
+      await chooseView(page, 'allOpen');
       await expect(page).toHaveURL(/\/tasks$/);
-      await expect(view(page, 'All Open')).toHaveAttribute('aria-pressed', 'true');
+      await expect.poll(() => isPressed(page, 'allOpen')).toBe(true);
     });
 
     test('a plain /tasks restores the last view with a visible notice, and Reset to default undoes it', async ({
@@ -490,8 +489,6 @@ test.describe('Column filters on the work lists', () => {
       await expect(filterDropdown(page, 'Project')).toHaveCount(0);
     });
   });
-
-  test.describe('Filters sheet', () => {});
 
   test('axe: closed, open, filtered, empty at 1366 and on the three work lists and the Matter tasks', async ({
     page,

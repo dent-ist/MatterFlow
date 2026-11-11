@@ -3,6 +3,7 @@ import { Page } from '@playwright/test';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { SIZES, noHorizontalScroll, shot } from '../support/screens';
 import { expect, test } from '../support/fixtures';
+import { ci } from '../support/text';
 import { Seeder, uid } from '../support/seed';
 
 /**
@@ -87,7 +88,7 @@ test.describe('Search filters and the Advanced search redirect (WP-SR5)', () => 
     await page.getByLabel('On Hold').check();
     await expect(rows(page)).toHaveCount(0);
     await expect(page.locator('[data-empty]')).toContainText('No results match these filters');
-    const chip = page.getByRole('button', { name: /^Remove filter Task status: On Hold/ });
+    const chip = page.getByRole('button', { name: ci(/^Remove filter Task status: On Hold/) });
     await chip.focus();
     await page.keyboard.press('Enter');
     await expect(rows(page)).toHaveCount(3);

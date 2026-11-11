@@ -69,7 +69,9 @@ test.describe('Search results: counted tabs on a fixed page (#466)', () => {
       ]);
     // The zero tabs (Matters, Clients) are still tabs, and the section headings carry the same true counts (not "5+").
     await expect(tabs(page).getByRole('tab', { name: /^Matters, 0 results/ })).toBeVisible();
-    await expect(page.getByRole('region', { name: `Tasks (${s.tasks})` })).toBeVisible();
+    await expect(
+      page.getByRole('region', { name: new RegExp(`^Tasks\\s+${s.tasks}$`) }),
+    ).toBeVisible();
     await expect(page.locator('[data-section=task] [data-hit-row]')).toHaveCount(5);
   });
 

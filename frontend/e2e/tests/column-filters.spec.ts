@@ -165,7 +165,7 @@ test.describe('Column filters on the Assets screen', () => {
     await expect(toggle(page)).toBeVisible();
   });
 
-  test('axe: no violations with the row closed, open, filtered with chips, and in the sheet', async ({
+  test('axe: no violations with the row closed, open, filtered with chips', async ({
     page,
     seed,
   }) => {

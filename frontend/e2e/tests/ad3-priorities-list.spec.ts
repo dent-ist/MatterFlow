@@ -58,7 +58,7 @@ test.describe('the Priorities list (#605)', () => {
     page,
   }) => {
     await page.setViewportSize(SIZES[1]);
-    await page.goto('/admin/priorities');
+    await page.goto('/admin/lists/priorities');
     await expect(rows(page).first()).toBeVisible();
     expect(await rows(page).count()).toBeGreaterThanOrEqual(9);
     await expect(page.locator('table.mf-grid thead th')).toHaveText([
@@ -85,7 +85,8 @@ test.describe('the Priorities list (#605)', () => {
       eighth.y + eighth.height,
       'the eighth row ends inside the scroll area',
     ).toBeLessThanOrEqual(regionBox.y + regionBox.height + 0.5);
-    // One scroll area: no scrolling box inside the table's wrap, and the page itself does not scroll.
+    // One scroll area: no scrolling box inside the table's wrap, and the page itself does not scroll. (The list is opened at its own address: the old
+    // address /admin/priorities redirects with a "moved" banner, and that banner's height makes the catalogue pane scroll, which is another page state.)
     const nested = await page.evaluate(
       () =>
         Array.from(document.querySelectorAll('#mf-main *')).filter((el) => {
@@ -109,7 +110,7 @@ test.describe('the Priorities list (#605)', () => {
     admin,
   }) => {
     await page.setViewportSize(SIZES[1]);
-    await page.goto('/admin/priorities');
+    await page.goto('/admin/lists/priorities');
     const row = priorityRow(page, used.label);
     const cell = row.locator('[data-open-tasks]');
     await expect(cell).toHaveText('3');
@@ -122,7 +123,7 @@ test.describe('the Priorities list (#605)', () => {
     await cell.getByRole('link').click();
     await expect(page).toHaveURL(new RegExp(`/tasks\\?.*priority=${used.id}`));
     // An unused priority is a plain 0 (no link to an empty list).
-    await page.goto('/admin/priorities');
+    await page.goto('/admin/lists/priorities');
     const unused = priorityRow(page, extras[0].label);
     await expect(unused.locator('[data-open-tasks]')).toHaveText('0');
     await expect(unused.locator('[data-open-tasks] a')).toHaveCount(0);
@@ -132,7 +133,7 @@ test.describe('the Priorities list (#605)', () => {
     page,
   }) => {
     await page.setViewportSize(SIZES[1]);
-    await page.goto('/admin/priorities');
+    await page.goto('/admin/lists/priorities');
     const row = priorityRow(page, used.label);
     const stops = await row.evaluate((tr) =>
       Array.from(tr.querySelectorAll<HTMLElement>('a, button, input, select, textarea, [tabindex]'))
@@ -149,7 +150,7 @@ test.describe('the Priorities list (#605)', () => {
   }) => {
     // Tall enough for every row to be on screen: a drop target outside the scroll area would need the browser's auto-scroll.
     await page.setViewportSize({ width: 1920, height: 1080 });
-    await page.goto('/admin/priorities');
+    await page.goto('/admin/lists/priorities');
     const first = page.locator(`tr[data-row="${extras[0].label}"]`);
     const second = page.locator(`tr[data-row="${extras[1].label}"]`);
     await expect(first).toBeVisible();
@@ -208,7 +209,7 @@ test.describe('the Priorities list (#605)', () => {
     const user = await personas.create({ permissions: ['Priority.Manage'], label: 'ad3-nt' });
     const page = await asUser(user.username);
     await page.setViewportSize(SIZES[1]);
-    await page.goto('/admin/priorities');
+    await page.goto('/admin/lists/priorities');
     await expect(rows(page).first()).toBeVisible();
     await expect(page.locator('table.mf-grid thead th')).toHaveText([
       'Order',
@@ -238,7 +239,7 @@ test.describe('the Priorities list (#605)', () => {
     }) => {
       test.skip(!axeAvailable(), 'axe-core is not available');
       await page.setViewportSize(size);
-      await page.goto('/admin/priorities');
+      await page.goto('/admin/lists/priorities');
       await expect(page.locator('tbody tr[data-row], li.rc').first()).toBeVisible();
       await noSideScroll(page, `priorities at ${size.width}`);
       expect(await axeViolations(page), `priorities at ${size.width}`).toEqual([]);

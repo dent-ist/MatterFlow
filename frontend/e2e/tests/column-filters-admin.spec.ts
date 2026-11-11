@@ -3,6 +3,7 @@ import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
 import { filterDropdown } from '../support/dropdown';
+import { shownName } from '../support/text';
 
 /**
  * Column filters on the administration lists (epic #75, Batch 4, issue #79): Users, Pods, Task Types, Workflows, Workflow Steps, Asset
@@ -63,12 +64,14 @@ test.describe('Column filters on the administration lists', () => {
       await expect(rows).toHaveCount(3);
 
       // The waiting person is Pending access.
-      await expect(rows.filter({ hasText: waiting.username })).toContainText('Pending Access');
+      await expect(rows.filter({ hasText: shownName(waiting.username) })).toContainText(
+        'Pending Access',
+      );
       // Pending access is the default while someone waits (this stack has waiting people): written into the address on first load (#429).
       await page.goto(`/admin/users?account=${token}`);
       await expect(page).toHaveURL(/status=pending/);
       await expect(rows).toHaveCount(1);
-      await expect(rows.first()).toContainText(waiting.username);
+      await expect(rows.first()).toContainText(shownName(waiting.username));
       await page.locator('[data-strip-item="all"]').click();
       await expect(rows).toHaveCount(3);
 
@@ -78,7 +81,7 @@ test.describe('Column filters on the administration lists', () => {
       await page.getByRole('button', { name: 'Done' }).click();
       await expect(page).toHaveURL(/roleId=\d+/);
       await expect(rows).toHaveCount(1);
-      await expect(rows.first()).toContainText(tech.username);
+      await expect(rows.first()).toContainText(shownName(tech.username));
       await multi(page, 'Roles').click();
       const panel = page.getByRole('dialog', { name: 'Filter by Roles' });
       await panel.getByRole('button', { name: 'Clear', exact: true }).click();
@@ -89,7 +92,7 @@ test.describe('Column filters on the administration lists', () => {
       await select(page, 'Availability').selectOption('OUT_OF_OFFICE');
       await expect(page).toHaveURL(/availability=OUT_OF_OFFICE/);
       await expect(rows).toHaveCount(1);
-      await expect(rows.first()).toContainText(away.username);
+      await expect(rows.first()).toContainText(shownName(away.username));
       await expect(page.locator('[data-filter-live]')).toHaveText(/1 user/);
 
       // Name and Email narrow it further, with no match the headers and the row stay.
@@ -443,9 +446,9 @@ test.describe('Column filters on the administration lists', () => {
       const operation = found.items[0].correlationId;
       await page.goto(`/admin/audit?correlationId=${operation}`);
       await expect(page.locator('[data-operation-banner]')).toHaveCount(0);
-      await expect(chips(page)).toContainText('Operation: One operation');
+      await expect(chips(page)).toContainText('Operation: One Operation');
       await expect(grid(page, 'Audit events list').locator('tbody tr').first()).toBeVisible();
-      await page.getByRole('button', { name: 'Remove filter Operation: One operation' }).click();
+      await page.getByRole('button', { name: 'Remove filter Operation: One Operation' }).click();
       await expect(page).not.toHaveURL(/correlationId=/);
       await expect(page.locator('[data-operation-banner]')).toHaveCount(0);
     });

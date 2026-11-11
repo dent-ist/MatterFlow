@@ -121,7 +121,7 @@ test.describe('Column filters on the record lists', () => {
       return { alpha, beta, merger, audit, review };
     }
 
-    test('CM Number, Name and Client are column filters; Sensitive is a select after Status (no Other filters)', async ({
+    test('CM Number, Name and Client are column filters; Sensitive is a select after Status (Other Filters keeps only the Primary PM of a hidden column)', async ({
       page,
       seed,
     }) => {
@@ -149,7 +149,15 @@ test.describe('Column filters on the record lists', () => {
       await text(page, 'CM Number').fill('');
 
       // Sensitive is a select in the row (WP8 #272), then a chip when the row is closed.
-      await expect(page.getByRole('button', { name: 'Other Filters' })).toHaveCount(0);
+      // Other Filters is the home of the filters that have no column on screen: here the Primary PM (a hidden column), and Sensitive is not among them.
+      const other = page.getByRole('button', { name: 'Other Filters' });
+      await expect(other).toHaveCount(1);
+      await other.click();
+      const popover = page.locator('mf-filter-popover');
+      await expect(popover).toContainText('Primary PM');
+      await expect(popover).not.toContainText('Sensitive');
+      await page.keyboard.press('Escape');
+      await expect(popover).toHaveCount(0);
       await select(page, 'Sensitive').selectOption('true');
       await expect(page).toHaveURL(/isSensitive=true/);
       await expect(rows).toHaveCount(1);

@@ -42,22 +42,24 @@ export function asDropdown(button: Locator): Dropdown {
       const value = typeof choice === 'string' ? choice : choice.value;
       const label = typeof choice === 'string' ? undefined : choice.label;
       await open();
-      let target: Locator;
-      if (label !== undefined) {
-        target = options().filter({ hasText: new RegExp(`^\\s*${escape(label)}\\s*(\\d+)?\\s*$`) });
-      } else {
+      // The target is chosen on every attempt, on the open list: right after the click the options may not be drawn yet (a list that loads its items or whose host
+      // re-renders), and a lookup by value that ran too early found nothing and fell back to the TEXT of a value such as NTH_WEEKDAY for good.
+      const targetOf = async (): Promise<Locator> => {
+        if (label !== undefined)
+          return options().filter({
+            hasText: new RegExp(`^\\s*${escape(label)}\\s*(\\d+)?\\s*$`),
+          });
         const byValue = page.locator(`.dd-panel [role="option"][data-value="${value}"]`);
-        target =
-          (await byValue.count()) > 0
-            ? byValue
-            : options().filter({
-                hasText: new RegExp(`^\\s*${escape(value ?? '')}\\s*(\\d+)?\\s*$`),
-              });
-      }
+        return (await byValue.count()) > 0
+          ? byValue
+          : options().filter({
+              hasText: new RegExp(`^\\s*${escape(value ?? '')}\\s*(\\d+)?\\s*$`),
+            });
+      };
       // The list can be re-drawn while it loads (options arrive late, the host re-renders): a click on a node that went away is tried again on the open list.
       await expect(async () => {
         if ((await page.locator('.dd-panel [role="listbox"]').count()) === 0) await open();
-        await target.first().click({ timeout: 4000 });
+        await (await targetOf()).first().click({ timeout: 4000 });
       }).toPass({ timeout: 20_000 });
       await expect(page.locator('.dd-panel')).toHaveCount(0);
     },

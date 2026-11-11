@@ -62,7 +62,7 @@ test.describe('the priority row menu (#614, #618)', () => {
     page,
   }) => {
     await page.setViewportSize(SIZES[1]);
-    await page.goto('/admin/priorities');
+    await page.goto('/admin/lists/priorities');
     await openRowMenu(page, menuOf(page, used.label));
     await expect(item(page, /^Delete/)).toHaveCount(0);
     await expect(page.getByRole('menuitem')).toContainText([
@@ -91,7 +91,7 @@ test.describe('the priority row menu (#614, #618)', () => {
     admin,
   }) => {
     await page.setViewportSize(SIZES[1]);
-    await page.goto('/admin/priorities');
+    await page.goto('/admin/lists/priorities');
     const name = extras[2].label;
     await openRowMenu(page, menuOf(page, name));
     await item(page, /^Delete/).click();
@@ -120,7 +120,7 @@ test.describe('the priority row menu (#614, #618)', () => {
     seed,
   }) => {
     await page.setViewportSize(SIZES[1]);
-    await page.goto('/admin/priorities');
+    await page.goto('/admin/lists/priorities');
     const name = extras[1].label;
     await openRowMenu(page, menuOf(page, name));
     await item(page, /^Delete/).click();
@@ -146,7 +146,7 @@ test.describe('the priority row menu (#614, #618)', () => {
   }) => {
     const defaultRow = (await admin.get<Json[]>('/api/v1/priorities')).find((p) => p.isDefault)!;
     await page.setViewportSize(SIZES[1]);
-    await page.goto('/admin/priorities');
+    await page.goto('/admin/lists/priorities');
     await openRowMenu(page, menuOf(page, defaultRow.label));
     const deactivate = item(page, /^Deactivate/);
     await expect(deactivate).toHaveAttribute('aria-disabled', 'true');
@@ -170,7 +170,7 @@ test.describe('the priority row menu (#614, #618)', () => {
     admin,
   }) => {
     await page.setViewportSize(SIZES[1]);
-    await page.goto('/admin/priorities');
+    await page.goto('/admin/lists/priorities');
     const name = extras[0].label;
     const before = (await admin.get<Json[]>('/api/v1/priorities')).map((p) => p.label);
     const at = before.indexOf(name);
@@ -204,7 +204,7 @@ test.describe('the priority row menu (#614, #618)', () => {
     const before = (await admin.get<Json[]>('/api/v1/priorities')).find((p) => p.isDefault)!;
     const target = extras[0];
     await page.setViewportSize(SIZES[1]);
-    await page.goto('/admin/priorities');
+    await page.goto('/admin/lists/priorities');
     try {
       await openRowMenu(page, menuOf(page, target.label));
       await item(page, ci(/^Set as default/)).click();
@@ -228,7 +228,7 @@ test.describe('the priority row menu (#614, #618)', () => {
     page,
   }) => {
     await page.setViewportSize(SIZES[1]);
-    await page.goto('/admin/priorities');
+    await page.goto('/admin/lists/priorities');
     const name = extras[0].label;
     await openRowMenu(page, menuOf(page, name));
     await item(page, /^Deactivate/).click();
@@ -248,7 +248,7 @@ test.describe('the priority row menu (#614, #618)', () => {
     }) => {
       test.skip(!axeAvailable(), 'axe-core is not available');
       await page.setViewportSize(size);
-      await page.goto('/admin/priorities');
+      await page.goto('/admin/lists/priorities');
       await expect(page.locator('tbody tr[data-row], li.rc').first()).toBeVisible();
       const card = rowOf(page, used.label);
       const menu = card.getByRole('button', { name: /^Actions for / });
