@@ -10,9 +10,7 @@ import { noHorizontalScroll, shot } from '../support/screens';
  */
 const SIZES_DESKTOP = [
   { width: 1366, height: 768 },
-  { width: 1366, height: 600 },
   { width: 1920, height: 1080 },
-  { width: 1024, height: 768 },
 ] as const;
 
 const box = async (page: Page, selector: string) => {

@@ -80,7 +80,7 @@ test.describe('Assets list contract (WP-AS3)', () => {
     const token = uid();
     await rows(seed, token, 1);
     for (const width of [1366, 1920]) {
-      await page.setViewportSize({ width, height: 900 });
+      await page.setViewportSize({ width, height: width === 1366 ? 768 : 1080 });
       await page.goto(`/assets?name=${token}`);
       await expect(page.locator('#asset-filter-row')).toBeVisible();
       const toggle = page.getByRole('button', { name: /^Filters/ });

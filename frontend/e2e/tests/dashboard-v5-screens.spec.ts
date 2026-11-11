@@ -52,7 +52,7 @@ test.describe('dashboard v5 screenshots', () => {
       await shoot(techPage, `06-summary-technician-${w}`);
     }
 
-    await page.setViewportSize({ width: 1366, height: 900 });
+    await page.setViewportSize({ width: 1366, height: 768 });
     const role = await seed.role(
       ['Task.View', 'Dashboard.View', 'Dashboard.ViewUnassigned'],
       'E2E queue',

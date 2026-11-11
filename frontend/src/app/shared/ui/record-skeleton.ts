@@ -103,6 +103,9 @@ const ROWS = [0, 1, 2, 3, 4] as const;
             [tabs]="tabs()"
             [selected]="tab()"
           />
+          @if (assetStrip() && tab() === 'summary') {
+            <div class="rk__assets mf-card" data-assets-skeleton></div>
+          }
           <ng-container *ngTemplateOutlet="rowsTpl" />
         } @else {
           <mf-record-header [kind]="kind()" [parents]="parents()" [skeleton]="true" />
@@ -259,7 +262,7 @@ const ROWS = [0, 1, 2, 3, 4] as const;
       display: flex;
       align-items: center;
       gap: var(--mf-s2);
-      min-height: 1.25rem;
+      min-height: var(--mf-s4);
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
     }
@@ -289,6 +292,12 @@ const ROWS = [0, 1, 2, 3, 4] as const;
     }
     .rk__mh-btn--sq {
       width: var(--mf-ctl-h);
+    }
+    /* The Summary tab's asset strip (one 52 px row, as the tiles and the "No assets yet." card), so the Details card below does not move (#1367). */
+    .rk__assets {
+      box-sizing: border-box;
+      height: calc(var(--mf-ctl-h) + 2 * var(--mf-s2));
+      margin-bottom: var(--mf-s3);
     }
     .rk__rows {
       border-top: 1px solid var(--mf-border);
@@ -424,6 +433,8 @@ export class RecordSkeleton {
   readonly activeTab = input('details');
   /** Matter page: the Notes height choice is folded, so the header is not drawn (the page does not jump when the data arrives). */
   readonly foldHeader = input(false);
+  /** Matter page, Summary tab: the person sees the asset strip above the Details card, so the skeleton keeps its room. */
+  readonly assetStrip = input(false);
 
   /** The Task page's layout share is remembered per person; the page passes its key so the columns are drawn where they will be. */
   readonly splitKey = input('');

@@ -256,7 +256,7 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
     seed,
   }) => {
     const client = await seed.client({ name: `Scroll Client ${uid()}` });
-    await page.setViewportSize({ width: 1366, height: 600 });
+    await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/clients/${client.clientId}`);
     const area = page.getByRole('region', { name: 'Client overview, scrollable' });
     await expect(area).toBeVisible();

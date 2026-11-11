@@ -149,7 +149,7 @@ test.describe('Pod Work first release', () => {
         if (r.url().includes('/api/v1/pod-work')) requests.push(r.url());
       });
 
-      for (const size of [{ width: 1440, height: 900 }]) {
+      for (const size of [{ width: 1366, height: 768 }]) {
         await page.setViewportSize(size);
         await page.goto('/dashboard');
         await expect(page.getByRole('navigation', { name: 'Main' })).toBeAttached();
@@ -177,7 +177,7 @@ test.describe('Pod Work first release', () => {
       const fx = await podWorkFixtures(seed, personas);
       for (const person of [fx.lead, fx.readonly, fx.director]) {
         const page = await asUser(person.username);
-        await page.setViewportSize({ width: 1440, height: 900 });
+        await page.setViewportSize({ width: 1366, height: 768 });
         await page.goto('/my-work');
         await page
           .getByRole('navigation', { name: 'Main' })

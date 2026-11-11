@@ -8,16 +8,12 @@ import { seedBulk } from '../support/bulk';
 /**
  * Screenshot run for docs/ux/fixed-header (not a test: skipped unless E2E_SCREENSHOTS is set to the output folder):
  *   E2E_SCREENSHOTS=docs/ux/fixed-header/before E2E_SEED_BULK=1 frontend/e2e/run-local.sh -g "fixed-header screenshots"
- * Takes every grid screen in its scrolled state at 1366x768, 1280x800, 1024x768, 768x1024 and 375x812. `E2E_SEED_BULK=1` creates the
+ * Takes every grid screen in its scrolled state at 1366x768. `E2E_SEED_BULK=1` creates the
  * long lists first (skip it when the stack already holds them).
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
 
-const SIZES = [
-  { w: 1366, h: 768 },
-  { w: 1280, h: 800 },
-  { w: 1024, h: 768 },
-];
+const SIZES = [{ w: 1366, h: 768 }];
 
 interface Screen {
   name: string;

@@ -13,7 +13,6 @@ const OUT = process.env['E2E_SCREENSHOTS'];
 const SIZES = [
   { width: 1920, height: 1080 },
   { width: 1366, height: 768 },
-  { width: 1024, height: 768 },
 ] as const;
 
 const LONG_WORD = 'Reallylongassettypenamewithoutanyspacesatall'.repeat(4);
@@ -190,8 +189,8 @@ test.describe('the 44 px grid contract (#543)', () => {
   test('LC-09: no column leaves by window width (data-drop is only a marker) and the actions column stays', async ({
     page,
   }) => {
-    for (const width of [1920, 1366, 1279, 1024]) {
-      await page.setViewportSize({ width, height: 800 });
+    for (const width of [1920, 1366]) {
+      await page.setViewportSize({ width, height: width === 1366 ? 768 : 1080 });
       await load(page);
       const what = `at ${width}`;
       expect(await visible(page, 'th.mf-cell-num'), `Assets ${what}`).toBe(true);

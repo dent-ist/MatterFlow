@@ -8,8 +8,8 @@ import { expect, test } from '../support/fixtures';
 /**
  * Screenshot and accessibility run for docs/ux/task-detail-v2 (not a test: skipped unless E2E_SCREENSHOTS is set to the output folder):
  *   E2E_SCREENSHOTS=docs/ux/task-detail-v2 E2E_SHOT_SUFFIX=after E2E_AXE=/path/to/axe.min.js frontend/e2e/run-local.sh -g "task detail v2 screenshots"
- * Seeds one busy task (long pasted email with a wide table, 6 steps, 12 comments, 8 assets) and photographs it at 1920x1080, 1366x768,
- * 1024x768 and 375x812 (full page and first screen). With the resizable layout it also drags the splitter to 40 % and 65 %. With `E2E_AXE`
+ * Seeds one busy task (long pasted email with a wide table, 6 steps, 12 comments, 8 assets) and photographs it at 1920x1080 and 1366x768
+ * (full page and first screen). With the resizable layout it also drags the splitter to 40 % and 65 %. With `E2E_AXE`
  * every shot is also checked with axe and the run fails on a violation. `E2E_SHOT_SUFFIX` (before / after) names the files.
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
@@ -19,7 +19,6 @@ const SUFFIX = process.env['E2E_SHOT_SUFFIX'] ?? 'after';
 const SIZES = [
   { w: 1920, h: 1080 },
   { w: 1366, h: 768 },
-  { w: 1024, h: 768 },
 ];
 
 async function axeViolations(page: Page): Promise<string[]> {

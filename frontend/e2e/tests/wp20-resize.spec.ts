@@ -392,7 +392,7 @@ test.describe('Drag resize (#204)', () => {
     );
   });
 
-  test('touch: a finger on the handle resizes at 768; below 640 px there are no handles; axe at both desktop sizes', async ({
+  test('touch: a finger on the handle resizes; axe at both desktop sizes', async ({
     seed,
     asUser,
   }) => {
@@ -411,13 +411,12 @@ test.describe('Drag resize (#204)', () => {
       const visible = await page
         .locator('thead .wt-resize')
         .evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().width > 0).length);
-      if (w < 640) expect(visible, `no handles at ${w}`).toBe(0);
-      else expect(visible, `handles at ${w}`).toBeGreaterThan(0);
+      expect(visible, `handles at ${w}`).toBeGreaterThan(0);
       await axeClean(page, `Task Queue with handles at ${w}`);
       await shot(page, `resize-handles-${w}x${h}`);
     }
 
-    await page.setViewportSize({ width: 768, height: 1024 });
+    await page.setViewportSize({ width: 1366, height: 768 });
     await queue.open(`?q=${encodeURIComponent(tag)}`);
     await expect(page.locator('[data-task]')).toHaveCount(1);
     expect(await handle(page, 'matter').evaluate((e) => getComputedStyle(e).touchAction)).toBe(

@@ -297,9 +297,9 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     expect(saved.bodyHtml).not.toContain('style=');
   });
 
-  test('editing uses the full width of the note panel at 1675 px', async ({ page, seed }) => {
+  test('editing uses the full width of the note panel at 1920 px', async ({ page, seed }) => {
     const w = await world(seed);
-    await page.setViewportSize({ width: 1675, height: 900 });
+    await page.setViewportSize({ width: 1920, height: 1080 });
     await open(page, w.matter.matterId);
     await page.locator('[data-new-note]').click();
     await expect(page.locator('[data-editor-toolbar]')).toBeVisible();
@@ -439,13 +439,13 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     expect(n.noteId).toBeGreaterThan(0);
   });
 
-  test('history column at 1366 wide: grouped by day, collapses to a rail', async ({
+  test('history column at 1920 wide: grouped by day, collapses to a rail', async ({
     page,
     seed,
   }) => {
     const w = await world(seed);
     await w.note(`History ${uid()}`);
-    await page.setViewportSize({ width: 1600, height: 900 });
+    await page.setViewportSize({ width: 1920, height: 1080 });
     await open(page, w.matter.matterId);
     await page.locator('[data-note-item]').first().click();
     const col = page.locator('[data-history-rail-open]');
@@ -469,7 +469,7 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
       bodyHtml: `<h1>Refs note</h1><p>See <span data-asset-id="${asset.assetId}">${asset.displayName}</span></p>`,
       tagIds: [],
     });
-    await page.setViewportSize({ width: 1600, height: 900 });
+    await page.setViewportSize({ width: 1920, height: 1080 });
     await open(page, w.matter.matterId);
     await page.locator('[data-note-item]').first().click();
     await expect(page.locator('[data-note-title]')).toBeVisible();

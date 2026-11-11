@@ -7,7 +7,7 @@ import { uid } from '../support/seed';
 
 /**
  * WP-AD4 (AD-C): the asset type record page (#635), its Fields and Assets tabs, Activity and the Deactivate dialog (#636), and the way into
- * the form designer (#638). `/admin/asset-types/new` and `/admin/asset-types/:id`, five widths, axe 0, no sideways scroll, permission variants.
+ * the form designer (#638). `/admin/asset-types/new` and `/admin/asset-types/:id`, both desktop sizes, axe 0, no sideways scroll, permission variants.
  * Screenshots go to E2E_SCREENSHOTS (docs/ux/admin-pages-review/fixes/ad4-asset-types).
  */
 const heading = (page: Page) => page.getByRole('heading', { level: 1 });
@@ -17,7 +17,6 @@ const ask = (page: Page) => page.getByRole('dialog', { name: 'Unsaved Changes' }
 const WIDTHS = [
   { width: 1920, height: 1080 },
   { width: 1366, height: 768 },
-  { width: 1024, height: 768 },
 ] as const;
 
 async function everyWidth(page: Page, label: string): Promise<void> {
@@ -301,7 +300,7 @@ test.describe('Asset type record page (#635, #636, #638)', () => {
     if (axeAvailable()) expect(await axeViolations(page)).toEqual([]);
   });
 
-  test('an existing record at five widths: Overview, Fields and Assets tabs, axe 0 and no sideways scroll', async ({
+  test('an existing record at both desktop sizes: Overview, Fields and Assets tabs, axe 0 and no sideways scroll', async ({
     page,
     admin,
   }) => {

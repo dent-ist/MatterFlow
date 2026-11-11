@@ -6,7 +6,7 @@ import { expect, test } from '../support/fixtures';
  */
 test('Users: the Workload | Coverage switch does not move between the views', async ({ page }) => {
   for (const width of [1366, 1920]) {
-    await page.setViewportSize({ width, height: 900 });
+    await page.setViewportSize({ width, height: width === 1366 ? 768 : 1080 });
     await page.goto('/dashboard?tab=users');
     const views = page.locator('[data-users-views]');
     await expect(views).toBeVisible();

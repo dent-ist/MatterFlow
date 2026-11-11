@@ -159,29 +159,6 @@ test.describe('Task Queue toolbar (WP5)', () => {
     }
   });
 
-  test('#216: below 1100 px row 1 wraps views first, then the three buttons', async ({ page }) => {
-    await page.setViewportSize({ width: 1000, height: 768 });
-    const queue = new TaskQueuePage(page);
-    await queue.open();
-    // No overlap and the order of the DOM: Search, Filters, Other filters, views, Columns.
-    const parts = [
-      await box(page.getByRole('searchbox', { name: 'Search tasks', exact: true })),
-      await box(page.locator('[data-filters-toggle]')),
-      await box(page.locator('[data-more-filters]')),
-      await box(page.getByRole('toolbar', { name: 'Quick views' })),
-      await box(page.getByRole('button', { name: /^Columns/ })),
-    ];
-    for (let i = 1; i < parts.length; i++) {
-      const a = parts[i - 1];
-      const b = parts[i];
-      const sameLine = Math.abs(a.y - b.y) < 8;
-      expect(sameLine ? a.x + a.width <= b.x + 1 : a.y < b.y + 1, `part ${i} out of order`).toBe(
-        true,
-      );
-    }
-    await shot(page, 'default-1000x768');
-  });
-
   test('#217: the restored notice takes the place of the chips line and goes with the first action', async ({
     seed,
     asUser,

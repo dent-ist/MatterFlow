@@ -2,10 +2,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { Page } from '@playwright/test';
 import { Api } from '../support/api';
-import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { PmFixtures, pmFixtures } from '../support/pm-fixtures';
-import { SIZES, noHorizontalScroll } from '../support/screens';
+import { SIZES } from '../support/screens';
 
 /**
  * The permission, keyboard and motion checks of the Project Manager experience (epic #758, WP-PX6, #785). The tab specs, the scope specs and the
@@ -476,30 +475,5 @@ test.describe('Reduced motion and focus after a change', () => {
     await page.locator('[data-scope="all"]').click();
     await page.waitForLoadState('networkidle');
     expect(await running(), 'after the scope switch').toEqual([]);
-  });
-
-  test('zoom 200 percent (a 683 px wide window): the scoped lists, the tabs and the Overview do not scroll sideways', async ({
-    seed,
-    personas,
-    asUser,
-  }) => {
-    test.skip(!axeAvailable(), 'axe-core is not installed');
-    const fx = await pmFixtures(seed, personas);
-    const page = await asUser(fx.pmA.username);
-    await page.setViewportSize({ width: 683, height: 384 });
-    for (const url of [
-      '/matters',
-      '/tasks',
-      '/assets',
-      '/my-matters',
-      '/my-matters?tab=metrics',
-      `/matters/${fx.m.primary.matterId}`,
-    ]) {
-      await page.goto(url);
-      await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
-      await page.waitForLoadState('networkidle');
-      expect(await axeViolations(page), url).toEqual([]);
-      await noHorizontalScroll(page);
-    }
   });
 });

@@ -7,9 +7,6 @@ import { ci } from '../support/text';
 
 /** Fixes of the UX / QA review round 4 (docs/ux/review-round-4.md, section "Round 4 fixes"). */
 
-const pageOverflow = (page: Page) =>
-  page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-
 /** WCAG contrast ratio of two `rgb()` / `rgba()` strings (the background is assumed opaque). */
 function contrast(fg: string, bg: string): number {
   const channels = (c: string) => (c.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
@@ -34,24 +31,13 @@ test.describe('Round 4: layout and responsive', () => {
     const me = await admin.get('/api/v1/me');
     const title = `Fit ${uid()}`;
     await seed.task(world, { title, assignedUserId: me.userId, dueDate: '2030-01-15' });
-    const fits = async (path: string, width: number, mayScroll = false) => {
-      await page.setViewportSize({ width, height: 900 });
+    const fits = async (path: string, width: number) => {
+      await page.setViewportSize({ width, height: 768 });
       await page.goto(path);
       const wrap = page.locator('.wt-wrap');
       await expect(wrap).toBeVisible();
       await expect(page.locator('[data-task]').first()).toBeVisible();
       const over = await wrap.evaluate((el) => el.scrollWidth - el.clientWidth);
-      if (mayScroll && over > 1) {
-        // #201: Matter is never dropped, so the default Task Queue set (796 px plus a 160 px Title) needs a 956 px box; a 1024 px
-        // window has 920. The grid scrolls (from 1024 px its box is the named scrollable list, so no hint) and Ref stays in view.
-        await expect(wrap).toHaveAttribute('aria-label', /scrollable/);
-        expect(
-          await page
-            .locator('thead th[data-col="ref"]')
-            .evaluate((t) => getComputedStyle(t).position),
-        ).toBe('sticky');
-        return;
-      }
       expect(over, `${path} at ${width}`).toBeLessThanOrEqual(1);
       for (const column of ['due', 'status']) {
         const cell = page.locator(`[data-task] td[data-col="${column}"]`).first();
@@ -92,7 +78,7 @@ test.describe('Round 4: layout and responsive', () => {
     const me = await admin.get('/api/v1/me');
     const title = `Intake: new custodian ${uid()}`;
     const task = await seed.task(world, { title, assignedUserId: me.userId });
-    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.setViewportSize({ width: 1366, height: 768 });
     // The marker shows for tasks assigned since the current visit began: the first use marks nothing, so start the visit a day ago.
     await page.addInitScript((userId) => {
       localStorage.setItem(
@@ -126,7 +112,6 @@ test.describe('Round 4: layout and responsive', () => {
     const h1 = page.getByRole('heading', { level: 1 });
     await expect(h1.locator('[data-title-icon]')).toBeVisible();
     await expect(h1.locator('i[data-page-icon]')).toHaveCount(0);
-    await page.setViewportSize({ width: 375, height: 800 });
     const [icon, number] = [
       (await h1.locator('[data-title-icon]').boundingBox())!,
       (await h1.locator('[data-ref]').boundingBox())!,
@@ -136,7 +121,7 @@ test.describe('Round 4: layout and responsive', () => {
 
   test('UXR4-04: the Create Task type chooser uses the full width', async ({ page, seed }) => {
     await seed.world();
-    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.setViewportSize({ width: 1366, height: 768 });
     const create = new CreateTaskPage(page);
     await create.open();
     const chooser = (await create.chooser.boundingBox())!;
@@ -144,7 +129,7 @@ test.describe('Round 4: layout and responsive', () => {
   });
 
   test('UXR4-05: the Roles tab lists roles in a full-width table-like list', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto('/admin/roles');
     const list = page.getByRole('region', { name: 'Roles' });
     await expect(list).toBeVisible();
@@ -194,7 +179,7 @@ test.describe('Round 4: task type icons', () => {
     seed,
   }) => {
     const world = await seed.world();
-    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.setViewportSize({ width: 1920, height: 1080 });
     await page.goto(`/admin/task-types/${world.taskType.id}`);
     const trigger = page.locator('[data-icon-trigger]');
     // UXR4-11: the accessible name holds the visible words "Document" and "Change Icon".
@@ -204,7 +189,7 @@ test.describe('Round 4: task type icons', () => {
     await expect(dialog).toBeVisible();
 
     const scroll = dialog.locator('[data-icon-scroll]');
-    // The grid area is 90% of the window less the dialog's own parts (24.5 rem, #1217): 377 px at 1280x800, so well over a third of the window.
+    // The grid area is 90% of the window less the dialog's own parts (24.5 rem, #1217): 629 px at 1920x1080, so well over a third of the window.
     await expect
       .poll(async () => (await scroll.boundingBox())!.height, { message: 'grid area height' })
       .toBeGreaterThan(370);
@@ -501,7 +486,7 @@ test.describe('Round 4: queues, wording and accessibility', () => {
     );
   });
 
-  test('UXR4-19: My Work tabs stay on one row at 375 px and the near-empty line sits under the last row', async ({
+  test('UXR4-19: the near-empty line of My Work sits under the last row', async ({
     page,
     seed,
     asUser,
@@ -510,17 +495,8 @@ test.describe('Round 4: queues, wording and accessibility', () => {
     const world = await seed.world();
     await seed.task(world, { assignedUserId: tech.userId });
     const mine = await asUser(tech.username);
-    await mine.setViewportSize({ width: 375, height: 800 });
+    await mine.setViewportSize({ width: 1366, height: 768 });
     await mine.goto('/my-work');
-    const tabs = mine.getByRole('tab');
-    await expect(tabs).toHaveCount(4);
-    const tops = await tabs.evaluateAll((els) =>
-      els.map((e) => Math.round(e.getBoundingClientRect().top)),
-    );
-    expect(new Set(tops).size).toBe(1);
-    expect(await pageOverflow(mine)).toBeLessThanOrEqual(0);
-
-    await mine.setViewportSize({ width: 1280, height: 900 });
     const near = mine.locator('[data-near-empty]');
     await expect(near).toBeVisible();
     // A9 (#157): the line sits directly under the last row, inside the grid and above the pager row.

@@ -18,8 +18,8 @@ test.describe('PM v2 page fixes: Matters list columns (#881)', () => {
   }) => {
     const d = await pvWorld(seed, personas, 'pvh1');
     const page = await asUser(d.w.pm.username);
-    // 1440 px: the Secondary PM column shows from 1280 px since MD-21 (#1025), so at 1366 the names may take a third line; 1440 keeps the old promise.
-    await page.setViewportSize({ width: 1440, height: 900 });
+    // 1920 px: the Secondary PM column shows from 1280 px since MD-21 (#1025), so at 1366 the names may take a third line; 1920 keeps the old promise.
+    await page.setViewportSize({ width: 1920, height: 1080 });
     await page.goto('/matters?scope=mine');
     await expect(page.locator('tbody tr')).toHaveCount(2);
     // No truncation of the demo names at 1366: the name link shows all its text (two lines at most), the table does not scroll sideways.

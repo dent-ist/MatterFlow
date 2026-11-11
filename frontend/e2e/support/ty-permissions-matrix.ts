@@ -608,7 +608,7 @@ export function registerListsAuditMatrix(): void {
             ...(canAudit ? ['/admin/audit'] : []),
           ];
           for (const width of [1366, 1920]) {
-            await page.setViewportSize({ width, height: 900 });
+            await page.setViewportSize({ width, height: width === 1366 ? 768 : 1080 });
             for (const url of pages) {
               await visit(url);
               if (axeAvailable()) {

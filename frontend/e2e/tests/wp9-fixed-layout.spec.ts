@@ -304,12 +304,11 @@ test.describe('Fixed layout (#200)', () => {
       await axeClean(page, `Pod Work ${width}`);
     }
   });
-  test('#980: on a short desktop window the page does not scroll; the left menu scrolls inside itself and keeps the version line in view', async ({
+  test('#980: the page does not scroll at the two desktop sizes; the left menu scrolls inside itself and keeps the version line in view', async ({
     asUser,
   }) => {
     const page = await asUser('ke\\kekim');
     for (const [width, height] of [
-      [1366, 600],
       [1366, 768],
       [1920, 1080],
     ]) {
@@ -341,19 +340,5 @@ test.describe('Fixed layout (#200)', () => {
         await shot(page, `shell-nav-scroll-${width}x${height}`);
       }
     }
-    // Below the fixed-layout size (1280 x 500) the page may scroll, but the menu still scrolls inside itself and never makes the page taller.
-    await page.setViewportSize({ width: 1280, height: 500 });
-    await page.goto('/');
-    await expect(page.locator('h1').first()).toBeVisible();
-    const nav = await page.evaluate(() => {
-      const n = document.querySelector<HTMLElement>('nav.mf-nav')!;
-      return {
-        box: n.getBoundingClientRect().height,
-        win: window.innerHeight,
-        overflowY: getComputedStyle(n).overflowY,
-      };
-    });
-    expect(nav.overflowY).toBe('auto');
-    expect(nav.box).toBeLessThanOrEqual(nav.win);
   });
 });

@@ -132,6 +132,7 @@ type Tab = MatterTabKey;
             kind="matter"
             [activeTab]="current()"
             [foldHeader]="headerFolded()"
+            [assetStrip]="canSeeAssets()"
             (retry)="load()"
           />
         }

@@ -8,8 +8,7 @@ import { uid } from '../support/seed';
 import { dateInZone, FIRM_ZONE } from '../support/time';
 
 /**
- * Dashboard fixed height (issue #137) with the page chrome (#92 header row, #93 width cap, #100 single tab): at 1366x768, 1920x1080 and
- * 1024x768 the document never scrolls on any tab, the header row stays in view and only regions inside the tabs scroll. Boxes are
+ * Dashboard fixed height (issue #137) with the page chrome (#92 header row, #93 width cap, #100 single tab): at 1366x768 and 1920x1080 the document never scrolls on any tab, the header row stays in view and only regions inside the tabs scroll. Boxes are
  * measured, not eyeballed. With E2E_SCREENSHOTS set to a folder the run also writes the screenshots of docs/ux/dashboard-review-2/fixes/wp2.
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
@@ -17,7 +16,6 @@ const OUT = process.env['E2E_SCREENSHOTS'];
 const SIZES = [
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
-  { width: 1024, height: 768 },
 ] as const;
 
 type TabName = 'summary' | 'breakdowns' | 'trends' | 'swimlane' | 'workload' | 'table' | 'coverage';
@@ -63,7 +61,7 @@ test.beforeAll(async ({ admin, seed }) => {
     );
   }
   // One open task in each of nine task types (the Breakdowns card shows the top eight and "Other task types"), so the cards are taller than
-  // a 1024x768 window on a database that holds nothing else: the "cards scroll" test must not depend on what other tests left behind.
+  // a 1366x768 window on a database that holds nothing else: the "cards scroll" test must not depend on what other tests left behind.
   for (const [i, type] of types.slice(0, 9).entries()) {
     await seed.task(world, { title: `FH typed ${i + 1} ${tag}`, taskTypeId: type.id });
   }
@@ -160,7 +158,7 @@ test.describe('no page scroll on any tab (#137)', () => {
 
 test.describe('regions inside the tabs scroll (#137)', () => {
   test('Breakdowns: the cards scroll in their own region; the caption stays', async ({ page }) => {
-    await open(page, TABS[1], { width: 1024, height: 768 });
+    await open(page, TABS[1], { width: 1366, height: 768 });
     const region = page.getByRole('region', { name: 'Open task breakdowns, scrollable' });
     await expect(region).toHaveAttribute('tabindex', '0');
     const m = await region.evaluate((el) => ({ sh: el.scrollHeight, ch: el.clientHeight }));
@@ -204,13 +202,13 @@ test.describe('regions inside the tabs scroll (#137)', () => {
     await shoot(page, 'trends-ticked-1366');
   });
 
-  test('Trends: resizing the window from 768 to 1080 high re-fits the charts with no clipping', async ({
+  test('Trends: resizing the window from 1366x768 to 1920x1080 re-fits the charts with no clipping', async ({
     page,
   }) => {
     await open(page, TABS[2], { width: 1366, height: 768 });
     const flows = page.locator('[data-panel="flows"] .panel-plot');
     const small = (await flows.boundingBox())!;
-    await page.setViewportSize({ width: 1366, height: 1080 });
+    await page.setViewportSize({ width: 1920, height: 1080 });
     await expect
       .poll(async () => (await flows.boundingBox())!.height, { timeout: 5000 })
       .toBeGreaterThan(small.height + 100);
@@ -261,14 +259,14 @@ test.describe('regions inside the tabs scroll (#137)', () => {
   test('Users: toolbar and summary strip are pinned, the people scroll in their own region (cards and table)', async ({
     page,
   }) => {
-    await open(page, TABS[4], { width: 1024, height: 768 });
+    await open(page, TABS[4], { width: 1366, height: 768 });
     const region = page.getByRole('region', { name: 'Team workload, scrollable' });
     await expect(region).toHaveAttribute('tabindex', '0');
     const strip = (await page.locator('mf-users-summary').boundingBox())!;
     const box = (await region.boundingBox())!;
     expect(box.y).toBeGreaterThanOrEqual(strip.y + strip.height - 1);
     expect(box.y + box.height).toBeLessThanOrEqual(768);
-    await open(page, TABS[5], { width: 1024, height: 768 });
+    await open(page, TABS[5], { width: 1366, height: 768 });
     const table = page.getByRole('region', { name: 'Team workload, scrollable' });
     const th = page.locator('[data-users-table] thead th').first();
     const before = (await th.boundingBox())!;

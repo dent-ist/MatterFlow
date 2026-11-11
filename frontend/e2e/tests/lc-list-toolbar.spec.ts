@@ -149,7 +149,7 @@ test.describe('List toolbar on the work lists and the Matter Tasks tab', () => {
 });
 
 test.describe('LC-07: Admin Users, Pods chip', () => {
-  test('the Pods chip stays inside its cell and never paints over Availability at 1366 and 1280', async ({
+  test('the Pods chip stays inside its cell and never paints over Availability at 1366 and 1920', async ({
     page,
     seed,
     admin,
@@ -161,8 +161,11 @@ test.describe('LC-07: Admin Users, Pods chip', () => {
     ];
     const person = await seed.user(['Data Technician'], `${tag}-pods`);
     await admin.put(`/api/v1/users/${person.userId}/pods`, { podIds: pods, primaryPodId: pods[0] });
-    for (const width of [1366, 1280]) {
-      await page.setViewportSize({ width, height: 768 });
+    for (const [width, height] of [
+      [1366, 768],
+      [1920, 1080],
+    ] as const) {
+      await page.setViewportSize({ width, height });
       await page.goto(`/admin/users?status=all&account=${encodeURIComponent(tag)}`);
       const row = page.locator(`tr[data-record-id="${person.userId}"]`);
       await expect(row.locator('[data-pod-chip]').first()).toBeVisible();

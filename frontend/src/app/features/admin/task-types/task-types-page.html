@@ -238,8 +238,9 @@
                 tone="neutral"
                 icon="pi-info-circle"
                 [describedBy]="'tt-nu-' + t.id"
+                title="Not Usable"
                 data-not-usable
-                >Not Usable</mf-badge
+                ><span class="mf-sr-only">Not Usable</span></mf-badge
               >
               <span class="sr-only" [id]="'tt-nu-' + t.id" data-warning>{{ why }}</span>
             }

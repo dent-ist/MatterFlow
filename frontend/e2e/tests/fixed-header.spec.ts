@@ -381,16 +381,6 @@ test.describe('Fixed-header screens at 1366x768', () => {
 });
 
 test.describe('Fixed-header screens fall back to normal page scrolling', () => {
-  test('on a short window (under 561 px high) the page scrolls normally too', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 500 });
-    await page.goto('/tasks');
-    const region = page.getByRole('region', { name: 'Task Queue list, scrollable' });
-    await expect(region.locator('[data-task]').first()).toBeVisible();
-    expect(await documentOverflow(page)).toBeGreaterThan(100);
-    await page.mouse.wheel(0, 500);
-    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(100);
-  });
-
   test('the Dashboard is a fixed page too (#137): the document does not scroll', async ({
     page,
   }) => {

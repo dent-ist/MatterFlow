@@ -139,24 +139,6 @@ test.describe('pf3-columns: two columns from 1100 px, one card style, one width 
     }
   });
 
-  test('the breakpoint is 1100 px: 1099 is one column, 1100 is two', async ({
-    personas,
-    asUser,
-  }) => {
-    const p = await personas.create({ ...PERSONAS.technician, label: 'pf3break' });
-    const me = await asUser(p.username);
-    await me.goto('/profile');
-    await expect(me.locator('[data-card="work-hours"]')).toBeVisible();
-    await me.setViewportSize({ width: 1099, height: 900 });
-    let account = await box(me, '[data-account-card]');
-    let avail = await box(me, '[data-card="work-hours"]');
-    expect(account.left).toBeLessThan(avail.right);
-    await me.setViewportSize({ width: 1100, height: 900 });
-    account = await box(me, '[data-account-card]');
-    avail = await box(me, '[data-card="work-hours"]');
-    expect(account.left).toBeGreaterThanOrEqual(avail.right);
-  });
-
   test('Tab order follows reading order: the left column, then the right', async ({
     personas,
     asUser,

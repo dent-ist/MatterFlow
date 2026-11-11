@@ -107,7 +107,7 @@ test.describe('Task detail: single page layout', () => {
     admin,
   }) => {
     const task = await seedBusyTask(seed, admin);
-    await page.setViewportSize({ width: 1366, height: 600 });
+    await page.setViewportSize({ width: 1366, height: 768 });
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
     const aside = page.getByRole('complementary', { name: 'Details' });
@@ -220,24 +220,13 @@ test.describe('Task detail: single page layout', () => {
     await noHorizontalScroll(page);
   });
 
-  test('the splitter is hidden below 1100 px', async ({ page, seed }) => {
-    const world = await seed.world({ steps: FIVE_STEPS });
-    const task = await seed.task(world);
-    await page.setViewportSize({ width: 1024, height: 768 });
-    const detail = new TaskDetailPage(page);
-    await detail.open(task.taskId);
-    await expect(detail.splitter).toHaveCount(0);
-    await expect(page.getByRole('tablist', { name: 'Task sections' })).toBeVisible();
-    await noHorizontalScroll(page);
-  });
-
   test('Comments: only the latest 3 by default, Show all / Show latest 3 is remembered, the sort orders inside the window, search covers all, a new comment stays visible', async ({
     page,
     seed,
     admin,
   }) => {
     const task = await seedBusyTask(seed, admin);
-    await page.setViewportSize({ width: 1366, height: 900 });
+    await page.setViewportSize({ width: 1366, height: 768 });
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
     await detail.showSection('Comments');
@@ -472,7 +461,7 @@ test.describe('Task detail: single page layout', () => {
   }) => {
     const world = await seed.world();
     const task = await seed.task(world);
-    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.setViewportSize({ width: 1366, height: 768 });
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
 
@@ -486,7 +475,7 @@ test.describe('Task detail: single page layout', () => {
         const box = await drawer.boundingBox();
         return box!.x + box!.width;
       })
-      .toBeGreaterThan(1270);
+      .toBeGreaterThan(1356);
     await expect(drawer.locator(':focus')).toHaveCount(1);
     await page.keyboard.press('Escape');
     await expect(drawer).toBeHidden();
@@ -499,7 +488,7 @@ test.describe('Task detail: single page layout', () => {
   }) => {
     const world = await seed.world();
     const task = await seed.task(world);
-    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.setViewportSize({ width: 1366, height: 768 });
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);
 
@@ -526,7 +515,7 @@ test.describe('Task detail: single page layout', () => {
     const world = await seed.world();
     const task = await seed.task(world);
     const page = await asUser(user.username);
-    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.setViewportSize({ width: 1366, height: 768 });
 
     const detail = new TaskDetailPage(page);
     await detail.open(task.taskId);

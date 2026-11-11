@@ -148,7 +148,7 @@ test.describe('the Priorities list (#605)', () => {
     admin,
   }) => {
     // Tall enough for every row to be on screen: a drop target outside the scroll area would need the browser's auto-scroll.
-    await page.setViewportSize({ width: 1366, height: 2400 });
+    await page.setViewportSize({ width: 1920, height: 1080 });
     await page.goto('/admin/priorities');
     const first = page.locator(`tr[data-row="${extras[0].label}"]`);
     const second = page.locator(`tr[data-row="${extras[1].label}"]`);

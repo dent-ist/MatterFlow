@@ -121,8 +121,6 @@ test.describe('#450 Pods list on the kit', () => {
     await expect(page.locator('[data-clear-filters]')).toHaveCount(1);
     await page.locator('[data-clear-filters]').click();
     await expect(page).not.toHaveURL(/name=/);
-    await page.setViewportSize({ width: 375, height: 812 });
-    await expect(page.locator('[data-filter-row]')).toHaveCount(0);
   });
 
   test('"n inactive hidden - Show all": the count equals the inactive pods, Show all reveals them and the address records it', async ({

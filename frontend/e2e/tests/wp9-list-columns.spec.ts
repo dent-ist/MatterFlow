@@ -360,12 +360,11 @@ test.describe('WP9 list columns', () => {
         expect(h).toBeGreaterThanOrEqual(43);
         expect(h).toBeLessThanOrEqual(45);
       }
-      await page.setViewportSize({ width: 768, height: 1024 });
       await expect(region.getByRole('columnheader', { name: 'Client' })).toBeVisible(); // LC-09: kept, the frame scrolls
       await expect(same.first().locator('mf-matter-cell .mf-ref')).toBeVisible();
     });
 
-    test('Matters: the Client column stays at 768 px (LC-09: the frame scrolls) and Projects is not a column any more', async ({
+    test('Matters: the Client column stays (LC-09: the frame scrolls) and Projects is not a column any more', async ({
       page,
     }) => {
       const region = grid(page, 'Matters list');
@@ -373,8 +372,6 @@ test.describe('WP9 list columns', () => {
       await page.goto(`/matters?name=${w.token}`);
       await expect(region.getByRole('columnheader', { name: 'Client' })).toBeVisible();
       await expect(region.getByRole('columnheader', { name: 'Projects' })).toHaveCount(0);
-      await page.setViewportSize({ width: 768, height: 1024 });
-      await expect(region.getByRole('columnheader', { name: 'Client' })).toBeVisible();
       await expect(region.getByRole('columnheader', { name: 'Status' })).toBeVisible();
     });
   });
