@@ -1,6 +1,8 @@
 import { expect, test } from '../support/fixtures';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { asDropdown, labelledDropdown } from '../support/dropdown';
+import { ci, shownName } from '../support/text';
+import { userName, userRow } from '../support/users-grid';
 
 /**
  * Administration > Settings > Holidays and the coverage thresholds (epic #1074, CAL-06, issue #1080): a "US Holiday" calendar with Thanksgiving (4th Thursday of November,
@@ -71,25 +73,38 @@ test.describe('Settings > Holidays', () => {
 
   test('paste ten lines with one bad line: it is named before anything is saved', async ({
     page,
+    admin,
   }) => {
-    await page.goto('/admin/settings');
-    await page.getByRole('tab', { name: 'Holidays' }).click();
-    await page.locator('[data-calendar]').first().click();
-    await page.locator('[data-import]').click();
-    const dialog = page.getByRole('dialog', { name: 'Import or paste holidays' });
-    const year = new Date().getFullYear() + 2;
-    const lines = Array.from(
-      { length: 9 },
-      (_, i) => `${String((i % 9) + 1).padStart(2, '0')}/15/${year}, Paste ${i + 1}`,
-    );
-    lines.splice(4, 0, `July 4 ${year}, Bad line`);
-    await dialog.getByLabel(/One holiday per line/).fill(lines.join('\n'));
-    await expect(dialog.locator('[data-import-summary]')).toContainText(
-      '9 ready, 1 with a problem',
-    );
-    await expect(dialog.locator('[data-import-result] tr.im__bad')).toHaveCount(1);
-    await dialog.getByRole('button', { name: /Import 9 holidays/ }).click();
-    await expect(dialog).toBeHidden();
+    // The test brings its own empty calendar: pasting the same dates into a calendar that an earlier run (or test) filled would be "already in the calendar".
+    const name = `Paste ${Date.now() % 100000}`;
+    const made = await admin.post('/api/v1/admin/holiday-calendars', {
+      name,
+      colourKey: null,
+      regionNote: null,
+      appliesToEveryone: false,
+    });
+    try {
+      await page.goto('/admin/settings');
+      await page.getByRole('tab', { name: 'Holidays' }).click();
+      await page.locator('[data-calendar]', { hasText: name }).click();
+      await page.locator('[data-import]').click();
+      const dialog = page.getByRole('dialog', { name: 'Import Holidays' });
+      const year = new Date().getFullYear() + 2;
+      const lines = Array.from(
+        { length: 9 },
+        (_, i) => `${String((i % 9) + 1).padStart(2, '0')}/15/${year}, Paste ${i + 1}`,
+      );
+      lines.splice(4, 0, `July 4 ${year}, Bad line`);
+      await dialog.getByLabel(/One holiday per line/).fill(lines.join('\n'));
+      await expect(dialog.locator('[data-import-summary]')).toContainText(
+        '9 ready, 1 with a problem',
+      );
+      await expect(dialog.locator('[data-import-result] tr.im__bad')).toHaveCount(1);
+      await dialog.getByRole('button', { name: ci(/Import 9 holidays/) }).click();
+      await expect(dialog).toBeHidden();
+    } finally {
+      await admin.raw('DELETE', `/api/v1/admin/holiday-calendars/${made.calendarId}`);
+    }
   });
 
   test('a person is assigned to a calendar on the user, and the pod default is set', async ({
@@ -97,10 +112,11 @@ test.describe('Settings > Holidays', () => {
     seed,
     admin,
   }) => {
-    const { userId } = await seed.user(['Data Technician'], 'hol-user');
+    const { userId, username } = await seed.user(['Data Technician'], 'hol-user');
     const display = (await admin.get(`/api/v1/users/${userId}`)).displayName as string;
     await page.goto(`/admin/users?status=active&name=${encodeURIComponent(display)}`);
-    await page.locator('tbody tr', { hasText: display }).click();
+    // The person opens from the name button of the row (the row itself is not a button), and the drawer holds the calendar field.
+    await userName(userRow(page, userId, shownName(username))).click();
     const field = page.locator('[data-user-calendar-select]');
     await expect(field).toBeVisible();
     const dd = asDropdown(field.locator('button'));
