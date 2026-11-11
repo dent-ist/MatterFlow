@@ -7,12 +7,15 @@ name: e2e
 # When it runs: manually, every night against the default branch, and on pull requests that carry the label `e2e`
 # (add the label to run it; new commits to a labeled PR re-run it).
 #
-# History (#1354, #1356): one job ran the whole suite (324 spec files, one worker on CI) and hit its time limit. The Angular build hang was fixed in
-# frontend/scripts/run-ng-build.mjs. The first split used `--shard=i/4`, but Playwright keeps a dependent project together with everything it depends
-# on, so the `branding` project (depends on `chromium`) pulled the WHOLE suite into shard 1 (2,635 tests, 35-minute limit hit at test 501) and
-# shards 2 to 4 found nothing to run and "passed" in two minutes. Now the shards run only the `chromium` project (`--project=chromium --shard=i/12`,
-# about 218 tests each, one worker, own stack), the branding spec runs alone in its own job (`--project=branding --no-deps`, it changes the application
-# name for everybody), the sensitive-matter specs keep their own job with the go-live switch on, and a last job fails when any of them failed.
+# History (#1354, #1356, #1357): one job ran the whole suite (324 spec files, one worker on CI) and hit its time limit. The Angular build hang was fixed
+# in frontend/scripts/run-ng-build.mjs. The first split used `--shard=i/4`, but Playwright keeps a dependent project together with everything it depends
+# on, so the `branding` project (depends on `chromium`) pulled the WHOLE suite into shard 1 and shards 2 to 4 found nothing to run. The second split
+# (`--project=chromium --shard=i/12`) ran, but `--shard` balances by test count, not by time: shard 9 hit the 35-minute step limit on six tests of the
+# Task Types permission matrix (17 minutes together) and 34 tests "did not run" behind the first failure of a serial file.
+# Now: the chromium project is split by spec FILE with frontend/e2e/shard.mjs (greedy, balanced by frontend/e2e/shard-weights.json, about 19 minutes
+# predicted per shard, one worker, own stack); the branding spec runs alone in its own job (`--project=branding --no-deps`, it changes the application
+# name for everybody); the sensitive-matter specs keep their own job with the go-live switch on (shard.mjs leaves them out of the shards); every job
+# writes a Markdown summary (frontend/e2e/summary.mjs) and a last job fails when any of them failed.
 
 on:
   workflow_dispatch:
@@ -44,49 +47,50 @@ jobs:
       fail-fast: false # a failed shard must not hide the verdict of the others
       matrix:
         include:
-          # `--project=chromium --shard=i/12` splits the 2,617 tests of the chromium project into 12 slices of about 218 (about 15 minutes each).
+          # The 12 shards: `node e2e/shard.mjs <shard> 12` gives the spec files of a shard (frontend/e2e/shard-weights.json balances them by seconds).
+          # If the number of shards changes, change it in the `Select` step below and in the matrix together.
           - name: shard 1 of 12
             id: shard-1
-            args: '--project=chromium --shard=1/12'
+            shard: 1
           - name: shard 2 of 12
             id: shard-2
-            args: '--project=chromium --shard=2/12'
+            shard: 2
           - name: shard 3 of 12
             id: shard-3
-            args: '--project=chromium --shard=3/12'
+            shard: 3
           - name: shard 4 of 12
             id: shard-4
-            args: '--project=chromium --shard=4/12'
+            shard: 4
           - name: shard 5 of 12
             id: shard-5
-            args: '--project=chromium --shard=5/12'
+            shard: 5
           - name: shard 6 of 12
             id: shard-6
-            args: '--project=chromium --shard=6/12'
+            shard: 6
           - name: shard 7 of 12
             id: shard-7
-            args: '--project=chromium --shard=7/12'
+            shard: 7
           - name: shard 8 of 12
             id: shard-8
-            args: '--project=chromium --shard=8/12'
+            shard: 8
           - name: shard 9 of 12
             id: shard-9
-            args: '--project=chromium --shard=9/12'
+            shard: 9
           - name: shard 10 of 12
             id: shard-10
-            args: '--project=chromium --shard=10/12'
+            shard: 10
           - name: shard 11 of 12
             id: shard-11
-            args: '--project=chromium --shard=11/12'
+            shard: 11
           - name: shard 12 of 12
             id: shard-12
-            args: '--project=chromium --shard=12/12'
+            shard: 12
           # The branding spec changes the application name and icon for everybody (epic #850): it needs a stack of its own (18 tests).
           - name: branding spec
             id: branding
             args: '--project=branding --no-deps'
           # The sensitive-matter specs need the go-live switch on (epic #788): run-local.sh starts that stack when the arguments name `sensitive-`.
-          # They skip themselves in the shards above, where the switch is off.
+          # They are not in the shards above (shard.mjs leaves them out).
           - name: sensitive-matter specs
             id: sensitive
             args: '--project=chromium sensitive-'
@@ -104,19 +108,31 @@ jobs:
       - name: Install Chromium for Playwright
         working-directory: frontend
         run: npx playwright install --with-deps chromium
+      - name: Select the spec files of this shard
+        if: matrix.shard
+        id: select
+        working-directory: frontend
+        run: |
+          args="$(node e2e/shard.mjs ${{ matrix.shard }} 12 --args)"
+          echo "$args" | tr ' ' '\n' | sed 's/^/  /'
+          echo "args=$args" >> "$GITHUB_OUTPUT"
       - name: Check that this job has tests to run
         # Playwright exits 0 when a --shard slice is empty, which is how three shards once "passed" without running anything (#1356).
         working-directory: frontend
         env:
-          E2E_ARGS: ${{ matrix.args }}
+          E2E_ARGS: ${{ matrix.args || steps.select.outputs.args }}
         run: |
           npx playwright test -c e2e/playwright.config.ts --list $E2E_ARGS | tail -n 1 | tee /dev/stderr | grep -qv '^Total: 0 '
       - name: Run the suite (SQL Server container, build, publish, API, tests)
         timeout-minutes: 35
         working-directory: frontend
         env:
-          E2E_ARGS: ${{ matrix.args }}
+          E2E_ARGS: ${{ matrix.args || steps.select.outputs.args }}
         run: npm run e2e -- $E2E_ARGS
+      - name: Summary of this job (passed, failed, flaky, skipped, did not run, slowest tests)
+        if: always()
+        working-directory: frontend
+        run: node e2e/summary.mjs playwright-json/results.json "e2e (${{ matrix.name }})"
       - name: Upload Playwright report, traces, screenshots and videos
         if: always()
         uses: actions/upload-artifact@v4
@@ -124,6 +140,7 @@ jobs:
           name: e2e-report-${{ matrix.id }}-${{ github.run_id }}
           path: |
             frontend/playwright-report
+            frontend/playwright-json
             frontend/test-results
           if-no-files-found: ignore
           retention-days: 14

@@ -135,7 +135,7 @@ const PATHS: Record<'Users' | 'Roles' | 'Pods', string> = {
 };
 
 test.describe('#453: permission matrix of the Users area', () => {
-  test.describe.configure({ mode: 'serial' });
+  // Not serial (#1357): every row of the matrix is its own test on the seeded subject. Only the last test, which writes the matrix document when E2E_SCREENSHOTS is set, needs the rows of the tests before it in the same worker; run it without a failing row to get a complete document.
   let podId: number;
   let subjectId: number;
 

@@ -58,6 +58,7 @@ async function seedTypes(admin: Api): Promise<Seeded> {
  * a spec must not pile them up). The tests that change a type restore it, and the one that moves types runs last.
  */
 let s: Seeded;
+// Stays serial (#1357, #1356): one set of five types serves the whole file and the tests rely on their order. Every test that changes a type restores it, and the one that moves types runs last; run in parallel the order tests would see each other's moves.
 test.describe.configure({ mode: 'serial' });
 test.beforeAll(async ({ admin }) => {
   s = await seedTypes(admin);

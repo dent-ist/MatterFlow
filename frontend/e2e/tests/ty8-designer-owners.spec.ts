@@ -106,7 +106,7 @@ test.describe('Asset Type designer: the whole lifecycle in the shared layout', (
 });
 
 test.describe('Custom Fields designer (Client, Matter, Project)', () => {
-  test.describe.configure({ mode: 'serial' });
+  // Not serial (#1357): each test opens the designer in whatever state it finds and only opens and cancels dialogs, so a failure must not hide the tests after it.
 
   for (const object of CUSTOM) {
     for (const size of SIZES) {

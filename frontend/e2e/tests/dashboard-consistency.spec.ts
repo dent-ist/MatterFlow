@@ -37,7 +37,7 @@ const apis: Api[] = [];
 const queue = async (api: Api, query: string): Promise<number> =>
   (await api.get<Json>(`/api/v1/task-queue?${query}${query ? '&' : ''}pageSize=1`)).total;
 
-test.describe.configure({ mode: 'serial' });
+// Not serial (#1357): beforeAll builds the scenario once and the tests only read it, so a failure must not hide the tests after it.
 
 test.describe('Dashboard consistency across tabs (API)', () => {
   test.beforeAll(async ({ admin, seed }) => {

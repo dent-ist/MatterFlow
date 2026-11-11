@@ -17,7 +17,7 @@ const LONG_URL =
 const LONG_TEXT = 'A long description sentence that keeps going. '.repeat(33).slice(0, 1500).trim();
 
 test.describe('Assets final verification (#517)', () => {
-  test.describe.configure({ mode: 'serial' });
+  // Not serial (#1357): beforeAll seeds once and the tests only read it, so a failure must not hide the tests after it.
   test.setTimeout(240_000);
 
   let token = '';

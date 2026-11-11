@@ -74,7 +74,7 @@ async function measure(page: Page, state: string, expectActions: number): Promis
   return row;
 }
 
-test.describe.configure({ mode: 'serial' });
+// Not serial (#1357): the tests measure the profile page independently; the JSON written at the end (only with E2E_SCREENSHOTS) collects the rows of the tests before it in the same worker.
 
 test.describe("pf8-final: the final contract over the review's persons at both desktop sizes (#601)", () => {
   test.setTimeout(420_000);

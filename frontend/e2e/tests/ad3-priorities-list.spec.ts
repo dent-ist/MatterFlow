@@ -17,7 +17,7 @@ import { uid } from '../support/seed';
  * Queue, absent without Task.View), Status and one row menu; 44 px rows, eight rows fully visible at 1366x768 in the one scroll area, two Tab
  * stops per row, cards below 640 px with the same actions, the pointer drag as shipped. Screenshots: E2E_SCREENSHOTS (fixes/ad3-labels).
  */
-test.describe.configure({ mode: 'serial' });
+// Not serial (#1357): the tests only read the seeded priorities (the drag test restores the order), so a failure must not hide the tests after it; beforeAll seeds again in the worker that follows a failure.
 
 test.describe('the Priorities list (#605)', () => {
   let extras: Json[] = [];

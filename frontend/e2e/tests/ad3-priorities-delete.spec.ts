@@ -19,7 +19,7 @@ import { uid } from '../support/seed';
  * safe button is the default. The default row says why it cannot be deactivated or deleted, on screen. A refusal from the server (a race) is
  * reported once, inline, with no toast. Screenshots: E2E_SCREENSHOTS (fixes/ad3-labels).
  */
-test.describe.configure({ mode: 'serial' });
+// Not serial (#1357): every test works on its own extra priorities (or restores what it changed), so a failure must not hide the tests after it; beforeAll seeds again in the worker that follows a failure.
 
 const rowOf = priorityRow;
 const menuOf = (page: Page, name: string) =>

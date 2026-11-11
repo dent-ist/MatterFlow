@@ -17,6 +17,7 @@ frontend/.angular/
 frontend/coverage/
 frontend/out-tsc/
 frontend/playwright-report/
+frontend/playwright-json/
 frontend/test-results/
 npm-debug.log*
 

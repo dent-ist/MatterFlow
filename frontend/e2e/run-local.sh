@@ -13,6 +13,8 @@
 #   E2E_RID=linux-x64        runtime identifier used for the publish
 #   E2E_AXE_PATH=...         axe.min.js for the accessibility checks (default: the installed axe-core package)
 #   E2E_CHROMIUM_PATH=...    Chromium executable (default: the preinstalled one if present, else Playwright's own browser)
+#   E2E_SHARD=3/12          run only the spec files of shard 3 of 12 (the split CI uses: e2e/shard.mjs, balanced by e2e/shard-weights.json); the
+#                            Playwright arguments given besides are added. Never combine it with the sensitive-* specs (they have their own run).
 #   E2E_SENSITIVE_ACCESS=1   start the API with the go-live switch of the sensitive-matter rule on (Features__SensitiveMatterAccess=true, epic #788).
 #                            It is also turned on by itself when a Playwright argument names a sensitive-*.spec.ts file. Off otherwise, as in
 #                            appsettings.json; the sensitive-* specs skip themselves when the switch is off.
@@ -144,4 +146,10 @@ export E2E_BASE_URL="http://127.0.0.1:$api_port"
 # one UPDATE inside this throwaway container and skip themselves when these are not set.
 export E2E_SQL_CONTAINER="$sql_name"
 export E2E_SQL_PASSWORD="$sql_password"
-npx playwright test -c e2e/playwright.config.ts "$@"
+shard_args=()
+if [ -n "${E2E_SHARD:-}" ]; then
+  # shellcheck disable=SC2207
+  shard_args=($(node e2e/shard.mjs "${E2E_SHARD%/*}" "${E2E_SHARD#*/}" --args))
+  echo "    shard $E2E_SHARD: ${#shard_args[@]} arguments (project and spec files)"
+fi
+npx playwright test -c e2e/playwright.config.ts ${shard_args[@]+"${shard_args[@]}"} "$@"

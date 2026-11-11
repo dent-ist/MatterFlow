@@ -11,6 +11,8 @@ import { defineConfig } from '@playwright/test';
  *   E2E_CHROMIUM_PATH    Chromium executable to use instead of Playwright's own download (the sandbox ships one)
  *   E2E_NO_SANDBOX=1     pass --no-sandbox (needed when Chromium runs as root in a container)
  *   E2E_WORKERS          number of parallel workers (default 2; 1 on CI)
+ *
+ * CI splits the chromium project by spec FILE with e2e/shard.mjs (balanced by e2e/shard-weights.json), not with `--shard`.
  */
 const baseURL = process.env['E2E_BASE_URL'] ?? 'http://127.0.0.1:5190';
 const executablePath = process.env['E2E_CHROMIUM_PATH'] || undefined;
@@ -26,7 +28,13 @@ export default defineConfig({
   workers: process.env['E2E_WORKERS'] ? Number(process.env['E2E_WORKERS']) : isCi ? 1 : 2,
   timeout: 60_000,
   expect: { timeout: 10_000 },
-  reporter: [['list'], ['html', { outputFolder: '../playwright-report', open: 'never' }]],
+  // On CI the JSON report feeds the job summary (e2e/summary.mjs) and the refresh of e2e/shard-weights.json. It is written outside the HTML
+  // report folder because the HTML reporter clears its own folder.
+  reporter: [
+    ['list'],
+    ['html', { outputFolder: '../playwright-report', open: 'never' }],
+    ...(isCi ? [['json', { outputFile: '../playwright-json/results.json' }] as const] : []),
+  ],
   use: {
     baseURL,
     // The firm works in America/New_York; individual tests override the zone to check per-viewer behaviour.
@@ -46,7 +54,7 @@ export default defineConfig({
   projects: [
     // The branding spec changes the application name and icon for everybody (epic #850), so it runs alone after the rest of the suite.
     // CAUTION (#1356): `--shard` keeps a project together with the projects it depends on, so with this dependency `--shard=i/n` on the whole
-    // suite puts all tests into one shard and leaves the others empty. CI therefore shards `--project=chromium` only and runs
+    // suite puts all tests into one shard and leaves the others empty. CI therefore runs the chromium project in file shards (e2e/shard.mjs) and
     // `--project=branding --no-deps` as its own job (.github/workflows/e2e.yml).
     { name: 'chromium', testIgnore: '**/app-settings.spec.ts', use: { browserName: 'chromium' } },
     {

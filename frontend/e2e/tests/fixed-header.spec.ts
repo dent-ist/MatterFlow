@@ -38,7 +38,7 @@ async function visibleRows(page: Page, region: Locator, rowSelector: string): Pr
 
 let bulk: Bulk;
 
-test.describe.configure({ mode: 'serial' });
+// Not serial (#1357): beforeAll seeds the bulk data once and every test only reads it, so a failure must not hide the tests after it.
 
 test.describe('Fixed-header screens at 1366x768', () => {
   test.beforeAll(async ({ admin, seed }) => {

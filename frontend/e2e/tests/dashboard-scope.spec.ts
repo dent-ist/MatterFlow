@@ -127,7 +127,7 @@ async function summaryOf(page: Page, scope: string): Promise<Json> {
   return r.json();
 }
 
-test.describe.configure({ mode: 'serial' });
+// Not serial (#1357): beforeAll builds the scenario once and every test opens it as its own person, so a failure must not hide the tests after it.
 
 test.describe('Dashboard Scope', () => {
   test.beforeAll(async ({ seed }) => {

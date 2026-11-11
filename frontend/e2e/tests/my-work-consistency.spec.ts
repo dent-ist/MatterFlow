@@ -172,7 +172,7 @@ async function build(admin: Api, seed: Seeder): Promise<void> {
   ];
 }
 
-test.describe.configure({ mode: 'serial' });
+// Not serial (#1357): beforeAll builds the scenario once and the tests only read it, so a failure must not hide the tests after it.
 
 test.describe('My Work consistency across tabs and filters (API)', () => {
   test.beforeAll(async ({ admin, seed }) => {
