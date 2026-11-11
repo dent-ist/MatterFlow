@@ -74,7 +74,9 @@ import { NoteFix, NoteReason } from './task-type-record';
       padding: 0;
       list-style: none;
     }
+    /* The line is as high as its link (24 px target): a 20 px line let the 24 px link of one reason lie over the next line, and axe found the target obscured. */
     .sn__list li {
+      min-height: var(--mf-target-min, 24px);
       display: flex;
       flex-wrap: wrap;
       align-items: baseline;
