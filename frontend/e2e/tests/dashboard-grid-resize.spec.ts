@@ -3,7 +3,7 @@ import { expect, test } from '../support/fixtures';
 
 /**
  * DB-10 (#1073): a column divider resizes the column on its left and nothing else. Dragged on the Dashboard Summary grid: only that column
- * changes (its neighbour keeps its width), the divider stays under the pointer, and the grid grows sideways instead of squeezing another column.
+ * changes (its neighbour keeps its width; the Title is the spring and gives the room back, #1231), and the divider stays under the pointer.
  */
 const heads = (page: Page) =>
   page.evaluate(() =>
@@ -53,11 +53,20 @@ test('Dashboard grid: every divider resizes only its own column and follows the 
     const after = await heads(page);
     expect(after[key] - before[key], `${key} grows by the drag`).toBeGreaterThan(4);
     expect(after[key] - before[key]).toBeLessThanOrEqual(7);
+    const grew = after[key] - before[key];
     for (const other of keys.filter((k) => k !== key)) {
-      expect(
-        Math.abs(after[other] - before[other]),
-        `${key}: ${other} keeps its width`,
-      ).toBeLessThanOrEqual(1.5);
+      const change = after[other] - before[other];
+      if (other === 'title') {
+        // The Title is the spring (#1231): when another column is dragged, the Title gives the room back on release (the grid is never wider than its
+        // window unless the Title is already at its narrowest), so it shrinks by at most the drag and never grows.
+        expect(change, `${key}: the Title does not grow`).toBeLessThanOrEqual(1.5);
+        expect(
+          change,
+          `${key}: the Title gives at most what the column took`,
+        ).toBeGreaterThanOrEqual(-grew - 1.5);
+      } else {
+        expect(Math.abs(change), `${key}: ${other} keeps its width`).toBeLessThanOrEqual(1.5);
+      }
     }
     dragged++;
   }
