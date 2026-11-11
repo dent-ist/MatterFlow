@@ -301,6 +301,9 @@ export function initials(name: string): string {
     /* The title button comes first in the markup (so its stretched ::after lies under everything that follows) but is drawn second. */
     .top {
       order: -1;
+      /* The ref link is a 24 px target. On a card whose priority is plain text (a viewer who cannot edit) the row was 17 px high and the link hung 1.5 px
+         over the title under it (axe target-size); the row keeps the height of the link, as it has when the priority is a control. */
+      min-height: 24px;
     }
     .top,
     .people,
