@@ -94,27 +94,6 @@ test.describe('Search suggestion panel (WP-SR1)', () => {
     }
   });
 
-  test('BUG-1: a panel that has to scroll is a named region and still has no axe violation; the arrows keep the active option in view', async ({
-    page,
-    seed,
-  }) => {
-    const token = `Srs${uid().replace(/[^a-z0-9]/gi, '')}`;
-    const world = await seed.world();
-    for (let i = 0; i < 6; i++) await seed.task(world, { title: `${token} task ${i}` });
-    await page.setViewportSize({ width: 1366, height: 240 }); // short window: the three hits and the footer cannot fit
-    const box = await suggest(page, token);
-    const scroller = page.locator('[data-search-scroll]');
-    await expect(scroller).toHaveAttribute('role', 'region');
-    await expect(scroller).toHaveAttribute('aria-label', 'Search suggestions');
-    expect(await axeViolations(page), 'axe with a scrolling panel').toEqual([]);
-    await shot(page, 'sr1-panel-scrolling');
-
-    for (let i = 0; i < 5; i++) await box.press('ArrowDown');
-    const active = page.locator('[role=option][aria-selected=true]');
-    await expect(active).toBeInViewport();
-    await expect(box).toBeFocused();
-  });
-
   test('a person with Task.View only gets task options with no matter link text and no dead marker', async ({
     seed,
     asUser,

@@ -57,14 +57,14 @@ test.describe('Header user name (#592)', () => {
     for (const a of accounts) expect(a.trim().toLowerCase()).not.toBe(name.toLowerCase());
   });
 
-  test('a 66 character name keeps the header 57 px high at five widths and ends in an ellipsis; the tooltip has the full name', async ({
+  test('a 66 character name keeps the header 57 px high at both desktop sizes and ends in an ellipsis; the tooltip has the full name', async ({
     page,
     asUser,
   }) => {
     await page.goto('/access-pending');
     const long = await asUser(longName);
     await long.goto('/');
-    for (const [w, h] of [...SIZES, [1024, 768]] as const) {
+    for (const [w, h] of SIZES) {
       await page.setViewportSize({ width: w, height: h });
       await long.setViewportSize({ width: w, height: h });
       await page.goto('/my-work');

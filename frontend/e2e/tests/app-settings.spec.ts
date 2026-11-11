@@ -385,14 +385,14 @@ test.describe('accessibility and reflow', () => {
     const technician = (await personas.named('technician')).username;
     for (const width of [1366, 1920]) {
       const pending = await asUser(username);
-      await pending.setViewportSize({ width, height: 768 });
+      await pending.setViewportSize({ width, height: width === 1366 ? 768 : 1080 });
       await pending.goto('/');
       await expect(pending.locator('[data-state-brand]')).toHaveText(WIDEST_NAME);
       await noHorizontalScroll(pending);
 
       const error = await asUser(technician);
       await failMe(error);
-      await error.setViewportSize({ width, height: 768 });
+      await error.setViewportSize({ width, height: width === 1366 ? 768 : 1080 });
       await error.goto('/');
       await expect(error.locator('[data-state-brand]')).toHaveText(WIDEST_NAME);
       await noHorizontalScroll(error);

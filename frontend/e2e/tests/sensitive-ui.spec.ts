@@ -93,7 +93,7 @@ test.describe('Sensitive matters: the screens', () => {
     await axeAtEverySize(page, 'confirm dialog', async () => {
       await expect(dialog).toBeVisible();
     });
-    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.setViewportSize({ width: 1366, height: 768 });
 
     // Keep it as it is: nothing was saved.
     await dialog.getByRole('button', { name: 'Cancel' }).click();
