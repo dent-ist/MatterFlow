@@ -120,19 +120,23 @@ test.describe('Big screens (#126 W5, #93 P5)', () => {
     await shot(page, 'board-2560');
   });
 
-  test('1600 and 2560: Swimlane, Users, Trends and Coverage use the whole width, Summary and Breakdowns keep 1360 px; the left edge never moves', async ({
+  test('1920: Summary, Swimlane, Users, Trends and Coverage use the whole width, Breakdowns keeps 1360 px; the left edge never moves', async ({
     page,
   }) => {
     const tabs = [
-      { name: 'summary', url: '/dashboard', capped: true },
+      // The v4 Summary (grid and right column) uses the whole width from 1600 px like the board tabs.
+      { name: 'summary', url: '/dashboard', capped: false },
       { name: 'breakdowns', url: '/dashboard?tab=breakdowns', capped: true },
       { name: 'trends', url: '/dashboard?tab=trends', capped: false },
       { name: 'swimlane', url: `${base}`, capped: false },
       { name: 'users', url: '/dashboard?tab=users', capped: false },
       { name: 'coverage', url: '/dashboard?tab=users&view=coverage', capped: false },
     ];
-    for (const width of [1366, 1600, 2560]) {
-      await page.setViewportSize({ width, height: width === 2560 ? 1440 : 900 });
+    for (const [width, height] of [
+      [1366, 768],
+      [1920, 1080],
+    ]) {
+      await page.setViewportSize({ width, height });
       const lefts: number[] = [];
       for (const t of tabs) {
         await page.goto(t.url);

@@ -44,12 +44,6 @@ function inFirmZone(ms: number): { dueDate: string; dueTime: string } {
   return { dueDate: date, dueTime: time };
 }
 
-const ALL_SIZES = [
-  [1366, 768],
-  [1920, 1080],
-  [2560, 1440],
-  [1024, 768],
-] as const;
 const AXE_SIZES = [
   [1366, 768],
   [1920, 1080],
@@ -65,6 +59,15 @@ interface Cell {
 }
 
 /** What a Due cell says: the spoken sentence and the relative text (line 2), whitespace-normalised. */
+/**
+ * The compact (inline) Due cell of the Swimlane card and the task header says the same sentence as the Task Queue row, but prints the overdue time as the
+ * red suffix of the Dashboard cell (`+24d`, D-60 #1146) where the Task Queue prints `Overdue 24d` on its second line.
+ */
+const inlineWords = (w: { sr: string; l2: string }) => ({
+  sr: w.sr,
+  l2: w.l2.replace(/^Overdue (\d+) ?([dhm])$/, '+$1$2'),
+});
+
 const words = (sr: string | null, l2: string | null) => ({
   sr: (sr ?? '').replace(/\s+/g, ' ').trim(),
   l2: (l2 ?? '').replace(/\s+/g, ' ').trim(),
@@ -133,7 +136,7 @@ test.describe('Dashboard and Swimlane Due cell (#213, #214)', () => {
         .textContent({ timeout: 500 })
         .catch(() => null);
       const got = words(await cell.locator('.dc-sr').textContent(), l2);
-      expect(got, `${k}: Swimlane card = queue row`).toEqual(grid[k]);
+      expect(got, `${k}: Swimlane card = queue row`).toEqual(inlineWords(grid[k]));
       expect(
         await cell.evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
         `${k} chip not clipped`,
@@ -156,7 +159,7 @@ test.describe('Dashboard and Swimlane Due cell (#213, #214)', () => {
       expect(
         words(await cell.locator('.dc-sr').textContent(), l2),
         `${k}: header = queue row`,
-      ).toEqual(grid[k]);
+      ).toEqual(inlineWords(grid[k]));
       if (k === 'overdue24d') await shot(page, 'after-task-header-1366');
     }
 

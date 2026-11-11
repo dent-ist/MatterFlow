@@ -28,3 +28,10 @@ export const ciText = (text: string): string => text.replace(/\s+/g, ' ').trim()
 
 /** The list of texts in `ciText` form, to compare lists of labels (`expect(ciTexts(await tabs.allTextContents())).toEqual(ciTexts(['Due soon', ...]))`). */
 export const ciTexts = (texts: readonly string[]): string[] => texts.map(ciText);
+
+/** A person as the app prints them: the account name without its domain (`ke\kekim` is shown as `kekim`). */
+export const shownName = (account: string): string => account.replace(/^[^\\]*\\/, '');
+
+/** A count as the app prints it (`1,110` with a thousands separator from 1000 on) as a number. */
+export const toCount = (text: string | null | undefined): number =>
+  Number((text ?? '').replace(/[,\s]/g, ''));

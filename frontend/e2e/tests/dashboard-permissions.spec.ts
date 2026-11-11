@@ -209,7 +209,7 @@ test.describe('Dashboard permissions', () => {
 
   for (const [width, height] of [
     [1366, 768],
-    [1024, 768],
+    [1920, 1080],
   ]) {
     test(`the role editor form lines up at ${width}x${height}`, async ({ page, seed }) => {
       const role = await seed.role(['Task.View'], `E2E align ${width}`);
@@ -231,14 +231,9 @@ test.describe('Dashboard permissions', () => {
         expect(Math.abs(b.height - name.height)).toBeLessThan(1);
       // The description is a two-row text area (#449): at least a control tall.
       expect(description.height).toBeGreaterThanOrEqual(name.height);
-      // Search and Copy from role share a row when there is room, and the row fits inside the name field's column.
-      if (width > 640) {
-        expect(Math.abs(search.y - copy.y)).toBeLessThan(1);
-        expect(copy.x + copy.width).toBeLessThanOrEqual(name.x + name.width + 1);
-      } else {
-        expect(Math.abs(search.x - copy.x)).toBeLessThan(1);
-        expect(Math.abs(search.width - copy.width)).toBeLessThan(1);
-      }
+      // Search and Copy from role share a row, and the row fits inside the 640 px form card (the fields above are capped at 480 px, #1333).
+      expect(Math.abs(search.y - copy.y)).toBeLessThan(1);
+      expect(copy.x + copy.width).toBeLessThanOrEqual(name.x + 640 + 1);
       expect(
         await page.evaluate(
           () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,

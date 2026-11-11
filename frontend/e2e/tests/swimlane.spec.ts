@@ -4,6 +4,7 @@ import { axeAvailable, axeViolations } from '../support/axe';
 import { BoardSeed, seedBoard } from '../support/board';
 import { labelledDropdown } from '../support/dropdown';
 import { expect, test } from '../support/fixtures';
+import { shownName } from '../support/text';
 
 /**
  * Dashboard > Swimlane (issue #72). A board of about 60 tasks across clients, matters, priorities, statuses and assignees is seeded once per
@@ -204,7 +205,7 @@ test.describe('Swimlane tab', () => {
     const data = await api(page, '&groupBy=clientMatter');
     const first = data.groups.find((g: Json) => g.counts.new > 0);
     await expect(clients.first()).toContainText(first.label);
-    await expect(clients.first().locator('.count')).toHaveText(String(first.counts.new));
+    await expect(clients.first().locator('mf-count-chip')).toHaveText(String(first.counts.new));
 
     // Collapse a client with a click: its matters and cards leave the tree.
     const matterCount = await matters.count();
@@ -433,11 +434,10 @@ test.describe('Swimlane tab', () => {
     const ref = (await card.locator('[data-card-ref]').textContent())!.trim();
     await card.locator('[data-field="assignee"] [data-inline-trigger]').click();
     const user = board.users[1];
-    await page.getByRole('textbox', { name: 'Search People' }).fill(user.displayName.slice(0, 12));
-    await page
-      .getByRole('menuitemradio', { name: user.displayName.slice(0, 12) })
-      .first()
-      .click();
+    // The picker lists people without their domain.
+    const shown = shownName(user.displayName);
+    await page.getByRole('textbox', { name: 'Search People' }).fill(shown);
+    await page.getByRole('menuitemradio', { name: shown }).first().click();
     await expect(page.getByText(new RegExp(`${ref} assigned to`))).toBeVisible();
     // Assigning starts a New task: the card is in the In Progress lane now.
     await expect(cards(page, 'IN_PROGRESS').filter({ hasText: ref })).toHaveCount(1);

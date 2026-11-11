@@ -16,8 +16,9 @@ import { dateInZone, FIRM_ZONE } from '../support/time';
  *     the Title), the relative Due text on a second line, every row at most two lines (44 px, nothing taller than its row). Task Queue, My
  *     Work, Pod Work, a Matter's Tasks tab and a Project.
  *  2. The row-height histogram: one value per density over three pages of seed data, and the column widths do not move across the pages.
- *  3. The review's drill-through check on the Dashboard: every count of the Summary tiles and of the Breakdowns (priorities, statuses, ages,
- *     task types) equals the grid total behind its link, in one pod's scope so the numbers are this test's own.
+ *  3. The review's drill-through check on the Dashboard: every count of the Breakdowns (priorities, statuses, ages, task types) equals the grid
+ *     total behind its link, in one pod's scope so the numbers are this test's own. (The Summary tiles are gone since v4: its three cards filter
+ *     the grid in place and dashboard-v4-summary.spec.ts checks card count against grid total.)
  *  4. The Tab stops before the first row are counted and recorded (annotation and console).
  *  5. Axe at 1366 and 1920 on the six screens, and (with E2E_SCREENSHOTS) the screenshots of docs/ux/task-queue-review/fixes/final.
  *
@@ -351,7 +352,7 @@ test.describe('Final verification (#240)', () => {
     }
   });
 
-  test('Dashboard drill-through: every tile and every breakdown row equals the grid total behind its link', async ({
+  test('Dashboard drill-through: every breakdown row equals the grid total behind its link', async ({
     seed,
     admin,
     asUser,
@@ -406,34 +407,11 @@ test.describe('Final verification (#240)', () => {
     };
     const checked: string[] = [];
 
-    await page.goto(`/dashboard?pod=${pod.podId}`);
-    await expect(page.locator('a.tile').first()).toBeVisible();
-    const tiles = await page.evaluate(() =>
-      Array.from(document.querySelectorAll<HTMLAnchorElement>('a.tile')).map((a) => ({
-        href: a.getAttribute('href')!,
-        value: Number(a.querySelector('.value')?.textContent?.trim()),
-        label: a.querySelector('.label-text')?.textContent?.trim() ?? '',
-      })),
-    );
-    expect(tiles.length, 'Summary tiles with a count').toBeGreaterThanOrEqual(5);
-    for (const t of tiles) {
-      expect(await total(t.href), `tile ${t.label} (${t.href})`).toBe(t.value);
-      checked.push(`tile ${t.label}=${t.value}`);
-    }
-
     await page.goto(`/dashboard?tab=breakdowns&pod=${pod.podId}`);
     await expect(page.locator('mf-bar-list').first()).toBeVisible();
     await expect(page.locator('mf-stacked-bar').first()).toBeVisible();
-    // Every card starts as bars; the toggle walks bars, pie, table: stop at the table (its toggle then offers "View as bars").
-    const toggles = page.locator('[data-view-toggle]');
-    for (let i = 0; i < (await toggles.count()); i++) {
-      for (
-        let k = 0;
-        k < 3 && !/View as bars/.test((await toggles.nth(i).textContent()) ?? '');
-        k++
-      )
-        await toggles.nth(i).click();
-    }
+    // Every card starts as bars; the view switch (Bars, Pie, Table) goes to the table.
+    for (const toggle of await page.locator('[data-view="table"]').all()) await toggle.click();
     const rows = await page.evaluate(() =>
       Array.from(document.querySelectorAll('mf-bar-list, mf-stacked-bar')).flatMap((card) =>
         Array.from(card.querySelectorAll('tbody tr'))
@@ -532,7 +510,7 @@ test.describe('Final verification (#240)', () => {
         open: async (p) => {
           await p.goto(`/dashboard?pod=${s.pod.podId}`);
         },
-        ready: 'a.tile',
+        ready: '[data-dash-cards]',
       },
       {
         name: 'swimlane',

@@ -1,5 +1,7 @@
 import { axeAvailable, axeViolations } from '../support/axe';
 import { TaskQueuePage } from '../pages/queues.pages';
+import { ADMIN_USER } from '../support/api';
+import { shownName } from '../support/text';
 import { expect, test } from '../support/fixtures';
 import { dateInZone, FIRM_ZONE } from '../support/time';
 import { uid } from '../support/seed';
@@ -251,10 +253,14 @@ test.describe('Dashboard actions and click-through', () => {
       'aria-selected',
       'true',
     );
+    // ArrowLeft on the first tab wraps to the last one (Calendar since the Calendar tab, epic #1074).
     await page.keyboard.press('ArrowLeft');
-    await expect(tabs.getByRole('tab', { name: 'Users' })).toBeFocused();
-    await expect(page).toHaveURL(/tab=users/);
-    await expect(tabs.getByRole('tab', { name: 'Users' })).toHaveAttribute('aria-selected', 'true');
+    await expect(tabs.getByRole('tab', { name: 'Calendar' })).toBeFocused();
+    await expect(page).toHaveURL(/tab=calendar/);
+    await expect(tabs.getByRole('tab', { name: 'Calendar' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
     await page.keyboard.press('Home');
     await expect(tabs.getByRole('tab', { name: 'Summary' })).toBeFocused();
     await expect(page).toHaveURL(/tab=summary/);
@@ -296,7 +302,8 @@ test.describe('Audit Logs browser (smoke)', () => {
       .locator('tr[data-event]')
       .filter({ hasText: `${task.taskNumber} created` });
     await expect(created).toHaveCount(1);
-    await expect(created).toContainText('ke\\kekim');
+    // The Actor column prints the person without the domain (`kekim` for `ke\kekim`).
+    await expect(created).toContainText(shownName(ADMIN_USER));
     await created.getByRole('button', { name: /^Show details: / }).click();
     // The event code is a technical detail, behind its own disclosure (#652).
     await page.locator('tr.au-detail').getByRole('button', { name: 'Technical Details' }).click();

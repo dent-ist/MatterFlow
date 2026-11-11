@@ -106,7 +106,10 @@ test.describe('Dashboard shell: tabs are independent (P2) and errors stay in the
     await expect(page.locator('[data-dash-state="error"]')).toHaveCount(0);
     await expect(page.getByRole('heading', { name: 'Open Tasks', level: 2 })).toBeVisible();
     // Focus lands on the first control of the refreshed content, not on a vanished button.
-    await expect(page.getByRole('button', { name: 'View as pie for Priority' })).toBeFocused();
+    // (the pressed button of the Priority view switch is its one Tab stop)
+    await expect(
+      page.getByRole('group', { name: 'View of Priority' }).getByRole('button', { pressed: true }),
+    ).toBeFocused();
   });
 
   test('a deep link to Trends keeps its context when the summary fails', async ({ page }) => {
@@ -234,7 +237,7 @@ test.describe('Dashboard shell: the address keeps only what differs from the def
     await page.goForward();
     await expect(page).toHaveURL(/\?tab=swimlane$/);
 
-    await page.getByLabel('Group', { exact: true }).selectOption({ label: 'Assignee' });
+    await labelledDropdown(page, 'Group').selectOption({ label: 'Assignee' });
     await expect(page).toHaveURL(/\?tab=swimlane&group=assignee$/);
     // Back leaves the Swimlane tab altogether instead of stepping through filter states.
     await page.goBack();

@@ -7,6 +7,7 @@ import { expect, test } from '../support/fixtures';
 import { Seeder, uid } from '../support/seed';
 import { dateInZone, FIRM_ZONE } from '../support/time';
 import { labelledDropdown } from '../support/dropdown';
+import { toCount } from '../support/text';
 
 /**
  * Dashboard page-wide Scope (UX review 2, P1, #89): one Scope select at the right end of the tab row ("All Pods", "My Pods", one pod) for every
@@ -111,9 +112,9 @@ const CARDS: Record<string, string> = {
 const tile = (page: Page, label: string) => page.locator(`[data-card="${CARDS[label]}"]`);
 const tileValue = async (page: Page, label: string) => {
   if (label === 'Open') {
-    return Number((await page.locator('mf-dash-grid [data-list-count]').innerText()).trim());
+    return toCount(await page.locator('mf-dash-grid [data-list-count]').innerText());
   }
-  return Number((await tile(page, label).locator('[data-card-count]').innerText()).trim());
+  return toCount(await tile(page, label).locator('[data-card-count]').innerText());
 };
 const shown = async (page: Page) => {
   await expect(page.locator('[data-tabpanel="summary"] [data-dash-cards]')).toBeVisible();
