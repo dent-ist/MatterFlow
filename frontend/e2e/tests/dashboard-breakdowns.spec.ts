@@ -5,6 +5,7 @@ import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { dateInZone, FIRM_ZONE } from '../support/time';
 import { uid } from '../support/seed';
+import { toCount } from '../support/text';
 
 /**
  * Dashboard > Breakdowns (epic #85): every bar split into not overdue and overdue with the overdue link carrying `overdue=true` into the
@@ -92,7 +93,7 @@ test.describe('Dashboard Breakdowns', () => {
     const priority = section.locator('mf-bar-list').first();
     const withOverdue = priority.locator('li', { has: page.locator('.od-text') }).first();
     const text = (await withOverdue.locator('.od-text').innerText()).trim();
-    const shown = Number(/^(\d+) overdue/.exec(text)![1]);
+    const shown = toCount(/^([\d,]+) overdue/.exec(text)![1]);
     await withOverdue.locator('.od-text').click();
     await expect(page).toHaveURL(/overdue=true/);
     await expect(page).toHaveURL(/priority=\d+/);
@@ -240,7 +241,7 @@ test.describe('Dashboard Breakdowns', () => {
     const bars = await priority.locator('li').evaluateAll((lis) =>
       lis.map((li) => ({
         label: li.querySelector('.name')!.textContent!.trim(),
-        count: Number(li.querySelector('.count')!.textContent),
+        count: Number(li.querySelector('.count')!.textContent!.replace(/[,\s]/g, '')), // 1,104 from 1000 on
         href: li.querySelector('a.rowlink')?.getAttribute('href') ?? null,
         od: li.querySelector('.od-text')?.getAttribute('href') ?? null,
       })),
@@ -251,7 +252,7 @@ test.describe('Dashboard Breakdowns', () => {
     const pie = await priority.locator('[data-pie-legend] li').evaluateAll((lis) =>
       lis.map((li) => ({
         label: li.querySelector('.name')!.textContent!.trim(),
-        count: Number(li.querySelector('.count')!.textContent),
+        count: Number(li.querySelector('.count')!.textContent!.replace(/[,\s]/g, '')), // 1,104 from 1000 on
         href: li.querySelector('a.rowlink')?.getAttribute('href') ?? null,
         od: li.querySelector('.od-text')?.getAttribute('href') ?? null,
       })),

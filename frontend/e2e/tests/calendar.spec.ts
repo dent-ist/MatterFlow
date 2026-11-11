@@ -103,9 +103,9 @@ test.describe('Dashboard > Calendar', () => {
     const other = (await admin.get(`/api/v1/users/${b.userId}`)).displayName as string;
     await expect(panel.locator('[data-list="unavailable"]')).toContainText(name);
     // The absence type is the front of the pods line of the Not Available row (only with the reasons permission).
-    await expect(panel.locator('[data-list="unavailable"] [data-pods]').first()).toContainText(
-      'Sick',
-    );
+    await expect(
+      panel.locator('[data-list="unavailable"] .person', { hasText: name }).locator('[data-pods]'),
+    ).toContainText('Sick');
     await expect(panel.locator('[data-list="available"]')).toContainText(other);
     await expect(panel).not.toContainText('private note');
     // Reading order is the visual order: the counts, the pods, then Available, then Not Available.
