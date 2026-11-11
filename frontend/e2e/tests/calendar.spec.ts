@@ -5,8 +5,7 @@ import { expect, test } from '../support/fixtures';
 
 /**
  * Dashboard > Calendar (epic #1074, CAL-07 and CAL-08, issues #1081 and #1082): Month and Week, the Pod scope and the Role filter, the coverage cell with its icon and word, the
- * day panel with the Available and Unavailable lists by role, the privacy of the absence type (only with Dashboard.ViewAbsenceReasons), the Technician who has no tab, the phone
- * layout (panel as a bottom sheet) and axe at 1366x768, 1920x1080, 768x1024 and 375x812. The data is created through the API for people of one new pod, so the assertions
+ * day panel with the Available and Unavailable lists by role, the privacy of the absence type (only with Dashboard.ViewAbsenceReasons), the Technician who has no tab, and axe at 1366x768 and 1920x1080. The data is created through the API for people of one new pod, so the assertions
  * name those people and never count the whole firm.
  */
 
@@ -44,7 +43,7 @@ async function podWithTwo(seed: {
 }
 
 test.describe('Dashboard > Calendar', () => {
-  test('the Director sees the Calendar tab with a Month grid, levels as icon and word, and a legend', async ({
+  test('the Director sees the Calendar tab with a Month grid, a quiet good day, and a legend', async ({
     asUser,
     personas,
   }) => {
@@ -59,13 +58,31 @@ test.describe('Dashboard > Calendar', () => {
     await expect(page.locator('[data-cal-legend]')).toContainText('Good');
     await expect(page.locator('[data-cal-legend]')).toContainText('Critical');
     // A working day prints "available of expected" (never only a colour).
-    const cell = page
-      .locator(
-        '[data-day][data-level="GOOD"], [data-day][data-level="WATCH"], [data-day][data-level="LOW"], [data-day][data-level="CRITICAL"]',
-      )
-      .first();
-    await expect(cell).toContainText(/\d+ of \d+ expected|\d+\/\d+/);
+    const good = page.locator('[data-day][data-level="GOOD"]').first();
+    await expect(good).toContainText(/\d+ of \d+ expected|\d+\/\d+/);
+    // A good day is quiet: the icon and word of a level mark only the days that are not good (Calendar redesign).
+    await expect(good.locator('.lv')).toHaveCount(0);
+  });
+
+  test('a day below good coverage carries the level as an icon and a word, never only a colour', async ({
+    asUser,
+    personas,
+    seed,
+    admin,
+  }) => {
+    const { a, b, pod } = await podWithTwo(seed);
+    const day = weekdayFrom(5);
+    await absent(admin, a.userId, day);
+    await absent(admin, b.userId, day);
+    const director = await personas.named('director');
+    const page = await asUser(director.username);
+    await page.goto(`/dashboard?tab=calendar&pod=${pod.podId}&day=${day}`);
+    const cell = page.locator(`[data-day="${day}"]`);
+    await expect(cell).toBeVisible();
+    await expect(cell).not.toHaveAttribute('data-level', 'GOOD');
+    await expect(cell).toContainText(/0 of 2 expected|0\/2/);
     await expect(cell.locator('.lv .pi')).toHaveCount(1);
+    await expect(cell.locator('.lv .lw')).toHaveText(/Watch|Low|Critical/);
   });
 
   test('a day with an absence lists the person under Unavailable with the reason and the type (reasons permission), never the note', async ({
