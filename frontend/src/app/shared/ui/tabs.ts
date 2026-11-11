@@ -195,7 +195,8 @@ export interface MfTab {
       scroll-snap-align: start;
       box-sizing: border-box;
       height: var(--mf-tab-h);
-      padding: 0 var(--mf-s4);
+      /* 12 px each side, so the System Admin's eight Matter tabs fit the 1098 px strip at 1366 (#1367). */
+      padding: 0 var(--mf-s3);
       color: var(--mf-text-muted);
       background: none;
       border: 0;
