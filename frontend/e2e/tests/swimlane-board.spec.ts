@@ -6,6 +6,7 @@ import { axeAvailable, axeViolations } from '../support/axe';
 import { BoardSeed, seedBoard } from '../support/board';
 import { labelledDropdown } from '../support/dropdown';
 import { expect, test } from '../support/fixtures';
+import { toCount } from '../support/text';
 
 /**
  * Dashboard > Swimlane, work package WP9a (#122 one-line compact card and one-line toolbar, #123 lane counts link to the Task Queue,
@@ -311,7 +312,7 @@ test.describe('Swimlane lane counts (WP9a, #123)', () => {
   /** Lane count, the link target and the Task Queue's own total for it, read at the same moment. */
   async function counts(page: Page, code: string) {
     const link = lane(page, code).locator('a[data-lane-count]');
-    const shown = Number(((await link.textContent()) ?? '').trim());
+    const shown = toCount(await link.textContent());
     const href = (await link.getAttribute('href'))!;
     const params = new URL(href, 'http://x').searchParams;
     const queue = await (await page.request.get(`/api/v1/task-queue?pageSize=1&${params}`)).json();

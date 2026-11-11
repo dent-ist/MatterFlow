@@ -162,11 +162,11 @@ test.describe('By task type (C1, #134)', () => {
       page
         .locator('[data-type-row]')
         .evaluateAll((els) => els.map((e) => e.getAttribute('data-type-name')));
-    expect(await names()).toEqual([cov.typeNames.review, cov.typeNames.production]);
+    await expect.poll(names).toEqual([cov.typeNames.review, cov.typeNames.production]);
     await order.selectOption('completed');
-    expect(await names()).toEqual([cov.typeNames.production, cov.typeNames.review]);
+    await expect.poll(names).toEqual([cov.typeNames.production, cov.typeNames.review]);
     await order.selectOption('name');
-    expect(await names()).toEqual([cov.typeNames.production, cov.typeNames.review]);
+    await expect.poll(names).toEqual([cov.typeNames.production, cov.typeNames.review]);
     await page.reload();
     await expect(await usersFilter(page, 'Order')).toHaveAttribute('data-value', 'name');
     await page.locator('#cv-q').fill(`Cov ${cov.tag} Review`);
