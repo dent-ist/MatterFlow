@@ -12,7 +12,11 @@ const nav = (page: Page) => page.getByRole('navigation', { name: 'Main' });
 
 test.describe('Global Create task (#625)', () => {
   const global = (page: Page) => page.locator('header .mf-create');
+  /** A Project record's header has the primary "New Task" button; the work lists have "New Task" in the page header. */
   const create = (page: Page) => page.getByRole('button', { name: 'New Task' });
+  /** A Matter record's header has the Create menu ("New": Task, Project, Asset, ...), whose Task entry is the record header's Create task (MD-01). */
+  const createMenu = (page: Page) => page.getByRole('button', { name: 'Create: New' });
+  const matterCreateTask = (page: Page) => page.locator('[data-action="create-task"]');
 
   test("Matter and Project records show one Create task (the record header's); Client and lists show the global one", async ({
     page,
@@ -23,13 +27,19 @@ test.describe('Global Create task (#625)', () => {
     const project = await seed.project(matter);
     for (const size of SIZES) {
       await page.setViewportSize(size);
-      for (const url of [`/matters/${matter.matterId}`, `/projects/${project.projectId}`]) {
-        await page.goto(url);
-        await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-        await expect(global(page)).toHaveCount(0);
-        await expect(create(page)).toHaveCount(1);
-        await expect(create(page)).toBeVisible();
-      }
+      await page.goto(`/matters/${matter.matterId}`);
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+      await expect(global(page)).toHaveCount(0);
+      await expect(createMenu(page)).toHaveCount(1);
+      await createMenu(page).click();
+      await expect(matterCreateTask(page)).toHaveCount(1);
+      await expect(matterCreateTask(page)).toBeVisible();
+      await page.keyboard.press('Escape');
+      await page.goto(`/projects/${project.projectId}`);
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+      await expect(global(page)).toHaveCount(0);
+      await expect(create(page)).toHaveCount(1);
+      await expect(create(page)).toBeVisible();
       for (const url of [`/clients/${client.clientId}`, '/clients', '/matters']) {
         await page.goto(url);
         await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
@@ -77,15 +87,23 @@ test.describe('Global Create task (#625)', () => {
       await page.goto(url);
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
       await expect(create(page)).toHaveCount(0);
+      await expect(matterCreateTask(page)).toHaveCount(0);
+    }
+    // A person who may not create tasks has no Task entry in the Create menu either (the menu itself may be absent).
+    if (await createMenu(page).count()) {
+      await createMenu(page).click();
+      await expect(matterCreateTask(page)).toHaveCount(0);
     }
     const intake = await personas.named('intakeCoordinator');
     const p2 = await asUser(intake.username);
     await p2.goto(`/matters/${matter.matterId}`);
     await expect(p2.getByRole('heading', { level: 1 })).toBeVisible();
     await expect(p2.locator('header .mf-create')).toHaveCount(0);
-    await expect(create(p2)).toHaveCount(1);
-    await create(p2).focus();
-    await expect(create(p2)).toBeFocused();
+    await expect(createMenu(p2)).toHaveCount(1);
+    await createMenu(p2).focus();
+    await expect(createMenu(p2)).toBeFocused();
+    await p2.keyboard.press('Enter');
+    await expect(matterCreateTask(p2)).toBeFocused();
     await p2.keyboard.press('Enter');
     await expect(p2).toHaveURL(/\/tasks\/new/);
   });

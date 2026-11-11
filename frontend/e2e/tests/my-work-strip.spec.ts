@@ -67,14 +67,16 @@ test.describe('My Work needs-attention strip', () => {
       'title',
       'All your open tasks, not affected by the filters below',
     );
-    // The strip sits between the title and the tabs.
+    // The strip sits under the title and the tab row, above the list (the page anatomy of UI2 #1167: title, tabs, strip, toolbar and grid).
     const boxes = await Promise.all([
       page.getByRole('heading', { name: 'My Work', level: 1 }).boundingBox(),
-      strip.boundingBox(),
       page.getByRole('tablist', { name: 'My Work views' }).boundingBox(),
+      strip.boundingBox(),
+      rows.first().boundingBox(),
     ]);
     expect(boxes[0]!.y).toBeLessThan(boxes[1]!.y);
     expect(boxes[1]!.y).toBeLessThan(boxes[2]!.y);
+    expect(boxes[2]!.y).toBeLessThan(boxes[3]!.y);
     await shot(page, 'strip-1366x768');
 
     // A click applies the filter on Active; the grid total equals the number on the item.

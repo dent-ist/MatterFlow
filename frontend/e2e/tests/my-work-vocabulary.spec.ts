@@ -97,7 +97,12 @@ test.describe('My Work vocabulary and tab rules', () => {
         (t) => /(Over13|Over5|Over1|Today|Tomorrow|Asap|Far)/.exec(t)?.[1],
       );
     expect(await titles()).toEqual(['Over13', 'Over5', 'Over1', 'Today', 'Tomorrow']);
-    await expect(page.locator('[data-sort-note]')).toContainText('Overdue first, then due date');
+    // The line is short ("Sorted by Overdue first", #1126); the whole sentence is its tooltip.
+    await expect(page.locator('[data-sort-note]')).toContainText('Sorted by Overdue first');
+    await expect(page.locator('[data-sorted-text]')).toHaveAttribute(
+      'title',
+      'Sorted by Overdue first, then due date (default order)',
+    );
     await page.getByRole('button', { name: 'How the default order works' }).click();
     await expect(page.locator('[data-sort-rule]')).toContainText(
       'Default order: Overdue first, then due date, then priority',
