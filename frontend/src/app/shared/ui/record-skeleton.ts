@@ -162,8 +162,8 @@ const ROWS = [0, 1, 2, 3, 4] as const;
         </div>
       </mf-detail-layout>
     </ng-template>
-    <!-- My profile (#532): the final page without its header (the page shows its own): the left column (Availability, Work hours and the action
-         bar) and the right column (Account, Notifications) as boxes at their final height, so nothing moves when the data arrives. -->
+    <!-- My profile (#532): the final page without its header (the page shows its own): the left column (Out of Office, Work Hours and the action
+         bar) and the right column (Holidays, Account, My Landing Page, Notifications) as boxes at their final height, so nothing moves when the data arrives. -->
     <ng-template #profileTpl>
       <div class="rk__pf" data-profile-skeleton>
         <div class="rk__pf-col">
@@ -182,6 +182,11 @@ const ROWS = [0, 1, 2, 3, 4] as const;
           <div class="rk__card rk__card--bar"><span class="rk__bar rk__btn"></span></div>
         </div>
         <div class="rk__pf-col">
+          <div class="rk__card rk__card--holidays">
+            <span class="rk__bar rk__h2"></span>
+            <span class="rk__bar rk__line"></span>
+            <span class="rk__bar rk__line rk__line--s"></span>
+          </div>
           <div class="rk__card rk__card--account">
             <span class="rk__bar rk__h2"></span>
             @for (i of [0, 1, 2, 3, 4]; track i) {
@@ -349,22 +354,25 @@ const ROWS = [0, 1, 2, 3, 4] as const;
       background: var(--mf-surface);
     }
     .rk__card--avail {
-      min-height: 161px;
+      min-height: 236px;
     }
     .rk__card--hours {
-      min-height: 356px;
+      min-height: 334px;
     }
     .rk__card--bar {
-      min-height: 58px;
+      min-height: 62px;
+    }
+    .rk__card--holidays {
+      min-height: 115px;
     }
     .rk__card--account {
-      min-height: 252px;
+      min-height: 248px;
     }
     .rk__card--landing {
-      min-height: 176px;
+      min-height: 208px;
     }
     .rk__card--notes {
-      min-height: 357px;
+      min-height: 360px;
     }
     .rk__line {
       width: 90%;
