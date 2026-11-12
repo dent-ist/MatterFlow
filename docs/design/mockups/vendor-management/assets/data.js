@@ -26,11 +26,11 @@ window.MF = (function () {
   ];
 
   const MATTERS = [
-    { id: 'm1', cm: '10482-0017', name: 'Acme Holdings v. Beta Corp', client: 'Acme Holdings' },
-    { id: 'm2', cm: '20331-0004', name: 'Orion Pharma Subpoena Response', client: 'Orion Pharma' },
-    { id: 'm3', cm: '31077-0002', name: 'Hartwell Merger Second Request', client: 'Hartwell Group' },
-    { id: 'm4', cm: '40215-0009', name: 'Lakeview Hospital Data Breach', client: 'Lakeview Health' },
-    { id: 'm5', cm: '52990-0011', name: 'Redstone Energy Arbitration', client: 'Redstone Energy' },
+    { id: 'm1', cm: '10482-0017', name: 'Acme Holdings v. Beta Corp', client: 'Acme Holdings', cno: '10482', mno: '0017', type: 'Litigation', state: 'Collection', pm: 'p1', sec: 'p3', created: '02/03/2026', changed: '11/10/2026' },
+    { id: 'm2', cm: '20331-0004', name: 'Orion Pharma Subpoena Response', client: 'Orion Pharma', cno: '20331', mno: '0004', type: 'Regulatory', state: 'Review', pm: 'p3', sec: 'p1', created: '03/22/2026', changed: '11/05/2026' },
+    { id: 'm3', cm: '31077-0002', name: 'Hartwell Merger Second Request', client: 'Hartwell Group', cno: '31077', mno: '0002', type: 'Antitrust', state: 'Intake', pm: 'p1', sec: '', created: '10/19/2026', changed: '11/11/2026' },
+    { id: 'm4', cm: '40215-0009', name: 'Lakeview Hospital Data Breach', client: 'Lakeview Health', cno: '40215', mno: '0009', type: 'Investigation', state: 'Processing', pm: 'p3', sec: '', created: '07/14/2026', changed: '11/02/2026' },
+    { id: 'm5', cm: '52990-0011', name: 'Redstone Energy Arbitration', client: 'Redstone Energy', cno: '52990', mno: '0011', type: 'Arbitration', state: 'Production', pm: 'p1', sec: '', created: '01/12/2026', changed: '10/28/2026' },
   ];
 
   /* flag: DNH = Do Not Hire, REC = Recommended */
@@ -41,12 +41,12 @@ window.MF = (function () {
       contacts: [
         { pid: 'p9', flag: 'REC', date: '03/18/2026', by: 'Maria Alvarez', note: 'Turned around the Orion productions on a weekend and caught a privilege-log gap before service. Responsive and accurate.' },
         { pid: 'p10', flag: null } ],
-      links: [['m1', '02/03/2026', 'Maria Alvarez'], ['m3', '05/19/2026', 'Priya Nair'], ['m4', '08/02/2026', 'Maria Alvarez'], ['m5', '10/11/2026', 'Maria Alvarez']], updated: '10/11/2026' },
+      links: [['m1', '02/03/2026', 'Maria Alvarez'], ['m4', '08/02/2026', 'Maria Alvarez'], ['m5', '10/11/2026', 'Maria Alvarez']], updated: '10/11/2026' },
     { id: 'v2', name: 'Ledgerline Forensics', site: 'ledgerline.example', cat: 'Preferred',
       svc: ['Forensic', 'Forensic Accounting'], area: ['US', 'Canada'], ai: ['Nuix Neo anomaly detection'],
       note: 'Testifying experts available. Rates fixed through 12/2026.',
       contacts: [{ pid: 'p11', flag: 'REC', date: '06/02/2026', by: 'Daniel Okafor', note: 'Excellent deposition witness; clear and unflappable.' }],
-      links: [['m1', '02/10/2026', 'Maria Alvarez'], ['m3', '05/20/2026', 'Priya Nair']], updated: '09/30/2026' },
+      links: [['m1', '02/10/2026', 'Maria Alvarez']], updated: '09/30/2026' },
     { id: 'v3', name: 'Kessler Review Partners GmbH', site: 'kessler-review.example', cat: 'Preferred',
       svc: ['Review', 'Translation'], area: ['EU', 'UK'], ai: ['Reveal AI classification'],
       note: 'GDPR-compliant review centre in Frankfurt. Bilingual (German, English) reviewers.',
@@ -61,7 +61,7 @@ window.MF = (function () {
       svc: ['ITAR', 'Forensic', 'Managed Services'], area: ['US'], ai: [],
       note: 'US persons only. Facility is ITAR registered; certificate on file with Legal Operations.',
       contacts: [{ pid: 'p15', flag: null }],
-      links: [['m2', '04/20/2026', 'Priya Nair']], updated: '07/08/2026' },
+      links: [], updated: '07/08/2026' },
     { id: 'v6', name: 'Brightpath Custom Dev', site: 'brightpathdev.example', cat: 'Preferred',
       svc: ['Custom Development'], area: ['US', 'EU'], ai: ['Azure OpenAI (GPT-4 class) for summarisation'],
       note: 'Builds connectors and one-off ingestion scripts. No matters yet.',
@@ -82,22 +82,23 @@ window.MF = (function () {
     { id: 'v10', name: 'Harbor Analytics', site: 'harboranalytics.example', cat: 'Preferred',
       svc: ['eDiscovery', 'Custom Development'], area: ['US', 'Canada'], ai: ['Azure OpenAI (GPT-4 class)', 'Relativity aiR for Review'],
       note: 'Analytics and technology-assisted review. Data stays in the firm tenant.',
-      contacts: [], links: [['m2', '04/16/2026', 'Sofia Rossi'], ['m1', '07/01/2026', 'Sofia Rossi']], updated: '09/03/2026' },
+      contacts: [], links: [['m1', '07/01/2026', 'Sofia Rossi']], updated: '09/03/2026' },
   ];
 
   /* Matter 1 team (Matter > Team). */
-  const TEAM = [
-    { pid: 'p1', title: 'Case Manager' }, { pid: 'p6', title: 'Lead Attorney' }, { pid: 'p4', title: 'Technical Lead' },
-    { pid: 'p7', title: 'Client Contact' }, { pid: 'p8', title: 'Opposing Counsel' }, { pid: 'p3', title: 'Case Manager' }, { pid: 'p5', title: 'Technical Lead' },
-  ];
+  const TEAMS = {
+    m1: [{ pid: 'p1', title: 'Case Manager' }, { pid: 'p6', title: 'Lead Attorney' }, { pid: 'p4', title: 'Technical Lead' }, { pid: 'p7', title: 'Client Contact' }, { pid: 'p8', title: 'Opposing Counsel' }, { pid: 'p3', title: 'Case Manager' }, { pid: 'p5', title: 'Technical Lead' }],
+    m2: [{ pid: 'p3', title: 'Case Manager' }, { pid: 'p2', title: 'Lead Attorney' }, { pid: 'p4', title: 'Technical Lead' }],
+    m3: [{ pid: 'p1', title: 'Case Manager' }, { pid: 'p6', title: 'Lead Attorney' }],
+  };
 
   /* Roles x permissions (proposal). Existing role names from the app. i = implied by another ticked permission. */
   const ROLES = ['System Admin', 'Director', 'Project Manager', 'Pod Lead', 'Data Technician', 'Data Scientist', 'SME Intake Coordinator'];
   const PERMS = [
-    { group: 'Vendors', code: 'Vendor.View', short: 'See vendors and the matter Vendors box', desc: 'See the Vendors page, vendor details, and the Vendors box on the matter Summary tab', roles: [1, 1, 1, 1, 0, 0, 0] },
+    { group: 'Vendors', code: 'Vendor.View', short: 'See vendors and the matter Vendors panel', desc: 'See the Vendors page, vendor details, and the Vendors panel on the matter Summary tab', roles: [1, 1, 1, 1, 0, 0, 0] },
     { group: 'Vendors', code: 'Vendor.Manage', short: 'Create, edit and delete vendors and contacts', desc: 'Create, edit and delete vendors; add and edit their contacts and contact notes; maintain the Services and Areas lists', roles: [1, 1, 0, 0, 0, 0, 0] },
     { group: 'Vendors', code: 'Vendor.Link', short: 'Link and unlink vendors on a matter', desc: 'Link and unlink vendors on a matter (Add Vendor). Needs Vendor.View and Matter.View', roles: [1, 1, 1, 0, 0, 0, 0] },
-    { group: 'People', code: 'People.View', short: 'See the People page', desc: 'See the People page. Pickers in the Team box and vendor contacts work for anyone who may edit them', roles: [1, 1, 1, 1, 0, 0, 1] },
+    { group: 'People', code: 'People.View', short: 'See the People page', desc: 'See the People page. Pickers in the Team panel and vendor contacts work for anyone who may edit them', roles: [1, 1, 1, 1, 0, 0, 1] },
     { group: 'People', code: 'People.Manage', short: 'Create, edit and delete people', desc: 'Create, edit and delete people, including the quick "Add New Person" in pickers', roles: [1, 1, 1, 0, 0, 0, 0] },
   ];
 
@@ -110,6 +111,6 @@ window.MF = (function () {
   };
 
   const byId = (arr, id) => arr.find((x) => x.id === id);
-  return { TODAY, SERVICES, AREAS, TEAM_TITLES, PEOPLE, MATTERS, VENDORS, TEAM, ROLES, PERMS, PERSONAS,
+  return { TODAY, SERVICES, AREAS, TEAM_TITLES, PEOPLE, MATTERS, VENDORS, TEAMS, ROLES, PERMS, PERSONAS,
     person: (id) => byId(PEOPLE, id), vendor: (id) => byId(VENDORS, id), matter: (id) => byId(MATTERS, id) };
 })();

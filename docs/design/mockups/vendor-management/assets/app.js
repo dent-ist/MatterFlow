@@ -21,16 +21,21 @@
       ['vendor-delete-blocked', 'Delete Vendor (blocked, in use)', { page: 'vendors', dialog: 'deleteVendor', dv: 'v1' }],
     ]],
     ['Matter', [
-      ['matter-summary', 'Matter > Summary: Team and Vendors boxes', { page: 'matterSummary' }],
-      ['matter-summary-empty', 'Matter > Summary: both boxes empty', { page: 'matterSummary', teamEmpty: true }],
+      ['matter-summary', 'Summary: 7 team, 6 vendors (side column)', { page: 'matterSummary' }],
+      ['matter-summary-collapsed', 'Summary: both panels collapsed', { page: 'matterSummary', coll: { team: true, vendors: true } }],
+      ['matter-summary-one', 'Summary: one vendor', { page: 'matterSummary', mid: 'm2' }],
+      ['matter-summary-none', 'Summary: no vendors', { page: 'matterSummary', mid: 'm3' }],
       ['matter-team-all', 'Team: Show All (read only)', { page: 'matterSummary', dialog: 'listDlg', ld: { kind: 'team', edit: false } }],
-      ['matter-team-edit', 'Team: Edit', { page: 'matterSummary', dialog: 'listDlg', ld: { kind: 'team', edit: true } }],
-      ['matter-team-add', 'Add Team Member: pick a person', { page: 'matterSummary', dialog: 'teamAdd', pp: { open: true, q: '' } }],
-      ['matter-team-new', 'Add Team Member: add new person inline', { page: 'matterSummary', dialog: 'teamAdd', tm: { newOpen: true } }],
       ['matter-vendors-all', 'Vendors: Show All (read only)', { page: 'matterSummary', dialog: 'listDlg', ld: { kind: 'vendors', edit: false } }],
-      ['matter-vendors-edit', 'Vendors: Edit', { page: 'matterSummary', dialog: 'listDlg', ld: { kind: 'vendors', edit: true } }],
-      ['matter-picker', 'Add Vendors picker', { page: 'matterSummary', dialog: 'picker', pk: { sel: ['v9', 'v5'] } }],
-      ['matter-picker-warn', 'Add Vendors picker, blacklisted selected', { page: 'matterSummary', dialog: 'picker', pk: { sel: ['v9', 'v4'], cat: 'all' } }],
+      ['matter-team-edit', 'Edit Team: list plus empty row', { page: 'matterSummary', dialog: 'editDlg', te: { kind: 'team' } }],
+      ['matter-team-search', 'Edit Team: typing "ma" in the empty row', { page: 'matterSummary', dialog: 'editDlg', te: { kind: 'team', q: 'ma', open: true } }],
+      ['matter-team-filled', 'Edit Team: several people added in a row', { page: 'matterSummary', dialog: 'editDlg', te: { kind: 'team', add: [['p9', 'Vendor Contact'], ['p15', '']], rm: 1 } }],
+      ['matter-team-similar', 'Edit Team: near-duplicate hint', { page: 'matterSummary', dialog: 'editDlg', te: { kind: 'team', q: 'Laura Whitfeld', open: true } }],
+      ['matter-team-nomatch', 'Edit Team: no match, Create offered', { page: 'matterSummary', dialog: 'editDlg', te: { kind: 'team', q: 'Dana Whitaker', open: true } }],
+      ['matter-team-create', 'Edit Team: inline new person form', { page: 'matterSummary', dialog: 'editDlg', te: { kind: 'team', q: 'Dana Whitaker', form: { first: 'Dana', last: 'Whitaker' } } }],
+      ['matter-vendors-edit', 'Edit Vendors: list plus empty row', { page: 'matterSummary', dialog: 'editDlg', te: { kind: 'vendors' } }],
+      ['matter-vendors-search', 'Edit Vendors: typing "pa"', { page: 'matterSummary', dialog: 'editDlg', te: { kind: 'vendors', q: 'pa', open: true } }],
+      ['matter-vendors-warn', 'Edit Vendors: Blacklisted picked, tick needed', { page: 'matterSummary', dialog: 'editDlg', te: { kind: 'vendors', add: ['v9', 'v4'] } }],
     ]],
     ['People', [
       ['people', 'People page', { page: 'people' }],
@@ -41,10 +46,10 @@
       ['permissions', 'Role permission matrix', { page: 'permissions' }],
       ['noperm-summary', 'Summary: what each missing permission does', { page: 'without' }],
       ['noperm-hidden', 'No Vendor.View: nav hidden, address blocked', { page: 'vendors', persona: 'none' }],
-      ['noperm-matter', 'No Vendor.View: Vendors box hidden', { page: 'matterSummary', persona: 'none' }],
+      ['noperm-matter', 'No Vendor.View: Vendors panel hidden', { page: 'matterSummary', persona: 'none' }],
       ['noperm-readonly', 'Vendor.View only: read-only drawer', { page: 'vendors', persona: 'ro', drawer: 'v1', dtab: 'contacts' }],
       ['noperm-link', 'No Vendor.Link: Edit disabled, reason shown', { page: 'matterSummary', persona: 'ro' }],
-      ['noperm-people', 'No People.Manage: Add New Person disabled', { page: 'matterSummary', persona: 'ro', dialog: 'teamAdd', pp: { open: true, q: '' } }],
+      ['noperm-people', 'No People.Manage: Create disabled, reason shown', { page: 'matterSummary', persona: 'ro', dialog: 'editDlg', te: { kind: 'team', q: 'Dana Whitaker', open: true } }],
     ]],
   ];
   const FLAT = SCREENS.flatMap((g) => g[1]);
@@ -52,7 +57,7 @@
   const blank = () => ({ page: 'vendors', drawer: null, dtab: 'overview', dialog: null, dv: null, dctx: null, menu: null, mvEmpty: false,
     f: { q: '', cat: 'all', svc: [], area: [] },
     pk: { q: '', cat: 'all', svc: [], area: [], sel: [], ack: false },
-    teamEmpty: false, ld: { kind: 'team', edit: false }, pp: { open: false, q: '' }, tm: { newOpen: false, picked: null, ptype: 'External' }, pe: 'new', pf: { q: '', type: 'all' }, noteFlag: null, noteSeg: null, toast: null,
+    mid: 'm1', coll: { team: false, vendors: false }, te: null, ld: { kind: 'team', edit: false }, pp: { open: false, q: '' }, tm: { newOpen: false, picked: null, ptype: 'External' }, pe: 'new', pf: { q: '', type: 'all' }, noteFlag: null, noteSeg: null, toast: null,
     cvSel: { cat: 'Preferred', svc: ['eDiscovery', 'Review', 'Forensic'], area: ['US', 'EU'] }, keep: null });
   let S = Object.assign(blank(), { persona: qs.get('as') || 'full', guide: false });
 
@@ -69,6 +74,7 @@
       else if (k === 'pp') S.pp = Object.assign(S.pp, o.pp);
       else if (k === 'tm') S.tm = Object.assign(S.tm, o.tm);
       else if (k === 'ld') S.ld = o.ld;
+      else if (k === 'te') { initTE(o.te.kind); const t = S.te; if (o.te.q) t.q = o.te.q; t.open = !!o.te.open; if (o.te.rm) { t.rows.splice(o.te.rm, 1); t.removed = 1; } (o.te.add || []).forEach((x) => { if (o.te.kind === 'team') t.rows.push({ pid: x[0], title: x[1] }); else t.rows.push({ vid: x, ack: false }); }); if (o.te.form) t.form = o.te.form; }
       else S[k] = o[k];
     });
     if (hit[0] === 'vendor-note') S.noteFlag = 'DNH';
@@ -199,7 +205,7 @@
       body = '<div class="sect"><h3>Matters</h3><span class="cnt">' + v.links.length + '</span></div>' +
         (v.links.length ? '<div class="frame" style="flex:none;box-shadow:none"><table><colgroup><col style="width:110px"><col><col style="width:130px"><col style="width:96px"><col style="width:120px"></colgroup><thead><tr><th>CM Number</th><th>Matter</th><th>Client</th><th>Linked</th><th>Linked By</th></tr></thead><tbody>' +
           v.links.map((l) => { const m = D.matter(l[0]); return '<tr><td><a class="link mono" style="font-family:var(--mf-font-mono)" href="#matter-summary">' + m.cm + '</a></td><td title="' + esc(m.name) + '">' + esc(m.name) + '</td><td>' + esc(m.client) + '</td><td>' + l[1] + '</td><td>' + esc(l[2]) + '</td></tr>'; }).join('') + '</tbody></table></div>' +
-          '<p class="sm muted" style="margin:0">Vendors are linked from the matter: open a matter, Summary, then Edit on the Vendors box.</p>'
+          '<p class="sm muted" style="margin:0">Vendors are linked from the matter: open a matter, Summary, then Edit on the Vendors panel.</p>'
           : '<div class="state">' + ic('folder') + '<p>Not linked to any matter.</p><small>Link it from a matter\'s Summary tab. A vendor with no matters can be deleted.</small></div>');
     }
     return '<div class="scrim scrim--drawer" data-a="close"><aside class="drawer" role="dialog" aria-label="Vendor ' + esc(v.name) + '" data-stop="1"><header><h2 style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(v.name) + '</h2>' + catChip(v.cat) + '<span class="sp"></span>' +
@@ -245,7 +251,7 @@
     return dialog('Contact Note', esc(pname(p)) + ', ' + esc(v.name), '', body, cancelSave('Save Note'));
   }
 
-  /* person picker (used by Team box and vendor Add Contact) */
+  /* person picker (used by Team panel and vendor Add Contact) */
   function pickerHtml(excl, tagFor) {
     const pe = P(); const q = S.pp.q.trim().toLowerCase();
     const list = D.PEOPLE.filter((p) => !q || (pname(p) + ' ' + p.email + ' ' + p.company + ' ' + p.title).toLowerCase().includes(q));
@@ -271,18 +277,6 @@
       '<div class="field"><label for="ni5">Title or Role</label><div class="inp"><input id="ni5" value="Court Reporter"></div></div>' +
       '</div><div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn--text" data-a="cancelnew">Cancel New Person</button><button class="btn" data-a="savenew">Create and Select</button></div></div>';
   }
-  function teamDialog() {
-    const teamIds = D.TEAM.map((t) => t.pid); const t = S.tm; const p = t.picked ? D.person(t.picked) : null;
-    let personField;
-    if (t.newOpen) personField = '<div class="full">' + newPersonInline('selected for this matter') + '</div>';
-    else if (p) personField = '<div class="field full"><span class="lbl">Person <span class="req">(required)</span></span>' + pickedBox(p) + '</div>';
-    else personField = '<div class="field full"><label for="pp">Person <span class="req">(required)</span></label><div class="inp" data-a="ppopen">' + ic('search') + '<input id="pp" data-keep="pp" value="' + esc(S.pp.q) + '" placeholder="Search by name, email or company" role="combobox" aria-expanded="' + S.pp.open + '" autocomplete="off">' + ic('chevron-down') + '</div>' +
-      (S.pp.open ? pickerHtml(teamIds, 'On the Team') : '<div class="help">Everyone in People: system users, other firm staff and outside contacts.</div>') + '</div>';
-    const body = '<div class="fgrid">' + personField +
-      '<div class="field full" ' + (S.pp.open && !p && !t.newOpen ? 'style="visibility:hidden;height:0"' : '') + '><label for="tt">Title on This Matter <span class="req">(required)</span></label><div class="inp"><select id="tt"><option>' + (p ? 'Client Contact' : 'Select a title') + '</option>' + D.TEAM_TITLES.map((x) => '<option>' + x + '</option>').join('') + '</select></div><div class="help">From the Team Titles list. The person\'s own Title or Role stays on their People record.</div></div></div>';
-    const foot = '<button class="btn" data-a="close">Cancel</button><span class="mid">' + (p ? 'The same person cannot be on one matter twice.' : '') + '</span><button class="btn btn--primary" data-a="save|Add Member">Add Member</button>';
-    return dialog('Add Team Member', 'Acme Holdings v. Beta Corp (10482-0017)', '', (S.pp.open && !p && !t.newOpen ? '<div style="min-height:410px">' + body + '</div>' : body), foot, true);
-  }
   function addContactDialog() {
     const v = D.vendor(S.drawer || 'v1'); const t = S.tm; const p = t.picked ? D.person(t.picked) : null;
     let f;
@@ -295,29 +289,6 @@
     const v = D.vendor(S.dv); const n = v.links.length;
     if (n) return dialog('Delete Vendor', '', 'dlg--sm', '<p><b>' + esc(v.name) + '</b> is linked to ' + n + ' matter' + (n > 1 ? 's' : '') + ' and cannot be deleted. Unlink it from each matter first. If the firm should stop using it, set its category to Blacklisted instead.</p>', '<span class="sp"></span><button class="btn btn--primary" data-a="close">Close</button>');
     return dialog('Delete Vendor', '', 'dlg--sm', '<p>Delete <b>' + esc(v.name) + '</b> and its ' + v.contacts.length + ' contact' + (v.contacts.length === 1 ? '' : 's') + '? The people stay in People. This cannot be undone.</p>', '<button class="btn" data-a="close">Cancel</button><button class="btn btn--solid-danger" data-a="save|Delete Vendor">Delete Vendor</button>');
-  }
-
-  /* vendor picker (matter) */
-  function pickerDialog() {
-    const k = S.pk; const linked = m1Vendors().map((v) => v.id);
-    const rows = D.VENDORS.filter((v) => vendorMatch(v, k)).sort((a, b) => a.name.localeCompare(b.name));
-    const sel = k.sel; const selBl = sel.map((i) => D.vendor(i)).filter((v) => v.cat === 'Blacklisted');
-    const list = rows.map((v) => {
-      const isL = linked.includes(v.id); const on = sel.includes(v.id); const bl = v.cat === 'Blacklisted'; const dnh = flagged(v, 'DNH'); const rec = flagged(v, 'REC');
-      return '<div class="prow ' + (bl ? 'warn ' : '') + (isL ? 'is-linked' : '') + '"' + (on && bl ? ' data-fr="1"' : '') + '>' +
-        (isL ? '<span class="chk"><span class="box" style="background:var(--mf-surface-alt);border-color:var(--mf-border-mid)"></span></span>' : '<button class="chk" style="border:0;background:none;padding:0" role="checkbox" aria-checked="' + on + '" aria-label="Select ' + esc(v.name) + '" data-a="pksel|' + v.id + '"><span class="box ' + (on ? 'on' : '') + '">' + (on ? ic('check') : '') + '</span></button>') +
-        '<div style="min-width:0"><span class="nm">' + esc(v.name) + '</span><span class="sub2"><span class="mono" style="font-family:var(--mf-font-mono)">' + esc(v.site) + '</span>' + (dnh ? '<span style="color:var(--mf-danger);font-weight:600">' + ic('flag') + ' ' + dnh + ' contact flagged Do Not Hire</span>' : '') + (rec && !bl ? '<span style="color:var(--mf-sem-healthy-fg)">' + ic('thumbs-up') + ' ' + rec + ' recommended contact</span>' : '') + '</span></div>' +
-        '<div><div class="tags" style="gap:4px">' + v.svc.slice(0, 2).map((x) => '<span class="tag">' + esc(x) + '</span>').join('') + (v.svc.length > 2 ? '<span class="cnt">+' + (v.svc.length - 2) + '</span>' : '') + '</div><div class="sm muted" style="margin-top:2px">' + v.area.join(', ') + '</div></div>' +
-        '<div style="text-align:right">' + (isL ? '<span class="chip chip--off">' + ic('link') + 'Linked</span>' : catChip(v.cat)) + '</div></div>';
-    }).join('');
-    const warn = selBl.length ? '<div class="banner banner--bad" style="align-items:flex-start;padding:8px 12px">' + ic('exclamation-triangle') + '<span class="txt"><b>' + selBl.length + ' selected vendor' + (selBl.length > 1 ? ' are' : ' is') + ' Blacklisted: ' + selBl.map((v) => esc(v.name)).join(', ') + '.</b> ' + esc(selBl[0].note) + '<br><label class="chk" style="margin-top:6px;font-weight:600"><button class="chk" style="border:0;background:none;padding:0" role="checkbox" aria-checked="' + k.ack + '" data-a="ack"><span class="box ' + (k.ack ? 'on' : '') + '">' + (k.ack ? ic('check') : '') + '</span></button> I have read this and still want to add ' + (selBl.length > 1 ? 'them' : 'it') + '.</label></span></div>' : '';
-    const filtered = k.q || k.cat !== 'all' || k.svc.length || k.area.length;
-    const body = '<div style="display:flex;flex-direction:column;gap:12px"><div class="toolbar" style="flex-wrap:wrap"><label class="search" style="width:240px">' + ic('search') + '<input data-keep="pq" value="' + esc(k.q) + '" placeholder="Search vendors" aria-label="Search vendors"></label>' +
-      dd('pk-cat', 'Category', 'single', k.cat, ['all', 'Preferred', 'Blacklisted'], []) + dd('pk-svc', 'Service', 'multi', '', D.SERVICES, k.svc) + dd('pk-area', 'Area', 'multi', '', D.AREAS, k.area) + (filtered ? '<button class="btn btn--text" data-a="pkclear">Clear</button>' : '') + '</div>' +
-      '<div class="picklist" style="height:' + (selBl.length ? 250 : 336) + 'px">' + (rows.length ? list : '<div class="state" style="height:100%">' + ic('search') + '<p>No vendors match.</p><small>Blacklisted vendors are included in this list; check the Category filter.</small></div>') + '</div>' + warn + '</div>';
-    const n = sel.length; const dis = n === 0 || (selBl.length && !k.ack);
-    const foot = '<button class="btn" data-a="close">Cancel</button><span class="mid">' + n + ' selected' + (selBl.length ? ' (' + selBl.length + ' Blacklisted)' : '') + '</span><button class="btn btn--primary" data-a="save|Add Vendors"' + (dis ? ' disabled' : '') + '>' + (n ? 'Add ' + n + ' Vendor' + (n > 1 ? 's' : '') : 'Add Vendors') + '</button>';
-    return dialog('Add Vendors', 'Acme Holdings v. Beta Corp (10482-0017). Linked vendors are shown but cannot be picked again.', 'dlg--lg', body, foot, true);
   }
 
   function personDialog() {
@@ -339,63 +310,140 @@
     const d = S.dialog;
     if (d === 'newVendor') h += vendorDialog(true); else if (d === 'editVendor') h += vendorDialog(false);
     else if (d === 'contactNote') h += noteDialog(); else if (d === 'addContact') h += addContactDialog(); else if (d === 'deleteVendor') h += deleteDialog();
-    else if (d === 'listDlg') h += listDialog(); else if (d === 'picker') h += pickerDialog(); else if (d === 'teamAdd') h += teamDialog(); else if (d === 'personEdit') h += personDialog();
+    else if (d === 'listDlg') h += listDialog(); else if (d === 'editDlg') h += editDialog(); else if (d === 'personEdit') h += personDialog();
     if (S.toast) h += '<div class="toast" role="status"><b>' + S.toast + '</b></div>';
     return h;
   }
 
-  /* ---------- matter Summary tab ---------- */
-  const m1Vendors = () => D.VENDORS.filter((v) => v.links.some((l) => l[0] === 'm1')).sort((a, b) => (a.cat === b.cat ? a.name.localeCompare(b.name) : a.cat === 'Blacklisted' ? -1 : 1));
-  const cap = () => (window.innerHeight >= 900 ? 5 : 4);
+  /* ---------- matter Summary tab: Details at the left, Team and Vendors panels in a side column ---------- */
+  const M = () => D.matter(S.mid);
+  const vendorsOf = (mid) => D.VENDORS.filter((v) => v.links.some((l) => l[0] === mid)).sort((a, b) => (a.cat === b.cat ? a.name.localeCompare(b.name) : a.cat === 'Blacklisted' ? -1 : 1));
+  const teamOf = (mid) => D.TEAMS[mid].map((t) => ({ t, p: D.person(t.pid) }));
+  const cap = () => (window.innerHeight >= 900 ? 5 : 3);
+  const lev = (a, b) => { const m = []; for (let i = 0; i <= a.length; i++) { m[i] = [i]; } for (let j = 1; j <= b.length; j++) m[0][j] = j; for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) m[i][j] = Math.min(m[i - 1][j] + 1, m[i][j - 1] + 1, m[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); return m[a.length][b.length]; };
   function matterShell(content) {
+    const mt = M();
     const tabs = [['summary', 'Summary', 'home', ''], ['tasks', 'Tasks', 'check-square', ' (14)'], ['projects', 'Projects', 'folder', ' (2)'], ['assets', 'Assets', 'database', ' (9)'], ['productions', 'Productions', 'send', ' (3)'], ['notes', 'Notes', 'file-edit', ' (6)'], ['activities', 'Activities', 'history', '']];
-    return '<main class="main"><div class="crumb"><a href="#matter-summary">Matters</a>' + ic('chevron-right').replace('pi ', 'pi xs ') + '<span class="cur">10482-0017</span></div>' +
-      '<div class="ph"><span class="tile">' + ic('folder') + '</span><h1>Acme Holdings v. Beta Corp</h1><span class="chip chip--ok">' + ic('check-circle') + 'Active</span><span class="sp"></span><button class="btn">' + ic('pencil') + 'Edit</button><button class="btn">' + ic('history') + 'Activity</button><button class="btn btn--primary">' + ic('plus') + 'New Task</button></div>' +
-      '<div class="sub"><span class="mono" style="font-family:var(--mf-font-mono)">CM 10482-0017</span><span class="sep">|</span><span>Client: <a class="link" href="#matter-summary">Acme Holdings</a></span><span class="sep">|</span><span>Primary PM: Maria Alvarez</span></div>' +
+    return '<main class="main"><div class="crumb"><a href="#matter-summary">Matters</a>' + ic('chevron-right').replace('pi ', 'pi xs ') + '<span class="cur">' + mt.cm + '</span></div>' +
+      '<div class="ph"><span class="tile">' + ic('folder') + '</span><h1>' + esc(mt.name) + '</h1><span class="chip chip--ok">' + ic('check-circle') + 'Active</span><span class="sp"></span><button class="btn">' + ic('pencil') + 'Edit</button><button class="btn">' + ic('history') + 'Activity</button><button class="btn btn--primary">' + ic('plus') + 'New Task</button></div>' +
+      '<div class="sub"><span class="mono" style="font-family:var(--mf-font-mono)">CM ' + mt.cm + '</span><span class="sep">|</span><span>Client: <a class="link" href="#matter-summary">' + esc(mt.client) + '</a></span><span class="sep">|</span><span>Primary PM: ' + pname(D.person(mt.pm)) + '</span></div>' +
       '<div class="tabs" role="tablist">' + tabs.map((x) => '<a class="tab" role="tab" href="#matter-summary" data-dead="1" aria-selected="' + (x[0] === 'summary') + '">' + ic(x[2]) + x[1] + x[3] + '</a>').join('') + '</div>' + content + '</main>';
   }
-  const tl = (arr) => arr;
-  function teamRows() { return S.teamEmpty ? [] : D.TEAM.map((t) => ({ t, p: D.person(t.pid) })); }
-  function boxTeam() {
-    const rows = teamRows(), n = rows.length, c = cap();
-    const list = rows.slice(0, c).map((r) => '<li class="bx-row">' + av(r.p, true) + '<span class="bx-main"><b>' + pname(r.p) + '</b></span><span class="bx-role" title="' + esc(r.t.title) + '">' + esc(r.t.title) + '</span>' + typeChip(r.p).replace('chip ', 'chip bx-chip ') + '</li>').join('');
-    return '<section class="card bx" aria-label="Team"><div class="bx-h"><h3>Team</h3><span class="cnt">' + n + '</span><span class="sp"></span>' + btn('Edit', 'ld|team|1', { icon: 'pencil' }) + '</div>' +
-      (n ? '<ul class="bx-list" style="min-height:' + c * 36 + 'px">' + list + '</ul>' + (n > c ? '<div class="bx-f"><button class="btn btn--text" data-a="ld|team|0">Show All ' + n + '</button></div>' : '')
-        : '<div class="bx-empty"><span class="muted">No team members yet.</span>' + btn('Add Member', 'dlg|teamAdd', { cls: 'btn--text' }) + '</div>') + '</section>';
+  function panel(key, title, n, extraChip, editBtn, rows, footer, emptyHtml) {
+    const open = !S.coll[key];
+    if (!n) return '<section class="card pnl pnl-empty" aria-label="' + title + '"><span class="pnl-t">' + title + '</span><span class="cnt">0</span>' + emptyHtml + '</section>';
+    return '<section class="card pnl" aria-label="' + title + '"><div class="pnl-h"><button class="pnl-tg" aria-expanded="' + open + '" data-a="coll|' + key + '" aria-label="' + (open ? 'Collapse ' : 'Expand ') + title + '">' + ic(open ? 'chevron-down' : 'chevron-right') + '<span class="pnl-t">' + title + '</span><span class="cnt">' + n + '</span>' + (extraChip || '') + '</button>' + editBtn + '</div>' + (open ? '<ul class="bx-list">' + rows + '</ul>' + (footer || '') : '') + '</section>';
   }
-  function boxVendors() {
+  function panelTeam() {
+    const rows = teamOf(S.mid), n = rows.length, c = cap();
+    const li = rows.slice(0, c).map((r) => '<li class="pl-row">' + av(r.p, true) + '<span class="pl-tx"><b>' + pname(r.p) + '</b><span class="pl-sub" title="' + esc(r.t.title) + '">' + esc(r.t.title) + '</span></span>' + typeChip(r.p).replace('chip ', 'chip bx-chip ') + '</li>').join('');
+    return panel('team', 'Team', n, '', '<button class="btn btn--text" data-a="ld|team|1">' + ic('pencil') + 'Edit</button>', li, n > c ? '<div class="bx-f"><button class="btn btn--text" data-a="ld|team|0">Show All ' + n + '</button></div>' : '', '<span class="sp"></span><span class="muted sm">No team members</span><button class="btn btn--text" data-a="ld|team|1">+ Add Member</button>');
+  }
+  function panelVendors() {
     const pe = P(); if (!pe.view) return '';
-    const vs = S.teamEmpty ? [] : m1Vendors(), n = vs.length, c = cap(), bl = vs.filter((v) => v.cat === 'Blacklisted');
-    const list = vs.slice(0, c).map((v) => '<li class="bx-row ' + (v.cat === 'Blacklisted' ? 'bx-warn' : '') + '"><span class="bx-main"><button class="btn btn--name" data-a="goto|vendor-drawer" title="' + esc(v.name) + '">' + esc(v.name) + '</button></span>' + (flagged(v, 'DNH') ? '<span style="color:var(--mf-danger)" title="Contact flagged Do Not Hire">' + ic('flag') + '</span>' : '') + catChip(v.cat).replace('chip ', 'chip bx-chip ') + '</li>').join('');
-    const edit = pe.link ? btn('Edit', 'ld|vendors|1', { icon: 'pencil' }) : '<button class="btn" disabled aria-disabled="true" aria-describedby="whylink">' + ic('pencil') + 'Edit</button>';
-    return '<section class="card bx" aria-label="Vendors"><div class="bx-h"><h3>Vendors</h3><span class="cnt">' + n + '</span>' + (bl.length ? '<span class="chip chip--bad bx-chip" title="' + esc(bl.map((v) => v.name).join(', ')) + '">' + ic('exclamation-triangle') + bl.length + ' Blacklisted</span>' : '') + '<span class="sp"></span>' + edit + '</div>' +
-      (n ? '<ul class="bx-list" style="min-height:' + c * 36 + 'px">' + list + '</ul>' + (!pe.link ? '<div class="bx-f"><span class="why" id="whylink">' + ic('lock') + 'Needs Vendor.Link to change. Ask an administrator.</span><span class="sp"></span>' + (n > c ? '<button class="btn btn--text" data-a="ld|vendors|0">Show All ' + n + '</button>' : '') + '</div>' : (n > c ? '<div class="bx-f"><button class="btn btn--text" data-a="ld|vendors|0">Show All ' + n + '</button></div>' : ''))
-        : '<div class="bx-empty"><span class="muted">No vendors linked yet.</span>' + (pe.link ? btn('Add Vendor', 'dlg|picker', { cls: 'btn--text' }) : '<span class="why" id="whylink">' + ic('lock') + 'Needs Vendor.Link.</span>') + '</div>') + '</section>';
+    const vs = vendorsOf(S.mid), n = vs.length, c = cap(), bl = vs.filter((v) => v.cat === 'Blacklisted');
+    const li = vs.slice(0, c).map((v) => '<li class="pl-row pl-v ' + (v.cat === 'Blacklisted' ? 'bx-warn' : '') + '"><span class="bx-main"><button class="btn btn--name" data-a="goto|vendor-drawer" title="' + esc(v.name) + '">' + esc(v.name) + '</button></span>' + (flagged(v, 'DNH') ? '<span style="color:var(--mf-danger)" title="Contact flagged Do Not Hire">' + ic('flag') + '</span>' : '') + catChip(v.cat).replace('chip ', 'chip bx-chip ') + '</li>').join('');
+    const edit = pe.link ? '<button class="btn btn--text" data-a="ld|vendors|1">' + ic('pencil') + 'Edit</button>' : '<button class="btn btn--text" disabled aria-disabled="true" aria-describedby="whylink" style="color:var(--mf-text-disabled);cursor:not-allowed">' + ic('pencil') + 'Edit</button>';
+    const why = !pe.link ? '<div class="bx-f"><span class="why" id="whylink">' + ic('lock') + 'Needs Vendor.Link to change.</span><span class="sp"></span>' + (n > c ? '<button class="btn btn--text" data-a="ld|vendors|0">Show All ' + n + '</button>' : '') + '</div>' : (n > c ? '<div class="bx-f"><button class="btn btn--text" data-a="ld|vendors|0">Show All ' + n + '</button></div>' : '');
+    return panel('vendors', 'Vendors', n, bl.length ? '<span class="chip chip--bad bx-chip" title="' + esc(bl.map((v) => v.name).join(', ')) + '">' + ic('exclamation-triangle') + bl.length + '</span>' : '', edit, li, why, '<span class="sp"></span><span class="muted sm">No vendors linked</span>' + (pe.link ? '<button class="btn btn--text" data-a="ld|vendors|1">+ Add Vendor</button>' : '<span class="why" id="whylink">' + ic('lock') + 'Needs Vendor.Link</span>'));
   }
   function summaryPage() {
+    const mt = M(); const pr = D.person(mt.pm), sc = mt.sec ? D.person(mt.sec) : null;
     const tiles = [['Hard Drives', 'database', 'slate', 12], ['Email Sets', 'at', 'blue', 4], ['Cloud Sources', 'globe', 'teal', 6], ['Chat Exports', 'comments', 'violet', 3], ['Production Volumes', 'box', 'orange', 3]];
     const f = (l, v, wide) => '<div class="df ' + (wide ? 'wide' : '') + '"><span class="dl">' + l + '</span><span class="dv">' + v + '</span></div>';
-    const boxes = boxTeam() + boxVendors();
     return matterShell('<ul class="ms-tiles">' + tiles.map((t) => '<li class="card ms-tile"><span class="tt" style="background:var(--mf-tt-' + t[2] + ')">' + ic(t[1]) + '</span><span class="nm">' + t[0] + '</span><span class="ct">' + t[3] + '</span></li>').join('') + '</ul>' +
-      '<div class="card ms-details"><div class="bx-h"><h3>Details</h3></div><div class="ms-fields">' +
-      f('CM Number', '<span class="ms-cm">10482-0017</span>') + f('Client', '<a class="link mono" href="#matter-summary">1048</a> Acme Holdings') + f('Matter Number', '<span class="mono">0017</span>') + f('Matter Name', 'Acme Holdings v. Beta Corp') +
-      f('Matter Type', 'Litigation') + f('Current State', 'Collection') + f('DMS Path', '<span class="mono">\\\\fs01\\dms\\Matters\\1048\\0017\\Acme v. Beta</span> <button class="btn btn--text">Copy</button>', 1) + f('DFS Path', '<span class="mono">https://dfs.example.com/matters/1048/0017</span> <button class="btn btn--text">Copy</button>', 1) +
-      f('Status', '<span class="chip chip--ok">' + ic('check-circle') + 'Active</span>') + f('Primary PM', av(D.person('p1'), true) + ' Maria Alvarez') + f('Secondary PM', av(D.person('p3'), true) + ' Priya Nair') + f('AI Allowed', '<span class="chip">' + ic('sparkles') + 'Yes</span>') + f('Created', '02/03/2026') + f('Last Changed', '11/10/2026') +
-      '</div></div><div class="bxrow ' + (P().view ? '' : 'one') + '">' + boxes + '</div>');
+      '<div class="sumgrid"><div class="card ms-details"><div class="bx-h"><h3>Details</h3></div><div class="ms-fields">' +
+      f('CM Number', '<span class="ms-cm">' + mt.cm + '</span>') + f('Client', '<a class="link mono" href="#matter-summary">' + mt.cno + '</a> ' + esc(mt.client)) + f('Matter Number', '<span class="mono">' + mt.mno + '</span>') + f('Matter Name', esc(mt.name)) +
+      f('Matter Type', mt.type) + f('Current State', mt.state) + f('DMS Path', '<span class="mono">\\\\fs01\\dms\\Matters\\' + mt.cno.slice(0, 4) + '\\' + mt.mno + '</span> <button class="btn btn--text">Copy</button>', 1) + f('DFS Path', '<span class="mono">https://dfs.example.com/matters/' + mt.cno + '/' + mt.mno + '</span> <button class="btn btn--text">Copy</button>', 1) +
+      f('Status', '<span class="chip chip--ok">' + ic('check-circle') + 'Active</span>') + f('Primary PM', av(pr, true) + ' ' + pname(pr)) + f('Secondary PM', sc ? av(sc, true) + ' ' + pname(sc) : '<span class="muted">None</span>') + f('AI Allowed', '<span class="chip">' + ic('sparkles') + 'Yes</span>') + f('Created', mt.created) + f('Last Changed', mt.changed) +
+      '</div></div><div class="side">' + panelTeam() + panelVendors() + '</div></div>');
   }
+  /* read-only Show All */
   function listDialog() {
-    const pe = P(); const k = S.ld; const edit = k.edit;
+    const k = S.ld; const mt = M();
     if (k.kind === 'team') {
-      const rows = teamRows();
-      const body = '<div class="frame" style="box-shadow:none;flex:none"><table><colgroup><col><col style="width:124px"><col style="width:190px"><col style="width:176px">' + (edit ? '<col style="width:var(--mf-col-actions-w)">' : '') + '</colgroup><thead><tr><th>Name</th><th>Type</th><th>Email</th><th>Title</th>' + (edit ? '<th class="act"><span class="sr">Remove</span></th>' : '') + '</tr></thead><tbody>' +
-        rows.map((r) => '<tr><td><span class="two"><b>' + pname(r.p) + '</b></span><span class="two">' + esc(r.p.title) + (r.p.company ? ', ' + esc(r.p.company) : '') + '</span></td><td>' + typeChip(r.p) + '</td><td title="' + esc(r.p.email) + '">' + esc(r.p.email) + '</td><td>' + (edit ? '<span class="inp" style="height:32px"><select aria-label="Title for ' + pname(r.p) + '"><option>' + esc(r.t.title) + '</option></select></span>' : esc(r.t.title)) + '</td>' + (edit ? '<td class="act"><button class="btn btn--icon" aria-label="Remove ' + pname(r.p) + '">' + ic('trash') + '</button></td>' : '') + '</tr>').join('') + '</tbody></table></div>';
-      return dialog('Team (' + rows.length + ')', 'Acme Holdings v. Beta Corp (10482-0017)', 'dlg--lg', body, edit ? '<button class="btn" data-a="close">Cancel</button><span class="mid">Titles and removals save with Save Changes.</span><button class="btn" data-a="dlg|teamAdd">' + ic('plus') + 'Add Member</button><button class="btn btn--primary" data-a="save|Save Changes" style="margin-left:8px">Save Changes</button>' : '<span class="sp"></span><button class="btn btn--primary" data-a="close">Close</button>');
+      const rows = teamOf(S.mid);
+      const body = '<div class="frame" style="box-shadow:none;flex:none"><table><colgroup><col><col style="width:124px"><col style="width:200px"><col style="width:170px"></colgroup><thead><tr><th>Name</th><th>Type</th><th>Email</th><th>Title</th></tr></thead><tbody>' +
+        rows.map((r) => '<tr><td><span class="two"><b>' + pname(r.p) + '</b></span><span class="two">' + esc(r.p.title) + (r.p.company ? ', ' + esc(r.p.company) : '') + '</span></td><td>' + typeChip(r.p) + '</td><td title="' + esc(r.p.email) + '">' + esc(r.p.email) + '</td><td>' + esc(r.t.title) + '</td></tr>').join('') + '</tbody></table></div>';
+      return dialog('Team (' + rows.length + ')', esc(mt.name) + ' (' + mt.cm + ')', 'dlg--lg', body, '<span class="sp"></span><button class="btn btn--primary" data-a="close">Close</button>');
     }
-    const vs = m1Vendors(); const bl = vs.filter((v) => v.cat === 'Blacklisted');
+    const vs = vendorsOf(S.mid); const bl = vs.filter((v) => v.cat === 'Blacklisted');
     const body = (bl.length ? '<div class="banner banner--bad" style="margin-bottom:12px" role="note">' + ic('exclamation-triangle') + '<span class="txt"><b>' + esc(bl[0].name) + ' is Blacklisted</b> (' + bl[0].updated + '). It was linked before it was blacklisted. Review it before more work goes to it.</span><button class="btn btn--text" data-a="goto|vendor-drawer">View Vendor</button></div>' : '') +
-      '<div class="frame" style="box-shadow:none;flex:none"><table><colgroup><col><col style="width:124px"><col style="width:150px"><col style="width:130px"><col style="width:100px">' + (edit ? '<col style="width:var(--mf-col-actions-w)">' : '') + '</colgroup><thead><tr><th>Vendor</th><th>Category</th><th>Services</th><th>Contacts</th><th>Linked</th>' + (edit ? '<th class="act"><span class="sr">Unlink</span></th>' : '') + '</tr></thead><tbody>' +
-      vs.map((v) => { const cons = v.contacts.map((c) => D.person(c.pid)); const l = v.links.find((x) => x[0] === 'm1'); return '<tr class="' + (v.cat === 'Blacklisted' ? 'row-warn' : '') + '"><td><span class="two"><b>' + esc(v.name) + '</b></span><span class="two" style="font-family:var(--mf-font-mono)">' + esc(v.site) + '</span></td><td>' + catChip(v.cat) + '</td><td>' + tagsShort(v.svc, 16) + '</td><td>' + (cons.length ? pname(cons[0]) + (cons.length > 1 ? ' +' + (cons.length - 1) : '') : '<span class="muted">None</span>') + '</td><td><span class="two">' + l[1] + '</span><span class="two">' + esc(l[2]) + '</span></td>' + (edit ? '<td class="act"><button class="btn btn--icon" aria-label="Unlink ' + esc(v.name) + '">' + ic('minus-circle') + '</button></td>' : '') + '</tr>'; }).join('') + '</tbody></table></div>';
-    return dialog('Vendors (' + vs.length + ')', 'Acme Holdings v. Beta Corp (10482-0017)', 'dlg--lg', body, edit ? '<button class="btn" data-a="close">Cancel</button><span class="mid">Unlinking saves with Save Changes.</span><button class="btn" data-a="dlg|picker">' + ic('plus') + 'Add Vendor</button><button class="btn btn--primary" data-a="save|Save Changes" style="margin-left:8px">Save Changes</button>' : '<span class="sp"></span><button class="btn btn--primary" data-a="close">Close</button>');
+      '<div class="frame" style="box-shadow:none;flex:none"><table><colgroup><col><col style="width:124px"><col style="width:150px"><col style="width:130px"><col style="width:100px"></colgroup><thead><tr><th>Vendor</th><th>Category</th><th>Services</th><th>Contacts</th><th>Linked</th></tr></thead><tbody>' +
+      vs.map((v) => { const cons = v.contacts.map((c) => D.person(c.pid)); const l = v.links.find((x) => x[0] === S.mid); return '<tr class="' + (v.cat === 'Blacklisted' ? 'row-warn' : '') + '"><td><span class="two"><b>' + esc(v.name) + '</b></span><span class="two" style="font-family:var(--mf-font-mono)">' + esc(v.site) + '</span></td><td>' + catChip(v.cat) + '</td><td>' + tagsShort(v.svc, 16) + '</td><td>' + (cons.length ? pname(cons[0]) + (cons.length > 1 ? ' +' + (cons.length - 1) : '') : '<span class="muted">None</span>') + '</td><td><span class="two">' + l[1] + '</span><span class="two">' + esc(l[2]) + '</span></td></tr>'; }).join('') + '</tbody></table></div>';
+    return dialog('Vendors (' + vs.length + ')', esc(mt.name) + ' (' + mt.cm + ')', 'dlg--lg', body, '<span class="sp"></span><button class="btn btn--primary" data-a="close">Close</button>');
+  }
+
+  /* Edit dialog: member list plus an always-present empty row with a combobox (apply on Save) */
+  function initTE(kind) {
+    S.te = { kind, rows: kind === 'team' ? teamOf(S.mid).map((r) => ({ pid: r.p.id, title: r.t.title, orig: true })) : vendorsOf(S.mid).map((v) => ({ vid: v.id, orig: true })), q: '', open: false, hot: 0, form: null, removed: 0 };
+  }
+  function teOptions() {
+    const te = S.te; const q = te.q.trim().toLowerCase(); const out = [];
+    if (te.kind === 'team') {
+      const on = te.rows.map((r) => r.pid);
+      const hit = D.PEOPLE.filter((p) => !q || (pname(p) + ' ' + p.email + ' ' + p.company + ' ' + p.title).toLowerCase().includes(q));
+      hit.slice(0, 8).forEach((p) => out.push({ k: 'p', p, dis: on.includes(p.id) }));
+      if (q && !hit.length) D.PEOPLE.filter((p) => lev(pname(p).toLowerCase(), q) <= 3).forEach((p) => out.push({ k: 'sim', p, dis: on.includes(p.id) }));
+      if (q && !D.PEOPLE.some((p) => pname(p).toLowerCase() === q)) out.push({ k: 'create', q: te.q.trim() });
+    } else {
+      const on = te.rows.map((r) => r.vid); const linked = vendorsOf(S.mid).map((v) => v.id);
+      const hit = D.VENDORS.filter((v) => !q || (v.name + ' ' + v.site + ' ' + v.svc.join(' ')).toLowerCase().includes(q));
+      hit.slice(0, 8).forEach((v) => out.push({ k: 'v', v, dis: on.includes(v.id) }));
+      if (!hit.length) out.push({ k: 'none', q: te.q.trim() });
+    }
+    return out;
+  }
+  function teDropdown() {
+    const te = S.te; const opts = teOptions(); const pe = P(); let h = '';
+    opts.forEach((o, i) => {
+      const hot = i === te.hot ? ' hot' : '';
+      if (o.k === 'p' || o.k === 'sim') {
+        const p = o.p;
+        h += (o.k === 'sim' && !h.includes('Similar') ? '<div class="grp">' + ic('exclamation-circle') + 'Did you mean this person?</div>' : '') + '<button class="po' + hot + '" ' + (o.dis ? 'disabled' : 'data-a="te-pick|' + p.id + '"') + '>' + av(p, true) + '<span class="txt"><span class="nm">' + pname(p) + '</span><span class="meta">' + esc(p.title) + ' &middot; ' + esc(p.company || p.email) + '</span></span>' + (o.dis ? '<span class="chip chip--off">On the List</span>' : typeChip(p).replace('chip ', 'chip bx-chip ')) + '</button>';
+      } else if (o.k === 'create') {
+        h += '<div class="add">' + (pe.pmanage ? '<button class="po' + hot + '" data-a="te-create"><span class="avatar avatar--sm" style="background:var(--mf-primary);color:#fff">' + ic('plus') + '</span><span class="txt"><span class="nm" style="color:var(--mf-link)">+ Create "' + esc(o.q) + '"</span><span class="meta">' + (opts.some((x) => x.k === 'sim') ? 'Check the people above first, to avoid a duplicate. ' : '') + 'Saved to People with Save Changes</span></span></button>'
+          : '<div class="po" style="color:var(--mf-text-disabled)"><span class="avatar avatar--sm" style="background:var(--mf-surface-alt)">' + ic('lock') + '</span><span class="txt"><span class="nm">Create "' + esc(o.q) + '" (not available)</span><span class="meta">Needs People.Manage. Ask an administrator, or ask someone who has it.</span></span></div>') + '</div>';
+      } else if (o.k === 'v') {
+        const v = o.v; const bl = v.cat === 'Blacklisted'; const lk = vendorsOf(S.mid).some((x) => x.id === v.id);
+        h += '<button class="po' + hot + '" style="' + (bl ? 'background:var(--mf-sem-risk-bg)' : '') + '" ' + (o.dis ? 'disabled' : 'data-a="te-pick|' + v.id + '"') + '><span class="avatar avatar--sm avatar--ext">' + ic('truck') + '</span><span class="txt"><span class="nm">' + esc(v.name) + '</span><span class="meta">' + esc(v.svc.slice(0, 3).join(', ')) + ' &middot; ' + esc(v.area.join(', ')) + (flagged(v, 'DNH') ? ' &middot; <span style="color:var(--mf-danger);font-weight:600">Do Not Hire contact</span>' : '') + '</span></span>' + (o.dis ? '<span class="chip chip--off">' + (lk ? 'Linked' : 'On the List') + '</span>' : catChip(v.cat).replace('chip ', 'chip bx-chip ')) + '</button>';
+      } else if (o.k === 'none') {
+        h += '<div class="po" style="color:var(--mf-text-muted)"><span class="txt"><span class="nm">No vendor matches "' + esc(o.q) + '"</span><span class="meta">' + (pe.manage ? 'New vendors are added on the Vendors page.' : 'Only vendors already in the list can be linked.') + '</span></span></div>';
+      }
+    });
+    return '<div class="cbx cbx-up" role="listbox"><div class="list">' + (h || '<div class="po muted"><span class="txt">Type a name to search.</span></div>') + '</div></div>';
+  }
+  function teRow(r, i) {
+    const te = S.te;
+    if (te.kind === 'team') {
+      const p = r.pid ? D.person(r.pid) : { id: 'new', first: r.np.first, last: r.np.last, type: r.np.type === 'Internal' ? 'int' : 'ext', user: false, title: '', company: r.np.company, email: r.np.email };
+      return '<div class="erow ' + (r.orig ? '' : 'added') + '">' + av(p, true) + '<span class="pl-tx"><b>' + pname(p) + '</b><span class="pl-sub">' + esc(p.title ? p.title + ', ' : '') + esc(p.company || p.email) + '</span></span>' + (r.np ? '<span class="chip chip--risk bx-chip">New Person</span>' : typeChip(p).replace('chip ', 'chip bx-chip ')) +
+        '<span class="inp tsel ' + (r.title ? '' : 'inv') + '" style="height:32px"><select data-te-title="' + i + '" aria-label="Title for ' + pname(p) + '"><option value="">Choose a title</option>' + D.TEAM_TITLES.map((t) => '<option' + (t === r.title ? ' selected' : '') + '>' + t + '</option>').join('') + '</select></span><button class="btn btn--icon" data-a="te-rm|' + i + '" aria-label="Remove ' + pname(p) + '">' + ic('trash') + '</button></div>';
+    }
+    const v = D.vendor(r.vid); const bl = v.cat === 'Blacklisted'; const need = bl && !r.orig;
+    return '<div class="erow ' + (r.orig ? '' : 'added') + (bl ? ' warnrow' : '') + '" style="' + (need ? 'height:auto;padding-top:8px;padding-bottom:8px;flex-wrap:wrap' : '') + '"><span class="avatar avatar--sm avatar--ext">' + ic('truck') + '</span><span class="pl-tx"><b>' + esc(v.name) + '</b><span class="pl-sub">' + esc(v.svc.slice(0, 3).join(', ')) + '</span></span>' + (r.orig ? '' : '<span class="chip chip--info bx-chip">To Add</span>') + catChip(v.cat).replace('chip ', 'chip bx-chip ') + '<button class="btn btn--icon" data-a="te-rm|' + i + '" aria-label="Unlink ' + esc(v.name) + '">' + ic('minus-circle') + '</button>' +
+      (need ? '<div class="banner banner--bad" style="flex-basis:100%;align-items:flex-start;padding:6px 10px;margin-left:36px">' + ic('exclamation-triangle') + '<span class="txt"><b>Blacklisted.</b> ' + esc(v.note) + '<br><button class="chk" style="border:0;background:none;padding:0;margin-top:4px;font-weight:600" role="checkbox" aria-checked="' + !!r.ack + '" data-a="te-ack|' + i + '"><span class="box ' + (r.ack ? 'on' : '') + '">' + (r.ack ? ic('check') : '') + '</span> I have read this and still want to link it.</button></span></div>' : '') + '</div>';
+  }
+  function editDialog() {
+    const te = S.te; const mt = M(); const team = te.kind === 'team';
+    const added = te.rows.filter((r) => !r.orig).length; const removed = te.removed;
+    const bad = team ? te.rows.some((r) => !r.title) : te.rows.some((r) => !r.orig && D.vendor(r.vid).cat === 'Blacklisted' && !r.ack);
+    let empty;
+    if (team && te.form) {
+      const f = te.form;
+      empty = '<div class="inline-new" style="margin:0"><h3>' + ic('user-plus') + 'New Person <span class="sm muted" style="font-weight:400">Saved to People with Save Changes. Only people in People can be on a team.</span></h3><div class="fgrid">' +
+        '<div class="field"><label for="ni1">First Name <span class="req">(required)</span></label><div class="inp"><input id="ni1" value="' + esc(f.first) + '"></div></div><div class="field"><label for="ni2">Last Name <span class="req">(required)</span></label><div class="inp"><input id="ni2" value="' + esc(f.last) + '"></div></div>' +
+        '<div class="field"><span class="lbl">Internal or External</span><span class="seg" role="group"><button aria-pressed="false">Internal</button><button aria-pressed="true">External</button></span></div><div class="field"><label for="ni3">Company Name</label><div class="inp"><input id="ni3" value="Whitaker Court Reporting"></div></div>' +
+        '<div class="field"><label for="ni4">Email <span class="req">(required)</span></label><div class="inp"><input id="ni4" value="dana@whitakerreporting.example"></div></div><div class="field"><label for="ni5">Title on This Matter <span class="req">(required)</span></label><div class="inp"><select id="ni5"><option>Choose a title</option>' + D.TEAM_TITLES.map((t) => '<option>' + t + '</option>').join('') + '</select></div></div></div>' +
+        '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn--text" data-a="te-fcancel">Cancel New Person</button><button class="btn" data-a="te-fsave">Add to Team</button></div></div>';
+    } else {
+      empty = '<div class="erow erow-new" style="position:relative"><span class="avatar avatar--sm" style="background:var(--mf-surface-alt);color:var(--mf-text-muted)">' + ic(team ? 'user-plus' : 'link') + '</span><div class="inp" style="flex:1" data-a="te-open">' + ic('search') + '<input data-keep="te" value="' + esc(te.q) + '" placeholder="' + (team ? 'Search People by name, email or company' : 'Search vendors by name or service') + '" role="combobox" aria-expanded="' + te.open + '" aria-label="' + (team ? 'Add a person' : 'Add a vendor') + '" autocomplete="off">' + ic('chevron-down') + '</div>' +
+        '<span class="inp tsel" style="height:32px;opacity:' + (team ? .6 : 0) + '">' + (team ? '<select disabled aria-label="Title"><option>Title</option></select>' : '') + '</span><span style="width:36px"></span>' + (te.open ? teDropdown() : '') + '</div>';
+    }
+    const colhead = team ? '<div class="ehead"><span>Person</span><span style="width:124px"></span><span style="width:176px">Title on This Matter</span><span style="width:36px"></span></div>' : '<div class="ehead"><span>Vendor</span></div>';
+    const body = '<p class="sm muted" style="margin:0 0 8px">' + (team ? 'Type in the last row to find someone in People, pick them, then choose their title. A new empty row appears after each one. Nothing is saved until Save Changes.' : 'Type in the last row to find a vendor and pick it. Blacklisted vendors are flagged and need a tick. Nothing is saved until Save Changes.') + '</p>' + colhead + '<div class="erows" style="' + (te.form ? 'max-height:134px' : '') + '">' + te.rows.map(teRow).join('') + '</div>' + empty;
+    const foot = '<button class="btn" data-a="close">Cancel</button><span class="mid">' + (added || removed ? (added ? added + ' added' : '') + (added && removed ? ', ' : '') + (removed ? removed + ' removed' : '') + (bad ? '. ' + (team ? 'Choose a title for every row.' : 'Tick the Blacklisted warning.') : '') : 'No changes yet.') + '</span><button class="btn btn--primary" data-a="save|Save Changes"' + (bad || (!added && !removed) ? ' disabled' : '') + '>Save Changes</button>';
+    return dialog((team ? 'Edit Team' : 'Edit Vendors'), esc(mt.name) + ' (' + mt.cm + ')', 'dlg--lg', body, foot, true);
   }
 
   /* ---------- People page ---------- */
@@ -428,13 +476,13 @@
   }
   function withoutPage() {
     const rows = [
-      ['Vendor.View missing', 'Vendors menu item hidden. Opening the address shows Access Denied.', 'Vendors box hidden; the Team box fills the row.', 'Not reachable.'],
-      ['Vendor.View only (no Manage)', 'Page and detail panel are read only: no New Vendor, row menu, Edit, Delete, Add Contact or Edit Note. Flags and notes stay readable.', 'Vendors box readable.', 'Not reachable.'],
-      ['Vendor.Link missing', 'Unchanged.', 'Edit on the Vendors box shown disabled with the reason in the box footer. No Unlink.', 'Add Vendors picker not reachable.'],
-      ['People.Manage missing', 'People page is read only: no New Person, no row menu, no Edit.', 'Team box unchanged (Edit needs Matter.Edit as today).', '"Add New Person" shown disabled with the reason. Existing people can still be picked.'],
-      ['People.View missing', 'People menu item hidden. Opening the address shows Access Denied.', 'Team box unchanged.', 'Pickers still list everyone, for anyone who may edit a team or a vendor contact.'],
+      ['Vendor.View missing', 'Vendors menu item hidden. Opening the address shows Access Denied.', 'Vendors panel hidden; the Team panel fills the column.', 'Not reachable.'],
+      ['Vendor.View only (no Manage)', 'Page and detail panel are read only: no New Vendor, row menu, Edit, Delete, Add Contact or Edit Note. Flags and notes stay readable.', 'Vendors panel readable.', 'Not reachable.'],
+      ['Vendor.Link missing', 'Unchanged.', 'Edit on the Vendors panel shown disabled with the reason in the panel footer. No Unlink.', 'Add Vendors picker not reachable.'],
+      ['People.Manage missing', 'People page is read only: no New Person, no row menu, no Edit.', 'Team panel unchanged (Edit needs Matter.Edit as today).', '"Add New Person" shown disabled with the reason. Existing people can still be picked.'],
+      ['People.View missing', 'People menu item hidden. Opening the address shows Access Denied.', 'Team panel unchanged.', 'Pickers still list everyone, for anyone who may edit a team or a vendor contact.'],
     ];
-    return '<main class="main">' + head('lock', 'What a Person Without a Permission Sees', null, '', 'Rule of thumb: a whole page is hidden when the person has no business there; an action that is the point of a box they can read is shown disabled, with the reason in plain text next to it.') +
+    return '<main class="main">' + head('lock', 'What a Person Without a Permission Sees', null, '', 'Rule of thumb: a whole page is hidden when the person has no business there; an action that is the point of a panel they can read is shown disabled, with the reason in plain text next to it.') +
       '<div class="frame"><div class="scroll"><table><colgroup><col style="width:200px"><col style="width:34%"><col style="width:24%"><col></colgroup><thead><tr><th>Missing</th><th>Menu and page</th><th>On the matter</th><th>Pickers and dialogs</th></tr></thead><tbody>' +
       rows.map((r) => '<tr>' + r.map((c, i) => '<td style="height:auto;padding:12px;vertical-align:top;white-space:normal;' + (i === 0 ? 'font-weight:600' : '') + '">' + (i === 0 ? '<code>' + c.split(' ')[0] + '</code><div class="sm" style="font-weight:400">' + c.split(' ').slice(1).join(' ') + '</div>' : c) + '</td>').join('') + '</tr>').join('') + '</tbody></table></div></div>' +
       '<div class="controls"><span class="sm muted">Open the "No ..." screens in the guide to see each state in place.</span></div></main>';
@@ -454,6 +502,7 @@
     $root.innerHTML = '<div class="app">' + nav() + top() + main + '</div>' + overlays() + guide();
     document.querySelectorAll('.mk-only').forEach((e) => { if (document.body.classList.contains('nochrome')) e.style.display = 'none'; });
     if (S.keep) { const el = document.querySelector('[data-keep="' + S.keep + '"]'); if (el) { el.focus(); const n = el.value.length; try { el.setSelectionRange(n, n); } catch (e) { /* ignore */ } } }
+    const er = document.querySelector('.erows'); if (er && S.te && S.te.rows.some((r) => !r.orig)) er.scrollTop = er.scrollHeight;
     const fr = document.querySelector('.prow[data-fr]'); if (fr) { const pl = fr.parentElement; pl.scrollTop = fr.offsetTop - 60; }
     document.title = 'Vendor Management Mockup';
   }
@@ -464,12 +513,20 @@
     else { tgt[key] = val === '__clear' ? [] : toggle(tgt[key], val); }
   }
   const acts = {
-    noop: () => {}, close: () => { if (S.dialog) { S.dialog = null; S.menu = null; S.pp = { open: false, q: '' }; S.tm = { newOpen: false, picked: null }; } else S.drawer = null; S.keep = null; },
+    noop: () => {}, close: () => { if (S.dialog) { S.dialog = null; S.menu = null; S.pp = { open: false, q: '' }; S.tm = { newOpen: false, picked: null }; S.te = null; } else S.drawer = null; S.keep = null; },
     guide: () => { S.guide = !S.guide; },
     drawer: (id) => { if (P().view) { S.drawer = id; S.dtab = 'overview'; S.menu = null; } },
     dtab: (t) => { S.dtab = t; },
-    ld: (kind, e) => { S.ld = { kind, edit: e === '1' }; S.dialog = 'listDlg'; S.menu = null; },
-    dlg: (n) => { S.dialog = n; S.menu = null; S.pp = { open: false, q: '' }; S.tm = { newOpen: false, picked: null }; if (n === 'newVendor') S.cvSel = { cat: 'Preferred', svc: [], area: [] }; if (n === 'picker') S.pk = { q: '', cat: 'all', svc: [], area: [], sel: [], ack: false }; if (n === 'personEdit') S.pe = 'new'; if (n === 'deleteVendor') S.dv = S.drawer; },
+    ld: (kind, e) => { S.menu = null; if (e === '1') { initTE(kind); S.dialog = 'editDlg'; } else { S.ld = { kind, edit: false }; S.dialog = 'listDlg'; } },
+    coll: (k) => { S.coll[k] = !S.coll[k]; },
+    'te-open': () => { S.te.open = true; S.keep = 'te'; },
+    'te-pick': (id) => { const t = S.te; t.rows.push(t.kind === 'team' ? { pid: id, title: '' } : { vid: id, ack: false }); t.q = ''; t.open = false; t.hot = 0; S.keep = 'te'; },
+    'te-rm': (i) => { const t = S.te; if (t.rows[i].orig) t.removed++; t.rows.splice(+i, 1); },
+    'te-ack': (i) => { S.te.rows[i].ack = !S.te.rows[i].ack; },
+    'te-create': () => { const q = S.te.q.trim().split(/\s+/); S.te.form = { first: q[0] || '', last: q.slice(1).join(' ') }; S.te.open = false; },
+    'te-fcancel': () => { S.te.form = null; },
+    'te-fsave': () => { S.te.rows.push({ np: { first: S.te.form.first, last: S.te.form.last, type: 'External', company: 'Whitaker Court Reporting', email: 'dana@whitakerreporting.example' }, title: 'Vendor Contact' }); S.te.form = null; S.te.q = ''; },
+    dlg: (n) => { S.dialog = n; S.menu = null; S.pp = { open: false, q: '' }; S.tm = { newOpen: false, picked: null }; if (n === 'newVendor') S.cvSel = { cat: 'Preferred', svc: [], area: [] }; if (n === 'personEdit') S.pe = 'new'; if (n === 'deleteVendor') S.dv = S.drawer; },
     menu: (id) => { S.menu = S.menu === id ? null : id; },
     ddset: (id, val) => setDd(id, val),
     clearf: () => { S.f = { q: '', cat: 'all', svc: [], area: [] }; S.menu = null; },
@@ -505,11 +562,19 @@
   });
   $root.addEventListener('input', (e) => {
     const k = e.target.getAttribute && e.target.getAttribute('data-keep'); if (!k) return;
-    if (k === 'vq') S.f.q = e.target.value; else if (k === 'pq') S.pk.q = e.target.value; else if (k === 'peq') S.pf.q = e.target.value; else if (k === 'pp') { S.pp.q = e.target.value; S.pp.open = true; }
+    if (k === 'vq') S.f.q = e.target.value; else if (k === 'pq') S.pk.q = e.target.value; else if (k === 'peq') S.pf.q = e.target.value; else if (k === 'pp') { S.pp.q = e.target.value; S.pp.open = true; } else if (k === 'te') { S.te.q = e.target.value; S.te.open = true; S.te.hot = 0; }
     S.keep = k; render();
   });
-  $root.addEventListener('change', (e) => { if (e.target.getAttribute('data-a') === 'persona') { S.persona = e.target.value; render(); } });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && (S.dialog || S.drawer || S.menu)) { if (S.menu) S.menu = null; else acts.close(); render(); } });
+  $root.addEventListener('change', (e) => { const ti = e.target.getAttribute && e.target.getAttribute('data-te-title'); if (ti != null) { S.te.rows[ti].title = e.target.value; render(); return; } if (e.target.getAttribute('data-a') === 'persona') { S.persona = e.target.value; render(); } });
+  $root.addEventListener('keydown', (e) => {
+    if (!(e.target.getAttribute && e.target.getAttribute('data-keep') === 'te')) return;
+    const t = S.te; const n = teOptions().length;
+    if (e.key === 'ArrowDown') { t.open = true; t.hot = Math.min(n - 1, t.hot + 1); e.preventDefault(); render(); }
+    else if (e.key === 'ArrowUp') { t.hot = Math.max(0, t.hot - 1); e.preventDefault(); render(); }
+    else if (e.key === 'Enter' && t.open) { const o = teOptions()[t.hot]; if (o && !o.dis) { e.preventDefault(); if (o.k === 'create') acts['te-create'](); else if (o.k === 'p' || o.k === 'sim') acts['te-pick'](o.p.id); else if (o.k === 'v') acts['te-pick'](o.v.id); render(); } }
+    else if (e.key === 'Escape' && t.open) { t.open = false; e.stopPropagation(); e.preventDefault(); render(); }
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !e.defaultPrevented && (S.dialog || S.drawer || S.menu)) { if (S.menu) S.menu = null; else acts.close(); render(); } });
   window.addEventListener('hashchange', () => applyScreen(location.hash.slice(1)));
   applyScreen(location.hash.slice(1) || 'vendors');
 })();
