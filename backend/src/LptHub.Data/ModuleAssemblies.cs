@@ -7,6 +7,7 @@ using LptHub.Notes;
 using LptHub.Notifications;
 using LptHub.Organization;
 using LptHub.Productions;
+using LptHub.Vendors;
 using LptHub.WorkflowEngine;
 using LptHub.WorkManagement;
 
@@ -27,5 +28,6 @@ public static class ModuleAssemblies
         typeof(NotificationsModule).Assembly,
         typeof(ProductionsModule).Assembly,
         typeof(NotesModule).Assembly,
+        typeof(VendorsModule).Assembly,
     ];
 }

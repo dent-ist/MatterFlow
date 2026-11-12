@@ -15,6 +15,7 @@ using LptHub.Organization;
 using LptHub.Productions;
 using LptHub.Reports;
 using LptHub.Search;
+using LptHub.Vendors;
 using LptHub.WorkflowEngine;
 using LptHub.WorkManagement;
 using LptHub.WorkViews;
@@ -46,6 +47,7 @@ public static class ModuleComposition
         services.AddReportsModule(configuration);
         services.AddProductionsModule();
         services.AddNotesModule();
+        services.AddVendorsModule();
         services.AddStarterConfigurationSeeding();
         return services;
     }

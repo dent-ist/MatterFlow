@@ -67,6 +67,7 @@ public class AuditScopeRulesTests
         ["UserAdministration.cs"] = 1,
         ["UserAvailabilityService.cs"] = 2,
         ["WorkflowAdminService.cs"] = 7,
+        ["VendorAudit.cs"] = 1, // VENDOR_SERVICES/AREAS/TECH_AI_CHANGED (epic #1373): the lists of a firm-wide vendor record; no matter data (the link and unlink events carry their matter)
         ["StepDefinitionService.cs"] = 1,
         ["ClientService.cs"] = 2,
         ["TaskQueueExportService.cs"] = 2, // EXPORT_RUN (PM v2 #879): the surface, the row count and the filters of a list export; no record data

@@ -77,7 +77,7 @@ public class PermissionCatalogTests
         codes.ShouldContain("Matter.SetActive");
         codes.ShouldContain("User.Manage");
         codes.ShouldContain("Role.Manage");
-        codes.Count.ShouldBe(73); // MatterList.Manage (epic #1298); People.View and People.Manage (epic #1373)
+        codes.Count.ShouldBe(76); // MatterList.Manage (epic #1298); People.View and People.Manage, Vendor.View, Vendor.Manage and Vendor.Link (epic #1373)
     }
 
     [Fact]
@@ -211,6 +211,26 @@ public class PermissionCatalogTests
 
         foreach (var role in StarterRoles.All.Where(r => r.Permissions.Contains(Permissions.People.Manage)))
             role.Permissions.ShouldContain(Permissions.People.View, role.Name + ": Manage without View would show nothing");
+
+        // Vendors (epic #1373, owner mockup matrix): Director, Project Manager and Pod Lead see vendors; only the Director maintains them; Director and Project Manager link them to matters.
+        foreach (var role in new[] { "Director", "Project Manager", "Pod Lead" })
+            P(role).ShouldContain(Permissions.Vendor.View, role);
+        P("Director").ShouldContain(Permissions.Vendor.Manage);
+        P("Director").ShouldContain(Permissions.Vendor.Link);
+        P("Project Manager").ShouldContain(Permissions.Vendor.Link);
+        P("Project Manager").ShouldNotContain(Permissions.Vendor.Manage);
+        P("Pod Lead").ShouldNotContain(Permissions.Vendor.Manage);
+        P("Pod Lead").ShouldNotContain(Permissions.Vendor.Link);
+        foreach (var role in new[] { "Data Technician", "Data Scientist" })
+        {
+            P(role).ShouldNotContain(Permissions.Vendor.View, role);
+            P(role).ShouldNotContain(Permissions.Vendor.Manage, role);
+            P(role).ShouldNotContain(Permissions.Vendor.Link, role);
+        }
+
+        StarterRoles.All.Select(r => r.Name).ShouldNotContain("SME Intake Coordinator"); // a mockup-only role: nothing is granted to it
+        foreach (var role in StarterRoles.All.Where(r => r.Permissions.Contains(Permissions.Vendor.Manage) || r.Permissions.Contains(Permissions.Vendor.Link)))
+            role.Permissions.ShouldContain(Permissions.Vendor.View, role.Name + ": Manage or Link without View would show nothing");
     }
 
     [Fact]

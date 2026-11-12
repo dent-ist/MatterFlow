@@ -40,6 +40,15 @@ public static class ErrorCodes
     /// <summary>A person linked to a user: name, e-mail and type follow the user and the person cannot be deactivated here (People, epic #1373).</summary>
     public const string SystemPersonReadOnly = "SYSTEM_PERSON_READ_ONLY";
 
+    /// <summary>A vendor linked to one or more matters cannot be deleted (Vendors, epic #1373). The message and <c>meta.matterCount</c> say how many; change its category to Blacklisted instead.</summary>
+    public const string VendorLinkedToMatters = "VENDOR_LINKED_TO_MATTERS";
+
+    /// <summary>The vendor is Blacklisted: linking it to a matter needs <c>confirmBlacklisted</c> true on the request (the "I have read this" tick).</summary>
+    public const string VendorBlacklistedConfirmation = "VENDOR_BLACKLISTED_CONFIRMATION_REQUIRED";
+
+    /// <summary>The person is already a contact of the vendor, or the vendor is already linked to the matter.</summary>
+    public const string DuplicateLink = "DUPLICATE_LINK";
+
     public const string ClientInactive = "CLIENT_INACTIVE";
     public const string ProjectInactive = "PROJECT_INACTIVE";
     public const string PodInactive = "POD_INACTIVE";

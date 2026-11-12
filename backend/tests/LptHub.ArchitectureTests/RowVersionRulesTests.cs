@@ -25,7 +25,7 @@ public class RowVersionRulesTests
     private static IEnumerable<Type> RequestTypes()
     {
         var assemblies = new List<Assembly> { typeof(Program).Assembly, typeof(IdentityModule).Assembly };
-        foreach (var name in new[] { "Audit", "Configuration", "Organization", "Assets", "WorkflowEngine", "WorkManagement", "WorkViews", "Search", "Intake", "Productions", "Notes" })
+        foreach (var name in new[] { "Audit", "Configuration", "Organization", "Assets", "WorkflowEngine", "WorkManagement", "WorkViews", "Search", "Intake", "Productions", "Notes", "Vendors" })
             assemblies.Add(Assembly.Load($"LptHub.{name}"));
 
         return assemblies

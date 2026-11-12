@@ -29,7 +29,9 @@
     <ProjectReference Include="..\..\src\Modules\LptHub.Notes\LptHub.Notes.csproj" />
     <ProjectReference Include="..\..\src\Modules\LptHub.Notes.Contracts\LptHub.Notes.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Modules\LptHub.Productions\LptHub.Productions.csproj" />
+    <ProjectReference Include="..\..\src\Modules\LptHub.Vendors\LptHub.Vendors.csproj" />
     <ProjectReference Include="..\..\src\Modules\LptHub.Productions.Contracts\LptHub.Productions.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\LptHub.Vendors.Contracts\LptHub.Vendors.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Modules\LptHub.Reports\LptHub.Reports.csproj" />
     <ProjectReference Include="..\..\src\Modules\LptHub.Reports.Contracts\LptHub.Reports.Contracts.csproj" />
   </ItemGroup>
