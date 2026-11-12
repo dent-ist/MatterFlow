@@ -11,6 +11,7 @@
     <ProjectReference Include="..\Modules\LptHub.Notifications\LptHub.Notifications.csproj" />
     <ProjectReference Include="..\Modules\LptHub.Notes\LptHub.Notes.csproj" />
     <ProjectReference Include="..\Modules\LptHub.Productions\LptHub.Productions.csproj" />
+    <ProjectReference Include="..\Modules\LptHub.Vendors\LptHub.Vendors.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />

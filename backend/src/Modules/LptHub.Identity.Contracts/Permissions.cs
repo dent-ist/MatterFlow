@@ -194,6 +194,19 @@ public static class Permissions
         public const string Manage = "People.Manage";
     }
 
+    /// <summary>Vendor permissions (epic #1373): vendors, their contacts and the link of a vendor to a matter.</summary>
+    public static class Vendor
+    {
+        /// <summary>See the Vendors page, vendor details and the Vendors panel of a matter. Needs <c>Matter.View</c> for the matter side.</summary>
+        public const string View = "Vendor.View";
+
+        /// <summary>Create, edit and delete vendors; add and edit contacts and contact notes; maintain the Services and Areas lists.</summary>
+        public const string Manage = "Vendor.Manage";
+
+        /// <summary>Link and unlink vendors on a matter. Needs <c>Vendor.View</c> and <c>Matter.View</c>.</summary>
+        public const string Link = "Vendor.Link";
+    }
+
     /// <summary>User permissions.</summary>
     public static class User
     {
@@ -375,6 +388,9 @@ public static class Permissions
         Pod.ManageMembers,
         People.View,
         People.Manage,
+        Vendor.View,
+        Vendor.Manage,
+        Vendor.Link,
         User.View,
         User.Manage,
         User.ManageAvailability,

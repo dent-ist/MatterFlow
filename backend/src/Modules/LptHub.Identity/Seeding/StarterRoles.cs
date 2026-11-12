@@ -50,6 +50,13 @@ public static class StarterRoles
 
     private static readonly string[] PeopleManage = [Permissions.People.View, Permissions.People.Manage];
 
+    /// <summary>Vendors (epic #1373, issue #1377, owner mockup matrix): Director, Project Manager and Pod Lead see vendors; only the Director maintains them; Director and Project Manager link vendors to matters. "SME Intake Coordinator" of the mockup is not a starter role.</summary>
+    private static readonly string[] VendorView = [Permissions.Vendor.View];
+
+    private static readonly string[] VendorManage = [Permissions.Vendor.View, Permissions.Vendor.Manage, Permissions.Vendor.Link];
+
+    private static readonly string[] VendorLink = [Permissions.Vendor.View, Permissions.Vendor.Link];
+
     private static readonly string[] NumbersAndActivation =
     [
         Permissions.Client.EditNumber, Permissions.Matter.EditNumber, Permissions.Matter.SetActive,
@@ -69,7 +76,7 @@ public static class StarterRoles
     [
         // Matter.BeManager (owner decision, issue #976, 2026-11-07; script 66 for existing databases): the Director opens My Matters (the page needs BeManager) and can be named as a matter's project manager.
         new("Director", "Department head: full operational access plus oversight.",
-            [..Everyone, ..ClientMatterEdit, ..NumbersAndActivation, ..ProjectManage, Permissions.Matter.BeManager, ..AssignManagers, ..MatterContentManage, ..PeopleManage, Permissions.Matter.ViewSensitive, Permissions.Asset.Dispose, Permissions.Pod.Manage, Permissions.Pod.ManageMembers,
+            [..Everyone, ..ClientMatterEdit, ..NumbersAndActivation, ..ProjectManage, Permissions.Matter.BeManager, ..AssignManagers, ..MatterContentManage, ..PeopleManage, ..VendorManage, Permissions.Matter.ViewSensitive, Permissions.Asset.Dispose, Permissions.Pod.Manage, Permissions.Pod.ManageMembers,
                 Permissions.User.View, Permissions.Audit.View,
                 Permissions.Dashboard.View, Permissions.Dashboard.ViewSummary, Permissions.Dashboard.ViewBreakdowns, Permissions.Dashboard.ViewTrends,
                 Permissions.Dashboard.ViewSwimlane, Permissions.Dashboard.ViewUsers, Permissions.Dashboard.ViewCoverage,
@@ -77,10 +84,10 @@ public static class StarterRoles
             LandingPageKeys.Dashboard),
         // Report.Run (owner decision 8, 2026-11-07; script 65 for existing databases): the only starter role that may run reports. It shows only the reports an administrator assigns to the role.
         new("Project Manager", "Manages clients, matters and projects, can be named as a matter's project manager; works from My Matters.",
-            [..Everyone, ..ClientMatterEdit, ..NumbersAndActivation, ..ProjectManage, Permissions.Matter.BeManager, ..AssignManagers, ..MatterContentManage, ..PeopleManage, Permissions.Asset.Dispose, Permissions.Report.Run],
+            [..Everyone, ..ClientMatterEdit, ..NumbersAndActivation, ..ProjectManage, Permissions.Matter.BeManager, ..AssignManagers, ..MatterContentManage, ..PeopleManage, ..VendorLink, Permissions.Asset.Dispose, Permissions.Report.Run],
             LandingPageKeys.MyMatters),
         new("Pod Lead", "Leads a pod: manages pod members; sees the Dashboard summary, swimlane and team workload.",
-            [..Everyone, ..ClientMatterEdit, ..ProjectManage, ..MatterContentManage, ..PeopleView, Permissions.Pod.Manage, Permissions.Pod.ManageMembers,
+            [..Everyone, ..ClientMatterEdit, ..ProjectManage, ..MatterContentManage, ..PeopleView, ..VendorView, Permissions.Pod.Manage, Permissions.Pod.ManageMembers,
                 Permissions.Dashboard.View, Permissions.Dashboard.ViewSummary, Permissions.Dashboard.ViewSwimlane, Permissions.Dashboard.ViewUsers,
                 Permissions.Dashboard.ViewCoverage, ..CalendarAccess]),
         new("Data Technician", "Works tasks and manages projects.",
