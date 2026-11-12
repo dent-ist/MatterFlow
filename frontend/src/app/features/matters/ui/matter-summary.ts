@@ -24,7 +24,7 @@ import { IntPipe } from '../../../shared/ui/number-format';
  *   Assets by type: equal tiles, one per type, that scroll sideways instead of wrapping; each opens the Assets tab for the type  [Asset.View]
  *   Details: ONE full-width card (the shared `mf-details-card`, D-44f, #1253) that fits its content, sits at the top and scrolls inside itself when it is taller than the room; its Edit button is in the page header.
  *     Small muted labels over values in 3 columns (card 1100 px and wider) or 2: CM number (one highlighted line), Client, Matter number,
- *     Matter name, Matter Type, Current State, DMS Path and DFS Path (full width, with Copy; epic #1298), Status, Sensitive (only when sensitive), Primary PM, Secondary PM, AI allowed, Created, Last changed, then the custom fields (no heading).
+ *     Matter name, Matter Types (all of them), Matter Category, Current State, DMS Path and DFS Path (full width, with Copy; epic #1298), Status, Sensitive (only when sensitive), Primary PM, Secondary PM, AI allowed, Created, Last changed, then the custom fields (no heading).
  *
  * Only fields the Matter already has plus AI allowed. The recent activity lives on the Activities tab (owner decision, MD-42).
  */
@@ -235,11 +235,18 @@ import { IntPipe } from '../../../shared/ui/number-format';
         <div mfDetailField label="Matter Name">
           <span data-matter-name>{{ matter().name }}</span>
         </div>
-        <div mfDetailField label="Matter Type">
-          @if (matter().matterType; as t) {
-            <span class="ms__clip" data-matter-type [mfTip]="listTip(t)">{{ t.name }}</span>
+        <div mfDetailField label="Matter Types">
+          @if (matter().matterTypes.length > 0) {
+            <span class="ms__clip" data-matter-type [mfTip]="typesTip()">{{ typesText() }}</span>
           } @else {
             <span class="ms__none" data-matter-type>Not set</span>
+          }
+        </div>
+        <div mfDetailField label="Matter Category">
+          @if (matter().matterCategory; as c) {
+            <span class="ms__clip" data-matter-category [mfTip]="listTip(c)">{{ c.name }}</span>
+          } @else {
+            <span class="ms__none" data-matter-category>Not set</span>
           }
         </div>
         <div mfDetailField label="Current State">
@@ -372,6 +379,20 @@ export class MatterSummary {
     (this.assetsLoader.data() ?? []).filter((t) => t.count > 0),
   );
   protected readonly ai = computed(() => aiLabel(this.matter().aiAllowed));
+
+  /** The Matter Types as one line, in the order of the Matter Types list: "Litigation, Investigation". */
+  protected readonly typesText = computed(() =>
+    this.matter()
+      .matterTypes.map((t) => t.name)
+      .join(', '),
+  );
+
+  /** The tooltip of the Matter Types: every name, an item an administrator has since deactivated marked "(inactive)". */
+  protected readonly typesTip = computed(() =>
+    this.matter()
+      .matterTypes.map((t) => this.listTip(t))
+      .join(', '),
+  );
 
   /** The tooltip of a Matter Type or Current State: the full name, with " (inactive)" for an item an administrator has since deactivated (the cell shows the plain name). */
   protected listTip(t: { name: string; isActive: boolean }): string {

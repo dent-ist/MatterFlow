@@ -1,5 +1,5 @@
 import { axeAvailable, axeViolations } from '../support/axe';
-import { dropdownById } from '../support/dropdown';
+import { dropdownById, toggleDropdownOptions } from '../support/dropdown';
 import { expect, test } from '../support/fixtures';
 import { SIZES } from '../support/labels';
 import { uid } from '../support/seed';
@@ -17,6 +17,14 @@ test.describe('Matter fields: dialog, list and Matter Lists (#1301)', () => {
     const admin = seed.admin;
     const type = await admin.post('/api/v1/matter-types', {
       name: `Type ${token}`,
+      isActive: true,
+    });
+    const second = await admin.post('/api/v1/matter-types', {
+      name: `Second ${token}`,
+      isActive: true,
+    });
+    const category = await admin.post('/api/v1/matter-categories', {
+      name: `Category ${token}`,
       isActive: true,
     });
     const state = await admin.post('/api/v1/current-states', {
@@ -43,12 +51,18 @@ test.describe('Matter fields: dialog, list and Matter Lists (#1301)', () => {
 
     await dialog.locator('#matter-dms-path').fill('\\\\fs01\\dms\\Matters\\1234');
     await dialog.locator('#matter-dfs-path').fill('https://dfs.example.com/m/1234');
-    await dropdownById(dialog, 'matter-type').selectOption({ label: `Type ${token}` });
+    await toggleDropdownOptions(dialog, 'matter-type', `Type ${token}`, `Second ${token}`);
+    await expect(dialog.locator('#matter-type')).toContainText(`Type ${token} +1`);
+    await dropdownById(dialog, 'matter-category').selectOption({ label: `Category ${token}` });
     await dropdownById(dialog, 'matter-state').selectOption({ label: `State ${token}` });
     if (axeAvailable()) expect(await axeViolations(page), 'Edit Matter dialog').toEqual([]);
     await dialog.getByRole('button', { name: 'Save Changes' }).click();
+    // Several types show in one line, in the order of the Matter Types list.
     await expect(page.locator('[data-summary-details] [data-matter-type]')).toHaveText(
-      `Type ${token}`,
+      `Type ${token}, Second ${token}`,
+    );
+    await expect(page.locator('[data-summary-details] [data-matter-category]')).toHaveText(
+      `Category ${token}`,
     );
 
     // A second edit that touches only the name must not clear the four fields (the API takes them as full values).
@@ -56,9 +70,17 @@ test.describe('Matter fields: dialog, list and Matter Lists (#1301)', () => {
     await dialog.locator('#matter-name').fill(`Form Matter ${token} renamed`);
     await dialog.getByRole('button', { name: 'Save Changes' }).click();
     const saved = await admin.get(`/api/v1/matters/${matter.matterId}`);
-    expect(saved.matterType.id).toBe(type.id);
+    expect(saved.matterTypes.map((t: { id: number }) => t.id)).toEqual([type.id, second.id]);
+    expect(saved.matterCategory.id).toBe(category.id);
     expect(saved.currentState.id).toBe(state.id);
     expect(saved.dmsPath).toBe('\\\\fs01\\dms\\Matters\\1234');
+    // Both changes are in the audit log with the names (epic #1368, #1372).
+    const events = await admin.get(
+      `/api/v1/audit/events?objectType=Matter&objectId=${matter.matterId}&pageSize=100`,
+    );
+    const summaries = events.items.map((e: { summary: string }) => e.summary);
+    expect(summaries).toContain(`Matter Types set to Type ${token}, Second ${token}.`);
+    expect(summaries).toContain(`Matter Category set to Category ${token}.`);
     expect(saved.dfsPath).toBe('https://dfs.example.com/m/1234');
   });
 
@@ -80,13 +102,13 @@ test.describe('Matter fields: dialog, list and Matter Lists (#1301)', () => {
       name: fresh.name,
       isSensitive: false,
       rowVersion: fresh.rowVersion,
-      matterTypeId: type.id,
+      matterTypeIds: [type.id],
     });
     await page.setViewportSize(SIZES[1]);
     await page.goto(`/matters?name=${token}`);
     const heads = page.locator('thead th');
     // Owner decision 2026-11-08 (spec 6.1): Matter Type and Current State on by default; the PM and count columns off.
-    await expect(heads.filter({ hasText: 'Matter Type' })).toHaveCount(1);
+    await expect(heads.filter({ hasText: 'Matter Types' })).toHaveCount(1);
     await expect(heads.filter({ hasText: 'Current State' })).toHaveCount(1);
     await expect(heads.filter({ hasText: 'Primary PM' })).toHaveCount(0);
     await expect(heads.filter({ hasText: 'Open Tasks' })).toHaveCount(0);

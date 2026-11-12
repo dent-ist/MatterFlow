@@ -67,6 +67,8 @@ internal abstract class MatterListConfiguration<T>(string table, string uniqueNa
 
 internal sealed class MatterTypeConfiguration() : MatterListConfiguration<MatterType>("MatterType", "UQ_MatterType_Name");
 
+internal sealed class MatterCategoryConfiguration() : MatterListConfiguration<MatterCategory>("MatterCategory", "UQ_MatterCategory_Name");
+
 internal sealed class CurrentStateConfiguration() : MatterListConfiguration<CurrentState>("CurrentState", "UQ_CurrentState_Name");
 
 internal sealed class TeamTitleConfiguration() : MatterListConfiguration<TeamTitle>("TeamTitle", "UQ_TeamTitle_Name");

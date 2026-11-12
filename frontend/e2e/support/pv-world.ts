@@ -49,7 +49,7 @@ export async function pvWorld(seed: Seeder, personas: Personas, label: string): 
       name,
       isSensitive,
       // Matter Type, Current State and the paths are full values on PUT (omitting them clears them): send the current ones.
-      matterTypeId: fresh.matterType?.id,
+      matterTypeIds: (fresh.matterTypes ?? []).map((t: { id: number }) => t.id),
       currentStateId: fresh.currentState?.id,
       dmsPath: fresh.dmsPath ?? undefined,
       dfsPath: fresh.dfsPath ?? undefined,

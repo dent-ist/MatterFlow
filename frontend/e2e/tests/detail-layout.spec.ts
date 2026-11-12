@@ -54,9 +54,9 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
 
     // The primary action of the header (the Matters tab has its own button too until the list package drops it).
     await page.locator('[data-page-actions]').getByRole('button', { name: 'New Matter' }).click();
-    // The pop-up of the Matters list opens with this client (MD-22): the old address redirects there.
-    await expect(page.getByRole('dialog', { name: 'New Matter' })).toBeVisible();
-    await expect(page).toHaveURL(/\/matters$/);
+    // The New Matter page opens with this client (epic #1368).
+    await expect(page.getByRole('heading', { level: 1, name: 'New Matter' })).toBeVisible();
+    await expect(page).toHaveURL(/\/matters\/new\?clientId=\d+$/);
   });
 
   test('Client: the matters grid filters by name through the column filter row', async ({

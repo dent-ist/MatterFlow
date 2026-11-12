@@ -76,6 +76,8 @@ describe('audit formatting', () => {
     expect(eventTypeLabel('COMMENT_ADDED')).toBe('Comment added');
     expect(eventTypeLabel('TASK_TYPE_WORKFLOWS_CHANGED')).toBe('Task type workflows changed');
     expect(eventTypeLabel('MATTER_SENSITIVITY_CHANGED')).toBe('Matter sensitivity changed');
+    expect(eventTypeLabel('MATTER_TYPE_CHANGED')).toBe('Matter Types changed');
+    expect(eventTypeLabel('MATTER_CATEGORY_CHANGED')).toBe('Matter Category changed');
     expect(eventTypeLabel('ASSET_NEXT_NUMBER_SET')).toBe('Asset next number set');
     expect(eventTypeLabel('ASSET_NUMBER_ASSIGNED')).toBe('Asset number assigned');
     expect(eventTypeLabel('FIELD_CHANGED')).toBe('Field changed');

@@ -52,9 +52,9 @@ export class MatterFormPage {
   }
 
   async open(): Promise<void> {
-    // The old address opens the New matter pop-up on the Matters list (MD-22).
+    // New Matter is a full page (epic #1368, #1371), no longer a pop-up.
     await this.page.goto('/matters/new');
-    await expect(this.page.getByRole('dialog', { name: 'New Matter' })).toBeVisible();
+    await expect(this.page.getByRole('heading', { level: 1, name: 'New Matter' })).toBeVisible();
   }
 
   /** Picks the client by typing its number and choosing the suggestion. */

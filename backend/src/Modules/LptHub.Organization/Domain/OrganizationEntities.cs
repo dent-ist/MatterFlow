@@ -69,9 +69,12 @@ public class Matter : AuditedEntity<int>, IAuditScoped
     /// <summary>Which AI tools may be used on this Matter's content (MD-02, #1003): No (default), On-prem only or Company-approved. Changes are audited as a field change.</summary>
     public MatterAiAllowed AiAllowed { get; set; }
 
-    /// <summary>Optional Matter Type (admin list, epic #1298). Changes are audited by <c>MATTER_TYPE_CHANGED</c> events with the names, not as generic field changes.</summary>
+    // The Matter Types of a matter (epic #1368, issue #1370: zero, one or several) are the rows of MatterMatterType, not a column of this entity. The old single column
+    // dbo.Matter.MatterTypeId is kept in the database until a later script drops it; nothing maps or reads it any more.
+
+    /// <summary>Optional Matter Category (admin list, epic #1368; a single choice). Changes are audited by <c>MATTER_CATEGORY_CHANGED</c> events with the names, not as generic field changes.</summary>
     [AuditExplicit]
-    public int? MatterTypeId { get; set; }
+    public int? MatterCategoryId { get; set; }
 
     /// <summary>Optional Current State (admin list, epic #1298): the current value only. Each change is audited by a <c>MATTER_STATE_CHANGED</c> event with the names.</summary>
     [AuditExplicit]
@@ -89,6 +92,18 @@ public class Matter : AuditedEntity<int>, IAuditScoped
     int? IAuditScoped.AuditMatterId => Id;
 
     long? IAuditScoped.AuditTaskId => null;
+}
+
+/// <summary>
+/// One Matter Type chosen on a matter (epic #1368, issue #1370): the matter and the type are the key. Changes are audited by <c>MATTER_TYPE_CHANGED</c> events with the
+/// type names (one event per save that changes the set), so the row itself is not field-audited. Shown in the order of the Matter Types list.
+/// </summary>
+public class MatterMatterType
+{
+    public int MatterId { get; set; }
+
+    /// <summary>The Matter Type (admin list in the Configuration module); a type that is later deactivated stays on the matters that use it.</summary>
+    public int MatterTypeId { get; set; }
 }
 
 /// <summary>A flat container of Tasks within a Matter (no nesting). A Task's Project must belong to the Task's Matter.</summary>

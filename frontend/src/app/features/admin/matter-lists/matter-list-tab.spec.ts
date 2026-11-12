@@ -63,9 +63,14 @@ describe('Matter Lists wording (UI spec 7.3)', () => {
     );
   });
 
-  it('has three lists on one permission, in the specified order', () => {
+  it('has four lists on one permission, in the specified order', () => {
     const matter = ADMIN_LISTS.filter((l) => l.group === 'Matter');
-    expect(matter.map((l) => l.label)).toEqual(['Matter Types', 'Current States', 'Team Titles']);
+    expect(matter.map((l) => l.label)).toEqual([
+      'Matter Types',
+      'Matter Categories',
+      'Current States',
+      'Team Titles',
+    ]);
     for (const l of matter) expect(l.permission).toBe('MatterList.Manage');
     // The registry and this tab name the New button the same way.
     expect(matter.map((l) => l.newLabel)).toEqual(
@@ -73,6 +78,7 @@ describe('Matter Lists wording (UI spec 7.3)', () => {
     );
     expect(types.newButton).toBe('New Matter Type');
     expect(MATTER_LIST_TEXTS['current-states'].newButton).toBe('New State');
+    expect(MATTER_LIST_TEXTS['matter-categories'].newButton).toBe('New Matter Category');
     expect(titles.newButton).toBe('New Title');
   });
 });

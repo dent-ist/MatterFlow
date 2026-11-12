@@ -1,9 +1,10 @@
 import { AdminTab } from '../admin-tabs';
 import { ADMIN_FIELD_LIMITS } from '../shared/field-limits';
 
-/** The eight lists of Administration > Lists (epic #1314), in catalogue order. The key is also the address segment: `/admin/lists/<key>`. */
+/** The nine lists of Administration > Lists (epic #1314), in catalogue order. The key is also the address segment: `/admin/lists/<key>`. */
 export type AdminListKey =
   | 'matter-types'
+  | 'matter-categories'
   | 'current-states'
   | 'team-titles'
   | 'priorities'
@@ -86,6 +87,26 @@ export const ADMIN_LISTS: readonly AdminListDef[] = [
     idField: 'id',
     nameField: 'name',
     nameLimit: ADMIN_FIELD_LIMITS.matterTypeName,
+    hasActive: true,
+    colour: null,
+    reorder: true,
+    delete: true,
+    create: true,
+    defaultAction: false,
+  },
+  {
+    key: 'matter-categories',
+    group: 'Matter',
+    label: 'Matter Categories',
+    permission: 'MatterList.Manage',
+    hint: 'Category of a matter, one per matter',
+    shownOn: 'Shown on: Matter form, Matter page.',
+    rule: MATTER_RULE,
+    newLabel: 'New Matter Category',
+    endpoint: '/api/v1/matter-categories',
+    idField: 'id',
+    nameField: 'name',
+    nameLimit: ADMIN_FIELD_LIMITS.matterCategoryName,
     hasActive: true,
     colour: null,
     reorder: true,

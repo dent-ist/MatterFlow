@@ -31,8 +31,10 @@ Totals (counted by `tools/db/schema-fingerprint.sql` on a database built from th
 | [FormVersion](#formversion) | Forms and custom fields | Configuration | 13 | 5 |
 | [Holiday](#holiday) | Availability and Calendar | Identity | 22 | 3 |
 | [HolidayCalendar](#holidaycalendar) | Availability and Calendar | Identity | 12 | 2 |
-| [Matter](#matter) | Clients, Matters and Projects | Organization | 21 | 7 |
+| [Matter](#matter) | Clients, Matters and Projects | Organization | 22 | 8 |
+| [MatterCategory](#mattercategory) | Clients, Matters and Projects | Configuration | 8 | 2 |
 | [MatterEvent](#matterevent) | Clients, Matters and Projects | Organization | 12 | 3 |
+| [MatterMatterType](#mattermattertype) | Clients, Matters and Projects | Organization | 2 | 2 |
 | [MatterTeamMember](#matterteammember) | Clients, Matters and Projects | Organization | 11 | 4 |
 | [MatterType](#mattertype) | Clients, Matters and Projects | Configuration | 9 | 2 |
 | [Note](#note) | Notes | Notes | 16 | 5 |
@@ -244,19 +246,19 @@ A law-firm client with a zero-padded 5-digit client number.
 A client case. Business reference is client number plus matter number (CM Number). Has Sensitive flag, Primary and Secondary project manager, an AI allowed switch and custom fields.
 
 - **Module:** Organization. **Area:** Clients, Matters and Projects.
-- **Scripts:** created by script 5; changed by scripts 28, 35, 37, 51, 64.
+- **Scripts:** created by script 5; changed by scripts 28, 35, 37, 51, 64, 68, 69.
 - **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_Matter` (MatterId), int identity.
-- **Columns (21; `?` = nullable):** `MatterId int`, `ClientId int`, `ClientNumber char(5)`, `MatterNumber char(5)`, `MatterRef char(11)`, `Name nvarchar(300)`, `IsActive bit`, `IsSensitive bit`, `CustomFieldsJson nvarchar(max)?`, `PrimaryManagerId int?`, `SecondaryManagerId int?`, `AiAllowed tinyint`, `MatterTypeId int?`, `CurrentStateId int?`, `DmsPath nvarchar(1000)?`, `DfsPath nvarchar(1000)?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
+- **Columns (22; `?` = nullable):** `MatterId int`, `ClientId int`, `ClientNumber char(5)`, `MatterNumber char(5)`, `MatterRef char(11)`, `Name nvarchar(300)`, `IsActive bit`, `IsSensitive bit`, `CustomFieldsJson nvarchar(max)?`, `PrimaryManagerId int?`, `SecondaryManagerId int?`, `AiAllowed tinyint`, `MatterTypeId int?` (deprecated since script 69: no longer read or written, the Matter Types of a matter are the rows of `MatterMatterType`), `CurrentStateId int?`, `DmsPath nvarchar(1000)?`, `DfsPath nvarchar(1000)?`, `MatterCategoryId int?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (7):**
   - `FK_Matter_CurrentState`: `CurrentStateId` to `CurrentState(CurrentStateId)`
-  - `FK_Matter_MatterType`: `MatterTypeId` to `MatterType(MatterTypeId)`
+  -   - `FK_Matter_MatterCategory`: `MatterCategoryId` to `MatterCategory(MatterCategoryId)`
   - `FK_Matter_Client`: `ClientId, ClientNumber` to `Client(ClientId, ClientNumber)`
   - `FK_Matter_CreatedBy`: `CreatedByUserId` to `AppUser(UserId)`
   - `FK_Matter_ModifiedBy`: `ModifiedByUserId` to `AppUser(UserId)`
   - `FK_Matter_PrimaryManager`: `PrimaryManagerId` to `AppUser(UserId)`
   - `FK_Matter_SecondaryManager`: `SecondaryManagerId` to `AppUser(UserId)`
-- **Indexes and unique constraints (10):** `IX_Matter_CurrentState` (CurrentStateId); `IX_Matter_MatterType` (MatterTypeId); `IX_Matter_Client` (ClientId,IsActive); `IX_Matter_Name` (Name); `IX_Matter_Number` (MatterNumber); `IX_Matter_PrimaryManager` (PrimaryManagerId) - filter [PrimaryManagerId] IS NOT NULL; includes IsActive; `IX_Matter_SecondaryManager` (SecondaryManagerId) - filter [SecondaryManagerId] IS NOT NULL; includes IsActive; `IX_Matter_Sensitive` (MatterId) - filter [IsSensitive]=(1; includes PrimaryManagerId,SecondaryManagerId; `UQ_Matter_ClientMatterNumber` (ClientId,MatterNumber) - unique; `UQ_Matter_Ref` (MatterRef) - unique.
+- **Indexes and unique constraints (10):** `IX_Matter_CurrentState` (CurrentStateId); `IX_Matter_MatterCategory` (MatterCategoryId); `IX_Matter_Client` (ClientId,IsActive); `IX_Matter_Name` (Name); `IX_Matter_Number` (MatterNumber); `IX_Matter_PrimaryManager` (PrimaryManagerId) - filter [PrimaryManagerId] IS NOT NULL; includes IsActive; `IX_Matter_SecondaryManager` (SecondaryManagerId) - filter [SecondaryManagerId] IS NOT NULL; includes IsActive; `IX_Matter_Sensitive` (MatterId) - filter [IsSensitive]=(1; includes PrimaryManagerId,SecondaryManagerId; `UQ_Matter_ClientMatterNumber` (ClientId,MatterNumber) - unique; `UQ_Matter_Ref` (MatterRef) - unique.
 - **Check constraints (4):** `CK_Matter_AiAllowed`, `CK_Matter_CustomFieldsJson`, `CK_Matter_ManagersDiffer`, `CK_Matter_Number`.
 - **Triggers:** `TR_Matter_SensitivityToTask`.
 
@@ -305,6 +307,20 @@ Admin-managed list: the title of a team member (`MatterTeamMember.TeamTitleId`).
 - **Indexes and unique constraints (2):** `IX_TeamTitle_Sort` (SortOrder); `UQ_TeamTitle_Name` (Name) - unique.
 - **Check constraints (1):** `CK_TeamTitle_Name`.
 
+### MatterMatterType
+
+The Matter Types chosen on a matter (a multi-select; epic #1368). One row per matter and type. Script 69 copied each former single `Matter.MatterTypeId` in as one row. The types are shown in the order of the `MatterType` list.
+
+- **Module:** Organization. **Area:** Clients, Matters and Projects.
+- **Scripts:** created by script 69.
+- **Report login (`lpt_report_reader`):** allow.
+- **Primary key:** `PK_MatterMatterType` (MatterId, MatterTypeId).
+- **Columns (2; `?` = nullable):** `MatterId int`, `MatterTypeId int`.
+- **Foreign keys (2):**
+  - `FK_MatterMatterType_Matter`: `MatterId` to `Matter(MatterId)`
+  - `FK_MatterMatterType_MatterType`: `MatterTypeId` to `MatterType(MatterTypeId)`
+- **Indexes and unique constraints (1):** `IX_MatterMatterType_MatterType` (MatterTypeId,MatterId).
+
 ### MatterTeamMember
 
 A person on a matter's team: a typed-in contact (name, email, title), not a user account, so it never affects visibility or permissions. The email is unique within the matter without regard to case.
@@ -337,6 +353,21 @@ A project inside a matter, with custom fields.
   - `FK_Project_ModifiedBy`: `ModifiedByUserId` to `AppUser(UserId)`
 - **Indexes and unique constraints (4):** `IX_Project_Matter` (MatterId,IsActive); `IX_Project_Name` (Name); `UQ_Project_IdMatter` (ProjectId,MatterId) - unique; `UQ_Project_MatterName` (MatterId,Name) - unique.
 - **Check constraints (1):** `CK_Project_CustomFieldsJson`.
+
+### MatterCategory
+
+Admin-managed list: the Matter Category a matter can carry (optional, a single choice; `Matter.MatterCategoryId`). Names are unique; a used item is deactivated, an unused one may be deleted. The list starts empty and is filled on the Admin Lists page.
+
+- **Module:** Configuration. **Area:** Clients, Matters and Projects.
+- **Scripts:** created by script 68.
+- **Report login (`lpt_report_reader`):** allow.
+- **Primary key:** `PK_MatterCategory` (MatterCategoryId), int identity.
+- **Columns (8; `?` = nullable):** `MatterCategoryId int`, `Name nvarchar(100)`, `SortOrder int`, `IsActive bit`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
+- **Foreign keys (2):**
+  - `FK_MatterCategory_CreatedBy`: `CreatedByUserId` to `AppUser(UserId)`
+  - `FK_MatterCategory_ModifiedBy`: `ModifiedByUserId` to `AppUser(UserId)`
+- **Indexes and unique constraints (2):** `IX_MatterCategory_Sort` (SortOrder); `UQ_MatterCategory_Name` (Name) - unique.
+- **Check constraints (1):** `CK_MatterCategory_Name`.
 
 ### MatterEvent
 

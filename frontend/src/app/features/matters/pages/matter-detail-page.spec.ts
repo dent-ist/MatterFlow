@@ -409,7 +409,8 @@ describe('MatterDetailPage', () => {
       'Client',
       'Matter Number',
       'Matter Name',
-      'Matter Type',
+      'Matter Types',
+      'Matter Category',
       'Current State',
       'DMS Path',
       'DFS Path',
@@ -433,6 +434,28 @@ describe('MatterDetailPage', () => {
     // Activities is a tab now, no longer a drawer button.
     expect(el().querySelector('mf-tabs')!.textContent).toMatch(/Activities/);
     expect(el().querySelector('[data-page-actions]')!.textContent).not.toContain('Activity');
+  });
+
+  it('shows every Matter Type and the Matter Category on the Summary, "Not set" when there is none; a retired item is marked in its tooltip (epic #1368)', async () => {
+    await create(
+      ['Matter.View'],
+      aMatter({
+        matterTypes: [
+          { id: 1, name: 'Litigation', isActive: true },
+          { id: 2, name: 'Investigation', isActive: false },
+        ],
+        matterCategory: { id: 4, name: 'Advisory', isActive: true },
+      }),
+    );
+    const types = el().querySelector('[data-matter-type]')!;
+    expect(types.textContent!.trim()).toBe('Litigation, Investigation');
+    const category = el().querySelector('[data-matter-category]')!;
+    expect(category.textContent!.trim()).toBe('Advisory');
+
+    TestBed.resetTestingModule();
+    await create(['Matter.View']);
+    expect(el().querySelector('[data-matter-type]')!.textContent!.trim()).toBe('Not set');
+    expect(el().querySelector('[data-matter-category]')!.textContent!.trim()).toBe('Not set');
   });
 
   it('shows the assets by type as tiles that open the Assets tab for the type (needs Asset.View); the Summary has no recent activity (MD-42)', async () => {

@@ -4,7 +4,7 @@ import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
 
 /**
- * One matter form for "+ New Matter" and Edit (MD-43, #1061): the same fields in the same order, the CM Number as a read-only preview, Client and Matter number locked in Edit,
+ * One matter form for the New Matter page (epic #1368; it was a pop-up) and the Edit pop-up (MD-43, #1061): the same fields in the same order, the CM Number as a read-only preview, Client and Matter number locked in Edit,
  * the matter number unlocked only after a confirmation and confirmed again on Save with its result. axe at both desktop sizes. Screenshots to E2E_SCREENSHOTS when set.
  */
 const SIZES = [
@@ -12,13 +12,12 @@ const SIZES = [
   [1920, 1080],
 ] as const;
 
-const fieldLabels = async (page: Page) =>
-  (await page.locator('.mf-formdlg').locator('.mf-label, .mf-field__label').allTextContents()).map(
-    (t) =>
-      t
-        .replace(/\(required\)/, '')
-        .replace(/\s+/g, ' ')
-        .trim(),
+const fieldLabels = async (page: Page, scope: string) =>
+  (await page.locator(scope).locator('.mf-label, .mf-field__label').allTextContents()).map((t) =>
+    t
+      .replace(/\(required\)/, '')
+      .replace(/\s+/g, ' ')
+      .trim(),
   );
 
 test.describe('Matter form (MD-43)', () => {
@@ -30,27 +29,29 @@ test.describe('Matter form (MD-43)', () => {
     const matter = await seed.matter({ client, name: `Form matter ${uid()}` });
     const dir = process.env['E2E_SCREENSHOTS'];
 
+    // New Matter is a full page (epic #1368, #1371); Edit stays the pop-up. Both hold the same matter form.
     await page.goto(`/matters/new?clientId=${client.clientId}`);
-    const dialog = page.locator('.mf-formdlg');
-    await expect(dialog).toContainText('New Matter');
-    const created = await fieldLabels(page);
+    const form = page.locator('[data-matter-create]');
+    await expect(page.getByRole('heading', { level: 1, name: 'New Matter' })).toBeVisible();
+    const created = await fieldLabels(page, '[data-matter-create]');
     expect(created.slice(0, 4)).toEqual(['Client', 'Matter Number', 'CM Number', 'Matter Name']);
-    await expect(dialog.locator('[data-cm-value]')).toHaveJSProperty('tagName', 'OUTPUT');
-    await dialog.locator('#matter-number').fill('12');
-    await expect(dialog.locator('[data-cm-value]')).toHaveText(`${client.clientNumber}-00012`);
+    expect(created).toContain('Matter Types');
+    expect(created).toContain('Matter Category');
+    await expect(form.locator('[data-cm-value]')).toHaveJSProperty('tagName', 'OUTPUT');
+    await form.locator('#matter-number').fill('12');
+    await expect(form.locator('[data-cm-value]')).toHaveText(`${client.clientNumber}-00012`);
     for (const [w, h] of SIZES) {
       await page.setViewportSize({ width: w, height: h });
       if (dir) await page.screenshot({ path: `${dir}/matter-form-new-${w}x${h}.png` });
       if (axeAvailable()) expect(await axeViolations(page), `New matter axe at ${w}`).toEqual([]);
     }
-    await page.keyboard.press('Escape');
-    await page.getByRole('dialog').getByRole('button', { name: 'Discard' }).click();
 
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/matters/${matter.matterId}`);
     await page.locator('[data-edit-matter]').click();
+    const dialog = page.locator('.mf-formdlg');
     await expect(dialog).toContainText('Edit Matter');
-    expect(await fieldLabels(page)).toEqual(created);
+    expect(await fieldLabels(page, '.mf-formdlg')).toEqual(created);
     // Client and Matter number are in the same places, locked; the CM Number shows the current one.
     await expect(dialog.locator('#matter-number')).toBeDisabled();
     await expect(dialog.locator('[data-cm-value]')).toHaveText(matter.matterRef);

@@ -196,10 +196,13 @@ describe('MattersListPage', () => {
     expect(fixture.nativeElement.querySelectorAll('.cfr-pair mf-filter-control')).toHaveLength(2);
   });
 
-  it('shows Matter Type and Current State by default; Primary PM, Secondary PM, Open Tasks and Overdue are one click away (owner 2026-11-08, D-43a)', async () => {
+  it('shows Matter Types and Current State by default; Primary PM, Secondary PM, Open Tasks and Overdue are one click away (owner 2026-11-08, D-43a)', async () => {
     const fixture = await create(['Matter.View', 'Task.View'], {}, [
       aMatter({
-        matterType: { id: 2, name: 'Securities Litigation', isActive: true },
+        matterTypes: [
+          { id: 2, name: 'Securities Litigation', isActive: true },
+          { id: 3, name: 'Investigation', isActive: true },
+        ],
         currentState: undefined,
       }),
     ]);
@@ -210,13 +213,14 @@ describe('MattersListPage', () => {
       'CM Number',
       'Matter Name',
       'Client',
-      'Matter Type',
+      'Matter Types',
       'Current State',
       'Status',
     ]);
     const row = fixture.nativeElement.querySelector('tbody tr')!;
+    // A matter with several types shows all of them in one line, in the order given.
     expect(row.querySelector('[data-cell=matterType]')!.textContent!.trim()).toBe(
-      'Securities Litigation',
+      'Securities Litigation, Investigation',
     );
     expect(row.querySelector('[data-cell=currentState]')!.textContent!.trim()).toBe('Not set');
     // 180 + 200 + 140 + 160 + 160 + 160 + 48 = 1048 of the 1098 px of the 1366 frame.
@@ -566,16 +570,13 @@ describe('MattersListPage', () => {
     expect(buttonByLabel(fixture.nativeElement, 'New Matter')).toBeUndefined();
   });
 
-  it('opens New matter as a pop-up dialog on the list instead of navigating (MD-22, #1026)', async () => {
+  it('opens New matter as a full page instead of a pop-up (epic #1368, #1371)', async () => {
     const fixture = await create(['Matter.View', 'Matter.Create']);
     buttonByLabel(fixture.nativeElement, 'New Matter')!.click();
     await settle(fixture);
 
-    const dialog = document.body.querySelector('.mf-formdlg');
-    expect(dialog).not.toBeNull();
-    expect(dialog?.textContent).toContain('New Matter');
-    expect(dialog?.querySelector('[data-panel-primary]')?.textContent).toContain('Create Matter');
-    expect(navigate).not.toHaveBeenCalledWith(['/matters/new']);
+    expect(navigate).toHaveBeenCalledWith(['/matters', 'new']);
+    expect(document.body.querySelector('.mf-formdlg')).toBeNull();
   });
 
   it('has a handle on every resizable column header and none on the selection and action columns (MD-21, #1025)', async () => {
@@ -586,7 +587,7 @@ describe('MattersListPage', () => {
     );
     expect(labels).toContain('Resize CM Number column');
     expect(labels).toContain('Resize Matter Name column');
-    expect(labels).toContain('Resize Matter Type column');
+    expect(labels).toContain('Resize Matter Types column');
   });
 
   it('reorders and hides columns from the shared Columns menu, remembers it per person, and resets (MD-28, #1032)', async () => {
@@ -641,7 +642,7 @@ describe('MattersListPage', () => {
         'Client',
         'Primary PM',
         'Secondary PM',
-        'Matter Type',
+        'Matter Types',
         'Current State',
         'Open Tasks',
         'Overdue',
@@ -667,7 +668,7 @@ describe('MattersListPage', () => {
         'CM Number',
         'Matter Name',
         'Client',
-        'Matter Type',
+        'Matter Types',
         'Current State',
         'Status',
       ]);

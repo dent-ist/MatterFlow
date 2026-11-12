@@ -141,6 +141,28 @@ export async function pickUserStates(page: Page, ...values: string[]): Promise<v
   await page.locator('[data-dd-done]').click();
 }
 
+/**
+ * The Matter Types field of the matter form (epic #1368): a multi-select dropdown. Opens it, clicks each named type (the checked ones combine) and closes it with Done.
+ * Pass the labels of the types to switch; a label that is already checked is unchecked.
+ */
+export async function toggleDropdownOptions(
+  scope: Page | Locator,
+  id: string,
+  ...labels: string[]
+): Promise<void> {
+  const button = dropdownById(scope, id);
+  const page = button.page();
+  await button.click();
+  await expect(page.locator('.dd-panel [role="listbox"]')).toBeVisible();
+  for (const label of labels)
+    await page
+      .locator('.dd-panel [role="option"]')
+      .filter({ hasText: new RegExp(`^\\s*${escape(label)}\\s*$`) })
+      .click();
+  await page.locator('[data-dd-done]').click();
+  await expect(page.locator('.dd-panel')).toHaveCount(0);
+}
+
 /** The number next to a state in the State dropdown (the people in it); '' is "All States". */
 export async function userStateCount(page: Page, key: string): Promise<number> {
   await page.getByRole('button', { name: /^State:/ }).click();

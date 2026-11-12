@@ -89,7 +89,7 @@ public sealed class MatterFieldsApiTests(SqlServerFixture sql) : IAsyncLifetime
 
         // Use it on a matter: the In Use count shows it and deleting is refused.
         var matter = await MatterAsync();
-        await OkAsync(await UpdateAsync(matter, new { matterTypeId = Id(created) }));
+        await OkAsync(await UpdateAsync(matter, new { matterTypeIds = new[] { Id(created) } }));
         var list = await OkAsync(await manager.GetAsync("/api/v1/matter-types"));
         list.EnumerateArray().First(i => Id(i) == Id(created)).GetProperty("inUseCount").GetInt32().ShouldBe(1);
         await ProblemAsync(await manager.DeleteAsync($"/api/v1/matter-types/{Id(created)}"), HttpStatusCode.Conflict, "IN_USE");
@@ -99,8 +99,8 @@ public sealed class MatterFieldsApiTests(SqlServerFixture sql) : IAsyncLifetime
         var row = current.EnumerateArray().First(i => Id(i) == Id(created));
         await OkAsync(await manager.PutAsJsonAsync($"/api/v1/matter-types/{Id(created)}", new { name = "Trial preparation", isActive = false, rowVersion = row.GetProperty("rowVersion").GetString() }));
         var shown = await MatterAsync();
-        shown.GetProperty("matterType").GetProperty("name").GetString().ShouldBe("Trial preparation");
-        shown.GetProperty("matterType").GetProperty("isActive").GetBoolean().ShouldBeFalse();
+        shown.GetProperty("matterTypes")[0].GetProperty("name").GetString().ShouldBe("Trial preparation");
+        shown.GetProperty("matterTypes")[0].GetProperty("isActive").GetBoolean().ShouldBeFalse();
 
         // An unused item is deleted for real; reorder needs every id once.
         var spare = await OkAsync(await manager.PostAsJsonAsync("/api/v1/team-titles", new { name = "Spare" }), HttpStatusCode.Created);
@@ -115,19 +115,19 @@ public sealed class MatterFieldsApiTests(SqlServerFixture sql) : IAsyncLifetime
     public async Task Type_state_and_paths_are_optional_saved_trimmed_returned_and_changes_are_audited_with_names()
     {
         var matter = await MatterAsync();
-        matter.GetProperty("matterType").ValueKind.ShouldBe(JsonValueKind.Null);
+        matter.GetProperty("matterTypes").GetArrayLength().ShouldBe(0);
         matter.GetProperty("currentState").ValueKind.ShouldBe(JsonValueKind.Null);
         matter.GetProperty("dmsPath").ValueKind.ShouldBe(JsonValueKind.Null);
 
         var type = await ItemIdAsync("matter-types", (Names(await OkAsync(await Admin.GetAsync("/api/v1/matter-types")))[0]));
         var startup = await ItemIdAsync("current-states", "Startup");
         var discovery = await ItemIdAsync("current-states", "Start of Discovery");
-        var saved = await OkAsync(await UpdateAsync(matter, new { matterTypeId = type, currentStateId = startup, dmsPath = @"  \\fs01\dms\1234\0056  ", dfsPath = "https://dfs.example.com/m/1" }));
+        var saved = await OkAsync(await UpdateAsync(matter, new { matterTypeIds = new[] { type }, currentStateId = startup, dmsPath = @"  \\fs01\dms\1234\0056  ", dfsPath = "https://dfs.example.com/m/1" }));
         saved.GetProperty("currentState").GetProperty("name").GetString().ShouldBe("Startup");
         saved.GetProperty("dmsPath").GetString().ShouldBe(@"\\fs01\dms\1234\0056");
         saved.GetProperty("dfsPath").GetString().ShouldBe("https://dfs.example.com/m/1");
 
-        var changed = await OkAsync(await UpdateAsync(saved, new { matterTypeId = type, currentStateId = discovery, dmsPath = @"\\fs01\dms\1234\0056", dfsPath = "https://dfs.example.com/m/1" }));
+        var changed = await OkAsync(await UpdateAsync(saved, new { matterTypeIds = new[] { type }, currentStateId = discovery, dmsPath = @"\\fs01\dms\1234\0056", dfsPath = "https://dfs.example.com/m/1" }));
         changed.GetProperty("currentState").GetProperty("name").GetString().ShouldBe("Start of Discovery");
 
         var states = await MatterEventsAsync(_w.MatterId, "MATTER_STATE_CHANGED");
@@ -137,7 +137,7 @@ public sealed class MatterFieldsApiTests(SqlServerFixture sql) : IAsyncLifetime
 
         // Clearing: null removes the values (full values, not a patch).
         var cleared = await OkAsync(await UpdateAsync(changed, new { }));
-        cleared.GetProperty("matterType").ValueKind.ShouldBe(JsonValueKind.Null);
+        cleared.GetProperty("matterTypes").GetArrayLength().ShouldBe(0);
         cleared.GetProperty("currentState").ValueKind.ShouldBe(JsonValueKind.Null);
         cleared.GetProperty("dmsPath").ValueKind.ShouldBe(JsonValueKind.Null);
         (await MatterEventsAsync(_w.MatterId, "MATTER_STATE_CHANGED")).Select(e => e.GetProperty("summary").GetString()).ShouldContain("Current State cleared (was Start of Discovery).");
@@ -145,6 +145,109 @@ public sealed class MatterFieldsApiTests(SqlServerFixture sql) : IAsyncLifetime
         // Path edits are field changes in the audit log.
         var page = await OkAsync(await Admin.GetAsync($"/api/v1/audit/events?objectType=Matter&objectId={_w.MatterId}&pageSize=100"));
         page.GetProperty("items").EnumerateArray().Any(e => e.GetProperty("fieldKey").GetString() == "DmsPath").ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task A_matter_can_carry_several_Matter_Types_shown_in_list_order_saved_as_a_full_set_and_audited_with_the_names()
+    {
+        var types = Names(await OkAsync(await Admin.GetAsync("/api/v1/matter-types")));
+        var first = await ItemIdAsync("matter-types", types[0]);
+        var second = await ItemIdAsync("matter-types", types[1]);
+        var third = await ItemIdAsync("matter-types", types[2]);
+
+        // The ids may be sent in any order and repeated; the answer lists them in the order of the Matter Types list.
+        var matter = await MatterAsync();
+        var saved = await OkAsync(await UpdateAsync(matter, new { matterTypeIds = new[] { third, first, first } }));
+        saved.GetProperty("matterTypes").EnumerateArray().Select(t => t.GetProperty("name").GetString()).ShouldBe([types[0], types[2]]);
+        (await MatterEventsAsync(_w.MatterId, "MATTER_TYPE_CHANGED")).Single().GetProperty("summary").GetString().ShouldBe($"Matter Types set to {types[0]}, {types[2]}.");
+
+        // Saving the same set again is no change (no new event); adding one and dropping one is a single event with both sets.
+        await OkAsync(await UpdateAsync(saved, new { matterTypeIds = new[] { first, third } }));
+        (await MatterEventsAsync(_w.MatterId, "MATTER_TYPE_CHANGED")).Length.ShouldBe(1);
+        var again = await MatterAsync();
+        var changed = await OkAsync(await UpdateAsync(again, new { matterTypeIds = new[] { second, third } }));
+        changed.GetProperty("matterTypes").EnumerateArray().Select(t => t.GetProperty("name").GetString()).ShouldBe([types[1], types[2]]);
+        (await MatterEventsAsync(_w.MatterId, "MATTER_TYPE_CHANGED")).Select(e => e.GetProperty("summary").GetString())
+            .ShouldContain($"Matter Types changed from {types[0]}, {types[2]} to {types[1]}, {types[2]}.");
+
+        // A type-only change still moves the row version, so a stale second editor is refused.
+        changed.GetProperty("rowVersion").GetString().ShouldNotBe(again.GetProperty("rowVersion").GetString());
+        (await UpdateAsync(again, new { matterTypeIds = new[] { first } })).StatusCode.ShouldBe(HttpStatusCode.Conflict);
+
+        // The In Use count counts matters per type; a used type cannot be deleted.
+        var manager = await _h.UserWithAsync(@"KE\mtypes", "MatterList.Manage");
+        var list = await OkAsync(await manager.GetAsync("/api/v1/matter-types"));
+        list.EnumerateArray().First(i => Id(i) == third).GetProperty("inUseCount").GetInt32().ShouldBe(1);
+        list.EnumerateArray().First(i => Id(i) == first).GetProperty("inUseCount").GetInt32().ShouldBe(0);
+        await ProblemAsync(await manager.DeleteAsync($"/api/v1/matter-types/{third}"), HttpStatusCode.Conflict, "IN_USE");
+
+        // The list filter matches a matter when ANY of its types is chosen; sorting uses the first type in list order.
+        var clientId = matter.GetProperty("clientId").GetInt32();
+        var other = await OkAsync(await Admin.PostAsJsonAsync("/api/v1/matters", new { clientId, matterNumber = "910", name = "Single", matterTypeIds = new[] { first } }), HttpStatusCode.Created);
+        var idOther = other.GetProperty("matterId").GetInt32();
+        int[] Ids(JsonElement page) => [.. page.GetProperty("items").EnumerateArray().Select(m => m.GetProperty("matterId").GetInt32())];
+        async Task<int[]> ListAsync(string query) => Ids(await OkAsync(await Admin.GetAsync($"/api/v1/matters?pageSize=100&{query}")));
+        (await ListAsync($"matterTypeId={third}")).ShouldBe([_w.MatterId]);
+        (await ListAsync($"matterTypeId={second}")).ShouldBe([_w.MatterId]);
+        (await ListAsync($"matterTypeId={first}&matterTypeId={third}")).ShouldBe([idOther, _w.MatterId], ignoreOrder: true);
+        (await ListAsync($"q={Uri.EscapeDataString(types[2])}")).ShouldContain(_w.MatterId);
+        var sorted = await ListAsync($"clientId={clientId}&sort=matterType");
+        sorted.ToList().IndexOf(idOther).ShouldBeLessThan(sorted.ToList().IndexOf(_w.MatterId));
+        var row = (await OkAsync(await Admin.GetAsync($"/api/v1/matters?q={Uri.EscapeDataString(types[2])}&pageSize=100"))).GetProperty("items").EnumerateArray().First(m => m.GetProperty("matterId").GetInt32() == _w.MatterId);
+        row.GetProperty("matterTypes").GetArrayLength().ShouldBe(2);
+
+        // Too many or unknown ids are refused; an empty list clears.
+        (await UpdateAsync(await MatterAsync(), new { matterTypeIds = new[] { first, 99999 } })).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        var cleared = await OkAsync(await UpdateAsync(await MatterAsync(), new { matterTypeIds = Array.Empty<int>() }));
+        cleared.GetProperty("matterTypes").GetArrayLength().ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task Matter_Category_is_a_managed_list_a_single_optional_choice_on_the_matter_and_changes_are_audited_with_names()
+    {
+        // The list starts empty (the owner fills it on the Lists page), is managed with MatterList.Manage and read with Matter.View.
+        Names(await OkAsync(await Admin.GetAsync("/api/v1/matter-categories"))).ShouldBeEmpty();
+        var manager = await _h.UserWithAsync(@"KE\mcat", "MatterList.Manage");
+        var advisory = await OkAsync(await manager.PostAsJsonAsync("/api/v1/matter-categories", new { name = "Advisory" }), HttpStatusCode.Created);
+        var dispute = await OkAsync(await manager.PostAsJsonAsync("/api/v1/matter-categories", new { name = "Dispute" }), HttpStatusCode.Created);
+        await ProblemAsync(await manager.PostAsJsonAsync("/api/v1/matter-categories", new { name = "advisory" }), HttpStatusCode.Conflict, "DUPLICATE_NAME");
+        var viewer = await _h.UserWithAsync(@"KE\mcatview", "Matter.View");
+        (await viewer.GetAsync("/api/v1/matter-categories")).StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await viewer.PostAsJsonAsync("/api/v1/matter-categories", new { name = "Nope" })).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+
+        var matter = await MatterAsync();
+        matter.GetProperty("matterCategory").ValueKind.ShouldBe(JsonValueKind.Null);
+        var saved = await OkAsync(await UpdateAsync(matter, new { matterCategoryId = Id(advisory) }));
+        saved.GetProperty("matterCategory").GetProperty("name").GetString().ShouldBe("Advisory");
+        var changed = await OkAsync(await UpdateAsync(saved, new { matterCategoryId = Id(dispute) }));
+        changed.GetProperty("matterCategory").GetProperty("name").GetString().ShouldBe("Dispute");
+
+        var events = await MatterEventsAsync(_w.MatterId, "MATTER_CATEGORY_CHANGED");
+        events.Select(e => e.GetProperty("summary").GetString()).ShouldBe(["Matter Category changed from Advisory to Dispute.", "Matter Category set to Advisory."], ignoreOrder: true);
+
+        // In use: counted, delete refused; deactivated it still shows on the matter but is not accepted for a new choice.
+        var list = await OkAsync(await manager.GetAsync("/api/v1/matter-categories"));
+        list.EnumerateArray().First(i => Id(i) == Id(dispute)).GetProperty("inUseCount").GetInt32().ShouldBe(1);
+        await ProblemAsync(await manager.DeleteAsync($"/api/v1/matter-categories/{Id(dispute)}"), HttpStatusCode.Conflict, "IN_USE");
+        (await manager.DeleteAsync($"/api/v1/matter-categories/{Id(advisory)}")).StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        var row = list.EnumerateArray().First(i => Id(i) == Id(dispute));
+        await OkAsync(await manager.PutAsJsonAsync($"/api/v1/matter-categories/{Id(dispute)}", new { name = "Dispute", isActive = false, rowVersion = row.GetProperty("rowVersion").GetString() }));
+        var shown = await MatterAsync();
+        shown.GetProperty("matterCategory").GetProperty("isActive").GetBoolean().ShouldBeFalse();
+        var other = await OkAsync(await manager.PostAsJsonAsync("/api/v1/matter-categories", new { name = "Other", isActive = false }), HttpStatusCode.Created);
+        (await UpdateAsync(shown, new { matterCategoryId = Id(other) })).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await UpdateAsync(shown, new { matterCategoryId = 9999 })).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+
+        // Created with a category: audited from the start. Clearing is a full value (null).
+        var clientId = shown.GetProperty("clientId").GetInt32();
+        var active = await OkAsync(await manager.PostAsJsonAsync("/api/v1/matter-categories", new { name = "Regulatory" }), HttpStatusCode.Created);
+        var created = await OkAsync(
+            await Admin.PostAsJsonAsync("/api/v1/matters", new { clientId, matterNumber = "779", name = "Category matter", matterCategoryId = Id(active) }),
+            HttpStatusCode.Created);
+        created.GetProperty("matterCategory").GetProperty("name").GetString().ShouldBe("Regulatory");
+        (await MatterEventsAsync(created.GetProperty("matterId").GetInt32(), "MATTER_CATEGORY_CHANGED")).Length.ShouldBe(1);
+        var cleared = await OkAsync(await UpdateAsync(created, new { }));
+        cleared.GetProperty("matterCategory").ValueKind.ShouldBe(JsonValueKind.Null);
     }
 
     [Fact]
@@ -156,7 +259,7 @@ public sealed class MatterFieldsApiTests(SqlServerFixture sql) : IAsyncLifetime
         await ProblemAsync(await UpdateAsync(matter, new { dfsPath = "https://user:pw@host/x" }), HttpStatusCode.BadRequest, "INVALID_PATH");
         await ProblemAsync(await UpdateAsync(matter, new { dfsPath = "ftp://host/x" }), HttpStatusCode.BadRequest, "INVALID_PATH");
         (await UpdateAsync(matter, new { dmsPath = new string('a', 1001) })).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
-        (await UpdateAsync(matter, new { matterTypeId = 9999 })).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await UpdateAsync(matter, new { matterTypeIds = new[] { 9999 } })).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
 
         var manager = await _h.UserWithAsync(@"KE\mlists2", "MatterList.Manage");
         var state = await ItemIdAsync("current-states", "Review");
@@ -175,7 +278,7 @@ public sealed class MatterFieldsApiTests(SqlServerFixture sql) : IAsyncLifetime
             await Admin.PostAsJsonAsync("/api/v1/matters", new { clientId, matterNumber = "777", name = "Fields matter", currentStateId = state, dmsPath = "https://dms.example.com/777" }),
             HttpStatusCode.Created);
         created.GetProperty("currentState").GetProperty("name").GetString().ShouldBe("Review");
-        created.GetProperty("matterType").ValueKind.ShouldBe(JsonValueKind.Null);
+        created.GetProperty("matterTypes").GetArrayLength().ShouldBe(0);
         (await MatterEventsAsync(created.GetProperty("matterId").GetInt32(), "MATTER_STATE_CHANGED")).Length.ShouldBe(1);
 
         await ProblemAsync(
@@ -259,8 +362,8 @@ public sealed class MatterFieldsApiTests(SqlServerFixture sql) : IAsyncLifetime
         var startup = await ItemIdAsync("current-states", "Startup");
         var review = await ItemIdAsync("current-states", "Review");
 
-        var a = await OkAsync(await Admin.PostAsJsonAsync("/api/v1/matters", new { clientId, matterNumber = "901", name = "Alpha", matterTypeId = typeA, currentStateId = review }), HttpStatusCode.Created);
-        var b = await OkAsync(await Admin.PostAsJsonAsync("/api/v1/matters", new { clientId, matterNumber = "902", name = "Beta", matterTypeId = typeB, currentStateId = startup }), HttpStatusCode.Created);
+        var a = await OkAsync(await Admin.PostAsJsonAsync("/api/v1/matters", new { clientId, matterNumber = "901", name = "Alpha", matterTypeIds = new[] { typeA }, currentStateId = review }), HttpStatusCode.Created);
+        var b = await OkAsync(await Admin.PostAsJsonAsync("/api/v1/matters", new { clientId, matterNumber = "902", name = "Beta", matterTypeIds = new[] { typeB }, currentStateId = startup }), HttpStatusCode.Created);
         var c = await OkAsync(await Admin.PostAsJsonAsync("/api/v1/matters", new { clientId, matterNumber = "903", name = "Gamma" }), HttpStatusCode.Created);
         int[] Ids(JsonElement page) => [.. page.GetProperty("items").EnumerateArray().Select(m => m.GetProperty("matterId").GetInt32())];
         var (idA, idB, idC) = (a.GetProperty("matterId").GetInt32(), b.GetProperty("matterId").GetInt32(), c.GetProperty("matterId").GetInt32());
@@ -294,7 +397,7 @@ public sealed class MatterFieldsApiTests(SqlServerFixture sql) : IAsyncLifetime
 
         // The row carries the new fields; an unknown filter name is still a 400.
         var row = (await OkAsync(await Admin.GetAsync($"/api/v1/matters?q=Alpha"))).GetProperty("items")[0];
-        row.GetProperty("matterType").GetProperty("id").GetInt32().ShouldBe(typeA);
+        row.GetProperty("matterTypes")[0].GetProperty("id").GetInt32().ShouldBe(typeA);
         (await Admin.GetAsync("/api/v1/matters?matterTyp=1")).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
 }

@@ -31,8 +31,7 @@
 | `/clients/:clientId/edit` | | `ClientFormPage` | `Client.Edit` or `Client.EditNumber` |
 | `/clients/:clientId` | | `ClientDetailPage` | `Client.View` |
 | `/matters` | `features/matters` | `MattersListPage` | `Matter.View` |
-| `/matters/new` | | redirects to `/matters?newMatter=1` (create dialog on the list; optional `newClient`) | `Matter.View` |
-| `/matters/:matterId/edit` | | `MatterFormPage` | `Matter.Edit` or `Matter.EditNumber` |
+| `/matters/new` | | `MatterCreatePage` (full-page New Matter, epic #1368; optional `?clientId=`; Cancel goes back to where the person came from). Editing is the pop-up on the Matter page | `Matter.Create` |
 | `/matters/:matterId` | | `MatterDetailPage`; tabs `?tab=summary`, `tasks`, `projects`, `assets`, `productions`, `notes`, `activities` | `Matter.View`; each tab has its own permission (`Project.View`, `Asset.View`, `Production.View`, `MatterNote.View`, `Audit.View`) |
 | `/projects` | `features/projects` | `ProjectsListPage` | `Project.View` |
 | `/projects/new` | | `ProjectFormPage` | `Project.Create` |

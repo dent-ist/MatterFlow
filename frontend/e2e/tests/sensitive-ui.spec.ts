@@ -80,32 +80,38 @@ test.describe('Sensitive matters: the screens', () => {
       name: `Mark-${u.tag} matter`,
     });
     const page = await asUser(u.people.p5.username);
-    await page.goto(`/matters/${matter.matterId}/edit`);
-    await page.getByRole('checkbox', { name: /Sensitive matter/ }).check();
+    await page.goto(`/matters/${matter.matterId}`);
+    await page.locator('[data-edit-matter]').click();
+    const form = page.locator('.mf-formdlg');
+    await expect(form).toContainText('Edit Matter');
+    await form.getByRole('checkbox', { name: /Sensitive matter/ }).check();
     // The wording says what the flag does now.
-    await expect(page.locator('form')).toContainText('Everyone else does not see it at all');
-    await page.getByRole('button', { name: 'Save Changes' }).click();
+    await expect(form).toContainText('Everyone else does not see it at all');
+    await form.getByRole('button', { name: 'Save Changes' }).click();
 
-    const dialog = page.getByRole('dialog', { name: 'Mark Matter Sensitive' });
-    await expect(dialog).toBeVisible();
-    await expect(dialog).toContainText('you will no longer see this matter');
-    await expect(toasts(page)).toHaveCount(0); // asked in the dialog, not announced as an error
+    // Asked in the dialog (the Edit Matter pop-up), not announced as an error toast: the next Save confirms.
+    const ask = form.locator('[role="alert"]', { hasText: 'You will no longer see this matter' });
+    await expect(ask).toBeVisible();
+    await expect(ask).toContainText('Press Save changes again to confirm');
+    await expect(toasts(page)).toHaveCount(0);
     await axeAtEverySize(page, 'confirm dialog', async () => {
-      await expect(dialog).toBeVisible();
+      await expect(ask).toBeVisible();
     });
     await page.setViewportSize({ width: 1366, height: 768 });
 
-    // Keep it as it is: nothing was saved.
-    await dialog.getByRole('button', { name: 'Cancel' }).click();
-    await expect(dialog).toBeHidden();
+    // Keep it as it is: closing the pop-up saves nothing.
+    await form.getByRole('button', { name: 'Cancel' }).click();
+    await expect(form.locator('[data-panel-guard]')).toBeVisible();
+    await form.getByRole('button', { name: 'Discard' }).click();
+    await expect(form).toBeHidden();
     expect((await admin.get<Json>(`/api/v1/matters/${matter.matterId}`)).isSensitive).toBe(false);
 
     // Confirm: saved, the list opens (the matter page would be "not found" now), and the editor no longer sees the matter.
-    await page.getByRole('button', { name: 'Save Changes' }).click();
-    await page
-      .getByRole('dialog', { name: 'Mark Matter Sensitive' })
-      .getByRole('button', { name: 'Mark Matter Sensitive', exact: true })
-      .click();
+    await page.locator('[data-edit-matter]').click();
+    await form.getByRole('checkbox', { name: /Sensitive matter/ }).check();
+    await form.getByRole('button', { name: 'Save Changes' }).click();
+    await expect(ask).toBeVisible();
+    await form.getByRole('button', { name: 'Save Changes' }).click();
     // The list opens on All for a person who manages no matter (landing pages epic #1330, #1334), on the person's own matters otherwise (epic #758).
     await expect(page).toHaveURL(/\/matters(\?scope=(mine|all))?$/);
     await expect(toasts(page).first()).toContainText('you no longer see it');
@@ -139,7 +145,7 @@ test.describe('Sensitive matters: the screens', () => {
       'aria-invalid',
       'true',
     );
-    await expect(page.getByRole('dialog', { name: 'New Matter' })).toBeVisible(); // still the pop-up (MD-22)
+    await expect(page.getByRole('heading', { level: 1, name: 'New Matter' })).toBeVisible(); // still the New Matter page
     await axeAtEverySize(page, 'new matter with the sensitive refusal');
 
     // The holder of Matter.ViewSensitive may create it without a manager, and opens it straight away.

@@ -347,7 +347,10 @@ test.describe('guard, keyboard and catalogue', () => {
   }) => {
     const cases: [string[], string[]][] = [
       [['Priority.Manage'], ['Priorities']],
-      [['MatterList.Manage'], ['Matter Types', 'Current States', 'Team Titles']],
+      [
+        ['MatterList.Manage'],
+        ['Matter Types', 'Matter Categories', 'Current States', 'Team Titles'],
+      ],
       [['StatusLabel.Manage'], ['Status Labels', 'Note Tags']],
       [['OnHoldReason.Manage'], ['On-Hold Reasons']],
       [['AssetType.Manage'], ['Link Roles']],
@@ -361,6 +364,7 @@ test.describe('guard, keyboard and catalogue', () => {
         ],
         [
           'Matter Types',
+          'Matter Categories',
           'Current States',
           'Team Titles',
           'Priorities',

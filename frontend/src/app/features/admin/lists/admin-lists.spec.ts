@@ -10,9 +10,10 @@ import {
 
 /** The registry is the one source of the catalogue, the routes, the redirects, the page title and the guard (UI spec 3.1 and 4.3). */
 describe('Administration > Lists registry (UI spec 3.1)', () => {
-  it('has the eight lists in catalogue order and four groups, with the permission of each', () => {
+  it('has the nine lists in catalogue order and four groups, with the permission of each', () => {
     expect(ADMIN_LISTS.map((l) => [l.group, l.key, l.label, l.permission])).toEqual([
       ['Matter', 'matter-types', 'Matter Types', 'MatterList.Manage'],
+      ['Matter', 'matter-categories', 'Matter Categories', 'MatterList.Manage'],
       ['Matter', 'current-states', 'Current States', 'MatterList.Manage'],
       ['Matter', 'team-titles', 'Team Titles', 'MatterList.Manage'],
       ['Task', 'priorities', 'Priorities', 'Priority.Manage'],

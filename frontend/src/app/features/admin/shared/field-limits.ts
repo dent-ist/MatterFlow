@@ -14,6 +14,8 @@ export const ADMIN_FIELD_LIMITS = {
   onHoldReasonName: 100,
   /** `MatterType.Name`, `CurrentState.Name` and `TeamTitle.Name` (epic #1298). */
   matterTypeName: 100,
+  /** `MatterCategory.Name` (epic #1368). */
+  matterCategoryName: 100,
   currentStateName: 100,
   teamTitleName: 100,
   /** `Priority.Label`. */

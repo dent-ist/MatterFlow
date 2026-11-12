@@ -113,7 +113,7 @@ const NORMAL_URLS = [
   '/tasks/7',
   '/clients/new',
   '/clients/7/edit',
-  '/matters/7/edit',
+  '/matters/new',
   '/projects/new',
   '/projects/7/edit',
   '/assets/new',

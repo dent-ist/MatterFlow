@@ -6,7 +6,6 @@ import {
   computed,
   effect,
   inject,
-  input,
   signal,
   untracked,
   viewChild,
@@ -61,7 +60,6 @@ import { TaskCount } from '../../../shared/ui/task-count';
 import { RowLink, registerTableSkip, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { ZeroDash } from '../../../shared/ui/zero-dash';
 import { MatterManagersDialog, ManagerTarget } from '../ui/matter-managers-dialog';
-import { MatterFormDialog } from '../ui/matter-form-dialog';
 import {
   RecordCell,
   RecordColumns,
@@ -154,7 +152,6 @@ const BONES: Record<string, string> = {
     RecordCell,
     RecordColumns,
     MatterManagersDialog,
-    MatterFormDialog,
     ScopeSwitch,
     ActionMenu,
     AddCommentDialog,
@@ -534,8 +531,8 @@ const BONES: Record<string, string> = {
             </ng-template>
             <ng-template mfCell="matterType" let-m>
               <td class="ml-list" data-cell="matterType">
-                @if (m.matterType; as t) {
-                  <span class="pg-clip" [attr.title]="t.name">{{ t.name }}</span>
+                @if (m.matterTypes.length > 0) {
+                  <span class="pg-clip" [attr.title]="typesText(m)">{{ typesText(m) }}</span>
                 } @else {
                   <span class="ml-muted">Not set</span>
                 }
@@ -676,13 +673,6 @@ const BONES: Record<string, string> = {
           [(visible)]="commentOpen"
         />
       }
-      @if (canCreate() && createUsed()) {
-        <mf-matter-form-dialog
-          [clientId]="createClient()"
-          [(visible)]="createOpen"
-          (saved)="created($event)"
-        />
-      }
       @if (canAssign()) {
         <mf-matter-managers-dialog
           [targets]="bulkTargets()"
@@ -783,7 +773,7 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
       // 180 + 200 + 140 + 160 + 160 + 160 + 48 = 1048 of 1098 px (D-43a).
       {
         key: 'matterType',
-        label: 'Matter Type',
+        label: 'Matter Types',
         sort: 'matterType',
         width: 'var(--mf-col-matter-type-w)',
         minWidth: 'var(--mf-col-matter-type-w)',
@@ -935,7 +925,7 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
     { value: 'name', label: 'Matter Name' },
     { value: 'clientNumber', label: 'Client' },
     { value: 'primaryManager', label: 'Primary PM' },
-    { value: 'matterType', label: 'Matter Type' },
+    { value: 'matterType', label: 'Matter Types' },
     { value: 'currentState', label: 'Current State' },
     ...(this.counts()
       ? [
@@ -976,7 +966,7 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
       { key: 'client', label: 'Client', column: 'client', type: 'text' },
       this.managerDef('primaryManager', 'Primary PM'),
       this.managerDef('secondaryManager', 'Secondary PM'),
-      this.pickListDef('matterType', 'Matter Type', 'matterTypeId', 'matterTypeNone', this.types),
+      this.pickListDef('matterType', 'Matter Types', 'matterTypeId', 'matterTypeNone', this.types),
       this.pickListDef(
         'currentState',
         'Current State',
@@ -1033,41 +1023,15 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
       this.grid.set({ ...this.grid.prefs(), visible: [...shown, column] });
   }
 
-  /** `?newMatter=1&newClient=5` (the old `/matters/new` link, Client pages): opens the New matter dialog at once, then leaves the URL clean. */
-  readonly newMatter = input<string | undefined>(undefined);
-  readonly newClient = input<string | undefined>(undefined);
-  protected readonly canCreate = computed(() => this.auth.has('Matter.Create'));
-  protected readonly createUsed = signal(false);
-  protected readonly createOpen = signal(false);
-  protected readonly createClient = signal<number | null>(null);
-
-  /** "+ New matter": the pop-up dialog (MD-22), no navigation. */
-  protected openNew(client: number | null = null): void {
-    this.createClient.set(client);
-    this.createUsed.set(true);
-    this.createOpen.set(true);
-  }
-
-  protected created(m: MatterResponse): void {
-    void this.router.navigate(['/matters', m.matterId]);
+  /** "+ New Matter": the full page (epic #1368, #1371; it was a pop-up on this list). */
+  protected openNew(): void {
+    void this.router.navigate(['/matters', 'new']);
   }
 
   constructor() {
     super();
     void this.loadManagers();
     void this.loadPickLists();
-    effect(() => {
-      if (!this.newMatter()) return;
-      const client = Number(this.newClient());
-      untracked(() => {
-        if (this.canCreate()) this.openNew(Number.isInteger(client) && client > 0 ? client : null);
-        void this.router.navigate([], {
-          queryParams: { newMatter: null, newClient: null },
-          queryParamsHandling: 'merge',
-          replaceUrl: true,
-        });
-      });
-    });
     // A new page of rows never keeps a tick from the old one.
     effect(() => {
       this.rows();
@@ -1207,6 +1171,11 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
     } catch {
       // The filter then offers only "Any" and "None".
     }
+  }
+
+  /** The Matter Types of a row as one line, in the order of the Matter Types list ("Litigation, Investigation"); the full line is the tooltip. */
+  protected typesText(m: MatterResponse): string {
+    return m.matterTypes.map((t) => t.name).join(', ');
   }
 
   /** "PM: Ann / Bob" on a phone card; only what is set, nothing at all for a matter without a manager. */
