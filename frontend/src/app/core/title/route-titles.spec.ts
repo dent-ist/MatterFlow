@@ -112,13 +112,7 @@ const TABLE: Row[] = [
   },
   { set: 'clients', routes: CLIENTS_ROUTES, key: ':clientId', title: 'Client - LPT Hub' },
   { set: 'matters', routes: MATTERS_ROUTES, key: '', title: 'Matters - LPT Hub' },
-  // `matters/new` is a redirect to the list with the New matter dialog open (MD-22): the list's own title applies, so it has no row here.
-  {
-    set: 'matters',
-    routes: MATTERS_ROUTES,
-    key: ':matterId/edit',
-    title: 'Edit Matter - LPT Hub',
-  },
+  { set: 'matters', routes: MATTERS_ROUTES, key: 'new', title: 'New Matter - LPT Hub' },
   { set: 'matters', routes: MATTERS_ROUTES, key: ':matterId', title: 'Matter - LPT Hub' },
   { set: 'projects', routes: PROJECTS_ROUTES, key: '', title: 'Projects - LPT Hub' },
   { set: 'projects', routes: PROJECTS_ROUTES, key: 'new', title: 'New Project - LPT Hub' },

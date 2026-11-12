@@ -6,7 +6,6 @@ import {
   computed,
   effect,
   inject,
-  input,
   signal,
   untracked,
   viewChild,
@@ -61,7 +60,6 @@ import { TaskCount } from '../../../shared/ui/task-count';
 import { RowLink, registerTableSkip, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { ZeroDash } from '../../../shared/ui/zero-dash';
 import { MatterManagersDialog, ManagerTarget } from '../ui/matter-managers-dialog';
-import { MatterFormDialog } from '../ui/matter-form-dialog';
 import {
   RecordCell,
   RecordColumns,
@@ -154,7 +152,6 @@ const BONES: Record<string, string> = {
     RecordCell,
     RecordColumns,
     MatterManagersDialog,
-    MatterFormDialog,
     ScopeSwitch,
     ActionMenu,
     AddCommentDialog,
@@ -676,13 +673,6 @@ const BONES: Record<string, string> = {
           [(visible)]="commentOpen"
         />
       }
-      @if (canCreate() && createUsed()) {
-        <mf-matter-form-dialog
-          [clientId]="createClient()"
-          [(visible)]="createOpen"
-          (saved)="created($event)"
-        />
-      }
       @if (canAssign()) {
         <mf-matter-managers-dialog
           [targets]="bulkTargets()"
@@ -1033,41 +1023,15 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
       this.grid.set({ ...this.grid.prefs(), visible: [...shown, column] });
   }
 
-  /** `?newMatter=1&newClient=5` (the old `/matters/new` link, Client pages): opens the New matter dialog at once, then leaves the URL clean. */
-  readonly newMatter = input<string | undefined>(undefined);
-  readonly newClient = input<string | undefined>(undefined);
-  protected readonly canCreate = computed(() => this.auth.has('Matter.Create'));
-  protected readonly createUsed = signal(false);
-  protected readonly createOpen = signal(false);
-  protected readonly createClient = signal<number | null>(null);
-
-  /** "+ New matter": the pop-up dialog (MD-22), no navigation. */
-  protected openNew(client: number | null = null): void {
-    this.createClient.set(client);
-    this.createUsed.set(true);
-    this.createOpen.set(true);
-  }
-
-  protected created(m: MatterResponse): void {
-    void this.router.navigate(['/matters', m.matterId]);
+  /** "+ New Matter": the full page (epic #1368, #1371; it was a pop-up on this list). */
+  protected openNew(): void {
+    void this.router.navigate(['/matters', 'new']);
   }
 
   constructor() {
     super();
     void this.loadManagers();
     void this.loadPickLists();
-    effect(() => {
-      if (!this.newMatter()) return;
-      const client = Number(this.newClient());
-      untracked(() => {
-        if (this.canCreate()) this.openNew(Number.isInteger(client) && client > 0 ? client : null);
-        void this.router.navigate([], {
-          queryParams: { newMatter: null, newClient: null },
-          queryParamsHandling: 'merge',
-          replaceUrl: true,
-        });
-      });
-    });
     // A new page of rows never keeps a tick from the old one.
     effect(() => {
       this.rows();

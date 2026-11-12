@@ -53,9 +53,8 @@ const FORM_FILES = [
   'app/features/tasks/panels/task-asset-links.ts',
   'app/features/tasks/create/create-task-page.html',
   'app/features/assets/pages/asset-form-page.ts',
-  'app/features/matters/ui/matter-form-dialog.ts',
+  'app/features/matters/ui/matter-form.ts',
   'app/features/matters/ui/matter-managers-dialog.ts',
-  'app/features/matters/pages/matter-form-page.ts',
   'app/features/notes/notes-tab.ts',
   'app/features/my-matters/ui/event-dialog.ts',
 ];

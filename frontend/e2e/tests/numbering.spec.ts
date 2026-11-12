@@ -106,8 +106,8 @@ test.describe('Client and matter numbering (SCN-001, SCN-002, SCN-003)', () => {
     await form.create(client.clientNumber, '1', `Another ${uid()}`);
 
     await expect(form.summary).toContainText(/already|exists|in use/i);
-    // The pop-up stays open on the list (MD-22): no page change.
-    await expect(page).toHaveURL(/\/matters$/);
+    // The New Matter page stays open (epic #1368): no page change.
+    await expect(page).toHaveURL(/\/matters\/new$/);
 
     const result = await admin.raw('POST', '/api/v1/matters', {
       clientId: client.clientId,

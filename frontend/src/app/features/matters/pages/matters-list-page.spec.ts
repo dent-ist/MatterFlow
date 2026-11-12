@@ -570,16 +570,13 @@ describe('MattersListPage', () => {
     expect(buttonByLabel(fixture.nativeElement, 'New Matter')).toBeUndefined();
   });
 
-  it('opens New matter as a pop-up dialog on the list instead of navigating (MD-22, #1026)', async () => {
+  it('opens New matter as a full page instead of a pop-up (epic #1368, #1371)', async () => {
     const fixture = await create(['Matter.View', 'Matter.Create']);
     buttonByLabel(fixture.nativeElement, 'New Matter')!.click();
     await settle(fixture);
 
-    const dialog = document.body.querySelector('.mf-formdlg');
-    expect(dialog).not.toBeNull();
-    expect(dialog?.textContent).toContain('New Matter');
-    expect(dialog?.querySelector('[data-panel-primary]')?.textContent).toContain('Create Matter');
-    expect(navigate).not.toHaveBeenCalledWith(['/matters/new']);
+    expect(navigate).toHaveBeenCalledWith(['/matters', 'new']);
+    expect(document.body.querySelector('.mf-formdlg')).toBeNull();
   });
 
   it('has a handle on every resizable column header and none on the selection and action columns (MD-21, #1025)', async () => {

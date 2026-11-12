@@ -288,7 +288,7 @@ One helper owns it: `frontend/src/app/shared/ui/numeric-date.ts` (constant `NUME
 
 ## 6. Create and edit in a pop-up dialog; side panels for detail (epic #1001, MD-22; owner decision 2026-11-02, addendum AQ.4)
 
-**Every create and edit opens in the shared centred pop-up dialog** (`mf-form-dialog`, `frontend/src/app/shared/ui/form-dialog.ts`). The right-hand side panel (`mf-slide-panel`, `slide-panel.ts`) is **only for read and detail context**: the tasks of a project, the details of a production or spec with comments and history, the notes history, the AI "coming soon" panel. A small centred confirmation (`mf-confirm-dialog`) is for confirmations ("Set matter inactive"). The old routed form pages stay until their screen is converted (the matter edit page `/matters/:id/edit` is one; creating a matter is the pop-up on the Matters list).
+**Every create and edit opens in the shared centred pop-up dialog** (`mf-form-dialog`, `frontend/src/app/shared/ui/form-dialog.ts`). The right-hand side panel (`mf-slide-panel`, `slide-panel.ts`) is **only for read and detail context**: the tasks of a project, the details of a production or spec with comments and history, the notes history, the AI "coming soon" panel. A small centred confirmation (`mf-confirm-dialog`) is for confirmations ("Set matter inactive"). The old routed form pages stay until their screen is converted (creating a matter is the exception: since epic #1368 New Matter is the full page `/matters/new`, because the matter keeps getting more fields; editing a matter stays the pop-up on the Summary).
 
 Rules of the dialog:
 

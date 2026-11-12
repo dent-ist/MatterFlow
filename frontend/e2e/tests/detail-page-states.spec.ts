@@ -410,8 +410,8 @@ test.describe('Client Matters tab: New matter and the inactive-client rule (#250
     await page.goto(`/clients/${withMatter.clientId}?tab=matters`);
     await expect(page.getByRole('button', { name: 'New Matter' })).toHaveCount(1); // the header only
     await page.locator('[data-page-actions] [data-action="new-matter"]').click();
-    await expect(page.getByRole('dialog', { name: 'New Matter' })).toBeVisible(); // MD-22
-    await expect(page).toHaveURL(/\/matters$/);
+    await expect(page.getByRole('heading', { level: 1, name: 'New Matter' })).toBeVisible(); // a full page (epic #1368)
+    await expect(page).toHaveURL(/\/matters\/new\?clientId=\d+$/);
   });
 
   test('an inactive client: the header New matter is aria-disabled and focusable with its reason; activating it does nothing', async ({

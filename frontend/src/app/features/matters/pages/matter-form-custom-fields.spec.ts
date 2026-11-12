@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { ClientsClient, FormsClient, MattersClient } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
@@ -12,12 +12,16 @@ import {
   settle,
   withPermissions,
 } from '../../../shared/testing/org-testing';
-import { MatterFormPage } from './matter-form-page';
+import { MatterForm } from '../ui/matter-form';
+import { MatterCreatePage } from './matter-create-page';
 
-describe('MatterFormPage custom fields', () => {
-  async function create(inputs: Record<string, string>, matter = aMatter()) {
+describe('New and Edit Matter: custom fields', () => {
+  /** The New Matter page when no matter is given, else the matter form with that matter (what the Edit Matter pop-up holds). */
+  async function create(
+    inputs: Record<string, string>,
+    matter: ReturnType<typeof aMatter> | null = null,
+  ) {
     const matters = {
-      getMatter: vi.fn().mockReturnValue(ok(matter)),
       getMatterCustomFieldForm: vi.fn().mockReturnValue(ok({ publishedFormVersionId: 21 })),
       createMatter: vi.fn().mockReturnValue(ok(aMatter({ matterId: 21 }))),
       updateMatter: vi.fn().mockReturnValue(ok(aMatter())),
@@ -38,7 +42,10 @@ describe('MatterFormPage custom fields', () => {
     });
     vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     await TestBed.inject(AuthStore).ensureLoaded();
-    const fixture = TestBed.createComponent(MatterFormPage);
+    const fixture: ComponentFixture<unknown> = matter
+      ? TestBed.createComponent(MatterForm)
+      : TestBed.createComponent(MatterCreatePage);
+    if (matter) fixture.componentRef.setInput('matter', matter);
     for (const [key, value] of Object.entries(inputs)) fixture.componentRef.setInput(key, value);
     await settle(fixture);
     return { fixture, matters, forms };
@@ -74,7 +81,7 @@ describe('MatterFormPage custom fields', () => {
 
   it('sends the custom values as a patch on edit and shows stored values', async () => {
     const { fixture, matters } = await create(
-      { matterId: '7' },
+      {},
       aMatter({
         formVersionId: 21,
         publishedFormVersionId: 21,

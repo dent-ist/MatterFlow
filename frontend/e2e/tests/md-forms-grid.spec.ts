@@ -71,37 +71,38 @@ test.describe('Matters list: columns and resize (MD-21)', () => {
   });
 });
 
-test.describe('New matter pop-up (MD-22)', () => {
-  test('+ New matter opens a centred dialog; Cancel is left, Create right; typing makes Esc ask first; the old address opens it too', async ({
+test.describe('New matter page (epic #1368, #1371; it was the pop-up of MD-22)', () => {
+  test('+ New matter opens a full page, not a dialog; Cancel returns to the list; typing makes leaving ask first; the Client pages open it with their client', async ({
     page,
     seed,
   }) => {
     const client = await seed.client();
     await page.setViewportSize({ width: 1366, height: 768 });
-    await page.goto('/matters');
+    await page.goto('/matters?name=zzz-none');
     await page.getByRole('button', { name: 'New Matter' }).first().click();
-    const dialog = page.getByRole('dialog', { name: 'New Matter' });
-    await expect(dialog).toBeVisible();
-    await expect(page).toHaveURL(/\/matters$/);
-    const buttons = dialog.locator('[data-panel-footer] button');
+    await expect(page).toHaveURL(/\/matters\/new$/);
+    await expect(page.getByRole('heading', { level: 1, name: 'New Matter' })).toBeVisible();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    const buttons = page.locator('[data-matter-create] .pg-actions button');
     await expect(buttons.first()).toHaveText('Cancel');
     await expect(buttons.last()).toHaveText('Create Matter');
-    const b = (await dialog.boundingBox())!;
-    expect(Math.abs(b.x + b.width / 2 - 683)).toBeLessThan(160); // centred in the window, not docked right
-    await shot(page, 'new-matter-dialog-1366x768');
-    await axeClean(page, 'new matter dialog');
+    await shot(page, 'new-matter-page-1366x768');
+    await axeClean(page, 'new matter page');
 
-    await dialog.locator('#matter-number').fill('4');
-    await page.keyboard.press('Escape');
-    await expect(dialog.locator('[data-panel-guard]')).toBeVisible();
-    await dialog.getByRole('button', { name: 'Discard' }).click();
-    await expect(dialog).toHaveCount(0);
+    // Typing makes leaving ask first; Cancel goes back to the page the person came from (with its filters).
+    await page.locator('#matter-number').fill('4');
+    await page.getByRole('button', { name: 'Cancel' }).click();
+    await page
+      .getByRole('dialog', { name: 'Unsaved Changes' })
+      .getByRole('button', { name: 'Discard Changes' })
+      .click();
+    await expect(page).toHaveURL(/\/matters\?name=zzz-none$/);
 
     await page.goto(`/matters/new?clientId=${client.clientId}`);
-    await expect(page.getByRole('dialog', { name: 'New Matter' })).toBeVisible();
-    await expect(page.getByRole('dialog', { name: 'New Matter' })).toContainText(
-      client.clientNumber,
-    );
+    await expect(page.getByRole('heading', { level: 1, name: 'New Matter' })).toBeVisible();
+    await expect(page.locator('[data-matter-create]')).toContainText(client.clientNumber);
+    // Opened directly, Cancel has no page to go back to: the Matters list.
+    await page.getByRole('button', { name: 'Cancel' }).click();
     await expect(page).toHaveURL(/\/matters$/);
   });
 });

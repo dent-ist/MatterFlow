@@ -139,7 +139,7 @@ test.describe('Sensitive matters: the screens', () => {
       'aria-invalid',
       'true',
     );
-    await expect(page.getByRole('dialog', { name: 'New Matter' })).toBeVisible(); // still the pop-up (MD-22)
+    await expect(page.getByRole('heading', { level: 1, name: 'New Matter' })).toBeVisible(); // still the New Matter page
     await axeAtEverySize(page, 'new matter with the sensitive refusal');
 
     // The holder of Matter.ViewSensitive may create it without a manager, and opens it straight away.
