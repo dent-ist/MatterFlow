@@ -62,6 +62,7 @@ const EVENT_TYPES: Readonly<Record<string, string>> = {
   FORM_RETIRED: 'Form retired',
   MATTER_SENSITIVITY_CHANGED: 'Matter sensitivity changed',
   MATTER_TYPE_CHANGED: 'Matter Types changed',
+  MATTER_CATEGORY_CHANGED: 'Matter Category changed',
   MATTER_STATE_CHANGED: 'Current State changed',
   MATTER_TEAM_MEMBER_ADDED: 'Team member added',
   MATTER_TEAM_MEMBER_CHANGED: 'Team member updated',

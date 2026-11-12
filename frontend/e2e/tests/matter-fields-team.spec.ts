@@ -93,6 +93,10 @@ test.describe('Matter page: Team tab and Details fields (#1301)', () => {
       name: `State ${token}`,
       isActive: true,
     });
+    const category = await admin.post('/api/v1/matter-categories', {
+      name: `Category ${token}`,
+      isActive: true,
+    });
     const client = await seed.client({ name: `Fields Client ${token}` });
     const matter = await seed.matter({ client, number: '00001', name: `Fields Matter ${token}` });
     const fresh = await admin.get(`/api/v1/matters/${matter.matterId}`);
@@ -101,6 +105,7 @@ test.describe('Matter page: Team tab and Details fields (#1301)', () => {
       isSensitive: fresh.isSensitive,
       rowVersion: fresh.rowVersion,
       matterTypeIds: [type.id],
+      matterCategoryId: category.id,
       currentStateId: state.id,
       dmsPath: '\\\\fs01\\dms\\Matters\\1234\\Acme v. Beta',
       dfsPath: 'https://dfs.example.com/matters/1234/0056',
@@ -110,6 +115,7 @@ test.describe('Matter page: Team tab and Details fields (#1301)', () => {
       await page.goto(`/matters/${matter.matterId}`);
       const card = page.locator('[data-summary-details]');
       await expect(card.locator('[data-matter-type]')).toHaveText(`Type ${token}`);
+      await expect(card.locator('[data-matter-category]')).toHaveText(`Category ${token}`);
       await expect(card.locator('[data-current-state]')).toHaveText(`State ${token}`);
       await expect(card.locator('[data-dms-path] [data-path-unc]')).toContainText('\\\\fs01\\dms');
       await expect(card.locator('[data-dms-path] a')).toHaveCount(0);
@@ -131,6 +137,7 @@ test.describe('Matter page: Team tab and Details fields (#1301)', () => {
     await page.goto(`/matters/${matter.matterId}`);
     const card = page.locator('[data-summary-details]');
     await expect(card.locator('[data-matter-type]')).toHaveText('Not set');
+    await expect(card.locator('[data-matter-category]')).toHaveText('Not set');
     await expect(card.locator('[data-current-state]')).toHaveText('Not set');
     await expect(card.locator('[data-path-none]')).toHaveCount(2);
     await expect(card.getByRole('button', { name: /^Copy D[MF]S Path$/ })).toHaveCount(0);
