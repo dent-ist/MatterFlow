@@ -3,7 +3,7 @@ import { NAV_ITEMS, mainNav } from './nav-items';
 const labels = (items: readonly { label: string }[]): string[] => items.map((i) => i.label);
 
 describe('main menu order (MM-59, #951)', () => {
-  it('is one order for everybody: Dashboard, My Matters, My Work, Clients, Matters, Projects, Assets, Pod Work, Task Queue, Reports', () => {
+  it('is one order for everybody: Dashboard, My Matters, My Work, Clients, Matters, Projects, Assets, People, Pod Work, Task Queue, Reports', () => {
     expect(labels(mainNav(NAV_ITEMS, false))).toEqual([
       'Dashboard',
       'My Matters',
@@ -12,6 +12,7 @@ describe('main menu order (MM-59, #951)', () => {
       'Matters',
       'Projects',
       'Assets',
+      'People',
       'Pod Work',
       'Task Queue',
       'Reports',
@@ -35,6 +36,7 @@ describe('main menu order (MM-59, #951)', () => {
       'Matters',
       'Projects',
       'Assets',
+      'People',
       'Task Queue',
       'Reports',
     ]);

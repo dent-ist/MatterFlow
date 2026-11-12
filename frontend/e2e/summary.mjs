@@ -32,7 +32,8 @@ const walk = (suite, titles) => {
       });
     }
   }
-  for (const child of suite.suites ?? []) walk(child, child.title && child.title !== suite.file ? [...titles, child.title] : titles);
+  for (const child of suite.suites ?? [])
+    walk(child, child.title && child.title !== suite.file ? [...titles, child.title] : titles);
 };
 
 let report = null;
@@ -45,7 +46,12 @@ try {
 const lines = [];
 let oneLine = `[e2e-summary] ${title}: no JSON report at ${file} (the run stopped before Playwright wrote it)`;
 if (report === null) {
-  lines.push(`### ${title}`, '', `No JSON report at \`${file}\` (the run stopped before Playwright wrote it, for example at the step time limit).`, '');
+  lines.push(
+    `### ${title}`,
+    '',
+    `No JSON report at \`${file}\` (the run stopped before Playwright wrote it, for example at the step time limit).`,
+    '',
+  );
 } else {
   for (const s of report.suites ?? []) walk(s, []);
   const count = { passed: 0, failed: 0, flaky: 0, skipped: 0, didNotRun: 0 };
@@ -80,7 +86,13 @@ if (report === null) {
   listed('Failed', 'unexpected');
   listed('Flaky', 'flaky');
   if (count.didNotRun > 0) {
-    const files = [...new Set(tests.filter((t) => t.status === 'skipped' && t.attempts === 0).map((t) => t.where.split(':')[0]))];
+    const files = [
+      ...new Set(
+        tests
+          .filter((t) => t.status === 'skipped' && t.attempts === 0)
+          .map((t) => t.where.split(':')[0]),
+      ),
+    ];
     lines.push(`Did not run: ${files.map((f) => `\`${f}\``).join(', ')}`, '');
   }
   lines.push('Slowest 10 tests', '', '| seconds | test |', '|---:|---|');

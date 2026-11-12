@@ -52,6 +52,7 @@ Left nav (items hidden when the user lacks the matching View permission):
   Matters                          /matters, /matters/:id, /matters/new
   Projects                         /projects (global list), /projects/:id    (also inside Matter)
   Assets                           /assets (global list), /assets/:id         (also inside Matter)
+  People                           /people   (People.View; the shared address book, S28)
   ----
   Administration (permission-gated)  /admin
      Users                         /admin/users (Users tab), /admin/roles (Roles tab), /admin/pods (Pods tab, ?pod=<id>|new opens the pod editor);
@@ -1386,6 +1387,15 @@ Route `/admin/settings` (lazy), left-rail item **Settings** (`pi pi-cog`, Admini
 - **Header and pages.** The name replaces the constant "LPT Hub" in the header, the 403, 404 and error pages, Access Pending, the search boxes and the time zone help text; a long name (40 characters) is cut with an ellipsis in the header and never widens the page, down to 320 px.
 - **Dark theme.** The icon is shown as uploaded on the header background of the current theme (no light chip, owner decision Q3): upload an icon that works on both. The browser-tab colour stays fixed (Q5).
 
+### S28 People (epic #1373, issue #1375; mockup `docs/design/mockups/vendor-management/`, design rule D-37)
+
+Route `/people` (lazy), main-menu item **People** (`pi pi-address-book`, after Assets), for `People.View`; a person without it gets no item and the standard 403 page ("You don't have access."). Title `People`. Nothing here adds or changes a keyboard shortcut (#420).
+
+- **Page.** `mf-page-header` "People" with the count chip, one description line ("The shared address book for matter teams and vendor contacts. Type a person once, pick them everywhere. System users appear here automatically."), "New Person" with `People.Manage`. Toolbar: Search (name, email, company or title), Filters (Type: All Types, Internal, External; Status: Active by default, Inactive, All), Columns, "Sorted by". Grid (`mf-record-grid`, id `people`): Name (name button), Email (plain text), Type (System User, Internal, External), Title or Role, Company ("Law firm" for an internal person), the row action with `People.Manage`; Status is an optional column. Sort by Name, Type, Title or Role, Company (the API has no Email sort); 25, 50 or 100 per page. Empty: "No people yet." with "New Person" (Manage) or "No people." Counts of matters and vendors per person (in the mockup) need an API field that does not exist yet and are not shown.
+- **Edit.** The name, or a click on the row, opens New Person / Edit Person (large 768 px, two columns: First Name and Last Name, Title or Role and Email side by side; Internal or External as the segmented switch with help text that follows the choice, Company only for External). Required errors show on submit, a wrong email after the field is left. System user: name, email and type are plain text, banner "This person is a system user. Name, email and type come from the user account; change them in Administration, Users. Title or Role and Comments can be edited here." Without `People.Manage` the dialog is a read-only view with one Close. A stale save says "This person was changed by someone else. Close the dialog and open it again." in the footer.
+- **Deactivate.** One icon button per row, Deactivate Person (Reactivate Person on an inactive person; none for a system user: deactivate the user instead): no question, the toast "<Name> deactivated." with Undo. A person is never deleted.
+- **Person picker.** `mf-person-picker`: see D-37 and theme guide 13.14. Used by the Matter Team panel (#1376) and vendor contacts.
+
 ---
 
 ## 7. Component inventory (reusable Angular components)
@@ -1421,6 +1431,7 @@ Prefix `mf-`. Standalone components, OnPush, signals-friendly inputs, a11y built
 | `mf-matter-ref` | Monospace `00343-00012` link (+ copy) | `clientNo`, `matterNo`, `link` | everywhere |
 | `mf-number-input` | 1 to 5 digit input with live zero-padded preview | `value`, `label`, `(normalized)` | S05, S06 |
 | `mf-entity-picker` | Typeahead for Client/Matter/Project/Asset/User/Pod; dependent filters; shows inactive marker | `type`, `scope`, `allowInactive` | forms, filters |
+| `mf-person-picker` | Combobox over People: single-line options (name, muted title and company, type badge), floating list, near-duplicate hint, `+ Create "name"` inline form (`People.Manage`), free text never accepted | `[(selected)]`, `taken`, `clearOnPick`, `(picked)`, `(created)`, `(draftChange)` | S28, Matter Team (#1376), vendor contacts |
 | `mf-assignee-picker` | User + Pod chooser with open-load hint, inactive handling | `taskId`, `(assign)` | S03, S04, S10 |
 | `mf-inline-select` | Click-to-edit select with save/undo toast | `value`, `options`, `canEdit` | queues, header |
 | `mf-stat-tile` | Dashboard count tile with drill link | `value`, `label`, `link` | S01 |
@@ -2101,6 +2112,7 @@ Internal codes fixed: NEW, IN_PROGRESS, ON_HOLD, COMPLETED, CANCELLED. Rules (ad
 | `Asset.View/Create/Edit/Link` | Assets screens; the Assets tab of a Matter; on the Task page `Asset.View` shows the Assets section's list and count and the asset names in the request form (otherwise "not available", no Asset API request), `Asset.Link` the Link asset button |
 | `Matter.BeManager` | Can be named a matter's Primary or Secondary project manager; with `Matter.View` and `Task.View` it shows the My Matters menu item and route and decides the landing (not for the System Admin, who lands as before)                              |
 | `Matter.AssignManagers` | Change a matter's managers (header Change, bulk "Set project managers"), My Matters' All matters scope and Project manager filter                                                                                                                 |
+| `People.View` / `People.Manage` | People nav item and page (403 without `View`); with `Manage`: New Person, Edit, the Deactivate and Reactivate row button and `+ Create "name"` in the person picker (shown disabled with the reason without it); the pickers read `/people/lookup` with `People.View`, `People.Manage` or `Matter.Edit` |
 | `Pod.View/Manage/ManageMembers` | Pod Work, Pods admin; on the Task page the `n open` hint in the Assignee menu, the Pod choice in Edit and Pod Work as a `?from=` origin |
 | `Role.Manage` | Users & Roles admin (incl. grant access) |
 | `User.Manage` | Administration > Users edits, and "Edit availability" for another person (everyone edits their own availability with `Task.View`) |

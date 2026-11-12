@@ -34,6 +34,7 @@
 | `/matters/new` | | `MatterFormPage` (full-page New Matter, epic #1368; optional `?clientId=`; Cancel goes back to where the person came from) | `Matter.Create` |
 | `/matters/:matterId/edit` | | `MatterFormPage` (full-page Edit Matter, same form; Cancel and Save return to where the person came from) | `Matter.Edit` or `Matter.EditNumber` |
 | `/matters/:matterId` | | `MatterDetailPage`; tabs `?tab=summary`, `tasks`, `projects`, `assets`, `productions`, `notes`, `activities` | `Matter.View`; each tab has its own permission (`Project.View`, `Asset.View`, `Production.View`, `MatterNote.View`, `Audit.View`) |
+| `/people` | `features/people` | `PeoplePage` (the shared People list, epic #1373; the person opens in a dialog, so there is no detail route) | `People.View` |
 | `/projects` | `features/projects` | `ProjectsListPage` | `Project.View` |
 | `/projects/new` | | `ProjectFormPage` | `Project.Create` |
 | `/projects/:projectId/edit` | | `ProjectFormPage` | `Project.Edit` |
@@ -85,6 +86,7 @@ Items are hidden, never disabled, without the permission. A person whose resolve
 | Matters | `/matters` | `Matter.View` |
 | Projects | `/projects` | `Project.View` |
 | Assets | `/assets` | `Asset.View` |
+| People | `/people` | `People.View` |
 | Pod Work | `/pods/work` | `Pod.View` and `Task.View` |
 | Task Queue | `/tasks` | `Task.View` |
 | Reports | `/reports` | `Report.Run` (shown also when nothing is assigned; the page explains it; it is not hidden in the compact menu of the Project Manager) |

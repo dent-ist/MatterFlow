@@ -65,6 +65,8 @@ describe('tab icons (LC-10, theme guide 11.3)', () => {
       ['assets', 'asset', 'page-assets'],
       ['matters', 'matter', 'page-matters'],
       ['clients', 'client', 'page-clients'],
+      // The matter Team tab shows the same People records as the People page (epic #1373).
+      ['team', 'page-people'],
       ['activities', 'activity', 'history', 'page-audit-logs'],
       ['workflows', 'workflow'],
       ['runs', 'run-log'],
