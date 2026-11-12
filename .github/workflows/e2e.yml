@@ -109,6 +109,14 @@ jobs:
       - name: Install Chromium for Playwright
         working-directory: frontend
         run: npx playwright install --with-deps chromium
+      - name: Install the Inter font
+        # The layout specs (column widths, no sideways scroll) are tuned on a machine where the app's font stack (Segoe UI, system-ui, ...)
+        # resolves to Inter. Without it the runner falls back to DejaVu Sans, which is wider: the Task Types grid then scrolls sideways
+        # and the row menu closes on the scroll (ty3-narrow-columns, ty9-audit, ty9-keyboard; #1359).
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq fonts-inter
+          fc-match system-ui
       - name: Select the spec files of this shard
         if: matrix.shard
         id: select

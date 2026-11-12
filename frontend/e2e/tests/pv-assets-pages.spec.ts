@@ -43,7 +43,7 @@ test.describe('PM v2 page fixes: Assets tab and list (#883)', () => {
     await expect(rows.filter({ hasText: `Big ${d.token}` }).locator('td[data-size]')).toContainText(
       '10 GB',
     );
-    await page.getByRole('columnheader', { name: 'Size' }).getByRole('button').click();
+    await page.locator('thead').getByRole('button', { name: 'Size', exact: true }).click();
     await expect(page).toHaveURL(/sort=-?size/);
 
     for (const size of SIZES) {

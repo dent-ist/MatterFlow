@@ -345,7 +345,7 @@ test.describe('Asset report builder (PM v2)', () => {
     await page.getByRole('menuitem', { name: 'Rename' }).click();
     const dialog = page.getByRole('dialog');
     await dialog.locator('[data-rename-input]').fill('Second name');
-    await dialog.getByRole('button', { name: 'Rename', exact: true }).click();
+    await dialog.getByRole('button', { name: 'Rename Report', exact: true }).click();
     await expect(page.locator('[data-saved-open]')).toHaveText('Second name');
     await expect(page.locator('[data-name]')).toHaveValue('Second name');
 
@@ -358,7 +358,10 @@ test.describe('Asset report builder (PM v2)', () => {
 
     await page.getByRole('button', { name: 'More actions for Second name' }).click();
     await page.getByRole('menuitem', { name: 'Delete' }).click();
-    await page.getByRole('dialog').getByRole('button', { name: 'Delete', exact: true }).click();
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: 'Delete Report', exact: true })
+      .click();
     await expect(page.locator('[data-saved-empty]')).toBeVisible();
     await expect(page.locator('[data-name]')).toHaveValue('');
   });
@@ -382,8 +385,16 @@ test.describe('Asset report builder (PM v2)', () => {
     await page.keyboard.type('Keyboard report');
     await press('[data-type] button');
     await page.keyboard.press('ArrowDown'); // opens the list
-    await page.keyboard.type(k.workspace.name); // type-ahead moves to the option
+    // Arrow keys to the option, not type-ahead: a space in the typed name would choose whichever option is focused (Space picks), and with
+    // other specs' "Workspace ..." types in the shared database the first one that matches would be the wrong type.
+    await expect(page.getByRole('option').first()).toBeVisible();
+    for (let i = 0; i < 200; i++) {
+      const text = await page.evaluate(() => document.activeElement?.textContent ?? '');
+      if (text.includes(k.workspace.name)) break;
+      await page.keyboard.press('ArrowDown');
+    }
     await page.keyboard.press('Enter');
+    await expect(page.locator('[data-type] button')).toContainText(k.workspace.name);
     await press('[data-run]');
     await page.keyboard.press('Enter');
     await expect(page.locator('[data-summary]')).toContainText('3 assets in 1 group');
@@ -487,8 +498,9 @@ test.describe('Asset report builder (PM v2)', () => {
     await page.goto('/assets');
     await page.locator('[data-build-report]').click();
     await expect(page).toHaveURL(/\/assets\/reports$/);
+    // The main menu has a Reports item for Report.Run holders (#718); the builder is not a menu item of its own.
     await expect(
-      page.getByRole('navigation', { name: /main|primary/i }).getByText('Reports', { exact: true }),
+      page.getByRole('navigation', { name: /main|primary/i }).locator('a[href="/assets/reports"]'),
     ).toHaveCount(0);
 
     const nobody = await personas.create({ label: 'no-assets', permissions: ['Client.View'] });

@@ -55,7 +55,7 @@ test.describe('Assets list contract (WP-AS3)', () => {
       'descending',
     );
     await expect(page.locator('tbody tr[data-record-id]').first()).toHaveAttribute(
-      'data-asset-id',
+      'data-record-id',
       String(busy.assetId),
     );
     await page.reload();
@@ -103,10 +103,10 @@ test.describe('Assets list contract (WP-AS3)', () => {
     const undelay = await delayApi(page, '**/api/v1/assets?*', 3000);
     await page.goto(`/assets?name=${token}`);
     await expect(page.locator('tbody [data-skeleton]')).toHaveCount(5);
-    const head = (await page.locator('table.mf-grid').boundingBox())!;
+    const head = (await page.locator('table.pg-table').boundingBox())!;
     await shot(page, 'as3-loading');
     await expect(page.locator('tbody tr[data-record-id]').first()).toBeVisible();
-    const after = (await page.locator('table.mf-grid').boundingBox())!;
+    const after = (await page.locator('table.pg-table').boundingBox())!;
     expect(Math.round(after.width)).toBe(Math.round(head.width));
     await undelay();
 
@@ -121,7 +121,7 @@ test.describe('Assets list contract (WP-AS3)', () => {
     await expect(page.locator('tbody tr[data-record-id]').first()).toBeVisible();
 
     await page.goto(`/assets?name=${token}-nothing`);
-    await expect(page.locator('[data-empty="filtered"]')).toContainText('No assets match');
+    await expect(page.locator('[data-empty="filtered"]')).toContainText('No results for');
     await expect(
       page.locator('[data-empty] ').getByRole('button', { name: 'Clear Filters' }),
     ).toBeVisible();
@@ -181,7 +181,7 @@ test.describe('Assets list contract (WP-AS3)', () => {
               tr.querySelectorAll<HTMLElement>('a[href], button, input, select, [tabindex]'),
             ).filter((e) => e.tabIndex >= 0).length,
         );
-    expect(await stops(page, busy.assetId)).toBe(3); // admin: the select box, the name and the matter link (the select box is for Asset.Dispose, #866)
+    expect(await stops(page, busy.assetId)).toBe(4); // admin: the select box (Asset.Dispose, #866), the name, the matter link and the row menu (More actions, #1185)
     const viewer = await personas.create({ label: 'assetonly', permissions: ['Asset.View'] });
     const plain = await asUser(viewer.username);
     await plain.goto(`/assets?name=${token}`);

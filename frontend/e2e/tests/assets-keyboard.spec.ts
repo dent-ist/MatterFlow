@@ -77,7 +77,10 @@ test.describe('Assets keyboard audit (WP-AS6)', () => {
 
     // From the first name to the end of the page: the stops are the name and matter link of each row, then the pager.
     const stops = await tabUntil(page, (n) => n.startsWith('body'), 40);
-    const rowStops = stops.filter((n) => n.startsWith('a '));
+    // The walk goes on past the pager into the main menu, which is not a row: count the row stops before the pager only.
+    const pager = stops.findIndex((n) => n.startsWith('button Rows per page'));
+    expect(pager, 'the pager follows the last row').toBeGreaterThan(0);
+    const rowStops = stops.slice(0, pager).filter((n) => n.startsWith('a '));
     await record(
       info,
       'list tab stops',
@@ -85,7 +88,7 @@ test.describe('Assets keyboard audit (WP-AS6)', () => {
         `Links in 3 rows: ${rowStops.length} (name and matter number per row = 2 per row for a System Admin).\n` +
         stops.map((s, i) => `${i + 1}. ${s}`).join('\n'),
     );
-    // Two stops per row at most (name and the matter number link), and the whole walk ends (no trap).
+    // Two links per row at most (name and the matter number link; the select box and the row menu are buttons), and the whole walk ends (no trap).
     expect(rowStops.length).toBeLessThanOrEqual(6);
     expect(stops.length).toBeLessThan(40);
   });
