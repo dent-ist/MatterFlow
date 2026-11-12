@@ -4,7 +4,7 @@ import { Page } from '@playwright/test';
 import { TaskQueuePage } from '../pages/queues.pages';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
-import { ViewKey, chooseView, viewAvailable } from '../support/views';
+import { ViewKey, chooseView, isPressed, viewAvailable } from '../support/views';
 
 /**
  * Task Queue copy (WP4: #225, #226, #227): chips and the restored notice never repeat themselves, an empty quick view says what is true
@@ -44,7 +44,7 @@ test.describe('Task Queue copy', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     const queue = new TaskQueuePage(page);
     await queue.open();
-    await queue.quickView('Overdue').click();
+    await chooseView(page, 'overdue'); // in the strip or in More: at 1366 the first line has room for one view only
     // The pressed view owns its filter: no chip repeats it (WP16, #221).
     await expect(page.locator('[data-filter-chips] [data-chip]')).toHaveCount(0);
     // The same filter without the view (one status only) reads "Overdue Only", never "Overdue: Overdue only".
@@ -53,10 +53,10 @@ test.describe('Task Queue copy', () => {
     await expect(chips).toContainText(['Overdue Only']);
     await expect(page.locator('[data-filter-chips]')).not.toContainText('Overdue: Overdue only');
     await queue.open();
-    await queue.quickView('Overdue').click();
+    await chooseView(page, 'overdue'); // in the strip or in More: at 1366 the first line has room for one view only
     // The view is remembered once its list has loaded.
     await expect(page).toHaveURL(/overdue=true/);
-    await expect(page.locator('[data-view="overdue"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect.poll(() => isPressed(page, 'overdue')).toBe(true);
     await page.waitForLoadState('networkidle');
 
     // Leave and come back to the plain list: the last view comes back, named once.
@@ -125,7 +125,7 @@ test.describe('Task Queue copy', () => {
     await expect(page).toHaveTitle('Task Queue - LPT Hub');
     await expect(page.locator('table caption')).toHaveText('Task Queue');
 
-    await queue.quickView('Overdue').click();
+    await chooseView(page, 'overdue'); // in the strip or in More: at 1366 the first line has room for one view only
     await expect(page).toHaveTitle('Task Queue: Overdue - LPT Hub');
     await expect(page.locator('table caption')).toHaveText('Task Queue: Overdue');
     const live = page.locator('.wl-sr');

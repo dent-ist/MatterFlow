@@ -114,16 +114,37 @@ test.describe('Settings > Holidays', () => {
   }) => {
     const { userId, username } = await seed.user(['Data Technician'], 'hol-user');
     const display = (await admin.get(`/api/v1/users/${userId}`)).displayName as string;
-    await page.goto(`/admin/users?status=active&name=${encodeURIComponent(display)}`);
-    // The person opens from the name button of the row (the row itself is not a button), and the drawer holds the calendar field.
-    await userName(userRow(page, userId, shownName(username))).click();
-    const field = page.locator('[data-user-calendar-select]');
-    await expect(field).toBeVisible();
-    const dd = asDropdown(field.locator('button'));
-    const options = await dd.optionTexts();
-    await dd.selectOption({ label: options[Math.min(1, options.length - 1)] });
-    await expect(page.getByText('Holiday calendar saved').first()).toBeVisible();
-    await expect(page.locator('[data-next-holidays]')).toBeVisible();
+    // The test brings its own calendar and picks it by name: "the second option" was whatever other specs had left in the shared database (an empty
+    // choice in CI) and the field's first option is the default that applies, not a calendar.
+    const name = `Person ${Date.now() % 100000}`;
+    const made = await admin.post('/api/v1/admin/holiday-calendars', {
+      name,
+      colourKey: null,
+      regionNote: null,
+      appliesToEveryone: false,
+    });
+    try {
+      // One yearly holiday, so the "Next holidays" list under the field has something to show.
+      await admin.post(`/api/v1/admin/holiday-calendars/${made.calendarId}/holidays`, {
+        name: `Person Day ${name}`,
+        ruleKind: 'FIXED',
+        month: 7,
+        day: 4,
+        yearly: true,
+        weekendRule: 'NONE',
+      });
+      await page.goto(`/admin/users?status=active&name=${encodeURIComponent(display)}`);
+      // The person opens from the name button of the row (the row itself is not a button), and the drawer holds the calendar field.
+      await userName(userRow(page, userId, shownName(username))).click();
+      const field = page.locator('[data-user-calendar-select]');
+      await expect(field).toBeVisible();
+      await asDropdown(field.locator('button')).selectOption({ label: name });
+      await expect(page.getByText('Holiday calendar saved').first()).toBeVisible();
+      await expect(field.locator('button')).toContainText(name);
+      await expect(page.locator('[data-next-holidays]')).toContainText(`Person Day ${name}`);
+    } finally {
+      await admin.raw('DELETE', `/api/v1/admin/holiday-calendars/${made.calendarId}`);
+    }
   });
 
   test('the capacity checkbox (count people outside work hours) is on by default, saves and resets', async ({

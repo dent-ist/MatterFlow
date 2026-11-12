@@ -208,8 +208,12 @@ test.describe('Shared grid: Columns menu, reorder and row hover (MD-28, MD-29)',
     await panel.locator('[data-move="due:left"]').focus();
     await page.keyboard.press('Enter');
     await expect(panel.locator('[data-move="due:left"]')).toBeFocused();
+    // Each choice is made from the columns the grid last reported: wait until the grid shows the column before the next choice (a person sees it
+    // too), so a second choice never starts from the state before the first one.
     await panel.locator('[data-column="steps"]').check();
+    await expect.poll(heads).toContain('Progress');
     await panel.locator('[data-column="project"]').check();
+    await expect.poll(heads).toContain('Project');
     await page.keyboard.press('Escape');
     const after = await heads();
     expect(after).toContain('Progress');

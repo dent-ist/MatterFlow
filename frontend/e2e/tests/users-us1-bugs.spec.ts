@@ -174,6 +174,9 @@ test.describe('BUG-2: focus and Esc', () => {
     await openList(page);
     await rowButton(page, active.userId).click();
     await expect(page.locator('[data-panel]')).toBeVisible();
+    // The drawer moves the focus to its heading once it has opened; a click before that is followed by it, and the dialog would hand the focus back
+    // to a control the drawer has since taken it from.
+    await expect(page.locator('[data-panel-heading]')).toBeFocused();
     const edit = page.locator('[data-edit-availability]');
     await edit.click();
     const dialog = page.getByRole('dialog', { name: /^Availability of / });
@@ -264,6 +267,8 @@ test.describe('BUG-3: the deactivation question', () => {
     const victim = await personas.create({ label: `us1x-kbd`, roles: ['Data Technician'] });
     await page.goto(`/admin/users?status=all&account=e2e-us1x-kbd`);
     await rowButton(page, victim.userId).click();
+    // The drawer takes the focus to its heading when it has opened: a focus() before that is overtaken by it.
+    await expect(page.locator('[data-panel-heading]')).toBeFocused();
     await page.getByRole('button', { name: /^Deactivate / }).focus();
     await page.keyboard.press('Enter');
     const dialog = page.getByRole('dialog', { name: /^Deactivate / });

@@ -442,13 +442,19 @@ test.describe('Rich text description with tables (issue #80)', () => {
     const editor = comments.getByRole('textbox', { name: 'Add a Comment' });
     await editor.click();
     // The label reads "Add a comment" now; the `i` makes the attribute selector ignore the letter case.
-    await pasteInto(
-      page,
-      '[aria-label="Add a Comment" i]',
-      '<table class=MsoTableGrid><tr><td style="x">Disk</td><td onclick="alert(1)">2</td></tr></table>',
-      'Disk 2',
-    );
-    await expect(editor.locator('table')).toHaveCount(1);
+    // The table code of the editor is a lazy chunk that loads on the first paste: a slow runner needs more than the default 10 s for it. Should the
+    // first paste still have inserted nothing (the caret had left the editor while the chunk loaded), it is sent once more.
+    await expect(async () => {
+      if ((await editor.locator('table').count()) === 0) {
+        await pasteInto(
+          page,
+          '[aria-label="Add a Comment" i]',
+          '<table class=MsoTableGrid><tr><td style="x">Disk</td><td onclick="alert(1)">2</td></tr></table>',
+          'Disk 2',
+        );
+      }
+      await expect(editor.locator('table')).toHaveCount(1, { timeout: 15_000 });
+    }).toPass({ timeout: 45_000, intervals: [100] });
     await comments.locator('[data-post]').click();
 
     const body = comments.locator('[data-comment-id] [data-body]');

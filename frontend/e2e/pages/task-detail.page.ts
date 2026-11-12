@@ -196,6 +196,8 @@ export class TaskDetailPage {
       await this.page.getByRole('menuitem', { name: 'Edit' }).click();
     }
     await expect(this.page.getByRole('dialog', { name: 'Edit Task' })).toBeVisible();
+    // The dialog puts the focus in the Title when it has finished opening; a click or key before that is overtaken by it (a slow runner, #1359).
+    await expect(this.page.locator('#td-title')).toBeFocused();
   }
 
   /**

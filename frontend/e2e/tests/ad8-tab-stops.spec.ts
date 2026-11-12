@@ -136,37 +136,46 @@ test.describe('Keyboard-only flows (#659)', () => {
       color: 'low',
       isActive: true,
     });
-    await admin.post('/api/v1/priorities', {
+    const b = await admin.post('/api/v1/priorities', {
       label: `Kbd B ${uid()}`,
       color: 'low',
       isActive: true,
     });
-    await page.setViewportSize({ width: 1366, height: 768 });
-    await page.goto('/admin/priorities');
-    await expect(page.locator('table.mf-grid tbody tr[data-row]').first()).toBeVisible();
+    // Both rows are removed whatever happens, so a failed run does not leave rows behind that push the next run's rows below the fold.
+    try {
+      await page.setViewportSize({ width: 1366, height: 768 });
+      await page.goto('/admin/priorities');
+      await expect(page.locator('table.mf-grid tbody tr[data-row]').first()).toBeVisible();
 
-    await page.keyboard.press('Tab');
-    await expect(page.getByRole('link', { name: 'Skip to Table' })).toBeFocused();
-    await page.keyboard.press('Enter');
-    await expect(page.locator('#lists-editor')).toBeFocused();
+      await page.keyboard.press('Tab');
+      await expect(page.getByRole('link', { name: 'Skip to Table' })).toBeFocused();
+      await page.keyboard.press('Enter');
+      await expect(page.locator('#lists-editor')).toBeFocused();
 
-    const link = page.locator(`tr[data-row="${a.label}"] [data-edit]`);
-    await link.focus();
-    await page.keyboard.press('Enter');
-    await expect(page.getByRole('dialog', { name: 'Edit Priority' })).toBeVisible();
-    await expect(page.locator('#priority-label')).toBeFocused();
-    await page.keyboard.press('Escape');
-    await expect(page.getByRole('dialog', { name: 'Edit Priority' })).toBeHidden();
-    await expect(link).toBeFocused();
+      const link = page.locator(`tr[data-row="${a.label}"] [data-edit]`);
+      await link.focus();
+      await page.keyboard.press('Enter');
+      await expect(page.getByRole('dialog', { name: 'Edit Priority' })).toBeVisible();
+      await expect(page.locator('#priority-label')).toBeFocused();
+      await page.keyboard.press('Escape');
+      await expect(page.getByRole('dialog', { name: 'Edit Priority' })).toBeHidden();
+      // The closing dialog stays in the page until its leave animation ends and its focus trap pulls focus back inside until then: the next key goes
+      // to the row menu only once the mask is gone (a person cannot be that fast, a slow runner makes the spec that fast).
+      await expect(page.locator('.p-dialog-mask')).toHaveCount(0);
+      await expect(link).toBeFocused();
 
-    const menu = page.getByRole('button', { name: `Actions for ${a.label}` });
-    await menu.focus();
-    await page.keyboard.press('Enter');
-    await page.getByRole('menuitem', { name: 'Move Down' }).focus();
-    await page.keyboard.press('Enter');
-    await expect(page.locator('[data-announce]')).toContainText('moved to position');
-    await expect(menu).toBeFocused();
-    await admin.raw('DELETE', `/api/v1/priorities/${a.id}`);
+      const menu = page.getByRole('button', { name: `Actions for ${a.label}` });
+      await menu.focus();
+      await page.keyboard.press('Enter');
+      await expect(menu).toHaveAttribute('aria-expanded', 'true');
+      await page.getByRole('menuitem', { name: 'Move Down' }).focus();
+      await page.keyboard.press('Enter');
+      await expect(page.locator('[data-announce]')).toContainText('moved to position');
+      await expect(menu).toBeFocused();
+    } finally {
+      await admin.raw('DELETE', `/api/v1/priorities/${a.id}`);
+      await admin.raw('DELETE', `/api/v1/priorities/${b.id}`);
+    }
   });
 
   test('Link Roles: the New button opens the dialog, Escape returns to it; the menu deactivates with the keyboard and focus stays on the row', async ({
