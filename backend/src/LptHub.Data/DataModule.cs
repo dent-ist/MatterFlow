@@ -22,6 +22,7 @@ public static class DataModule
         services.TryAddSingleton<IClock, SystemClock>();
         services.TryAddScoped<ICurrentUser, SystemCurrentUser>();
         services.AddAuditServices();
+        services.AddSingleton<LptHub.Identity.People.PersonUserSyncInterceptor>();
         services.AddScoped<AuditColumnsInterceptor>();
         services.AddScoped<AuditSaveChangesInterceptor>();
         services.AddSingleton<StablePlanInterceptor>();
@@ -33,6 +34,7 @@ public static class DataModule
                 ?? throw new InvalidOperationException($"Connection string 'ConnectionStrings:{ConnectionStringName}' is not configured.");
             options.UseSqlServer(connectionString);
             options.AddInterceptors(
+                sp.GetRequiredService<LptHub.Identity.People.PersonUserSyncInterceptor>(), // before the audit interceptors: the person it adds is stamped and audited
                 sp.GetRequiredService<AuditColumnsInterceptor>(),
                 sp.GetRequiredService<AuditSaveChangesInterceptor>(),
                 sp.GetRequiredService<StablePlanInterceptor>());

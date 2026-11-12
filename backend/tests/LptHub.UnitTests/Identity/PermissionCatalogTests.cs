@@ -77,7 +77,7 @@ public class PermissionCatalogTests
         codes.ShouldContain("Matter.SetActive");
         codes.ShouldContain("User.Manage");
         codes.ShouldContain("Role.Manage");
-        codes.Count.ShouldBe(71); // MatterList.Manage (epic #1298)
+        codes.Count.ShouldBe(73); // MatterList.Manage (epic #1298); People.View and People.Manage (epic #1373)
     }
 
     [Fact]
@@ -196,6 +196,21 @@ public class PermissionCatalogTests
             P(role).ShouldNotContain(Permissions.Dashboard.ViewSummary, role + ": technicians see the queue, not the department counts");
         P("Data Scientist").ShouldNotContain(Permissions.Project.Create);
         P("Data Scientist").ShouldContain(Permissions.Asset.Link);
+
+        // People (epic #1373): Director, Project Manager and Pod Lead see the list; Director and Project Manager maintain it; technicians hold neither.
+        foreach (var role in new[] { "Director", "Project Manager", "Pod Lead" })
+            P(role).ShouldContain(Permissions.People.View, role);
+        foreach (var role in new[] { "Director", "Project Manager" })
+            P(role).ShouldContain(Permissions.People.Manage, role);
+        P("Pod Lead").ShouldNotContain(Permissions.People.Manage);
+        foreach (var role in new[] { "Data Technician", "Data Scientist" })
+        {
+            P(role).ShouldNotContain(Permissions.People.View, role);
+            P(role).ShouldNotContain(Permissions.People.Manage, role);
+        }
+
+        foreach (var role in StarterRoles.All.Where(r => r.Permissions.Contains(Permissions.People.Manage)))
+            role.Permissions.ShouldContain(Permissions.People.View, role.Name + ": Manage without View would show nothing");
     }
 
     [Fact]

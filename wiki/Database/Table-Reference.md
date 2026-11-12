@@ -47,6 +47,7 @@ Totals (counted by `tools/db/schema-fingerprint.sql` on a database built from th
 | [NotificationPreference](#notificationpreference) | Audit, Notifications, Settings and platform | Notifications | 4 | 1 |
 | [OnHoldReason](#onholdreason) | Tasks and task configuration | Configuration | 9 | 2 |
 | [Permission](#permission) | Identity and access | Identity | 5 | 0 |
+| [Person](#person) | Identity and access | Identity | 15 | 3 |
 | [Pod](#pod) | Identity and access | Identity | 10 | 3 |
 | [PodMember](#podmember) | Identity and access | Identity | 3 | 2 |
 | [Priority](#priority) | Tasks and task configuration | Configuration | 11 | 2 |
@@ -179,6 +180,22 @@ Junction: roles of a user, with who granted and when.
   - `FK_UserRole_Role`: `RoleId` to `Role(RoleId)`
   - `FK_UserRole_User`: `UserId` to `AppUser(UserId)`
 - **Indexes and unique constraints (1):** `IX_UserRole_Role` (RoleId).
+
+### Person
+
+The shared People list (epic #1373): a person is Internal or External and is used by the matter Team and, later, by vendor contacts. Every user has one linked person (`UserId`, unique): created with the user by the application (script 72 backfilled the existing users), name and e-mail kept in step with the user, kept when the user is deactivated. Internal people without a login and external people have no `UserId`. People are deactivated, never deleted. `CompanyName` is for external people only; a person linked to a user is always internal.
+
+- **Module:** Identity. **Area:** Identity and access.
+- **Scripts:** created by script 71 (rows for existing users by script 72).
+- **Report login (`lpt_report_reader`):** allow.
+- **Primary key:** `PK_Person` (PersonId), int identity.
+- **Columns (15; `?` = nullable):** `PersonId int`, `FirstName nvarchar(200)`, `LastName nvarchar(200)`, `PersonType varchar(10)`, `Title nvarchar(100)?`, `Email nvarchar(320)?`, `Comments nvarchar(2000)?`, `CompanyName nvarchar(200)?`, `UserId int?`, `IsActive bit`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
+- **Foreign keys (3):**
+  - `FK_Person_CreatedBy`: `CreatedByUserId` to `AppUser(UserId)`
+  - `FK_Person_ModifiedBy`: `ModifiedByUserId` to `AppUser(UserId)`
+  - `FK_Person_User`: `UserId` to `AppUser(UserId)`
+- **Indexes and unique constraints (3):** `IX_Person_Email` (Email) - filter [Email] IS NOT NULL; `IX_Person_Name` (LastName,FirstName); `UQ_Person_User` (UserId) - filter [UserId] IS NOT NULL; unique.
+- **Check constraints (4):** `CK_Person_Company`, `CK_Person_FirstName`, `CK_Person_Type`, `CK_Person_User`.
 
 ### Pod
 

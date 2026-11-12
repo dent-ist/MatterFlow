@@ -180,6 +180,11 @@
       "reason": "Authorization catalogue; not report data."
     },
     {
+      "name": "Person",
+      "access": "allow",
+      "reason": "Business data that reports may read (names, titles and work e-mail addresses, like dbo.AppUser)."
+    },
+    {
       "name": "Pod",
       "access": "allow",
       "reason": "Business data that reports may read."

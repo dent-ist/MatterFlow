@@ -2,7 +2,7 @@
 
 [[_TOC_]]
 
-**What this page is for.** Every permission code of the application, what it allows, which starter roles hold it by default and where it is enforced. The source of truth is `contracts/permissions.json` (70 permissions in 13 groups); this page is built from it, from `backend/src/Modules/LptHub.Identity/Seeding/StarterRoles.cs` and from a search of the backend and frontend source for each code.
+**What this page is for.** Every permission code of the application, what it allows, which starter roles hold it by default and where it is enforced. The source of truth is `contracts/permissions.json` (73 permissions in 14 groups); this page is built from it, from `backend/src/Modules/LptHub.Identity/Seeding/StarterRoles.cs` and from a search of the backend and frontend source for each code.
 
 How to read it:
 
@@ -98,6 +98,15 @@ How to read it:
 | `User.View` | View the user list and access queue | Director | `CalendarAccess`, `PodService`, `RolesController`, `UsersController` | `admin.routes`, `app-shell`, `audit-links` and 6 more |
 | `User.Manage` | Activate or disable users and assign roles (also reads the list of holiday calendars, for the calendar picker of the user drawer, #1362) | none (System Admin only) | `AvailabilityControllers`, `HolidayControllers`, `UsersController` | `admin.routes`, `nav-items`, `pods-page` and 3 more |
 | `User.ManageAvailability` | Create, edit and delete Out of office entries of other people (a Pod Lead: members of their own pods) | Director, Pod Lead | `AvailabilityControllers`, `CalendarAccess`, `DashboardCalendarController` | `calendar-tab` |
+
+## People
+
+| Code | Meaning | Default roles | Backend | Frontend |
+|---|---|---|---|---|
+| `People.View` | See the People page. Pickers work for anyone who may edit a team or a vendor contact | Director, Project Manager, Pod Lead | `PeopleController` | not used yet (People page: issue #1375) |
+| `People.Manage` | Create, edit and deactivate people, including the quick Add New Person in pickers | Director, Project Manager | `PeopleController` | not used yet (People page: issue #1375) |
+
+`GET /people/lookup` (the picker source) accepts `People.View`, `People.Manage` or `Matter.Edit`, so a person who may edit a matter team can pick people without seeing the People page.
 
 ## Configuration
 

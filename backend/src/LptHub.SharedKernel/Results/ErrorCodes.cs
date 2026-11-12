@@ -37,6 +37,9 @@ public static class ErrorCodes
     /// <summary>The e-mail address is already on the matter's team (compared without regard to case); edit that member instead.</summary>
     public const string DuplicateTeamEmail = "DUPLICATE_TEAM_EMAIL";
 
+    /// <summary>A person linked to a user: name, e-mail and type follow the user and the person cannot be deactivated here (People, epic #1373).</summary>
+    public const string SystemPersonReadOnly = "SYSTEM_PERSON_READ_ONLY";
+
     public const string ClientInactive = "CLIENT_INACTIVE";
     public const string ProjectInactive = "PROJECT_INACTIVE";
     public const string PodInactive = "POD_INACTIVE";
