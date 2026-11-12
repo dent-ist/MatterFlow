@@ -178,9 +178,11 @@ type Tab = MatterTabKey;
                     [matter]="m"
                     [reload]="reloadTick()"
                     [canAssign]="canAssign()"
+                    [canEdit]="canEdit()"
                     [canLinkClient]="canLinkClient()"
                     data-details-tab
                     (changeManagers)="managersOpen.set(true)"
+                    (editMatter)="openEdit()"
                     (newAsset)="go('/assets/new?matterId=' + m.matterId)"
                   />
                 }

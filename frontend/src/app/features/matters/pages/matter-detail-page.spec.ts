@@ -6,6 +6,7 @@ import {
   AuditEventsClient,
   AuditSearchClient,
   MatterManagersClient,
+  MatterTeamClient,
   MatterEventsClient,
   MattersClient,
   ProjectsClient,
@@ -133,6 +134,31 @@ describe('MatterDetailPage', () => {
           },
         },
         { provide: ProjectsClient, useValue: projects },
+        {
+          provide: MatterTeamClient,
+          useValue: {
+            listMatterTeam: vi.fn().mockReturnValue(
+              ok({
+                items: [
+                  {
+                    id: 1,
+                    matterId: 7,
+                    personId: 5,
+                    name: 'Priya Nair',
+                    personType: 'INTERNAL',
+                    isSystemUser: true,
+                    title: { id: 2, name: 'Case Manager', isActive: true },
+                    sortOrder: 1,
+                    rowVersion: 'AAAA',
+                  },
+                ],
+                total: 1,
+                page: 1,
+                pageSize: 100,
+              }),
+            ),
+          },
+        },
         { provide: AssetsClient, useValue: assets },
         {
           provide: MatterEventsClient,
@@ -292,15 +318,7 @@ describe('MatterDetailPage', () => {
       Array.from(el().querySelectorAll('[role=tab]')).map((t) =>
         t.textContent!.trim().replace(/\s*\(.*\)$/, ''),
       ),
-    ).toEqual([
-      'Summary',
-      'Tasks',
-      'Projects',
-      'Assets',
-      'Productions',
-      'Notes',
-      'Activities',
-    ]);
+    ).toEqual(['Summary', 'Tasks', 'Projects', 'Assets', 'Productions', 'Notes', 'Activities']);
     expect(el().querySelectorAll('[role=tab] .pi').length).toBe(7);
     // Productions and Notes open their own tabs (MD-11, MD-13).
     await openTab('productions');
@@ -319,7 +337,7 @@ describe('MatterDetailPage', () => {
     expect(tab('Summary').getAttribute('aria-selected')).toBe('true');
     // Without Task.View and Asset.View the Overview has no sections, so the details are open at once.
     await openDetails();
-    expect(el().querySelector('[data-details-tab] dl')?.textContent).toContain('Acme Corp');
+    expect(el().querySelector('[data-summary-details]')?.textContent).toContain('Acme Corp');
     expect(queue.getTaskQueue).not.toHaveBeenCalled();
     // Without Task.View the Tasks tab says so and loads nothing.
     await openTab('tasks');
@@ -403,25 +421,34 @@ describe('MatterDetailPage', () => {
     expect(panel.getAttribute('aria-labelledby')).toBe('matter-tab-summary');
     const summary = panel.querySelector('[data-details-tab]')!;
     const rows = Array.from(summary.querySelectorAll('dt')).map((t) => t.textContent!.trim());
+    // Four groups under quiet sub-headings (#1376); two short fields share a row (CM Number and Matter Number, Status and AI Allowed).
     expect(rows).toEqual([
       'CM Number',
-      'Client',
       'Matter Number',
+      'Client',
       'Matter Name',
       'Matter Types',
       'Matter Category',
       'Current State',
-      'DMS Path',
-      'DFS Path',
       'Status',
+      'AI Allowed',
       'Sensitive',
       'Primary PM',
       'Secondary PM',
-      'AI Allowed',
-      'Created',
-      'Last Updated',
+      'DMS Path',
+      'DFS Path',
     ]);
-    expect(summary.querySelector('dl')!.textContent).toContain('00343-00012');
+    expect(
+      Array.from(summary.querySelectorAll('[data-details-group]')).map((h) =>
+        h.textContent!.trim(),
+      ),
+    ).toEqual(['Matter', 'Classification', 'Management', 'Paths']);
+    // Created and Last Updated are one quiet line, not two fields.
+    expect(summary.querySelector('[data-record-line]')!.textContent).toMatch(
+      /Created.*Last Updated/s,
+    );
+
+    expect(summary.querySelector('[data-summary-details]')!.textContent).toContain('00343-00012');
     expect(summary.querySelector('[data-ai-value]')!.textContent!.trim()).toBe('No');
     expect(summary.querySelector('mf-sensitive-badge')).not.toBeNull();
     // Dates are numeric (the year only when it is not this year, D-60); the long form is the tooltip.
@@ -446,8 +473,9 @@ describe('MatterDetailPage', () => {
         matterCategory: { id: 4, name: 'Advisory', isActive: true },
       }),
     );
-    const types = el().querySelector('[data-matter-type]')!;
-    expect(types.textContent!.trim()).toBe('Litigation, Investigation');
+    // Matter Types are small chips in the order of the Matter Types list; a retired one says so in its tooltip.
+    const chips = Array.from(el().querySelectorAll('[data-matter-type-chip]'));
+    expect(chips.map((c) => c.textContent!.trim())).toEqual(['Litigation', 'Investigation']);
     const category = el().querySelector('[data-matter-category]')!;
     expect(category.textContent!.trim()).toBe('Advisory');
 
@@ -455,6 +483,8 @@ describe('MatterDetailPage', () => {
     await create(['Matter.View']);
     expect(el().querySelector('[data-matter-type]')!.textContent!.trim()).toBe('Not set');
     expect(el().querySelector('[data-matter-category]')!.textContent!.trim()).toBe('Not set');
+    // Without Matter.Edit there is no "Set Category".
+    expect(el().querySelector('[data-set-category]')).toBeNull();
   });
 
   it('shows the assets by type as tiles that open the Assets tab for the type (needs Asset.View); the Summary has no recent activity (MD-42)', async () => {

@@ -4,7 +4,7 @@ import { CopyButton } from '../../../shared/ui/copy-button';
 import { Tip } from '../../../shared/ui/tip';
 
 /**
- * The value of a DMS Path or DFS Path on the Matter Summary (epic #1298, UI spec 2.3 and 2.4): the value at the left and the Copy button at the right.
+ * The value of a DMS Path or DFS Path on the Matter Summary (epic #1298, UI spec 2.3 and 2.4): the value at the left and the Copy button directly beside it (not pushed to the far edge of the field, #1376).
  * A web address (`http://` or `https://`) is a link in the mono font that opens in a new tab; a UNC path is plain selectable mono text (a browser opens no
  * UNC link from a page); an empty value is the muted "Not set" with no button. A path has no spaces to wrap on, so it wraps anywhere and is clamped to
  * two lines; the full text is the tooltip and is always what Copy puts on the clipboard. No toast on Copy: the button itself says "Copied".
@@ -20,10 +20,11 @@ import { Tip } from '../../../shared/ui/tip';
     .pv {
       display: flex;
       align-items: flex-start;
-      gap: var(--mf-s2);
+      gap: var(--mf-s1);
     }
+    /* The text takes the room it needs (and shrinks, wrapping, when the column is narrow): Copy stays right beside it. */
     .pv__text {
-      flex: 1 1 auto;
+      flex: 0 1 auto;
       min-width: 0;
       display: -webkit-box;
       -webkit-box-orient: vertical;

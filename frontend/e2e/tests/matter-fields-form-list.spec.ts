@@ -57,10 +57,11 @@ test.describe('Matter fields: dialog, list and Matter Lists (#1301)', () => {
     await dropdownById(dialog, 'matter-state').selectOption({ label: `State ${token}` });
     if (axeAvailable()) expect(await axeViolations(page), 'Edit Matter page').toEqual([]);
     await dialog.getByRole('button', { name: 'Save Changes' }).click();
-    // Several types show in one line, in the order of the Matter Types list.
-    await expect(page.locator('[data-summary-details] [data-matter-type]')).toHaveText(
-      `Type ${token}, Second ${token}`,
-    );
+    // Several types show as small chips, in the order of the Matter Types list.
+    await expect(page.locator('[data-summary-details] [data-matter-type-chip]')).toHaveText([
+      `Type ${token}`,
+      `Second ${token}`,
+    ]);
     await expect(page.locator('[data-summary-details] [data-matter-category]')).toHaveText(
       `Category ${token}`,
     );

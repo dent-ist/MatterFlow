@@ -92,7 +92,6 @@ describe('mf-record-skeleton (#247, #615)', () => {
       'Assets (--)',
       'Productions',
       'Notes',
-      'Team (--)',
       'Activities',
     ]);
     expect(el.querySelector('[role=tab][aria-selected=true]')?.textContent).toContain('Projects');

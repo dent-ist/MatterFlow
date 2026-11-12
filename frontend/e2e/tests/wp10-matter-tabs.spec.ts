@@ -161,12 +161,7 @@ test.describe('WP10 matter tabs', () => {
       await page.setViewportSize({ width: 1366, height: 768 });
       await page.goto(projectsUrl(w.big));
       await ready(page);
-      expect(await tabTexts(page)).toEqual([
-        'Summary',
-        'Tasks (4)',
-        'Projects (40)',
-        'Assets (0)',
-      ]);
+      expect(await tabTexts(page)).toEqual(['Summary', 'Tasks (4)', 'Projects (40)', 'Assets (0)']);
       const table = page.locator(PROJECT_TABLE);
       await expect(table.locator('thead th')).toHaveText([
         'Name',
@@ -354,12 +349,7 @@ test.describe('WP10 matter tabs', () => {
       await page.goto(assetsUrl(w.assets));
       await ready(page);
       // 6 assets, 5 shown (Active is the default Status) and the pager says why.
-      expect(await tabTexts(page)).toEqual([
-        'Summary',
-        'Tasks (0)',
-        'Projects (0)',
-        'Assets (6)',
-      ]);
+      expect(await tabTexts(page)).toEqual(['Summary', 'Tasks (0)', 'Projects (0)', 'Assets (6)']);
       const rows = page.locator('mf-matter-assets tbody tr:not(.gb-state)');
       await expect(rows).toHaveCount(5);
       await expect(page.locator('mf-matter-assets [data-hidden], mf-pager')).toContainText(
