@@ -10,15 +10,16 @@
     ['Vendors', [
       ['vendors', 'Vendor list', { page: 'vendors' }],
       ['vendor-filters', 'Vendor list, filter open', { page: 'vendors', menu: 'svc' }],
-      ['vendor-drawer', 'Vendor detail drawer: Overview', { page: 'vendors', drawer: 'v4', dtab: 'overview' }],
-      ['vendor-contacts', 'Vendor detail drawer: Contacts and notes', { page: 'vendors', drawer: 'v1', dtab: 'contacts' }],
-      ['vendor-matters', 'Vendor detail drawer: Matters', { page: 'vendors', drawer: 'v1', dtab: 'matters' }],
-      ['vendor-edit', 'Edit Vendor dialog', { page: 'vendors', drawer: 'v1', dtab: 'overview', dialog: 'editVendor', dv: 'v1' }],
+      ['vendor-view', 'Vendor dialog: Overview (view mode)', { page: 'vendors', drawer: 'v4', dtab: 'overview' }],
+      ['vendor-contacts', 'Vendor dialog: Contacts and notes', { page: 'vendors', drawer: 'v1', dtab: 'contacts' }],
+      ['vendor-matters', 'Vendor dialog: Matters', { page: 'vendors', drawer: 'v1', dtab: 'matters' }],
+      ['vendor-edit', 'Vendor dialog: Edit mode (Overview becomes the form)', { page: 'vendors', drawer: 'v1', dtab: 'overview', vedit: true }],
       ['vendor-new', 'New Vendor dialog', { page: 'vendors', dialog: 'newVendor' }],
-      ['vendor-note', 'Contact Note dialog', { page: 'vendors', drawer: 'v4', dtab: 'contacts', dialog: 'contactNote', dctx: ['v4', 'p13'] }],
-      ['vendor-add-contact', 'Add Contact (pick a person)', { page: 'vendors', drawer: 'v1', dtab: 'contacts', dialog: 'addContact', pp: { open: true, q: '' } }],
-      ['vendor-delete', 'Delete Vendor (allowed)', { page: 'vendors', dialog: 'deleteVendor', dv: 'v6' }],
-      ['vendor-delete-blocked', 'Delete Vendor (blocked, in use)', { page: 'vendors', dialog: 'deleteVendor', dv: 'v1' }],
+      ['vendor-note', 'Contacts: note form inline in the row', { page: 'vendors', drawer: 'v4', dtab: 'contacts', vnote: 'p13' }],
+      ['vendor-add-contact', 'Contacts: Add Contact inline', { page: 'vendors', drawer: 'v1', dtab: 'contacts', ac: true, pp: { open: true, q: '' } }],
+      ['vendor-delete-inline', 'Vendor dialog: Delete confirm in the footer', { page: 'vendors', drawer: 'v6', dtab: 'overview', vdel: true }],
+      ['vendor-delete', 'Delete Vendor from the list row menu (allowed)', { page: 'vendors', dialog: 'deleteVendor', dv: 'v6' }],
+      ['vendor-delete-blocked', 'Delete Vendor from the list row menu (blocked)', { page: 'vendors', dialog: 'deleteVendor', dv: 'v1' }],
     ]],
     ['Matter', [
       ['matter-summary', 'Summary: 7 team, 6 vendors (side column)', { page: 'matterSummary' }],
@@ -47,14 +48,14 @@
       ['noperm-summary', 'Summary: what each missing permission does', { page: 'without' }],
       ['noperm-hidden', 'No Vendor.View: nav hidden, address blocked', { page: 'vendors', persona: 'none' }],
       ['noperm-matter', 'No Vendor.View: Vendors panel hidden', { page: 'matterSummary', persona: 'none' }],
-      ['noperm-readonly', 'Vendor.View only: read-only drawer', { page: 'vendors', persona: 'ro', drawer: 'v1', dtab: 'contacts' }],
+      ['noperm-readonly', 'Vendor.View only: read-only vendor dialog', { page: 'vendors', persona: 'ro', drawer: 'v1', dtab: 'contacts' }],
       ['noperm-link', 'No Vendor.Link: Edit disabled, reason shown', { page: 'matterSummary', persona: 'ro' }],
       ['noperm-people', 'No People.Manage: Create disabled, reason shown', { page: 'matterSummary', persona: 'ro', dialog: 'editDlg', te: { kind: 'team', q: 'Dana Whitaker', open: true } }],
     ]],
   ];
   const FLAT = SCREENS.flatMap((g) => g[1]);
 
-  const blank = () => ({ page: 'vendors', drawer: null, dtab: 'overview', dialog: null, dv: null, dctx: null, menu: null, mvEmpty: false,
+  const blank = () => ({ page: 'vendors', drawer: null, dtab: 'overview', vedit: false, vnote: null, ac: false, vdel: false, dialog: null, dv: null, dctx: null, menu: null, mvEmpty: false,
     f: { q: '', cat: 'all', svc: [], area: [] },
     pk: { q: '', cat: 'all', svc: [], area: [], sel: [], ack: false },
     mid: 'm1', coll: { team: false, vendors: false }, te: null, ld: { kind: 'team', edit: false }, pp: { open: false, q: '' }, tm: { newOpen: false, picked: null, ptype: 'External' }, pe: 'new', pf: { q: '', type: 'all' }, noteFlag: null, noteSeg: null, toast: null,
@@ -181,37 +182,49 @@
     return '<main class="main">' + head('lock', 'Access Denied', null, '') + '<div class="frame"><div class="state">' + ic('lock') + '<p>You do not have access to ' + what + '.</p><small>Your role does not include <code>' + perm + '</code>. If you need it, ask an administrator to add it to your role. The ' + what + ' menu item is hidden for you, so this page only appears if you open its address directly.</small><a class="btn" href="#matter-summary">Go to Matters</a></div></div></main>';
   }
 
-  /* ---------- Vendor drawer ---------- */
-  function drawer() {
-    const v = D.vendor(S.drawer); const pe = P(); const t = S.dtab;
+  /* ---------- Vendor dialog (view mode with tabs; Edit switches Overview to the form in place) ---------- */
+  function vendorView() {
+    const v = D.vendor(S.drawer); const pe = P(); const t = S.dtab; const ed = S.vedit;
     const cons = contactsOf(v);
     const tabs = [['overview', 'Overview', 'info-circle', ''], ['contacts', 'Contacts', 'users', ' (' + v.contacts.length + ')'], ['matters', 'Matters', 'folder', ' (' + v.links.length + ')']];
     let body = '';
-    if (t === 'overview') {
-      body = (v.cat === 'Blacklisted' ? '<div class="banner banner--bad" role="note">' + ic('ban') + '<span class="txt"><b>Blacklisted.</b> This vendor stays in lists and can still be linked to a matter, but every place it appears carries this warning.</span></div>' : '') +
+    if (ed) {
+      body = vendorFormBody(false, v.id);
+    } else if (t === 'overview') {
+      body = (v.cat === 'Blacklisted' ? '<div class="banner banner--bad" role="note" style="margin-bottom:16px">' + ic('ban') + '<span class="txt"><b>Blacklisted.</b> This vendor stays in lists and can still be linked to a matter, but every place it appears carries this warning.</span></div>' : '') +
         '<dl class="facts"><dt>Category</dt><dd>' + catChip(v.cat) + '</dd><dt>Website</dt><dd><a class="link mono" style="font-family:var(--mf-font-mono)" href="#" data-a="noop">https://' + esc(v.site) + '</a> ' + ic('external-link') + '</dd>' +
         '<dt>Services</dt><dd>' + tagsAll(v.svc) + '</dd><dt>Areas</dt><dd>' + tagsAll(v.area, 'tag--teal') + '</dd>' +
         '<dt>Tech AI</dt><dd>' + (v.ai.length ? v.ai.map((a) => '<div class="ai">' + ic('microchip-ai') + esc(a) + '</div>').join('') : '<span class="muted">None reported</span>') + '</dd>' +
         '<dt>Note</dt><dd>' + esc(v.note) + '</dd><dt>Last Updated</dt><dd>' + v.updated + '</dd></dl>';
     } else if (t === 'contacts') {
-      body = '<div class="sect"><h3>Contacts</h3><span class="cnt">' + v.contacts.length + '</span><span class="sp"></span>' + (pe.manage ? btn('Add Contact', 'dlg|addContact', { icon: 'user-plus' }) : '') + '</div>' +
+      const acForm = S.ac ? '<div class="inline-new" style="margin-bottom:12px"><h3>' + ic('user-plus') + 'Add Contact <span class="sm muted" style="font-weight:400">Pick a person from People, or type a new name.</span></h3>' +
+        (S.tm.newOpen ? newPersonInline('added as a contact') : (S.tm.picked ? pickedBox(D.person(S.tm.picked)) + '<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn--text" data-a="acx">Cancel</button><button class="btn" data-a="acsave">Add Contact</button></div>' :
+          '<div class="field"><div class="inp" data-a="ppopen">' + ic('search') + '<input data-keep="pp" value="' + esc(S.pp.q) + '" placeholder="Search People by name, email or company" role="combobox" aria-expanded="' + S.pp.open + '" aria-label="Person" autocomplete="off">' + ic('chevron-down') + '</div>' + (S.pp.open ? pickerHtml(v.contacts.map((c) => c.pid), 'Already a Contact').replace('class="cbx"', 'class="cbx" style="position:static;max-height:230px;margin-top:6px"') : '') + '</div><div style="display:flex;justify-content:flex-end"><button class="btn btn--text" data-a="acx">Cancel</button></div>')) + '</div>' : '';
+      body = '<div class="sect"><h3>Contacts</h3><span class="cnt">' + v.contacts.length + '</span><span class="sp"></span>' + (pe.manage && !S.ac ? btn('Add Contact', 'ac', { icon: 'user-plus' }) : '') + '</div>' + acForm +
         (cons.length ? '<div>' + cons.map((c) => {
-          const p = c.p;
+          const p = c.p; const open = S.vnote === p.id; const fl = S.noteFlag == null ? c.flag || '' : S.noteFlag;
+          const form = open ? '<div class="inline-new" style="grid-column:1/-1;margin-top:4px"><h3>' + ic('flag') + 'Contact Note <span class="sm muted" style="font-weight:400">' + esc(pname(p)) + '</span></h3><div class="fgrid"><div class="field full"><span class="lbl">Note Flag</span><span class="seg" role="group" aria-label="Note flag">' + [['', 'No Note'], ['REC', 'Recommended'], ['DNH', 'Do Not Hire']].map((o) => '<button aria-pressed="' + (fl === o[0]) + '" data-a="flag|' + o[0] + '">' + (o[0] === 'DNH' ? ic('ban') : o[0] === 'REC' ? ic('thumbs-up') : '') + o[1] + '</button>').join('') + '</span></div>' +
+            '<div class="field"><label for="nd">Reported Date <span class="req">(required)</span></label><div class="inp"><input id="nd" value="' + (c.date || D.TODAY) + '">' + ic('calendar') + '</div></div><div class="field"><label for="nb">Reported By <span class="req">(required)</span></label><div class="inp">' + ic('search') + '<input id="nb" value="' + esc(c.by || P().name) + '"></div></div>' +
+            '<div class="field full"><label for="nn">Note <span class="req">(required)</span></label><textarea id="nn" class="inp" rows="3">' + esc(c.note || '') + '</textarea><div class="help">Everyone who can view vendors can read this.</div></div></div><div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn--text" data-a="vnote|">Cancel</button><button class="btn" data-a="save|Save Note">Save Note</button></div></div>' : '';
           return '<div class="contact"><div class="who">' + av(p) + '<div style="min-width:0"><div class="nm">' + pname(p) + ' <span class="muted" style="font-weight:400">' + esc(p.title) + '</span></div><div class="sm muted">' + esc(p.email) + '</div></div></div>' +
-            '<div style="display:flex;align-items:center;gap:8px">' + (c.flag ? flagChip(c.flag) : '<span class="sm muted">No note</span>') + (pe.manage ? '<button class="btn btn--text" data-a="note|' + v.id + '|' + p.id + '">' + (c.flag ? 'Edit Note' : 'Add Note') + '</button>' : '') + '</div>' +
-            (c.flag ? '<div class="note ' + (c.flag === 'DNH' ? 'bad' : 'ok') + '"><div class="hd">' + ic('flag') + 'Reported ' + c.date + ' by ' + esc(c.by) + '</div>' + esc(c.note) + '</div>' : '') + '</div>';
+            '<div style="display:flex;align-items:center;gap:8px">' + (c.flag ? flagChip(c.flag) : '<span class="sm muted">No note</span>') + (pe.manage && !open ? '<button class="btn btn--text" aria-expanded="false" data-a="vnote|' + p.id + '">' + (c.flag ? 'Edit Note' : 'Add Note') + '</button>' : '') + '</div>' +
+            (c.flag && !open ? '<div class="note ' + (c.flag === 'DNH' ? 'bad' : 'ok') + '"><div class="hd">' + ic('flag') + 'Reported ' + c.date + ' by ' + esc(c.by) + '</div>' + esc(c.note) + '</div>' : '') + form + '</div>';
         }).join('') + '</div>' : '<div class="state">' + ic('users') + '<p>No contacts yet.</p><small>Add the people at this vendor you deal with. Pick them from People, or add a new person on the way.</small></div>');
     } else {
       body = '<div class="sect"><h3>Matters</h3><span class="cnt">' + v.links.length + '</span></div>' +
-        (v.links.length ? '<div class="frame" style="flex:none;box-shadow:none"><table><colgroup><col style="width:110px"><col><col style="width:130px"><col style="width:96px"><col style="width:120px"></colgroup><thead><tr><th>CM Number</th><th>Matter</th><th>Client</th><th>Linked</th><th>Linked By</th></tr></thead><tbody>' +
+        (v.links.length ? '<div class="frame" style="flex:none;box-shadow:none"><table><colgroup><col style="width:110px"><col><col style="width:130px"><col style="width:96px"><col style="width:130px"></colgroup><thead><tr><th>CM Number</th><th>Matter</th><th>Client</th><th>Linked</th><th>Linked By</th></tr></thead><tbody>' +
           v.links.map((l) => { const m = D.matter(l[0]); return '<tr><td><a class="link mono" style="font-family:var(--mf-font-mono)" href="#matter-summary">' + m.cm + '</a></td><td title="' + esc(m.name) + '">' + esc(m.name) + '</td><td>' + esc(m.client) + '</td><td>' + l[1] + '</td><td>' + esc(l[2]) + '</td></tr>'; }).join('') + '</tbody></table></div>' +
-          '<p class="sm muted" style="margin:0">Vendors are linked from the matter: open a matter, Summary, then Edit on the Vendors panel.</p>'
+          '<p class="sm muted" style="margin:12px 0 0">Vendors are linked from the matter: open a matter, Summary, then Edit on the Vendors panel.</p>'
           : '<div class="state">' + ic('folder') + '<p>Not linked to any matter.</p><small>Link it from a matter\'s Summary tab. A vendor with no matters can be deleted.</small></div>');
     }
-    return '<div class="scrim scrim--drawer" data-a="close"><aside class="drawer" role="dialog" aria-label="Vendor ' + esc(v.name) + '" data-stop="1"><header><h2 style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(v.name) + '</h2>' + catChip(v.cat) + '<span class="sp"></span>' +
-      (pe.manage ? iconBtn('pencil', 'edit|' + v.id, 'Edit vendor') + iconBtn('trash', 'del|' + v.id, 'Delete vendor') : '') + iconBtn('times', 'close', 'Close') + '</header>' +
-      '<div class="tabs" role="tablist">' + tabs.map((x) => '<button class="tab" role="tab" aria-selected="' + (t === x[0]) + '" data-a="dtab|' + x[0] + '">' + ic(x[2]) + x[1] + x[3] + '</button>').join('') + '</div>' +
-      '<div class="bd">' + body + '</div></aside></div>';
+    let foot;
+    if (S.vdel) foot = '<span class="mid" style="padding:0;color:var(--mf-text)"><b>Delete ' + esc(v.name) + '?</b> ' + (v.links.length ? 'It is linked to ' + v.links.length + ' matter' + (v.links.length > 1 ? 's' : '') + ' and cannot be deleted. Unlink it first, or set its category to Blacklisted.' : 'Its contacts stay in People. This cannot be undone.') + '</span><button class="btn" data-a="vdel">' + (v.links.length ? 'Close' : 'Keep Vendor') + '</button>' + (v.links.length ? '' : '<button class="btn btn--solid-danger" data-a="save|Delete Vendor">Delete Vendor</button>');
+    else if (ed) foot = '<button class="btn" data-a="vedit">Cancel</button><span class="sp"></span><button class="btn btn--primary" data-a="save|Save Changes">Save Changes</button>';
+    else if (pe.manage) foot = '<button class="btn" data-a="vdel">' + ic('trash') + 'Delete Vendor</button><span class="sp"></span><button class="btn" data-a="close">Close</button><button class="btn btn--primary" data-a="vedit">' + ic('pencil') + 'Edit Vendor</button>';
+    else foot = '<span class="mid" style="padding:0">Read only. Editing vendors needs the Vendor.Manage permission.</span><button class="btn btn--primary" data-a="close">Close</button>';
+    return '<div class="scrim" data-a="close"><div class="dlg dlg--lg" style="height:min(640px,90vh)" role="dialog" aria-modal="true" aria-label="Vendor ' + esc(v.name) + '" data-stop="1"><header><div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px"><h2>' + (ed ? 'Edit Vendor' : esc(v.name)) + '</h2>' + (ed ? '<span class="subt" style="display:inline">' + esc(v.name) + '</span>' : catChip(v.cat)) + '</div>' + iconBtn('times', 'close', 'Close') + '</header>' +
+      '<div class="tabs" role="tablist" style="padding:0 8px;flex:none">' + tabs.map((x) => '<button class="tab" role="tab" ' + (ed && x[0] !== 'overview' ? 'disabled aria-disabled="true" style="color:var(--mf-text-disabled);cursor:not-allowed" ' : '') + 'aria-selected="' + (t === x[0]) + '" data-a="dtab|' + x[0] + '">' + ic(x[2]) + x[1] + x[3] + '</button>').join('') + '</div>' +
+      '<div class="bd">' + body + '</div><footer>' + foot + '</footer></div></div>';
   }
 
   /* ---------- dialogs ---------- */
@@ -223,8 +236,8 @@
   function fchips(group, all, sel) {
     return '<div class="tags" role="group">' + all.map((x) => '<button class="fchip" aria-pressed="' + sel.includes(x) + '" data-a="cv|' + group + '|' + x + '">' + (sel.includes(x) ? ic('check') : '') + esc(x) + '</button>').join('') + '</div>';
   }
-  function vendorDialog(isNew) {
-    const v = isNew ? { name: '', site: '', ai: [], note: '' } : D.vendor(S.dv);
+  function vendorFormBody(isNew, vid) {
+    const v = isNew ? { name: '', site: '', ai: [], note: '' } : D.vendor(vid);
     const c = S.cvSel;
     const body = '<div class="fgrid">' +
       '<div class="field"><label for="vn">Name <span class="req">(required)</span></label><div class="inp"><input id="vn" value="' + esc(v.name) + '"></div></div>' +
@@ -237,20 +250,9 @@
         '<div style="display:flex;gap:8px"><div class="inp" style="max-width:420px"><input aria-label="Add an AI system or service" placeholder="AI system or service, for example Relativity aiR"></div><button class="btn">' + ic('plus') + 'Add</button></div></div>' +
       '<div class="field full"><label for="vt">Note</label><textarea id="vt" class="inp" rows="3">' + esc(v.note) + '</textarea></div>' +
       (isNew ? '<div class="banner full" style="grid-column:1/-1">' + ic('info-circle') + '<span class="txt">Contacts are added after the vendor is saved, on the Contacts tab of its detail panel.</span></div>' : '') + '</div>';
-    return dialog(isNew ? 'New Vendor' : 'Edit Vendor', isNew ? '' : esc(v.name), 'dlg--lg', body, cancelSave(isNew ? 'Create Vendor' : 'Save Changes'));
+    return body;
   }
-  function noteDialog() {
-    const [vid, pid] = S.dctx || ['v4', 'p13']; const v = D.vendor(vid); const p = D.person(pid);
-    const c = v.contacts.find((x) => x.pid === pid) || {}; const fl = S.noteFlag == null ? c.flag || '' : S.noteFlag;
-    const opts = [['', 'No Note'], ['REC', 'Recommended'], ['DNH', 'Do Not Hire']];
-    const body = '<div class="fgrid"><div class="field full"><span class="lbl">Note Flag</span><span class="seg" role="group" aria-label="Note flag">' + opts.map((o) => '<button aria-pressed="' + (fl === o[0]) + '" data-a="flag|' + o[0] + '">' + (o[0] === 'DNH' ? ic('ban') : o[0] === 'REC' ? ic('thumbs-up') : '') + o[1] + '</button>').join('') + '</span>' +
-      '<div class="help">One flag per contact. The flag shows on the vendor, in the Add Vendor picker and on matters, so everyone sees it before hiring.</div></div>' +
-      '<div class="field"><label for="nd">Reported Date <span class="req">(required)</span></label><div class="inp"><input id="nd" value="' + (c.date || D.TODAY) + '">' + ic('calendar') + '</div></div>' +
-      '<div class="field"><label for="nb">Reported By <span class="req">(required)</span></label><div class="inp">' + ic('search') + '<input id="nb" value="' + esc(c.by || P().name) + '"></div><div class="help">Defaults to you. Pick someone else if you are recording their report.</div></div>' +
-      '<div class="field full"><label for="nn">Note <span class="req">(required)</span></label><textarea id="nn" class="inp" rows="4">' + esc(c.note || '') + '</textarea><div class="help">Say what happened, on which matter if it helps. Everyone who can view vendors can read this.</div></div></div>';
-    return dialog('Contact Note', esc(pname(p)) + ', ' + esc(v.name), '', body, cancelSave('Save Note'));
-  }
-
+  function vendorDialog() { return dialog('New Vendor', '', 'dlg--lg', vendorFormBody(true), cancelSave('Create Vendor')); }
   /* person picker (used by Team panel and vendor Add Contact) */
   function pickerHtml(excl, tagFor) {
     const pe = P(); const q = S.pp.q.trim().toLowerCase();
@@ -277,14 +279,6 @@
       '<div class="field"><label for="ni5">Title or Role</label><div class="inp"><input id="ni5" value="Court Reporter"></div></div>' +
       '</div><div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn--text" data-a="cancelnew">Cancel New Person</button><button class="btn" data-a="savenew">Create and Select</button></div></div>';
   }
-  function addContactDialog() {
-    const v = D.vendor(S.drawer || 'v1'); const t = S.tm; const p = t.picked ? D.person(t.picked) : null;
-    let f;
-    if (t.newOpen) f = newPersonInline('added as a contact');
-    else if (p) f = '<div class="field"><span class="lbl">Person <span class="req">(required)</span></span>' + pickedBox(p) + '</div>';
-    else f = '<div class="field"><label for="pp">Person <span class="req">(required)</span></label><div class="inp" data-a="ppopen">' + ic('search') + '<input id="pp" data-keep="pp" value="' + esc(S.pp.q) + '" placeholder="Search by name, email or company" role="combobox" aria-expanded="' + S.pp.open + '" autocomplete="off">' + ic('chevron-down') + '</div>' + (S.pp.open ? pickerHtml(v.contacts.map((c) => c.pid), 'Already a Contact') : '') + '</div>';
-    return dialog('Add Contact', esc(v.name), '', (S.pp.open && !p && !t.newOpen ? '<div style="min-height:410px">' : '<div>') + f + '<div class="help" style="margin-top:12px">Contacts at a vendor are normally External people. A note flag can be added after saving.</div></div>', cancelSave('Add Contact'), true);
-  }
   function deleteDialog() {
     const v = D.vendor(S.dv); const n = v.links.length;
     if (n) return dialog('Delete Vendor', '', 'dlg--sm', '<p><b>' + esc(v.name) + '</b> is linked to ' + n + ' matter' + (n > 1 ? 's' : '') + ' and cannot be deleted. Unlink it from each matter first. If the firm should stop using it, set its category to Blacklisted instead.</p>', '<span class="sp"></span><button class="btn btn--primary" data-a="close">Close</button>');
@@ -306,10 +300,10 @@
   }
   function overlays() {
     let h = '';
-    if (S.drawer) h += drawer();
+    if (S.drawer) h += vendorView();
     const d = S.dialog;
-    if (d === 'newVendor') h += vendorDialog(true); else if (d === 'editVendor') h += vendorDialog(false);
-    else if (d === 'contactNote') h += noteDialog(); else if (d === 'addContact') h += addContactDialog(); else if (d === 'deleteVendor') h += deleteDialog();
+    if (d === 'newVendor') h += vendorDialog();
+    else if (d === 'deleteVendor') h += deleteDialog();
     else if (d === 'listDlg') h += listDialog(); else if (d === 'editDlg') h += editDialog(); else if (d === 'personEdit') h += personDialog();
     if (S.toast) h += '<div class="toast" role="status"><b>' + S.toast + '</b></div>';
     return h;
@@ -342,7 +336,7 @@
   function panelVendors() {
     const pe = P(); if (!pe.view) return '';
     const vs = vendorsOf(S.mid), n = vs.length, c = cap(), bl = vs.filter((v) => v.cat === 'Blacklisted');
-    const li = vs.slice(0, c).map((v) => '<li class="pl-row pl-v ' + (v.cat === 'Blacklisted' ? 'bx-warn' : '') + '"><span class="bx-main"><button class="btn btn--name" data-a="goto|vendor-drawer" title="' + esc(v.name) + '">' + esc(v.name) + '</button></span>' + (flagged(v, 'DNH') ? '<span style="color:var(--mf-danger)" title="Contact flagged Do Not Hire">' + ic('flag') + '</span>' : '') + catChip(v.cat).replace('chip ', 'chip bx-chip ') + '</li>').join('');
+    const li = vs.slice(0, c).map((v) => '<li class="pl-row pl-v ' + (v.cat === 'Blacklisted' ? 'bx-warn' : '') + '"><span class="bx-main"><button class="btn btn--name" data-a="goto|vendor-view" title="' + esc(v.name) + '">' + esc(v.name) + '</button></span>' + (flagged(v, 'DNH') ? '<span style="color:var(--mf-danger)" title="Contact flagged Do Not Hire">' + ic('flag') + '</span>' : '') + catChip(v.cat).replace('chip ', 'chip bx-chip ') + '</li>').join('');
     const edit = pe.link ? '<button class="btn btn--text" data-a="ld|vendors|1">' + ic('pencil') + 'Edit</button>' : '<button class="btn btn--text" disabled aria-disabled="true" aria-describedby="whylink" style="color:var(--mf-text-disabled);cursor:not-allowed">' + ic('pencil') + 'Edit</button>';
     const why = !pe.link ? '<div class="bx-f"><span class="why" id="whylink">' + ic('lock') + 'Needs Vendor.Link to change.</span><span class="sp"></span>' + (n > c ? '<button class="btn btn--text" data-a="ld|vendors|0">Show All ' + n + '</button>' : '') + '</div>' : (n > c ? '<div class="bx-f"><button class="btn btn--text" data-a="ld|vendors|0">Show All ' + n + '</button></div>' : '');
     return panel('vendors', 'Vendors', n, bl.length ? '<span class="chip chip--bad bx-chip" title="' + esc(bl.map((v) => v.name).join(', ')) + '">' + ic('exclamation-triangle') + bl.length + '</span>' : '', edit, li, why, '<span class="sp"></span><span class="muted sm">No vendors linked</span>' + (pe.link ? '<button class="btn btn--text" data-a="ld|vendors|1">+ Add Vendor</button>' : '<span class="why" id="whylink">' + ic('lock') + 'Needs Vendor.Link</span>'));
@@ -368,7 +362,7 @@
       return dialog('Team (' + rows.length + ')', esc(mt.name) + ' (' + mt.cm + ')', 'dlg--lg', body, '<span class="sp"></span><button class="btn btn--primary" data-a="close">Close</button>');
     }
     const vs = vendorsOf(S.mid); const bl = vs.filter((v) => v.cat === 'Blacklisted');
-    const body = (bl.length ? '<div class="banner banner--bad" style="margin-bottom:12px" role="note">' + ic('exclamation-triangle') + '<span class="txt"><b>' + esc(bl[0].name) + ' is Blacklisted</b> (' + bl[0].updated + '). It was linked before it was blacklisted. Review it before more work goes to it.</span><button class="btn btn--text" data-a="goto|vendor-drawer">View Vendor</button></div>' : '') +
+    const body = (bl.length ? '<div class="banner banner--bad" style="margin-bottom:12px" role="note">' + ic('exclamation-triangle') + '<span class="txt"><b>' + esc(bl[0].name) + ' is Blacklisted</b> (' + bl[0].updated + '). It was linked before it was blacklisted. Review it before more work goes to it.</span><button class="btn btn--text" data-a="goto|vendor-view">View Vendor</button></div>' : '') +
       '<div class="frame" style="box-shadow:none;flex:none"><table><colgroup><col><col style="width:124px"><col style="width:150px"><col style="width:130px"><col style="width:100px"></colgroup><thead><tr><th>Vendor</th><th>Category</th><th>Services</th><th>Contacts</th><th>Linked</th></tr></thead><tbody>' +
       vs.map((v) => { const cons = v.contacts.map((c) => D.person(c.pid)); const l = v.links.find((x) => x[0] === S.mid); return '<tr class="' + (v.cat === 'Blacklisted' ? 'row-warn' : '') + '"><td><span class="two"><b>' + esc(v.name) + '</b></span><span class="two" style="font-family:var(--mf-font-mono)">' + esc(v.site) + '</span></td><td>' + catChip(v.cat) + '</td><td>' + tagsShort(v.svc, 16) + '</td><td>' + (cons.length ? pname(cons[0]) + (cons.length > 1 ? ' +' + (cons.length - 1) : '') : '<span class="muted">None</span>') + '</td><td><span class="two">' + l[1] + '</span><span class="two">' + esc(l[2]) + '</span></td></tr>'; }).join('') + '</tbody></table></div>';
     return dialog('Vendors (' + vs.length + ')', esc(mt.name) + ' (' + mt.cm + ')', 'dlg--lg', body, '<span class="sp"></span><button class="btn btn--primary" data-a="close">Close</button>');
@@ -513,10 +507,10 @@
     else { tgt[key] = val === '__clear' ? [] : toggle(tgt[key], val); }
   }
   const acts = {
-    noop: () => {}, close: () => { if (S.dialog) { S.dialog = null; S.menu = null; S.pp = { open: false, q: '' }; S.tm = { newOpen: false, picked: null }; S.te = null; } else S.drawer = null; S.keep = null; },
+    noop: () => {}, close: () => { if (S.dialog) { S.dialog = null; S.menu = null; S.pp = { open: false, q: '' }; S.tm = { newOpen: false, picked: null }; S.te = null; } else { S.drawer = null; S.vedit = false; S.vnote = null; S.ac = false; S.vdel = false; } S.keep = null; },
     guide: () => { S.guide = !S.guide; },
     drawer: (id) => { if (P().view) { S.drawer = id; S.dtab = 'overview'; S.menu = null; } },
-    dtab: (t) => { S.dtab = t; },
+    dtab: (t) => { if (!S.vedit) { S.dtab = t; S.vnote = null; S.ac = false; } },
     ld: (kind, e) => { S.menu = null; if (e === '1') { initTE(kind); S.dialog = 'editDlg'; } else { S.ld = { kind, edit: false }; S.dialog = 'listDlg'; } },
     coll: (k) => { S.coll[k] = !S.coll[k]; },
     'te-open': () => { S.te.open = true; S.keep = 'te'; },
@@ -531,10 +525,15 @@
     ddset: (id, val) => setDd(id, val),
     clearf: () => { S.f = { q: '', cat: 'all', svc: [], area: [] }; S.menu = null; },
     pkclear: () => { S.pk.q = ''; S.pk.cat = 'all'; S.pk.svc = []; S.pk.area = []; S.menu = null; },
-    edit: (id) => { S.dv = id; S.dialog = 'editVendor'; S.menu = null; S.cvSel = { cat: D.vendor(id).cat, svc: D.vendor(id).svc.slice(), area: D.vendor(id).area.slice() }; },
+    edit: (id) => { S.drawer = id; S.dtab = 'overview'; S.vedit = true; S.menu = null; S.cvSel = { cat: D.vendor(id).cat, svc: D.vendor(id).svc.slice(), area: D.vendor(id).area.slice() }; },
     del: (id) => { S.dv = id; S.dialog = 'deleteVendor'; S.menu = null; },
     cv: (g, x) => { if (g === 'cat') S.cvSel.cat = x; else S.cvSel[g] = toggle(S.cvSel[g], x); },
-    note: (v, p) => { S.dctx = [v, p]; S.noteFlag = null; S.dialog = 'contactNote'; },
+    vedit: () => { S.vedit = !S.vedit; if (S.vedit) { const v = D.vendor(S.drawer); S.dtab = 'overview'; S.cvSel = { cat: v.cat, svc: v.svc.slice(), area: v.area.slice() }; } },
+    vdel: () => { S.vdel = !S.vdel; },
+    vnote: (p) => { S.vnote = p || null; S.noteFlag = null; },
+    ac: () => { S.ac = true; S.pp = { open: true, q: '' }; S.tm = { newOpen: false, picked: null }; S.keep = 'pp'; },
+    acx: () => { S.ac = false; S.pp = { open: false, q: '' }; S.tm = { newOpen: false, picked: null }; },
+    acsave: () => { S.ac = false; S.toast = 'Contact added (demo only)'; setTimeout(() => { S.toast = null; render(); }, 2200); },
     flag: (f) => { S.noteFlag = f; },
     pksel: (id) => { S.pk.sel = toggle(S.pk.sel, id); if (!S.pk.sel.some((i) => D.vendor(i).cat === 'Blacklisted')) S.pk.ack = false; },
     ack: () => { S.pk.ack = !S.pk.ack; },
@@ -548,7 +547,7 @@
     ptf: (t) => { S.pf.type = t; },
     editp: (id) => { S.pe = id; S.dialog = 'personEdit'; },
     goto: (id) => { location.hash = id; },
-    save: (label) => { S.dialog = null; S.menu = null; S.toast = label + ': saved (demo only)'; setTimeout(() => { S.toast = null; render(); }, 2200); },
+    save: (label) => { if (label === 'Save Note') { S.vnote = null; } else if (label === 'Save Changes' && S.vedit) { S.vedit = false; } else if (label === 'Delete Vendor' && S.drawer) { S.drawer = null; S.vdel = false; } else { S.dialog = null; } S.menu = null; S.toast = label + ': saved (demo only)'; setTimeout(() => { S.toast = null; render(); }, 2200); },
   };
   $root.addEventListener('click', (e) => {
     const stop = e.target.closest('[data-stop]'); const el = e.target.closest('[data-a]');
