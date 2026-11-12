@@ -227,6 +227,9 @@ test.describe('the editor (#713 to #715)', () => {
     await tab(page, /^Parameters/).click();
     await expect(page.locator('[data-parameter="MAX"]')).toBeVisible();
     await asDropdown(page.locator('#param-0-type')).selectOption('number');
+    // The type decides how the person's run is checked below (a number is sent as a number): the saved report must hold it, so it is read back from the form
+    // before saving and from the API after, not assumed from the preview (which accepts a number typed into a text box too).
+    await expect(page.locator('#param-0-type')).toHaveAttribute('data-value', 'number');
     await page.locator('#param-0-label').fill('Largest value');
     await page.getByRole('button', { name: 'Create Report' }).click();
     await expect(page).toHaveURL(/\/admin\/reports\/\d+$/);
@@ -272,8 +275,12 @@ test.describe('the editor (#713 to #715)', () => {
 
     // The person with that role can run it now.
     const runner = await Api.as(role.username);
+    const saved = await admin.get<Json>(`/api/v1/report-admin/reports/${id}`);
     const run = await runner.raw('POST', `/api/v1/reports/${id}/runs`, { parameters: { MAX: 3 } });
-    expect(run.status).toBe(200);
+    expect(
+      run.status,
+      `run answered ${JSON.stringify(run.body).slice(0, 400)}; saved parameters ${JSON.stringify(saved.parameters ?? saved).slice(0, 400)}`,
+    ).toBe(200);
     await runner.dispose();
   });
 

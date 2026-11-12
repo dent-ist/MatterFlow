@@ -85,7 +85,8 @@ test.describe('the Priorities list (#605)', () => {
       eighth.y + eighth.height,
       'the eighth row ends inside the scroll area',
     ).toBeLessThanOrEqual(regionBox.y + regionBox.height + 0.5);
-    // One scroll area: no scrolling box inside the table's wrap, and the page itself does not scroll. (The list is opened at its own address: the old
+    // One scroll area: no scrolling box inside the table's wrap, and the page itself does not scroll. The catalogue pane at the left is a pane of its own that
+    // scrolls by design when its lists do not fit (nine lists since Matter Categories, #1369, are taller than the pane at 768 px), so it is not counted. (The list is opened at its own address: the old
     // address /admin/priorities redirects with a "moved" banner, and that banner's height makes the catalogue pane scroll, which is another page state.)
     const nested = await page.evaluate(
       () =>
@@ -96,7 +97,7 @@ test.describe('the Priorities list (#605)', () => {
             el.scrollHeight > el.clientHeight + 1 &&
             !el.hasAttribute('data-scroll-area') &&
             el.getAttribute('role') !== 'region' &&
-            !el.matches('mf-fixed-page, .mf-fill, #mf-main')
+            !el.matches('mf-fixed-page, .mf-fill, #mf-main, .cat__body')
           );
         }).length,
     );

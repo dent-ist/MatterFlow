@@ -516,8 +516,9 @@ export function registerListsAuditMatrix(): void {
           if (seen.failed.length > 0) problems.push(`${url}: refused ${seen.failed.join(', ')}`);
           const tabLinks = await page.locator('#mf-main [role="tab"]').count();
           if (tabLinks !== 0) problems.push(`${url}: ${tabLinks} tab links on the Lists page`);
-          // The catalogue: Priorities (1) and Status Labels with Note Tags (2); all eight for the System Admin; none for a single list.
-          const permitted = role.perms === null ? 8 : (canPr ? 1 : 0) + (canSl ? 2 : 0);
+          // The catalogue: Priorities (1) and Status Labels with Note Tags (2); all nine for the System Admin (Matter Categories joined the eight, #1369);
+          // none for a single list.
+          const permitted = role.perms === null ? 9 : (canPr ? 1 : 0) + (canSl ? 2 : 0);
           const options = await page.locator('#mf-main [role="option"]').count();
           if (options !== (permitted > 1 ? permitted : 0))
             problems.push(`${url}: ${options} catalogue options for ${permitted} permitted lists`);
@@ -594,8 +595,17 @@ export function registerListsAuditMatrix(): void {
           }
           if (role.key === 'au' && hrefs.length > 0)
             problems.push(`audit: ${hrefs.length} object links for Audit.View only`);
-          if (role.key === 'au-tv' && !hrefs.some((h) => h.startsWith('/tasks')))
-            problems.push('audit: no task link for Audit.View with Task.View');
+          if (role.key === 'au-tv') {
+            // The newest 50 events of the unfiltered page are all that is shown at first, and a busy run (parallel workers) can fill them with
+            // events of other objects, so the Task link is looked for among the Task events only (the Object type filter, in the address).
+            await visit('/admin/audit?objectType=Task');
+            await expect(page.locator('#mf-main table tbody tr').first()).toBeVisible();
+            const taskHrefs = await page
+              .locator('#mf-main table a.au-linkout')
+              .evaluateAll((as) => as.map((a) => a.getAttribute('href') ?? ''));
+            if (!taskHrefs.some((h) => h.startsWith('/tasks')))
+              problems.push('audit: no task link for Audit.View with Task.View');
+          }
           // Every link that is offered opens (never the 403 page).
           for (const href of hrefs.slice(0, 6)) {
             await visit(href);

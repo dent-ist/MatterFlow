@@ -87,8 +87,12 @@ test.describe('Assets list defects (WP-AS1)', () => {
     const popup = page.context().waitForEvent('page');
     await link.click({ modifiers: ['Control'] });
     const tab = await popup;
-    // A new tab loads the whole app cold (nothing cached in it yet): on a busy runner the address is committed late (empty for over 10 s in CI).
-    await expect(tab).toHaveURL(new RegExp(`/assets/${rows.plain.assetId}$`), { timeout: 45_000 });
+    // The new tab loads the record page (the screenshot of a failed run shows it fully drawn), but with the headless shell browser that CI uses, Playwright can keep
+    // reporting an empty address (`tab.url()`) for a tab opened by Ctrl+click for as long as one waits. So the address is read from the page itself
+    // (an evaluate that meets the page's own start-up navigation fails once and is asked again).
+    await expect
+      .poll(() => tab.evaluate(() => window.location.pathname).catch(() => ''), { timeout: 30_000 })
+      .toBe(`/assets/${rows.plain.assetId}`);
     await tab.close();
 
     await link.press('Enter');

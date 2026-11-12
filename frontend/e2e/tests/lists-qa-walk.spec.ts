@@ -22,17 +22,48 @@ const menuOf = (page: Page, name: string) =>
 const dlg = (page: Page) => page.getByRole('dialog');
 
 const NAME_LISTS = [
-  { key: 'matter-types', label: 'Matter Types', add: 'New Matter Type', hasDelete: true },
+  {
+    key: 'matter-types',
+    api: '/api/v1/matter-types',
+    label: 'Matter Types',
+    add: 'New Matter Type',
+    hasDelete: true,
+  },
   {
     key: 'matter-categories',
+    api: '/api/v1/matter-categories',
     label: 'Matter Categories',
     add: 'New Matter Category',
     hasDelete: true,
   },
-  { key: 'current-states', label: 'Current States', add: 'New State', hasDelete: true },
-  { key: 'team-titles', label: 'Team Titles', add: 'New Title', hasDelete: true },
-  { key: 'on-hold-reasons', label: 'On-Hold Reasons', add: 'New Reason', hasDelete: false },
-  { key: 'link-roles', label: 'Link Roles', add: 'New Link Role', hasDelete: true },
+  {
+    key: 'current-states',
+    api: '/api/v1/current-states',
+    label: 'Current States',
+    add: 'New State',
+    hasDelete: true,
+  },
+  {
+    key: 'team-titles',
+    api: '/api/v1/team-titles',
+    label: 'Team Titles',
+    add: 'New Title',
+    hasDelete: true,
+  },
+  {
+    key: 'on-hold-reasons',
+    api: '/api/v1/on-hold-reasons',
+    label: 'On-Hold Reasons',
+    add: 'New Reason',
+    hasDelete: false,
+  },
+  {
+    key: 'link-roles',
+    api: '/api/v1/asset-link-roles',
+    label: 'Link Roles',
+    add: 'New Link Role',
+    hasDelete: true,
+  },
 ] as const;
 
 test.describe('lifecycle of the name lists', () => {
@@ -44,8 +75,28 @@ test.describe('lifecycle of the name lists', () => {
       await page.goto(`/admin/lists/${l.key}`);
       await expect(page.locator('[data-list-body] tbody tr').first()).toBeVisible();
       await expect(page.locator('[data-count]').first()).not.toHaveText('--');
-      const before = await count(page, l.label);
-      await expect(page.locator('[data-active-count]')).toContainText(`${before} active`);
+      // The number in the catalogue (and the badge "N active" of the editor) is the number of active items of the list the editor last received. Other specs add
+      // and remove items of the same list at the same time (workers run in parallel), so it is compared with the active rows the editor shows, which come from
+      // the same list, and not with a number read earlier plus one or with the server's count of the moment.
+      const activeRows = () =>
+        page
+          .locator('[data-list-body] tbody tr[data-row]')
+          .evaluateAll(
+            (trs) =>
+              trs.filter(
+                (tr) =>
+                  !(tr as HTMLElement).innerText
+                    .split(/[\t\n]+/)
+                    .some((c) => c.trim() === 'Inactive'),
+              ).length,
+          );
+      const countMatchesRows = async () => {
+        await expect.poll(async () => (await count(page, l.label)) - (await activeRows())).toBe(0);
+        await expect(page.locator('[data-active-count]')).toContainText(
+          `${await count(page, l.label)} active`,
+        );
+      };
+      await countMatchesRows();
 
       // create
       const name = `QA ${uniq()}`;
@@ -54,8 +105,7 @@ test.describe('lifecycle of the name lists', () => {
       await dlg(page).locator('[data-lookup-submit]').click();
       await expect(dlg(page)).toHaveCount(0);
       await expect(rowOf(page, name)).toBeVisible();
-      await expect.poll(() => count(page, l.label)).toBe(before + 1);
-      await expect(page.locator('[data-active-count]')).toContainText(`${before + 1} active`);
+      await countMatchesRows();
 
       // duplicate name, in another case: the editor's own message, the dialog stays open and keeps the text
       await page.getByRole('button', { name: l.add }).click();
@@ -79,18 +129,45 @@ test.describe('lifecycle of the name lists', () => {
       await expect(dlg(page)).toHaveCount(0);
       await expect(rowOf(page, `${name} r`)).toBeVisible();
 
-      // reorder: Move Up puts the new last row above its neighbour
+      // reorder: Move Up puts the new last row above its neighbour. The server takes an order only for the list as it is (every item exactly once): when another
+      // worker adds or removes an item of this list between our load and the click, it answers 422 and the editor puts the old order back (as it would for a person,
+      // who then tries again). So the move is repeated after a reload until the server accepts it, and the saved order is read back from the answer.
       const names = () =>
         page
           .locator('[data-list-body] tbody tr[data-row]')
           .evaluateAll((r) => r.map((x) => x.getAttribute('data-row')));
-      const order = await names();
-      const i = order.indexOf(`${name} r`);
-      await openRowMenu(page, menuOf(page, `${name} r`));
-      await page.getByRole('menuitem', { name: 'Move Up' }).click();
-      await expect.poll(async () => (await names()).indexOf(`${name} r`)).toBe(i - 1);
+      let jumped: string | null = null;
+      for (let attempt = 0; attempt < 5 && jumped === null; attempt++) {
+        const order = await names();
+        const i = order.indexOf(`${name} r`);
+        expect(i, 'the renamed item is the last of the list or near it').toBeGreaterThan(0);
+        const answer = page.waitForResponse(
+          (r) => r.request().method() === 'PUT' && r.url().endsWith(`${l.api}/order`),
+        );
+        await openRowMenu(page, menuOf(page, `${name} r`));
+        await page.getByRole('menuitem', { name: 'Move Up' }).click();
+        const response = await answer;
+        if (response.ok()) {
+          const saved = (await response.json()) as { name: string }[];
+          const at = saved.findIndex((x) => x.name === `${name} r`);
+          jumped = saved[at + 1]?.name ?? '';
+          expect(at, 'the saved list has the item one place higher').toBe(i - 1);
+        } else {
+          await page.reload();
+          await expect(rowOf(page, `${name} r`)).toBeVisible();
+        }
+      }
+      expect(jumped, 'the server accepted the move').not.toBeNull();
       await page.reload();
-      await expect.poll(async () => (await names()).indexOf(`${name} r`)).toBe(i - 1);
+      // After a reload the item still stands above the one it jumped over (unless another worker has removed that one meanwhile).
+      await expect
+        .poll(async () => {
+          const now = await names();
+          const mine = now.indexOf(`${name} r`);
+          const over = now.indexOf(jumped!);
+          return mine >= 0 && (over === -1 || mine < over);
+        })
+        .toBe(true);
 
       // deactivate (confirm) lowers the catalogue count, activate raises it
       await openRowMenu(page, menuOf(page, `${name} r`));
@@ -98,12 +175,11 @@ test.describe('lifecycle of the name lists', () => {
       await expect(dlg(page)).toBeVisible();
       await dlg(page).locator('[data-confirm-primary]').click();
       await expect(rowOf(page, `${name} r`)).toContainText('Inactive');
-      await expect.poll(() => count(page, l.label)).toBe(before);
-      await expect(page.locator('[data-active-count]')).toContainText(`${before} active`);
+      await countMatchesRows();
       await openRowMenu(page, menuOf(page, `${name} r`));
       await page.getByRole('menuitem', { name: 'Activate' }).click();
       await expect(rowOf(page, `${name} r`)).toContainText('Active');
-      await expect.poll(() => count(page, l.label)).toBe(before + 1);
+      await countMatchesRows();
 
       // delete only where the list has it
       await openRowMenu(page, menuOf(page, `${name} r`));
@@ -111,7 +187,7 @@ test.describe('lifecycle of the name lists', () => {
         await page.getByRole('menuitem', { name: 'Delete' }).click();
         await dlg(page).locator('[data-confirm-primary]').click();
         await expect(rowOf(page, `${name} r`)).toHaveCount(0);
-        await expect.poll(() => count(page, l.label)).toBe(before);
+        await countMatchesRows();
       } else {
         await expect(page.getByRole('menuitem', { name: 'Delete' })).toHaveCount(0);
         await page.keyboard.press('Escape');
@@ -134,7 +210,7 @@ test.describe('Priorities, Status Labels and Note Tags', () => {
     const activeOnServer = async () =>
       (await admin.get('/api/v1/priorities')).filter((p: { isActive: boolean }) => p.isActive)
         .length;
-    const countMatchesServer = () =>
+    const countMatchesRows = () =>
       expect.poll(async () => (await count(page, 'Priorities')) - (await activeOnServer())).toBe(0);
     await page.getByRole('button', { name: 'New Priority' }).click();
     await dlg(page).locator('#priority-label').fill(label);
@@ -144,7 +220,7 @@ test.describe('Priorities, Status Labels and Note Tags', () => {
     await expect(dlg(page)).toHaveCount(0);
     await expect(rowOf(page, label)).toBeVisible();
     await expect(rowOf(page, label).locator('td').filter({ hasText: /\S/ }).nth(2)).not.toBeEmpty();
-    await countMatchesServer();
+    await countMatchesRows();
 
     const original = (await admin.get('/api/v1/priorities')).find(
       (p: { isDefault: boolean }) => p.isDefault,
@@ -166,7 +242,7 @@ test.describe('Priorities, Status Labels and Note Tags', () => {
     await page.getByRole('menuitem', { name: 'Delete' }).click();
     await dlg(page).locator('[data-confirm-primary]').click();
     await expect(rowOf(page, label)).toHaveCount(0);
-    await countMatchesServer();
+    await countMatchesRows();
   });
 
   test('Priorities: a duplicate label is refused with the editor message', async ({
