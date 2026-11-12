@@ -11,15 +11,16 @@ namespace LptHub.IntegrationTests.Configuration;
 /// Administration > Lists (epic #1314, backend check #1316 gap 1): a person who holds ONLY one list's Manage permission can load that list, and
 /// gets 403 <c>PERMISSION_DENIED</c> on the lists they do not hold. The catalogue is driven by the Manage permissions alone, so each of these
 /// personas must be able to open its lists without <c>Task.View</c>, <c>Matter.View</c> or <c>MatterNote.View</c>:
-/// <c>MatterList.Manage</c> (Matter Types, Current States, Team Titles), <c>OnHoldReason.Manage</c> (On-Hold Reasons) and
+/// <c>MatterList.Manage</c> (Matter Types, Matter Categories, Current States, Team Titles), <c>OnHoldReason.Manage</c> (On-Hold Reasons) and
 /// <c>StatusLabel.Manage</c> (Status Labels and, by the owner decision, Note Tags with <c>includeInactive=true</c>).
 /// </summary>
 [Collection(SqlServerCollection.Name)]
 public sealed class ListsManageOnlyApiTests(SqlServerFixture sql) : IAsyncLifetime
 {
-    private static readonly string[] AllEightLists =
+    private static readonly string[] AllNineLists =
     [
         "/api/v1/matter-types",
+        "/api/v1/matter-categories",
         "/api/v1/current-states",
         "/api/v1/team-titles",
         "/api/v1/priorities",
@@ -61,7 +62,7 @@ public sealed class ListsManageOnlyApiTests(SqlServerFixture sql) : IAsyncLifeti
 
     private static async Task AssertOnlyAsync(HttpClient person, params string[] allowed)
     {
-        foreach (var url in AllEightLists)
+        foreach (var url in AllNineLists)
         {
             if (allowed.Contains(url))
                 await ShouldLoadAsync(person, url);
@@ -71,10 +72,10 @@ public sealed class ListsManageOnlyApiTests(SqlServerFixture sql) : IAsyncLifeti
     }
 
     [Fact]
-    public async Task MatterList_Manage_alone_loads_the_three_matter_lists_and_nothing_else()
+    public async Task MatterList_Manage_alone_loads_the_four_matter_lists_and_nothing_else()
     {
         var person = await UserWithAsync(@"KE\mlonly", Permissions.MatterList.Manage);
-        await AssertOnlyAsync(person, "/api/v1/matter-types", "/api/v1/current-states", "/api/v1/team-titles");
+        await AssertOnlyAsync(person, "/api/v1/matter-types", "/api/v1/matter-categories", "/api/v1/current-states", "/api/v1/team-titles");
     }
 
     [Fact]

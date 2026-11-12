@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LptHub.Configuration.Application.Lookups;
 
-/// <summary>An item of a matter pick list (Matter Type, Current State or Team Title) for the admin screens and the pickers.</summary>
+/// <summary>An item of a matter pick list (Matter Type, Matter Category, Current State or Team Title) for the admin screens and the pickers.</summary>
 /// <param name="Id">Item id.</param>
 /// <param name="Name">Display name (unique within the list, case-insensitive).</param>
 /// <param name="SortOrder">Position in pickers.</param>
@@ -31,7 +31,7 @@ public sealed record UpdateMatterListItemRequest(
     [Required] string RowVersion);
 
 /// <summary>
-/// Admin commands and reads for one matter pick list (epic #1298): the three lists share every rule. Changes are audited by the generic interceptor.
+/// Admin commands and reads for one matter pick list (epic #1298): the lists share every rule. Changes are audited by the generic interceptor.
 /// A used item is deactivated; only an item nobody uses (In Use 0) can be deleted (409 <c>IN_USE</c> otherwise).
 /// </summary>
 /// <typeparam name="T">The list's entity.</typeparam>
@@ -125,12 +125,13 @@ public sealed class MatterListService<T>(DbContext db, string itemLabel, MatterL
     private Error Duplicate(string name) => LookupErrors.Duplicate("name", $"{itemLabel} '{name}' already exists.");
 }
 
-/// <summary>The <see cref="IMatterListCatalog"/> read side over the three lists.</summary>
+/// <summary>The <see cref="IMatterListCatalog"/> read side over the matter lists.</summary>
 public sealed class MatterListCatalog(DbContext db) : IMatterListCatalog
 {
     public Task<IReadOnlyList<MatterListItemInfo>> ListAsync(MatterListKind kind, bool includeInactive, CancellationToken cancellationToken = default) => kind switch
     {
         MatterListKind.MatterType => ReadAsync<MatterType>(includeInactive, cancellationToken),
+        MatterListKind.MatterCategory => ReadAsync<MatterCategory>(includeInactive, cancellationToken),
         MatterListKind.CurrentState => ReadAsync<CurrentState>(includeInactive, cancellationToken),
         MatterListKind.TeamTitle => ReadAsync<TeamTitle>(includeInactive, cancellationToken),
         _ => throw new ArgumentOutOfRangeException(nameof(kind)),
@@ -139,6 +140,7 @@ public sealed class MatterListCatalog(DbContext db) : IMatterListCatalog
     public IQueryable<MatterListItemKey> Keys(MatterListKind kind) => kind switch
     {
         MatterListKind.MatterType => KeysOf<MatterType>(),
+        MatterListKind.MatterCategory => KeysOf<MatterCategory>(),
         MatterListKind.CurrentState => KeysOf<CurrentState>(),
         MatterListKind.TeamTitle => KeysOf<TeamTitle>(),
         _ => throw new ArgumentOutOfRangeException(nameof(kind)),

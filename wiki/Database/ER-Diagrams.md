@@ -113,9 +113,9 @@ erDiagram
 
 ## Clients, Matters and Projects
 
-Tables: `Client`, `Matter`, `Project`, `MatterEvent`, `MatterType`, `CurrentState`, `TeamTitle`, `MatterTeamMember`.
+Tables: `Client`, `Matter`, `Project`, `MatterEvent`, `MatterType`, `MatterCategory`, `CurrentState`, `TeamTitle`, `MatterTeamMember`.
 
-A Matter belongs to one Client. The Matter keeps a copy of the client number (`ClientNumber`) and the composite foreign key `ClientId + ClientNumber` keeps it equal to the client's (`ON UPDATE CASCADE`). The business reference of a matter is `MatterRef` = client number + `-` + matter number (the CM Number, for example `00343-00012`). `PrimaryManagerId` and `SecondaryManagerId` point at `AppUser` (script 28). `IsSensitive` drives the Sensitive matter rule. `MatterTypeId` and `CurrentStateId` (both optional) point at the admin lists `MatterType` and `CurrentState`; `DmsPath` and `DfsPath` are optional text; the team of a matter is `MatterTeamMember` rows with a `TeamTitle` (script 64).
+A Matter belongs to one Client. The Matter keeps a copy of the client number (`ClientNumber`) and the composite foreign key `ClientId + ClientNumber` keeps it equal to the client's (`ON UPDATE CASCADE`). The business reference of a matter is `MatterRef` = client number + `-` + matter number (the CM Number, for example `00343-00012`). `PrimaryManagerId` and `SecondaryManagerId` point at `AppUser` (script 28). `IsSensitive` drives the Sensitive matter rule. `MatterTypeId`, `MatterCategoryId` (script 68) and `CurrentStateId` (all optional) point at the admin lists `MatterType`, `MatterCategory` and `CurrentState`; `DmsPath` and `DfsPath` are optional text; the team of a matter is `MatterTeamMember` rows with a `TeamTitle` (script 64).
 
 ::: mermaid
 erDiagram
@@ -137,7 +137,13 @@ erDiagram
     int PrimaryManagerId FK
     int SecondaryManagerId FK
     int MatterTypeId FK
+    int MatterCategoryId FK
     int CurrentStateId FK
+  }
+  MatterCategory {
+    int MatterCategoryId PK
+    nvarchar_100 Name UK
+    bit IsActive
   }
   MatterType {
     int MatterTypeId PK
@@ -181,6 +187,7 @@ erDiagram
   AppUser |o--o{ Matter : "SecondaryManagerId"
   Matter ||--o{ MatterEvent : "MatterId"
   Matter ||--o{ MatterTeamMember : "MatterId"
+  MatterCategory |o--o{ Matter : "MatterCategoryId"
   MatterType |o--o{ Matter : "MatterTypeId"
   CurrentState |o--o{ Matter : "CurrentStateId"
   TeamTitle ||--o{ MatterTeamMember : "TeamTitleId"
@@ -188,6 +195,7 @@ erDiagram
   AppUser |o--o{ Client : "CreatedBy, ModifiedBy"
   AppUser |o--o{ Matter : "CreatedBy, ModifiedBy"
   AppUser |o--o{ MatterEvent : "CreatedBy, ModifiedBy"
+  AppUser |o--o{ MatterCategory : "CreatedBy, ModifiedBy"
   AppUser |o--o{ MatterType : "CreatedBy, ModifiedBy"
   AppUser |o--o{ CurrentState : "CreatedBy, ModifiedBy"
   AppUser |o--o{ TeamTitle : "CreatedBy, ModifiedBy"

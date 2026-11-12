@@ -12,7 +12,7 @@ import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard'
 import { Badge } from '../../../shared/ui/badge';
 import { AdminTabCounts } from '../admin-tabs';
 import { AssetLinkRolesPage } from '../asset-link-roles/asset-link-roles-page';
-import { MatterListTab } from '../matter-lists/matter-list-tab';
+import { MatterListKind, MatterListTab } from '../matter-lists/matter-list-tab';
 import { NoteTagsPage } from '../note-tags/note-tags-page';
 import { OnHoldReasonsPage } from '../on-hold-reasons/on-hold-reasons-page';
 import { PrioritiesPage } from '../priorities/priorities-page';
@@ -20,9 +20,10 @@ import { StatusLabelsPage } from '../status-labels/status-labels-page';
 import { AdminListDef, AdminListKey } from './admin-lists';
 import { LIST_BODY } from './list-body';
 
-/** The three lists that share one body (`mf-matter-list-tab`). */
+/** The four lists that share one body (`mf-matter-list-tab`). */
 export const MATTER_LIST_KEYS: readonly AdminListKey[] = [
   'matter-types',
+  'matter-categories',
   'current-states',
   'team-titles',
 ];
@@ -186,9 +187,7 @@ export class ListEditor implements HasUnsavedChanges {
   protected readonly family = computed(() =>
     MATTER_LIST_KEYS.includes(this.def().key) ? 'matter' : this.def().key,
   );
-  protected readonly matterKind = computed(
-    () => this.def().key as 'matter-types' | 'current-states' | 'team-titles',
-  );
+  protected readonly matterKind = computed(() => this.def().key as MatterListKind);
   /** The active items of the open list, once its body has loaded; `null` before that (no badge). */
   protected readonly count = computed<number | null>(() => {
     const n = this.counts?.count(this.def().key)();

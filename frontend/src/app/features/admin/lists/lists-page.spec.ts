@@ -5,6 +5,7 @@ import { of, throwError } from 'rxjs';
 import {
   AssetLinkRolesClient,
   CurrentStatesClient,
+  MatterCategoriesClient,
   MatterTypesClient,
   NoteTagsClient,
   OnHoldReasonsClient,
@@ -77,6 +78,12 @@ describe('Administration > Lists page', () => {
           matterItem(3, 'Retired', false),
         ]),
       },
+      categories: {
+        listMatterCategories: listing('matter-categories', [
+          matterItem(1, 'Advisory'),
+          matterItem(2, 'Dispute', false),
+        ]),
+      },
       states: { listCurrentStates: listing('current-states', [matterItem(1, 'Intake')]) },
       titles: { listTeamTitles: listing('team-titles', []) },
       reasons: {
@@ -126,6 +133,7 @@ describe('Administration > Lists page', () => {
         { provide: StatusLabelsClient, useValue: statuses },
         { provide: AssetLinkRolesClient, useValue: roles },
         { provide: MatterTypesClient, useValue: api['types'] },
+        { provide: MatterCategoriesClient, useValue: api['categories'] },
         { provide: CurrentStatesClient, useValue: api['states'] },
         { provide: TeamTitlesClient, useValue: api['titles'] },
         { provide: OnHoldReasonsClient, useValue: api['reasons'] },
@@ -221,6 +229,7 @@ describe('Administration > Lists page', () => {
       async () => {
         await open('/admin/lists/priorities', ALL);
         expect(chip('matter-types')).toBe('2');
+        expect(chip('matter-categories')).toBe('1');
         expect(chip('current-states')).toBe('1');
         expect(chip('team-titles')).toBe('0');
         expect(chip('priorities')).toBe('4');
@@ -231,13 +240,19 @@ describe('Administration > Lists page', () => {
         expect(chip('link-roles')).toBe('4');
         // Note Tags are asked with includeInactive=true, the only parameter that endpoint takes, and every list is asked once.
         expect(calls.filter((c) => c.startsWith('note-tags'))).toEqual(['note-tags:true']);
-        for (const key of ['matter-types', 'current-states', 'team-titles', 'on-hold-reasons']) {
+        for (const key of [
+          'matter-types',
+          'matter-categories',
+          'current-states',
+          'team-titles',
+          'on-hold-reasons',
+        ]) {
           expect(
             calls.filter((c) => c === key),
             key,
           ).toHaveLength(1);
         }
-        expect(optionText()[3]).toContain('Priorities');
+        expect(optionText()[4]).toContain('Priorities');
       },
       SLOW,
     );
@@ -317,6 +332,7 @@ describe('Administration > Lists page', () => {
         await open('/admin/lists/matter-types', ['MatterList.Manage']);
         expect(options().map((o) => o.getAttribute('data-list'))).toEqual([
           'matter-types',
+          'matter-categories',
           'current-states',
           'team-titles',
         ]);
@@ -405,6 +421,7 @@ describe('Administration > Lists page', () => {
         await type('matter form');
         expect(options().map((o) => o.getAttribute('data-list'))).toEqual([
           'matter-types',
+          'matter-categories',
           'current-states',
         ]);
         await type('assets');

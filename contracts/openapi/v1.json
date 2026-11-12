@@ -2978,6 +2978,186 @@
         }
       }
     },
+    "/api/v1/matter-categories": {
+      "get": {
+        "tags": [
+          "MatterCategories"
+        ],
+        "operationId": "ListMatterCategories",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MatterListItemView"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "MatterCategories"
+        ],
+        "operationId": "CreateMatterCategory",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMatterListItemRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMatterListItemRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMatterListItemRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatterListItemView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/matter-categories/{id}": {
+      "put": {
+        "tags": [
+          "MatterCategories"
+        ],
+        "operationId": "UpdateMatterCategory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMatterListItemRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMatterListItemRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMatterListItemRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatterListItemView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "MatterCategories"
+        ],
+        "operationId": "DeleteMatterCategory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": { }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/matter-categories/order": {
+      "put": {
+        "tags": [
+          "MatterCategories"
+        ],
+        "operationId": "ReorderMatterCategories",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MatterListItemView"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/current-states": {
       "get": {
         "tags": [
@@ -24074,6 +24254,15 @@
             ],
             "format": "int32"
           },
+          "matterCategoryId": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
           "currentStateId": {
             "maximum": 2147483647,
             "minimum": 1,
@@ -27973,6 +28162,16 @@
             "type": [
               "null",
               "string"
+            ]
+          },
+          "matterCategory": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MatterListRef"
+              }
             ]
           }
         }
@@ -38729,6 +38928,15 @@
             ],
             "format": "int32"
           },
+          "matterCategoryId": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
           "currentStateId": {
             "maximum": 2147483647,
             "minimum": 1,
@@ -41486,6 +41694,9 @@
     },
     {
       "name": "MatterTypes"
+    },
+    {
+      "name": "MatterCategories"
     },
     {
       "name": "CurrentStates"

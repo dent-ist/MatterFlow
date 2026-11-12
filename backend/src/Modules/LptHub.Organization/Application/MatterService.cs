@@ -352,7 +352,7 @@ public sealed class MatterService(
                 "A sensitive matter needs a project manager, or be created by someone who can see all sensitive matters.");
         }
 
-        var fields = await CheckFieldsAsync(request.MatterTypeId, request.CurrentStateId, request.DmsPath, request.DfsPath, null, ct);
+        var fields = await CheckFieldsAsync(request.MatterTypeId, request.MatterCategoryId, request.CurrentStateId, request.DmsPath, request.DfsPath, null, ct);
         if (fields.IsFailure)
             return fields.Error!;
 
@@ -381,6 +381,7 @@ public sealed class MatterService(
             IsSensitive = request.IsSensitive,
             AiAllowed = request.AiAllowed,
             MatterTypeId = request.MatterTypeId,
+            MatterCategoryId = request.MatterCategoryId,
             CurrentStateId = request.CurrentStateId,
             DmsPath = fields.Value.Dms,
             DfsPath = fields.Value.Dfs,
@@ -423,12 +424,14 @@ public sealed class MatterService(
                 await db.SaveChangesAsync(ct);
             }
 
-            if (request.MatterTypeId is not null || request.CurrentStateId is not null)
+            if (request.MatterTypeId is not null || request.MatterCategoryId is not null || request.CurrentStateId is not null)
             {
                 // Created with a type or state: the events carry the matter id (known only now).
                 var names = await LoadListsAsync(ct);
                 if (request.MatterTypeId is { } typeId)
                     AuditListChange(matter, OrganizationAuditEvents.MatterTypeChanged, "MatterType", "Matter Type", null, names.Types.GetValueOrDefault(typeId)?.Name);
+                if (request.MatterCategoryId is { } categoryId)
+                    AuditListChange(matter, OrganizationAuditEvents.MatterCategoryChanged, "MatterCategory", "Matter Category", null, names.Categories.GetValueOrDefault(categoryId)?.Name);
                 if (request.CurrentStateId is { } stateId)
                     AuditListChange(matter, OrganizationAuditEvents.MatterStateChanged, "CurrentState", "Current State", null, names.States.GetValueOrDefault(stateId)?.Name);
                 await db.SaveChangesAsync(ct);
@@ -481,7 +484,7 @@ public sealed class MatterService(
                 new Dictionary<string, object?> { ["willLoseAccess"] = true });
         }
 
-        var fields = await CheckFieldsAsync(request.MatterTypeId, request.CurrentStateId, request.DmsPath, request.DfsPath, matter, ct);
+        var fields = await CheckFieldsAsync(request.MatterTypeId, request.MatterCategoryId, request.CurrentStateId, request.DmsPath, request.DfsPath, matter, ct);
         if (fields.IsFailure)
             return fields.Error!;
 
@@ -512,13 +515,19 @@ public sealed class MatterService(
         matter.IsSensitive = request.IsSensitive;
         if (request.AiAllowed is { } aiAllowed)
             matter.AiAllowed = aiAllowed;
-        if (matter.MatterTypeId != request.MatterTypeId || matter.CurrentStateId != request.CurrentStateId)
+        if (matter.MatterTypeId != request.MatterTypeId || matter.MatterCategoryId != request.MatterCategoryId || matter.CurrentStateId != request.CurrentStateId)
         {
             var names = await LoadListsAsync(ct);
             if (matter.MatterTypeId != request.MatterTypeId)
             {
                 AuditListChange(matter, OrganizationAuditEvents.MatterTypeChanged, "MatterType", "Matter Type", NameOf(names.Types, matter.MatterTypeId), NameOf(names.Types, request.MatterTypeId));
                 matter.MatterTypeId = request.MatterTypeId;
+            }
+
+            if (matter.MatterCategoryId != request.MatterCategoryId)
+            {
+                AuditListChange(matter, OrganizationAuditEvents.MatterCategoryChanged, "MatterCategory", "Matter Category", NameOf(names.Categories, matter.MatterCategoryId), NameOf(names.Categories, request.MatterCategoryId));
+                matter.MatterCategoryId = request.MatterCategoryId;
             }
 
             if (matter.CurrentStateId != request.CurrentStateId)
@@ -772,13 +781,20 @@ public sealed class MatterService(
         names is null ? null : MatterListNames.RefOf(names.Types, r.Matter.MatterTypeId),
         names is null ? null : MatterListNames.RefOf(names.States, r.Matter.CurrentStateId),
         r.Matter.DmsPath,
-        r.Matter.DfsPath);
+        r.Matter.DfsPath,
+        names is null ? null : MatterListNames.RefOf(names.Categories, r.Matter.MatterCategoryId));
 
     /// <summary>The names of the Matter Type and Current State items (inactive ones too), for the answers.</summary>
-    private sealed record MatterLists(IReadOnlyDictionary<int, MatterListItemInfo> Types, IReadOnlyDictionary<int, MatterListItemInfo> States);
+    private sealed record MatterLists(
+        IReadOnlyDictionary<int, MatterListItemInfo> Types,
+        IReadOnlyDictionary<int, MatterListItemInfo> States,
+        IReadOnlyDictionary<int, MatterListItemInfo> Categories);
 
     private async Task<MatterLists> LoadListsAsync(CancellationToken ct) =>
-        new(await MatterListNames.LoadAsync(lists, MatterListKind.MatterType, ct), await MatterListNames.LoadAsync(lists, MatterListKind.CurrentState, ct));
+        new(
+            await MatterListNames.LoadAsync(lists, MatterListKind.MatterType, ct),
+            await MatterListNames.LoadAsync(lists, MatterListKind.CurrentState, ct),
+            await MatterListNames.LoadAsync(lists, MatterListKind.MatterCategory, ct));
 
     private static MatterManagerResponse? PersonOf(IReadOnlyDictionary<int, MatterManagerResponse> people, int? userId) =>
         userId is { } id ? people.GetValueOrDefault(id) : null;
@@ -850,11 +866,15 @@ public sealed class MatterService(
     /// Checks the new matter fields: the chosen type and state (see <see cref="CheckChoiceAsync"/>) and cleans both paths. An unchanged stored path is accepted as it is
     /// (a value saved before the rules tightened does not block saving other changes).
     /// </summary>
-    private async Task<Result<(string? Dms, string? Dfs)>> CheckFieldsAsync(int? typeId, int? stateId, string? dms, string? dfs, Matter? current, CancellationToken ct)
+    private async Task<Result<(string? Dms, string? Dfs)>> CheckFieldsAsync(int? typeId, int? categoryId, int? stateId, string? dms, string? dfs, Matter? current, CancellationToken ct)
     {
         var type = await CheckChoiceAsync(MatterListKind.MatterType, typeId, current?.MatterTypeId, "matterTypeId", "matter type", ct);
         if (type.IsFailure)
             return type.Error!;
+
+        var category = await CheckChoiceAsync(MatterListKind.MatterCategory, categoryId, current?.MatterCategoryId, "matterCategoryId", "matter category", ct);
+        if (category.IsFailure)
+            return category.Error!;
 
         var state = await CheckChoiceAsync(MatterListKind.CurrentState, stateId, current?.CurrentStateId, "currentStateId", "current state", ct);
         if (state.IsFailure)

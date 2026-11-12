@@ -29,6 +29,7 @@ public static class ConfigurationModule
         services.AddScoped<OnHoldReasonService>();
         services.AddScoped<IOnHoldReasonCatalog>(sp => sp.GetRequiredService<OnHoldReasonService>());
         services.AddScoped(sp => new MatterListService<Domain.MatterType>(sp.GetRequiredService<DbContext>(), "A matter type named", MatterListKind.MatterType, sp.GetRequiredService<IMatterListUsage>()));
+        services.AddScoped(sp => new MatterListService<Domain.MatterCategory>(sp.GetRequiredService<DbContext>(), "A matter category named", MatterListKind.MatterCategory, sp.GetRequiredService<IMatterListUsage>()));
         services.AddScoped(sp => new MatterListService<Domain.CurrentState>(sp.GetRequiredService<DbContext>(), "A current state named", MatterListKind.CurrentState, sp.GetRequiredService<IMatterListUsage>()));
         services.AddScoped(sp => new MatterListService<Domain.TeamTitle>(sp.GetRequiredService<DbContext>(), "A team title named", MatterListKind.TeamTitle, sp.GetRequiredService<IMatterListUsage>()));
         services.TryAddScoped<IMatterListUsage, NoMatterListUsage>();

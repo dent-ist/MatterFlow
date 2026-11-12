@@ -177,6 +177,9 @@ public static class OrganizationAuditEvents
     /// <summary>A matter's Matter Type was set, changed or cleared (field key <c>MatterType</c>; old and new value are the type names).</summary>
     public const string MatterTypeChanged = "MATTER_TYPE_CHANGED";
 
+    /// <summary>A matter's Matter Category was set, changed or cleared (field key <c>MatterCategory</c>; old and new value are the category names).</summary>
+    public const string MatterCategoryChanged = "MATTER_CATEGORY_CHANGED";
+
     /// <summary>A matter's Current State was set, changed or cleared (field key <c>CurrentState</c>; old and new value are the state names).</summary>
     public const string MatterStateChanged = "MATTER_STATE_CHANGED";
 

@@ -96,7 +96,7 @@ public interface IAssetLinkRoleUsage
         Task.FromResult<IReadOnlyDictionary<int, int>>(new Dictionary<int, int>());
 }
 
-/// <summary>The three admin-managed pick lists of a matter (epic #1298).</summary>
+/// <summary>The admin-managed pick lists of a matter (epic #1298; Matter Category added by epic #1368).</summary>
 public enum MatterListKind
 {
     /// <summary>Matter Type (Litigation, Investigation, ...).</summary>
@@ -107,10 +107,13 @@ public enum MatterListKind
 
     /// <summary>Team Title of a matter's team member (Attorney, Paralegal, ...).</summary>
     TeamTitle,
+
+    /// <summary>Matter Category (epic #1368): a single choice per matter, maintained on the Admin Lists page.</summary>
+    MatterCategory,
 }
 
 /// <summary>An item of a matter pick list as other modules see it.</summary>
-/// <param name="Id">Item id (Matter.MatterTypeId, Matter.CurrentStateId or MatterTeamMember.TeamTitleId references it).</param>
+/// <param name="Id">Item id (a matter's type, category or state, or MatterTeamMember.TeamTitleId, references it).</param>
 /// <param name="Name">Display name.</param>
 /// <param name="SortOrder">Position in pickers.</param>
 /// <param name="IsActive">Inactive items still display where they are used but are not offered for new choices.</param>

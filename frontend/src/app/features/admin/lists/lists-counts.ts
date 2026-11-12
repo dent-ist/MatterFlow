@@ -3,6 +3,7 @@ import { firstValueFrom } from 'rxjs';
 import {
   AssetLinkRolesClient,
   CurrentStatesClient,
+  MatterCategoriesClient,
   MatterTypesClient,
   NoteTagsClient,
   OnHoldReasonsClient,
@@ -21,6 +22,7 @@ import { AdminListKey } from './admin-lists';
  */
 export function listCountLoaders(): Record<AdminListKey, CountLoader> {
   const types = inject(MatterTypesClient);
+  const categories = inject(MatterCategoriesClient);
   const states = inject(CurrentStatesClient);
   const titles = inject(TeamTitlesClient);
   const priorities = inject(PrioritiesClient);
@@ -32,6 +34,7 @@ export function listCountLoaders(): Record<AdminListKey, CountLoader> {
     rows.filter((r) => r.isActive).length;
   return {
     'matter-types': () => firstValueFrom(types.listMatterTypes()).then(active),
+    'matter-categories': () => firstValueFrom(categories.listMatterCategories()).then(active),
     'current-states': () => firstValueFrom(states.listCurrentStates()).then(active),
     'team-titles': () => firstValueFrom(titles.listTeamTitles()).then(active),
     priorities: () => firstValueFrom(priorities.listPriorities()).then(active),

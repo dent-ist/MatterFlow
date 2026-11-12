@@ -73,6 +73,10 @@ public class Matter : AuditedEntity<int>, IAuditScoped
     [AuditExplicit]
     public int? MatterTypeId { get; set; }
 
+    /// <summary>Optional Matter Category (admin list, epic #1368; a single choice). Changes are audited by <c>MATTER_CATEGORY_CHANGED</c> events with the names, not as generic field changes.</summary>
+    [AuditExplicit]
+    public int? MatterCategoryId { get; set; }
+
     /// <summary>Optional Current State (admin list, epic #1298): the current value only. Each change is audited by a <c>MATTER_STATE_CHANGED</c> event with the names.</summary>
     [AuditExplicit]
     public int? CurrentStateId { get; set; }

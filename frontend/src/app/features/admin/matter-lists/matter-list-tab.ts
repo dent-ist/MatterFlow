@@ -17,6 +17,7 @@ import { Button } from 'primeng/button';
 import { Observable, firstValueFrom } from 'rxjs';
 import {
   CurrentStatesClient,
+  MatterCategoriesClient,
   MatterListItemView,
   MatterTypesClient,
   TeamTitlesClient,
@@ -43,8 +44,9 @@ import { ADMIN_FIELD_LIMITS } from '../shared/field-limits';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
-/** The three lists this tab edits (the address segment of each on the Lists page). */
-export type MatterListKind = 'matter-types' | 'current-states' | 'team-titles';
+/** The four lists this tab edits (the address segment of each on the Lists page). */
+export type MatterListKind =
+  'matter-types' | 'matter-categories' | 'current-states' | 'team-titles';
 
 /** Everything that differs between the three lists: the words (UI spec 7.2 to 7.4 and the glossary) and the API calls. */
 export interface MatterListText {
@@ -84,6 +86,20 @@ export const MATTER_LIST_TEXTS: Readonly<Record<MatterListKind, MatterListText>>
     holder: ['matter', 'matters'],
     filterParam: 'matterTypeId',
     limit: ADMIN_FIELD_LIMITS.matterTypeName,
+  },
+  'matter-categories': {
+    heading: 'Matter Category',
+    newDialogTitle: 'New Matter Category',
+    newButton: 'New Matter Category',
+    addButton: 'Add Matter Category',
+    toast: 'Matter category',
+    dupNoun: 'matter category',
+    plural: 'matter categories',
+    thing: 'category',
+    inUseHeading: 'Matters',
+    holder: ['matter', 'matters'],
+    filterParam: null,
+    limit: ADMIN_FIELD_LIMITS.matterCategoryName,
   },
   'current-states': {
     heading: 'Current State',
@@ -145,7 +161,7 @@ interface ListApi {
 }
 
 /**
- * One of the three Matter lists of Administration > Lists (epic #1298, #1314): a reorder list built like On-Hold Reasons (the admin kit table: Order with the grip, Name, In Use, Status and
+ * One of the four Matter lists of Administration > Lists (epic #1298, #1314): a reorder list built like On-Hold Reasons (the admin kit table: Order with the grip, Name, In Use, Status and
  * the row menu with Rename, Move Up, Move Down, Deactivate or Activate and Delete). An item that is in use is deactivated, never deleted: Delete is offered only when In Use is
  * 0 (the API checks again: 409 `IN_USE`). Needs `MatterList.Manage`; the editor header (`mf-list-editor`) owns the primary New button and opens the New dialog through `openNew()`.
  */
@@ -178,6 +194,7 @@ export class MatterListTab {
 
   protected readonly paging = new LocalPaging();
   private readonly typesApi = inject(MatterTypesClient);
+  private readonly categoriesApi = inject(MatterCategoriesClient);
   private readonly statesApi = inject(CurrentStatesClient);
   private readonly titlesApi = inject(TeamTitlesClient);
   private readonly notify = inject(NotificationService);
@@ -198,6 +215,14 @@ export class MatterListTab {
           update: (id, b) => this.typesApi.updateMatterType(id, b),
           remove: (id) => this.typesApi.deleteMatterType(id),
           reorder: (b) => this.typesApi.reorderMatterTypes(b),
+        };
+      case 'matter-categories':
+        return {
+          list: () => this.categoriesApi.listMatterCategories(),
+          create: (b) => this.categoriesApi.createMatterCategory(b),
+          update: (id, b) => this.categoriesApi.updateMatterCategory(id, b),
+          remove: (id) => this.categoriesApi.deleteMatterCategory(id),
+          reorder: (b) => this.categoriesApi.reorderMatterCategories(b),
         };
       case 'current-states':
         return {
@@ -256,7 +281,7 @@ export class MatterListTab {
   private dragIndex: number | null = null;
 
   constructor() {
-    // A tab is one component for the three lists: a different kind starts again.
+    // A tab is one component for the four lists: a different kind starts again.
     effect(() => {
       this.kind();
       untracked(() => {

@@ -99,6 +99,10 @@ public abstract class MatterListEntity : AuditedEntity<int>
 [Audited(ObjectType = "MatterType")]
 public class MatterType : MatterListEntity;
 
+/// <summary>A Matter Category (the matter's MatterCategoryId references it; a single choice, unlike the Matter Types).</summary>
+[Audited(ObjectType = "MatterCategory")]
+public class MatterCategory : MatterListEntity;
+
 /// <summary>A Current State of a matter (the matter's CurrentStateId references it).</summary>
 [Audited(ObjectType = "CurrentState")]
 public class CurrentState : MatterListEntity;

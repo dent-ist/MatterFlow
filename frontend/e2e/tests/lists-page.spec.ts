@@ -1,6 +1,7 @@
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { SIZES, noSideScroll, shot } from '../support/labels';
+import { uid } from '../support/seed';
 
 /**
  * Epic #1314 (#1317, #1318): Administration > Lists. The master-detail page (catalogue of lists, editor of the open one), its redirects from the old
@@ -8,6 +9,7 @@ import { SIZES, noSideScroll, shot } from '../support/labels';
  */
 const LISTS = [
   ['matter-types', 'Matter Types', 'New Matter Type'],
+  ['matter-categories', 'Matter Categories', 'New Matter Category'],
   ['current-states', 'Current States', 'New State'],
   ['team-titles', 'Team Titles', 'New Title'],
   ['priorities', 'Priorities', 'New Priority'],
@@ -18,7 +20,7 @@ const LISTS = [
 ] as const;
 
 test.describe('the Lists page (epic #1314)', () => {
-  test('the catalogue names all eight lists in four groups and the editor follows the pick, at both sizes', async ({
+  test('the catalogue names all nine lists in four groups and the editor follows the pick, at both sizes', async ({
     page,
   }) => {
     for (const size of SIZES) {
@@ -30,7 +32,7 @@ test.describe('the Lists page (epic #1314)', () => {
       await expect(catalogue).toBeVisible();
       // 320 px at both sizes: the catalogue never grows.
       expect((await catalogue.boundingBox())!.width).toBeCloseTo(320, 0);
-      await expect(page.getByRole('listbox', { name: 'Lists' }).getByRole('option')).toHaveCount(8);
+      await expect(page.getByRole('listbox', { name: 'Lists' }).getByRole('option')).toHaveCount(9);
       await expect(page.getByRole('searchbox', { name: 'Find a list' })).toBeVisible();
       // The counts arrive as numbers (the lists' own GETs), never as a usage figure.
       await expect(catalogue.locator('[data-count]').first()).not.toHaveText('--');
@@ -56,7 +58,7 @@ test.describe('the Lists page (epic #1314)', () => {
     await expect(page.getByRole('heading', { level: 2 })).toHaveText('Matter Types');
     await page.getByRole('option', { name: /^Matter Types/ }).focus();
     await page.keyboard.press('ArrowDown');
-    await expect(page.getByRole('heading', { level: 2 })).toHaveText('Current States');
+    await expect(page.getByRole('heading', { level: 2 })).toHaveText('Matter Categories');
     await page.keyboard.press('End');
     await expect(page.getByRole('heading', { level: 2 })).toHaveText('Link Roles');
     await page.keyboard.press('Home');
@@ -79,13 +81,20 @@ test.describe('the Lists page (epic #1314)', () => {
     await expect(page.locator('[data-no-match]')).toContainText('No list matches "zzz".');
     await shot(page, 'lists-no-match');
     await page.keyboard.press('Escape');
-    await expect(page.getByRole('option')).toHaveCount(8);
+    await expect(page.getByRole('option')).toHaveCount(9);
   });
 
   for (const [key, label, newLabel] of LISTS) {
     test(`${label}: opens at /admin/lists/${key} with its header, sentence, rule and rows`, async ({
       page,
+      admin,
     }) => {
+      // The Matter Categories list starts empty (no starter rows), so the smoke test adds one.
+      if (key === 'matter-categories')
+        await admin.post('/api/v1/matter-categories', {
+          name: `Smoke ${Date.now()}`,
+          isActive: true,
+        });
       await page.setViewportSize(SIZES[1]);
       await page.goto(`/admin/lists/${key}`);
       await expect(page.getByRole('heading', { level: 2 })).toHaveText(label);
@@ -270,5 +279,50 @@ test.describe('Custom Fields cross-links (UI spec 3.5)', () => {
     await shot(page, 'custom-fields-banner');
     await banner.getByRole('link', { name: 'Open Lists' }).click();
     await expect(page).toHaveURL(/\/admin\/lists\/matter-types$/);
+  });
+});
+
+test.describe('Matter Categories (epic #1368, #1369)', () => {
+  test('a category added on the Lists page is stored on a matter through the API, then cannot be deleted while in use', async ({
+    page,
+    admin,
+    seed,
+  }) => {
+    const token = uid();
+    const name = `Category ${token}`;
+    await page.setViewportSize(SIZES[1]);
+    await page.goto('/admin/lists/matter-categories');
+    await expect(page.getByRole('heading', { level: 2 })).toHaveText('Matter Categories');
+    await page
+      .locator('mf-list-editor')
+      .getByRole('button', { name: 'New Matter Category' })
+      .first()
+      .click();
+    const dialog = page.getByRole('dialog', { name: 'New Matter Category' });
+    await dialog.getByRole('textbox').fill(name);
+    await dialog.locator('[data-lookup-submit]').click();
+    await expect(dialog).toHaveCount(0);
+    const row = page.locator('[data-list-body] tbody tr', { hasText: name });
+    await expect(row).toBeVisible();
+
+    const categories = await admin.get('/api/v1/matter-categories');
+    const category = categories.find((c: { name: string }) => c.name === name);
+    expect(category.inUseCount).toBe(0);
+    const client = await seed.client({ name: `Category Client ${token}` });
+    const matter = await seed.matter({ client, number: '00001', name: `Category Matter ${token}` });
+    const fresh = await admin.get(`/api/v1/matters/${matter.matterId}`);
+    expect(fresh.matterCategory).toBeFalsy();
+    await admin.put(`/api/v1/matters/${matter.matterId}`, {
+      name: fresh.name,
+      isSensitive: fresh.isSensitive,
+      rowVersion: fresh.rowVersion,
+      matterCategoryId: category.id,
+    });
+    const saved = await admin.get(`/api/v1/matters/${matter.matterId}`);
+    expect(saved.matterCategory.name).toBe(name);
+
+    // In use: the row shows 1 matter and can only be deactivated.
+    await page.reload();
+    await expect(row.locator('.mf-cell-num')).toHaveText('1');
   });
 });

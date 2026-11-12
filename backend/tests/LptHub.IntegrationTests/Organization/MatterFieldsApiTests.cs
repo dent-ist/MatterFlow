@@ -148,6 +148,54 @@ public sealed class MatterFieldsApiTests(SqlServerFixture sql) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Matter_Category_is_a_managed_list_a_single_optional_choice_on_the_matter_and_changes_are_audited_with_names()
+    {
+        // The list starts empty (the owner fills it on the Lists page), is managed with MatterList.Manage and read with Matter.View.
+        Names(await OkAsync(await Admin.GetAsync("/api/v1/matter-categories"))).ShouldBeEmpty();
+        var manager = await _h.UserWithAsync(@"KE\mcat", "MatterList.Manage");
+        var advisory = await OkAsync(await manager.PostAsJsonAsync("/api/v1/matter-categories", new { name = "Advisory" }), HttpStatusCode.Created);
+        var dispute = await OkAsync(await manager.PostAsJsonAsync("/api/v1/matter-categories", new { name = "Dispute" }), HttpStatusCode.Created);
+        await ProblemAsync(await manager.PostAsJsonAsync("/api/v1/matter-categories", new { name = "advisory" }), HttpStatusCode.Conflict, "DUPLICATE_NAME");
+        var viewer = await _h.UserWithAsync(@"KE\mcatview", "Matter.View");
+        (await viewer.GetAsync("/api/v1/matter-categories")).StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await viewer.PostAsJsonAsync("/api/v1/matter-categories", new { name = "Nope" })).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+
+        var matter = await MatterAsync();
+        matter.GetProperty("matterCategory").ValueKind.ShouldBe(JsonValueKind.Null);
+        var saved = await OkAsync(await UpdateAsync(matter, new { matterCategoryId = Id(advisory) }));
+        saved.GetProperty("matterCategory").GetProperty("name").GetString().ShouldBe("Advisory");
+        var changed = await OkAsync(await UpdateAsync(saved, new { matterCategoryId = Id(dispute) }));
+        changed.GetProperty("matterCategory").GetProperty("name").GetString().ShouldBe("Dispute");
+
+        var events = await MatterEventsAsync(_w.MatterId, "MATTER_CATEGORY_CHANGED");
+        events.Select(e => e.GetProperty("summary").GetString()).ShouldBe(["Matter Category changed from Advisory to Dispute.", "Matter Category set to Advisory."], ignoreOrder: true);
+
+        // In use: counted, delete refused; deactivated it still shows on the matter but is not accepted for a new choice.
+        var list = await OkAsync(await manager.GetAsync("/api/v1/matter-categories"));
+        list.EnumerateArray().First(i => Id(i) == Id(dispute)).GetProperty("inUseCount").GetInt32().ShouldBe(1);
+        await ProblemAsync(await manager.DeleteAsync($"/api/v1/matter-categories/{Id(dispute)}"), HttpStatusCode.Conflict, "IN_USE");
+        (await manager.DeleteAsync($"/api/v1/matter-categories/{Id(advisory)}")).StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        var row = list.EnumerateArray().First(i => Id(i) == Id(dispute));
+        await OkAsync(await manager.PutAsJsonAsync($"/api/v1/matter-categories/{Id(dispute)}", new { name = "Dispute", isActive = false, rowVersion = row.GetProperty("rowVersion").GetString() }));
+        var shown = await MatterAsync();
+        shown.GetProperty("matterCategory").GetProperty("isActive").GetBoolean().ShouldBeFalse();
+        var other = await OkAsync(await manager.PostAsJsonAsync("/api/v1/matter-categories", new { name = "Other", isActive = false }), HttpStatusCode.Created);
+        (await UpdateAsync(shown, new { matterCategoryId = Id(other) })).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await UpdateAsync(shown, new { matterCategoryId = 9999 })).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+
+        // Created with a category: audited from the start. Clearing is a full value (null).
+        var clientId = shown.GetProperty("clientId").GetInt32();
+        var active = await OkAsync(await manager.PostAsJsonAsync("/api/v1/matter-categories", new { name = "Regulatory" }), HttpStatusCode.Created);
+        var created = await OkAsync(
+            await Admin.PostAsJsonAsync("/api/v1/matters", new { clientId, matterNumber = "779", name = "Category matter", matterCategoryId = Id(active) }),
+            HttpStatusCode.Created);
+        created.GetProperty("matterCategory").GetProperty("name").GetString().ShouldBe("Regulatory");
+        (await MatterEventsAsync(created.GetProperty("matterId").GetInt32(), "MATTER_CATEGORY_CHANGED")).Length.ShouldBe(1);
+        var cleared = await OkAsync(await UpdateAsync(created, new { }));
+        cleared.GetProperty("matterCategory").ValueKind.ShouldBe(JsonValueKind.Null);
+    }
+
+    [Fact]
     public async Task Bad_paths_and_unknown_or_inactive_choices_are_refused_with_stable_codes()
     {
         var matter = await MatterAsync();

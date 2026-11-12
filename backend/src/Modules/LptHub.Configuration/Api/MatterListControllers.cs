@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace LptHub.Configuration.Api;
 
-// The three admin pick lists of a matter (epic #1298): same shape as the on-hold reasons. A used item is deactivated, never deleted.
+// The admin pick lists (Matter Type, Current State, Team Title, Matter Category) of a matter (epic #1298): same shape as the on-hold reasons. A used item is deactivated, never deleted.
 
 /// <summary>Matter Types: the admin-managed list a matter's Type is picked from (optional on a matter).</summary>
 [ApiController]
@@ -48,6 +48,54 @@ public class MatterTypesController(MatterListService<MatterType> items) : Contro
 
     /// <summary>Deletes a matter type nobody uses (In Use 0). 409 <c>IN_USE</c> when matters or team members carry it: deactivate it instead.</summary>
     [HttpDelete("{id:int}", Name = "DeleteMatterType")]
+    [Authorize(Policy = ConfigurationPolicies.MatterListManage)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
+    {
+        (await items.DeleteAsync(id, cancellationToken)).OrThrow();
+        return NoContent();
+    }
+}
+
+/// <summary>Matter Categories: the admin-managed list a matter's Category is picked from (optional on a matter).</summary>
+[ApiController]
+[Route("api/v1/matter-categories")]
+[Produces("application/json")]
+public class MatterCategoriesController(MatterListService<MatterCategory> items) : ControllerBase
+{
+    /// <summary>Lists all matter categories in their order, including inactive ones (pickers hide the inactive). Needs <c>Matter.View</c> or <c>MatterList.Manage</c>.</summary>
+    [HttpGet(Name = "ListMatterCategories")]
+    [Authorize(Policy = ConfigurationPolicies.MatterListRead)]
+    [ProducesResponseType<IReadOnlyList<MatterListItemView>>(StatusCodes.Status200OK, "application/json")]
+    public async Task<ActionResult<IReadOnlyList<MatterListItemView>>> List(CancellationToken cancellationToken) =>
+        Ok(await items.ListViewsAsync(cancellationToken));
+
+    /// <summary>Adds a matter category at the end of the list. 409 <c>DUPLICATE_NAME</c> when the name exists.</summary>
+    [HttpPost(Name = "CreateMatterCategory")]
+    [Authorize(Policy = ConfigurationPolicies.MatterListManage)]
+    [ProducesResponseType<MatterListItemView>(StatusCodes.Status201Created, "application/json")]
+    public async Task<ActionResult<MatterListItemView>> Create([FromBody] CreateMatterListItemRequest request, CancellationToken cancellationToken)
+    {
+        var created = (await items.CreateAsync(request, cancellationToken)).OrThrow();
+        return Created($"/api/v1/matter-categories/{created.Id}", created);
+    }
+
+    /// <summary>Renames, activates or deactivates a matter category (the way to retire a used one; there is no delete).</summary>
+    [HttpPut("{id:int}", Name = "UpdateMatterCategory")]
+    [Authorize(Policy = ConfigurationPolicies.MatterListManage)]
+    [ProducesResponseType<MatterListItemView>(StatusCodes.Status200OK, "application/json")]
+    public async Task<ActionResult<MatterListItemView>> Update(int id, [FromBody] UpdateMatterListItemRequest request, CancellationToken cancellationToken) =>
+        (await items.UpdateAsync(id, request, cancellationToken)).OrThrow();
+
+    /// <summary>Sets the order. The list must contain every item exactly once. Returns the full list.</summary>
+    [HttpPut("order", Name = "ReorderMatterCategories")]
+    [Authorize(Policy = ConfigurationPolicies.MatterListManage)]
+    [ProducesResponseType<IReadOnlyList<MatterListItemView>>(StatusCodes.Status200OK, "application/json")]
+    public async Task<ActionResult<IReadOnlyList<MatterListItemView>>> Reorder([FromBody] ReorderRequest request, CancellationToken cancellationToken) =>
+        Ok((await items.ReorderAsync(request.Ids, cancellationToken)).OrThrow());
+
+    /// <summary>Deletes a matter category nobody uses (In Use 0). 409 <c>IN_USE</c> when matters or team members carry it: deactivate it instead.</summary>
+    [HttpDelete("{id:int}", Name = "DeleteMatterCategory")]
     [Authorize(Policy = ConfigurationPolicies.MatterListManage)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)

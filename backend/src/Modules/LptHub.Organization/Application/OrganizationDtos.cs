@@ -110,6 +110,7 @@ public sealed class ChangeNumberRequest
 /// <param name="AtRiskTaskCount">Open Tasks that are At risk by the rule of the Task Queue (list only, PM v2 #881); null when the viewer lacks <c>Task.View</c> and on the detail response.</param>
 /// <param name="AiAllowed">Which AI tools may be used on this Matter: <c>No</c> (default), <c>OnPremOnly</c> or <c>CompanyApproved</c>.</param>
 /// <param name="MatterType">The Matter Type; null when not set (optional; existing matters stay blank). Inactive types still show here.</param>
+/// <param name="MatterCategory">The Matter Category (a single choice); null when not set. Inactive categories still show here.</param>
 /// <param name="CurrentState">The Current State (current value only; changes are in the audit log); null when not set.</param>
 /// <param name="DmsPath">The DMS location (UNC path or http/https address); null when not set.</param>
 /// <param name="DfsPath">The DFS location (UNC path or http/https address); null when not set.</param>
@@ -142,7 +143,8 @@ public sealed record MatterResponse(
     MatterListRef? MatterType = null,
     MatterListRef? CurrentState = null,
     string? DmsPath = null,
-    string? DfsPath = null);
+    string? DfsPath = null,
+    MatterListRef? MatterCategory = null);
 
 /// <summary>A chosen item of a matter pick list (Matter Type, Current State, Team Title) as lists and headers show it.</summary>
 /// <param name="Id">Item id.</param>
@@ -265,6 +267,10 @@ public sealed class CreateMatterRequest
     [Range(1, int.MaxValue)]
     public int? MatterTypeId { get; init; }
 
+    /// <summary>Optional Matter Category (an active item of the Matter Category list; a single choice). Setting it at creation is audited.</summary>
+    [Range(1, int.MaxValue)]
+    public int? MatterCategoryId { get; init; }
+
     /// <summary>Optional Current State (an active item of the Current State list). Setting it at creation is audited.</summary>
     [Range(1, int.MaxValue)]
     public int? CurrentStateId { get; init; }
@@ -310,6 +316,10 @@ public sealed class UpdateMatterRequest
     /// </summary>
     [Range(1, int.MaxValue)]
     public int? MatterTypeId { get; init; }
+
+    /// <summary>The Matter Category: the full value (null clears it), same rules as <see cref="MatterTypeId"/>. Audited as <c>MATTER_CATEGORY_CHANGED</c>.</summary>
+    [Range(1, int.MaxValue)]
+    public int? MatterCategoryId { get; init; }
 
     /// <summary>The Current State: the full value (null clears it), same rules as <see cref="MatterTypeId"/>. Audited as <c>MATTER_STATE_CHANGED</c>.</summary>
     [Range(1, int.MaxValue)]
