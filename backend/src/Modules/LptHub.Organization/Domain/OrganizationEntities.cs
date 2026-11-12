@@ -128,17 +128,16 @@ public class Project : AuditedEntity<int>, IAuditScoped
 }
 
 /// <summary>
-/// One person on a matter's team (epic #1298): a typed-in contact (name, e-mail, title), not a user account, so the Team never affects visibility,
-/// My Matters or permissions. The e-mail is unique within the matter without regard to case. Changes are audited by explicit
-/// <c>MATTER_TEAM_MEMBER_*</c> events, so the entity itself is not field-audited.
+/// One person on a matter's team (epic #1298, People #1376): a record of the shared People list (the Identity module owns it, so only the id is kept here and the
+/// name, type and e-mail are read through <c>IPersonDirectory</c>) with the title the person has on this matter. The Team never affects visibility, My Matters or
+/// permissions. A person is on a matter once. Changes are audited by explicit <c>MATTER_TEAM_MEMBER_*</c> events, so the entity itself is not field-audited.
 /// </summary>
 public class MatterTeamMember : AuditedEntity<int>
 {
     public int MatterId { get; set; }
 
-    public string Name { get; set; } = string.Empty;
-
-    public string Email { get; set; } = string.Empty;
+    /// <summary>The People record (dbo.Person, enforced by a foreign key in the database; the person is deactivated, never deleted).</summary>
+    public int PersonId { get; set; }
 
     /// <summary>The Team Title (admin list in the Configuration module); a title that is later deactivated stays on the rows that use it.</summary>
     public int TeamTitleId { get; set; }

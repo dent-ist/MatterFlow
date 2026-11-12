@@ -123,16 +123,17 @@ public sealed class LostWriteOrganizationTests(SqlServerFixture sql)
         var titles = await OkAsync(await admin.GetAsync("/api/v1/team-titles"));
         var attorney = titles.EnumerateArray().First(t => Str(t, "name") == "Attorney").GetProperty("id").GetInt32();
         var paralegal = titles.EnumerateArray().First(t => Str(t, "name") == "Paralegal").GetProperty("id").GetInt32();
+        var person = await OkAsync(await admin.PostAsJsonAsync("/api/v1/people", new { firstName = "Ann", lastName = "Lee", personType = "EXTERNAL", email = "ann.lee@firm.example" }), HttpStatusCode.Created);
         foreach (var (persona, matterId) in new[] { (u.UnrelatedClient, u.N1), (u.PmPrimaryClient, u.S1) })
         {
             var url = $"/api/v1/matters/{matterId}/team";
-            var member = await OkAsync(await persona.PostAsJsonAsync(url, new { name = "Ann Lee", email = $"ann{matterId}@firm.com", teamTitleId = attorney }), HttpStatusCode.Created);
+            var member = await OkAsync(await persona.PostAsJsonAsync(url, new { personId = person.GetProperty("personId").GetInt32(), teamTitleId = attorney }), HttpStatusCode.Created);
             var memberId = member.GetProperty("id").GetInt32();
-            var edited = await OkAsync(await persona.PutAsJsonAsync($"{url}/{memberId}", new { name = "Ann Q. Lee", email = $"ann{matterId}@firm.com", teamTitleId = paralegal, rowVersion = Str(member, "rowVersion") }));
-            Str(edited, "name").ShouldBe("Ann Q. Lee");
+            var edited = await OkAsync(await persona.PutAsJsonAsync($"{url}/{memberId}", new { teamTitleId = paralegal, rowVersion = Str(member, "rowVersion") }));
+            edited.GetProperty("title").GetProperty("id").GetInt32().ShouldBe(paralegal);
             var listed = (await OkAsync(await admin.GetAsync(url))).GetProperty("items");
             var stored = listed.EnumerateArray().Single(m => m.GetProperty("id").GetInt32() == memberId);
-            Str(stored, "name").ShouldBe("Ann Q. Lee");
+            Str(stored, "name").ShouldBe("Ann Lee");
             stored.GetProperty("title").GetProperty("id").GetInt32().ShouldBe(paralegal);
 
             (await persona.DeleteAsync($"{url}/{memberId}")).StatusCode.ShouldBe(HttpStatusCode.NoContent);

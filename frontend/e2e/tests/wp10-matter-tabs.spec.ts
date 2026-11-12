@@ -161,13 +161,7 @@ test.describe('WP10 matter tabs', () => {
       await page.setViewportSize({ width: 1366, height: 768 });
       await page.goto(projectsUrl(w.big));
       await ready(page);
-      expect(await tabTexts(page)).toEqual([
-        'Summary',
-        'Tasks (4)',
-        'Projects (40)',
-        'Assets (0)',
-        'Team (0)',
-      ]);
+      expect(await tabTexts(page)).toEqual(['Summary', 'Tasks (4)', 'Projects (40)', 'Assets (0)']);
       const table = page.locator(PROJECT_TABLE);
       await expect(table.locator('thead th')).toHaveText([
         'Name',
@@ -355,13 +349,7 @@ test.describe('WP10 matter tabs', () => {
       await page.goto(assetsUrl(w.assets));
       await ready(page);
       // 6 assets, 5 shown (Active is the default Status) and the pager says why.
-      expect(await tabTexts(page)).toEqual([
-        'Summary',
-        'Tasks (0)',
-        'Projects (0)',
-        'Assets (6)',
-        'Team (0)',
-      ]);
+      expect(await tabTexts(page)).toEqual(['Summary', 'Tasks (0)', 'Projects (0)', 'Assets (6)']);
       const rows = page.locator('mf-matter-assets tbody tr:not(.gb-state)');
       await expect(rows).toHaveCount(5);
       await expect(page.locator('mf-matter-assets [data-hidden], mf-pager')).toContainText(
@@ -414,7 +402,7 @@ test.describe('WP10 matter tabs', () => {
       });
       await page.goto(projectsUrl(w.big));
       await ready(page);
-      expect(await tabTexts(page)).toEqual(['Summary', 'Tasks', 'Projects (40)', 'Team (0)']);
+      expect(await tabTexts(page)).toEqual(['Summary', 'Tasks', 'Projects (40)']);
       await expect(page.locator(`${PROJECT_TABLE} thead th`)).toHaveText(['Name', 'Status']);
       await expect(page.locator('[data-count]')).toHaveCount(0);
       expect(await projectNames(page)).toHaveLength(33);
@@ -442,7 +430,7 @@ test.describe('WP10 matter tabs', () => {
       });
       await page.goto(assetsUrl(w.empty));
       await ready(page);
-      expect(await tabTexts(page)).toEqual(['Summary', 'Tasks (0)', 'Assets (0)', 'Team (0)']);
+      expect(await tabTexts(page)).toEqual(['Summary', 'Tasks (0)', 'Assets (0)']);
       await expect(page.locator('mf-matter-assets [data-empty=none]')).toBeVisible();
       await expect(page.locator('[data-empty-new-asset]')).toHaveCount(0);
       await expect(page.getByRole('button', { name: 'New asset' })).toHaveCount(0);

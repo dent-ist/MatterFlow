@@ -155,48 +155,48 @@ public sealed record MatterListRef(
     [property: Required] string Name,
     [property: Required] bool IsActive);
 
-/// <summary>A person on a matter's team: a typed-in contact, not a user account.</summary>
+/// <summary>A person on a matter's team: a record of the People list with the title the person has on this matter.</summary>
 /// <param name="Id">Team row id.</param>
 /// <param name="MatterId">Owning matter.</param>
-/// <param name="Name">The person's name.</param>
-/// <param name="Email">E-mail address, as typed (unique within the matter without regard to case).</param>
-/// <param name="Title">The Team Title (admin list).</param>
+/// <param name="PersonId">The People record.</param>
+/// <param name="Name">The person's name (first and last name together).</param>
+/// <param name="PersonType"><c>INTERNAL</c> or <c>EXTERNAL</c>.</param>
+/// <param name="IsSystemUser">True when the person belongs to a user (name and e-mail follow the user).</param>
+/// <param name="PersonTitle">The person's own title or role from People ("Partner"), if known; not the title on this matter.</param>
+/// <param name="Email">E-mail address, if known.</param>
+/// <param name="CompanyName">Company of an external person, if known.</param>
+/// <param name="Title">The Team Title on this matter (admin list).</param>
 /// <param name="SortOrder">Position in the order the people were added (1 is first); the list itself sorts by name unless asked otherwise.</param>
 /// <param name="RowVersion">Concurrency token (base64); send it back on edit.</param>
 public sealed record MatterTeamMemberResponse(
     [property: Required] int Id,
     [property: Required] int MatterId,
+    [property: Required] int PersonId,
     [property: Required] string Name,
-    [property: Required] string Email,
+    [property: Required] string PersonType,
+    [property: Required] bool IsSystemUser,
+    string? PersonTitle,
+    string? Email,
+    string? CompanyName,
     [property: Required] MatterListRef Title,
     [property: Required] int SortOrder,
     [property: Required] string RowVersion);
 
-/// <summary>Adds a person to a matter's team (appended at the end).</summary>
+/// <summary>Adds a person of the People list to a matter's team (appended at the end).</summary>
 public sealed class AddTeamMemberRequest
 {
-    /// <summary>The person's name (1 to 200 characters; trimmed).</summary>
-    [Required, StringLength(200)]
-    public string Name { get; init; } = string.Empty;
-
-    /// <summary>A plain e-mail address (max 254; trimmed). 409 <c>DUPLICATE_TEAM_EMAIL</c> when it is already on this matter's team (any case); 400 <c>INVALID_EMAIL</c> when malformed.</summary>
-    [Required, StringLength(254)]
-    public string Email { get; init; } = string.Empty;
+    /// <summary>The People record. It must exist and be active (400 <c>NOT_FOUND</c> or <c>INACTIVE</c> on <c>personId</c>); 409 <c>DUPLICATE_TEAM_PERSON</c> when the person is already on this matter's team.</summary>
+    [Range(1, int.MaxValue)]
+    public int PersonId { get; init; }
 
     /// <summary>An active Team Title.</summary>
     [Range(1, int.MaxValue)]
     public int TeamTitleId { get; init; }
 }
 
-/// <summary>Changes a team member (all three values are replaced).</summary>
+/// <summary>Changes a team member's title on the matter (the person cannot be changed: remove the row and add another).</summary>
 public sealed class UpdateTeamMemberRequest
 {
-    [Required, StringLength(200)]
-    public string Name { get; init; } = string.Empty;
-
-    [Required, StringLength(254)]
-    public string Email { get; init; } = string.Empty;
-
     /// <summary>A Team Title: an active one, or the member's current one (a retired title stays acceptable on the rows that already have it).</summary>
     [Range(1, int.MaxValue)]
     public int TeamTitleId { get; init; }
@@ -206,7 +206,7 @@ public sealed class UpdateTeamMemberRequest
     public string RowVersion { get; init; } = string.Empty;
 }
 
-/// <summary>Paging and sort of a matter's team. Sort: name (default), email, title; a minus sign sorts descending.</summary>
+/// <summary>Paging and sort of a matter's team. Sort: name (default), email, title (the title on the matter); a minus sign sorts descending.</summary>
 public sealed class TeamListQuery : OrgListQuery;
 
 /// <summary>A matter's project manager as lists and headers show them.</summary>
@@ -488,7 +488,7 @@ public sealed record ClientSummaryResponse(
 /// <param name="Unassigned">Open Tasks with no person assigned (the Task Queue's <c>unassigned=true</c>); null without <c>Task.View</c>.</param>
 /// <param name="ProjectCount">Number of Projects in the Matter (archived included).</param>
 /// <param name="AssetCount">Number of Assets of the Matter (retired included).</param>
-/// <param name="TeamMemberCount">Number of people on the matter's team (the Team tab's count).</param>
+/// <param name="TeamMemberCount">Number of people on the matter's team.</param>
 public sealed record MatterSummaryResponse(
     [property: Required] int MatterId,
     int? OpenTasks,

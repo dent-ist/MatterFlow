@@ -2,7 +2,7 @@ import { MATTER_TABS, MatterTabKey } from '../../src/app/features/matters/ui/mat
 import { WORK_COLUMNS } from '../../src/app/shared/work-queue/column-prefs';
 
 /**
- * Counts of the application that many specs used to hard-code (7 tabs became 8 with the Team tab, 8 columns became 9 with the asset numbering: about twelve files
+ * Counts of the application that many specs used to hard-code (7 tabs became 8 with a tab, and back to 7 when the Team moved into the Summary, 8 columns became 9 with the asset numbering: about twelve files
  * had to be edited each time; E2E #1359). One place now; `app-counts.spec.ts` fails when the application no longer agrees, so a change of the application
  * is fixed here once.
  */

@@ -1,10 +1,10 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { DetailField, DetailsCard } from './details-card';
+import { DetailField, DetailsCard, DetailsGroup } from './details-card';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DetailsCard, DetailField],
+  imports: [DetailsCard, DetailField, DetailsGroup],
   template: `
     <mf-details-card title="Details">
       <div mfDetailField label="Status">Active</div>
@@ -15,6 +15,16 @@ import { DetailField, DetailsCard } from './details-card';
     </mf-details-card>
     <mf-details-card title="Details" threeColumns scrollLabel="Matter details, scrollable">
       <div mfDetailField label="Client">Acme</div>
+    </mf-details-card>
+    <mf-details-card title="Details" data-grouped>
+      <section mfDetailsGroup heading="Matter">
+        <div mfDetailField label="CM Number">1-2</div>
+        <div mfDetailField label="Matter Name" wide>Acme v. Beta</div>
+      </section>
+      <section mfDetailsGroup heading="Paths">
+        <div mfDetailField label="DMS Path" wide>\\fs01</div>
+      </section>
+      <p mfDetailsFoot data-foot>Created 10/05</p>
     </mf-details-card>
   `,
 })
@@ -67,5 +77,19 @@ describe('DetailsCard (D-44f)', () => {
     expect(region.getAttribute('aria-label')).toBe('Matter details, scrollable');
     expect(region.getAttribute('tabindex')).toBe('0');
     expect(region.querySelector('dl')).not.toBeNull();
+  });
+
+  it('a group is a section with an h3 sub-heading and its own dl; the foot slot is below the body, outside the scroll region (#1376)', () => {
+    const el = render();
+    const card = el.querySelector('mf-details-card[data-grouped]')!;
+    const groups = card.querySelectorAll('section[mfDetailsGroup]');
+    expect(groups).toHaveLength(2);
+    const heading = groups[0].querySelector('h3[data-details-group]')!;
+    expect(heading.textContent).toBe('Matter');
+    expect(groups[0].getAttribute('aria-labelledby')).toBe(heading.id);
+    expect(groups[0].querySelectorAll('dl > div[mfDetailField]')).toHaveLength(2);
+    expect(groups[0].querySelectorAll('.df--wide')).toHaveLength(1);
+    expect(card.querySelector('[data-foot]')!.closest('.dc__body')).toBeNull();
+    expect(card.querySelector('.dc__body')!.contains(groups[1])).toBe(true);
   });
 });

@@ -1,10 +1,10 @@
 /**
- * The tab registry of the Matter page (MD-01, #1002; owner decision AQ.1): eight tabs in this order. The page builds its strip from this list,
+ * The tab registry of the Matter page (MD-01, #1002; owner decision AQ.1): seven tabs in this order (the Team is a panel in the side column of the Summary, #1376, not a tab). The page builds its strip from this list,
  * filters it by the viewer's permission and reads `?tab=`. Other agents add a tab by giving its entry a component in the page's `@switch`
  * (Productions: MD-11; Notes: MD-13); until then the page shows a placeholder.
  */
 export type MatterTabKey =
-  'summary' | 'tasks' | 'projects' | 'assets' | 'productions' | 'notes' | 'team' | 'activities';
+  'summary' | 'tasks' | 'projects' | 'assets' | 'productions' | 'notes' | 'activities';
 
 export interface MatterTabDef {
   key: MatterTabKey;
@@ -42,8 +42,6 @@ export const MATTER_TABS: readonly MatterTabDef[] = [
     permission: 'MatterNote.View',
     counted: true,
   },
-  // Reference information, so after the daily-work tabs (epic #1298, UI spec 4.1); every viewer of the matter sees it.
-  { key: 'team', label: 'Team', icon: 'pi-address-book', counted: true },
   { key: 'activities', label: 'Activities', icon: 'pi-history', permission: 'Audit.View' },
 ];
 

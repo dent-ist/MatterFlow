@@ -7,8 +7,8 @@ import { uid } from '../support/seed';
 /**
  * Epic #1373 / #1375: the People page in the main menu (grid, search, Type and Status filters, New Person, Edit Person, Deactivate with Undo, System User rows)
  * and its permission variants: People.Manage = everything, People.View only = read only, no People.View = no menu item and the 403 page.
- * Needs the API with the People backend (#1374) and the Dev auth admin. The reusable person picker has no page that hosts it yet (the Matter Team panel is #1376);
- * it is covered by its unit specs and gets its e2e and axe checks with that panel.
+ * Needs the API with the People backend (#1374) and the Dev auth admin. The reusable person picker is hosted by the Edit Team dialog of the matter Summary (#1376, `matter-summary-team.spec.ts`);
+ * this spec covers the page itself.
  */
 const search = (page: Page) => page.locator('[data-list-search] input');
 const rowOf = (page: Page, name: string) =>

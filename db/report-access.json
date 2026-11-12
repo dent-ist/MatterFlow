@@ -122,7 +122,7 @@
     {
       "name": "MatterTeamMember",
       "access": "deny",
-      "reason": "Typed-in contacts of a matter's team (outside people's names and e-mails); shown through the application's matter visibility rule only, not report data."
+      "reason": "Which people (a PersonId of the People list) are on a matter's team and their title there; shown through the application's matter visibility rule only, not report data."
     },
     {
       "name": "MatterType",

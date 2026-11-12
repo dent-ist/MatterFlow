@@ -18,7 +18,7 @@ export const ICONS: Readonly<Record<string, string>> = {
   'page-matters': 'pi-briefcase',
   'page-projects': 'pi-folder',
   'page-assets': 'pi-database',
-  // People (epic #1373): the shared address book. The same glyph as the matter Team tab (`team`), which shows the same people.
+  // People (epic #1373): the shared address book. The matter Summary's Team panel (#1376) shows the same people.
   'page-people': 'pi-address-book',
   'page-pod-work': 'pi-users',
   'page-task-queue': 'pi-list-check',
@@ -58,8 +58,6 @@ export const ICONS: Readonly<Record<string, string>> = {
   asset: 'pi-database',
   productions: 'pi-send',
   notes: 'pi-file-edit',
-  // The Matter's Team tab (epic #1298).
-  team: 'pi-address-book',
   activities: 'pi-history',
   activity: 'pi-history',
   history: 'pi-history',

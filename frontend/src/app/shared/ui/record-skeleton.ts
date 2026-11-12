@@ -32,7 +32,6 @@ const RECORD_TABS = {
     { key: 'assets', label: 'Assets', icon: 'pi-database', counted: true },
     { key: 'productions', label: 'Productions', icon: 'pi-send' },
     { key: 'notes', label: 'Notes', icon: 'pi-file-edit' },
-    { key: 'team', label: 'Team', icon: 'pi-address-book', counted: true },
     { key: 'activities', label: 'Activities', icon: 'pi-history' },
   ],
   project: [
@@ -480,7 +479,7 @@ export class RecordSkeleton {
     return recordTabs(
       kind,
       kind === 'matter'
-        ? { tasks: '--', projects: '--', assets: '--', team: '--' }
+        ? { tasks: '--', projects: '--', assets: '--' }
         : kind === 'project' || kind === 'asset'
           ? { tasks: '--' }
           : { matters: '--' },

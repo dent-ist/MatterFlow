@@ -35,7 +35,7 @@ Totals (counted by `tools/db/schema-fingerprint.sql` on a database built from th
 | [MatterCategory](#mattercategory) | Clients, Matters and Projects | Configuration | 8 | 2 |
 | [MatterEvent](#matterevent) | Clients, Matters and Projects | Organization | 12 | 3 |
 | [MatterMatterType](#mattermattertype) | Clients, Matters and Projects | Organization | 2 | 2 |
-| [MatterTeamMember](#matterteammember) | Clients, Matters and Projects | Organization | 11 | 4 |
+| [MatterTeamMember](#matterteammember) | Clients, Matters and Projects | Organization | 10 | 5 |
 | [MatterType](#mattertype) | Clients, Matters and Projects | Configuration | 9 | 2 |
 | [Note](#note) | Notes | Notes | 16 | 5 |
 | [NoteLink](#notelink) | Notes | Notes | 3 | 1 |
@@ -348,20 +348,20 @@ The Matter Types chosen on a matter (a multi-select; epic #1368). One row per ma
 
 ### MatterTeamMember
 
-A person on a matter's team: a typed-in contact (name, email, title), not a user account, so it never affects visibility or permissions. The email is unique within the matter without regard to case.
+A person on a matter's team: a record of the People list (`Person`) with the title the person has on this matter. It is not a way to grant access, so it never affects visibility or permissions. A person is on a matter's team once. Until script 76 the row held a typed-in name and email instead of the person.
 
 - **Module:** Organization. **Area:** Clients, Matters and Projects.
-- **Scripts:** created by script 64.
+- **Scripts:** created by script 64; `Name` and `Email` replaced by `PersonId` by script 76.
 - **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_MatterTeamMember` (MatterTeamMemberId), int identity.
-- **Columns (11; `?` = nullable):** `MatterTeamMemberId int`, `MatterId int`, `Name nvarchar(200)`, `Email nvarchar(254)` (case-insensitive collation), `TeamTitleId int`, `SortOrder int`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
-- **Foreign keys (4):**
+- **Columns (10; `?` = nullable):** `MatterTeamMemberId int`, `MatterId int`, `TeamTitleId int`, `SortOrder int`, `PersonId int`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
+- **Foreign keys (5):**
   - `FK_MatterTeamMember_CreatedBy`: `CreatedByUserId` to `AppUser(UserId)`
   - `FK_MatterTeamMember_Matter`: `MatterId` to `Matter(MatterId)`
   - `FK_MatterTeamMember_ModifiedBy`: `ModifiedByUserId` to `AppUser(UserId)`
+  - `FK_MatterTeamMember_Person`: `PersonId` to `Person(PersonId)`
   - `FK_MatterTeamMember_Title`: `TeamTitleId` to `TeamTitle(TeamTitleId)`
-- **Indexes and unique constraints (2):** `IX_MatterTeamMember_Title` (TeamTitleId); `UQ_MatterTeamMember_MatterEmail` (MatterId,Email) - unique.
-- **Check constraints (2):** `CK_MatterTeamMember_Email`, `CK_MatterTeamMember_Name`.
+- **Indexes and unique constraints (3):** `IX_MatterTeamMember_Person` (PersonId); `IX_MatterTeamMember_Title` (TeamTitleId); `UQ_MatterTeamMember_MatterPerson` (MatterId,PersonId) - unique.
 
 ### Project
 

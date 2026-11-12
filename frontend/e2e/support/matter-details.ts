@@ -5,5 +5,6 @@ import { Page, expect } from '@playwright/test';
  * on screen" in one line: it waits for the list.
  */
 export async function openMatterDetails(page: Page): Promise<void> {
-  await expect(page.locator('[data-summary-details] dl')).toBeVisible();
+  // The fields are in groups, one `dl` each (#1376); the first group's list is the one to wait for.
+  await expect(page.locator('[data-summary-details] .dg__fields').first()).toBeVisible();
 }

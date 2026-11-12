@@ -49,7 +49,6 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
         assets: /^\s*Assets \(0\)\s*$/,
         productions: /^\s*Productions/,
         notes: /^\s*Notes/,
-        team: /^\s*Team/,
         activities: /^\s*Activities\s*$/,
       }),
     );
@@ -66,7 +65,7 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
     await openMatterDetails(page);
     // The reference, the number and the name are in the header, not rows again (WP7).
     await expect(panel.getByText('Matter reference')).toHaveCount(0);
-    await expect(panel.locator('dl')).toContainText(world.matter.name); // the Summary lists the matter name as a row (round 3)
+    await expect(panel.locator('[data-summary-details]')).toContainText(world.matter.name); // the Summary lists the matter name as a field (round 3)
     await expect(panel).toContainText('Sensitive');
     await expect(panel).toContainText('Restricted access');
     await expect(panel.getByRole('link', { name: new RegExp(world.client.name) })).toHaveAttribute(
@@ -80,8 +79,8 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
     await expect(blocked).toHaveAttribute('aria-disabled', 'true');
     await expect(blocked).toContainText("aren't Completed or Cancelled");
     await page.keyboard.press('Escape');
-    // The details are a plain list in its own scrolling box, left aligned (round 3).
-    const list = (await panel.locator('[data-summary-details] dl').boundingBox())!;
+    // The details are groups of fields in their own scrolling box, left aligned (round 3).
+    const list = (await panel.locator('[data-summary-details] .dg__fields').first().boundingBox())!;
     const area = (await page.getByRole('region', { name: 'Matter details' }).boundingBox())!;
     expect(list.x - area.x).toBeLessThan(40);
     await noHorizontalScroll(page);

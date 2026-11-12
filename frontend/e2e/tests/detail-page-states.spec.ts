@@ -263,7 +263,7 @@ test.describe('Detail pages: loading skeleton (#247)', () => {
       }
       if (kind === 'matter') {
         await expect(skeleton.locator('[role=tab]')).toHaveText(
-          matterTabTexts({ tasks: ' (--)', projects: ' (--)', assets: ' (--)', team: ' (--)' }),
+          matterTabTexts({ tasks: ' (--)', projects: ' (--)', assets: ' (--)' }),
         );
       }
       await shot(page, `${kind}-loading`);

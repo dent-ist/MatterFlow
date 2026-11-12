@@ -176,8 +176,7 @@ erDiagram
   MatterTeamMember {
     int MatterTeamMemberId PK
     int MatterId FK
-    nvarchar_200 Name
-    nvarchar_254 Email
+    int PersonId FK
     int TeamTitleId FK
   }
   Project {
@@ -195,6 +194,9 @@ erDiagram
   AppUser {
     int UserId PK
   }
+  Person {
+    int PersonId PK
+  }
   Client ||--o{ Matter : "ClientId+ClientNumber"
   AppUser |o--o{ Matter : "PrimaryManagerId"
   AppUser |o--o{ Matter : "SecondaryManagerId"
@@ -205,6 +207,7 @@ erDiagram
   MatterType ||--o{ MatterMatterType : "MatterTypeId"
   CurrentState |o--o{ Matter : "CurrentStateId"
   TeamTitle ||--o{ MatterTeamMember : "TeamTitleId"
+  Person ||--o{ MatterTeamMember : "PersonId"
   Matter ||--o{ Project : "MatterId"
   AppUser |o--o{ Client : "CreatedBy, ModifiedBy"
   AppUser |o--o{ Matter : "CreatedBy, ModifiedBy"

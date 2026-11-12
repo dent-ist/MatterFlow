@@ -183,10 +183,10 @@ public static class OrganizationAuditEvents
     /// <summary>A matter's Current State was set, changed or cleared (field key <c>CurrentState</c>; old and new value are the state names).</summary>
     public const string MatterStateChanged = "MATTER_STATE_CHANGED";
 
-    /// <summary>A person was added to a matter's team (field key <c>Team</c>; new value is <c>Name &lt;email&gt; (Title)</c>).</summary>
+    /// <summary>A person was added to a matter's team (field key <c>Team</c>; new value is <c>Person name (Title)</c>).</summary>
     public const string MatterTeamMemberAdded = "MATTER_TEAM_MEMBER_ADDED";
 
-    /// <summary>A team member's name, e-mail or title was changed (old and new value as for added).</summary>
+    /// <summary>A team member's title on the matter was changed (old and new value as for added).</summary>
     public const string MatterTeamMemberChanged = "MATTER_TEAM_MEMBER_CHANGED";
 
     /// <summary>A person was removed from a matter's team (old value as for added).</summary>
@@ -199,7 +199,7 @@ internal static class OrganizationSupport
     public const string ClientNumberUnique = "UQ_Client_Number";
     public const string MatterNumberUnique = "UQ_Matter_ClientMatterNumber";
     public const string ProjectNameUnique = "UQ_Project_MatterName";
-    public const string TeamEmailUnique = "UQ_MatterTeamMember_MatterEmail";
+    public const string TeamPersonUnique = "UQ_MatterTeamMember_MatterPerson";
 
     /// <summary>Parses a 1-5 digit number, reporting the failure against <paramref name="field"/> (a request property name, camelCase).</summary>
     public static Result<BusinessNumber> ParseNumber(string? input, string field)
