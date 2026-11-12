@@ -12,12 +12,13 @@ namespace LptHub.IntegrationTests.Configuration;
 /// gets 403 <c>PERMISSION_DENIED</c> on the lists they do not hold. The catalogue is driven by the Manage permissions alone, so each of these
 /// personas must be able to open its lists without <c>Task.View</c>, <c>Matter.View</c> or <c>MatterNote.View</c>:
 /// <c>MatterList.Manage</c> (Matter Types, Matter Categories, Current States, Team Titles), <c>OnHoldReason.Manage</c> (On-Hold Reasons) and
-/// <c>StatusLabel.Manage</c> (Status Labels and, by the owner decision, Note Tags with <c>includeInactive=true</c>).
+/// <c>StatusLabel.Manage</c> (Status Labels and, by the owner decision, Note Tags with <c>includeInactive=true</c>) and
+/// <c>Vendor.Manage</c> (Vendor Services and Vendor Areas, epic #1373).
 /// </summary>
 [Collection(SqlServerCollection.Name)]
 public sealed class ListsManageOnlyApiTests(SqlServerFixture sql) : IAsyncLifetime
 {
-    private static readonly string[] AllNineLists =
+    private static readonly string[] AllLists =
     [
         "/api/v1/matter-types",
         "/api/v1/matter-categories",
@@ -28,6 +29,8 @@ public sealed class ListsManageOnlyApiTests(SqlServerFixture sql) : IAsyncLifeti
         "/api/v1/on-hold-reasons",
         "/api/v1/note-tags?includeInactive=true",
         "/api/v1/asset-link-roles",
+        "/api/v1/vendor-services",
+        "/api/v1/vendor-areas",
     ];
 
     private DatabaseApiFactory _factory = null!;
@@ -62,7 +65,7 @@ public sealed class ListsManageOnlyApiTests(SqlServerFixture sql) : IAsyncLifeti
 
     private static async Task AssertOnlyAsync(HttpClient person, params string[] allowed)
     {
-        foreach (var url in AllNineLists)
+        foreach (var url in AllLists)
         {
             if (allowed.Contains(url))
                 await ShouldLoadAsync(person, url);
@@ -90,5 +93,19 @@ public sealed class ListsManageOnlyApiTests(SqlServerFixture sql) : IAsyncLifeti
     {
         var person = await UserWithAsync(@"KE\slonly", Permissions.StatusLabel.Manage);
         await AssertOnlyAsync(person, "/api/v1/status-labels", "/api/v1/note-tags?includeInactive=true");
+    }
+
+    [Fact]
+    public async Task Vendor_Manage_alone_loads_the_services_and_areas_lists_and_nothing_else()
+    {
+        var person = await UserWithAsync(@"KE\vmonly", Permissions.Vendor.Manage);
+        await AssertOnlyAsync(person, "/api/v1/vendor-services", "/api/v1/vendor-areas");
+    }
+
+    [Fact]
+    public async Task Vendor_View_alone_loads_the_services_and_areas_lists_for_the_vendor_form()
+    {
+        var person = await UserWithAsync(@"KE\vvonly", Permissions.Vendor.View);
+        await AssertOnlyAsync(person, "/api/v1/vendor-services", "/api/v1/vendor-areas");
     }
 }

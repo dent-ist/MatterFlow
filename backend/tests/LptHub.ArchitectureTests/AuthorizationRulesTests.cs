@@ -25,7 +25,7 @@ public class AuthorizationRulesTests
     {
         yield return typeof(Program).Assembly;
         yield return typeof(IdentityModule).Assembly;
-        foreach (var name in new[] { "Audit", "Configuration", "Organization", "Assets", "WorkflowEngine", "WorkManagement", "WorkViews", "Search", "Intake", "Notifications", "Reports", "Productions", "Notes" })
+        foreach (var name in new[] { "Audit", "Configuration", "Organization", "Assets", "WorkflowEngine", "WorkManagement", "WorkViews", "Search", "Intake", "Notifications", "Reports", "Productions", "Notes", "Vendors" })
             yield return Assembly.Load($"LptHub.{name}");
     }
 

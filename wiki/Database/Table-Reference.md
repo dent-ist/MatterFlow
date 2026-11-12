@@ -87,6 +87,14 @@ Totals (counted by `tools/db/schema-fingerprint.sql` on a database built from th
 | [UserRole](#userrole) | Identity and access | Identity | 4 | 3 |
 | [UserView](#userview) | Identity and access | Identity | 9 | 1 |
 | [UserWorkHour](#userworkhour) | Availability and Calendar | Identity | 4 | 1 |
+| [Vendor](#vendor) | Vendors | Vendors | 10 | 2 |
+| [VendorAreaChoice](#vendorareachoice) | Vendors | Vendors | 2 | 2 |
+| [VendorAreaOption](#vendorareaoption) | Vendors | Vendors | 9 | 2 |
+| [VendorContact](#vendorcontact) | Vendors | Vendors | 12 | 5 |
+| [VendorMatter](#vendormatter) | Vendors | Vendors | 4 | 3 |
+| [VendorServiceChoice](#vendorservicechoice) | Vendors | Vendors | 2 | 2 |
+| [VendorServiceOption](#vendorserviceoption) | Vendors | Vendors | 9 | 2 |
+| [VendorTechAi](#vendortechai) | Vendors | Vendors | 4 | 1 |
 | [WorkflowDefinition](#workflowdefinition) | Workflows | WorkflowEngine | 9 | 2 |
 | [WorkflowInstance](#workflowinstance) | Workflows | WorkflowEngine | 9 | 3 |
 | [WorkflowVersion](#workflowversion) | Workflows | WorkflowEngine | 12 | 4 |
@@ -1014,6 +1022,128 @@ Junction: suggested tags of a note template.
 - **Foreign keys (2):**
   - `FK_NoteTemplateTag_Tag`: `NoteTagId` to `NoteTag(NoteTagId)`
   - `FK_NoteTemplateTag_Template`: `NoteTemplateId` to `NoteTemplate(NoteTemplateId)` (delete: cascade)
+
+## Area: Vendors
+
+### Vendor
+
+A vendor (epic #1373): name, website, category (`PREFERRED` or `BLACKLISTED`) and a note. Services, areas and the Tech AI list hang on it (`VendorServiceChoice`, `VendorAreaChoice`, `VendorTechAi`), its people are `VendorContact` rows, and `VendorMatter` links it to matters. A vendor linked to a matter cannot be deleted; an unlinked one can, and its contacts, choices and Tech AI rows go with it.
+
+- **Module:** Vendors. **Area:** Vendors.
+- **Scripts:** created by script 73.
+- **Report login (`lpt_report_reader`):** allow.
+- **Primary key:** `PK_Vendor` (VendorId), int identity.
+- **Columns (10; `?` = nullable):** `VendorId int`, `Name nvarchar(200)`, `Website nvarchar(300)?`, `CategoryCode varchar(12)`, `Note nvarchar(2000)?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
+- **Foreign keys (2):**
+  - `FK_Vendor_CreatedBy`: `CreatedByUserId` to `AppUser(UserId)`
+  - `FK_Vendor_ModifiedBy`: `ModifiedByUserId` to `AppUser(UserId)`
+- **Indexes and unique constraints (2):** `IX_Vendor_Category` (CategoryCode); `UQ_Vendor_Name` (Name) - unique (any case).
+- **Check constraints (2):** `CK_Vendor_Category`, `CK_Vendor_Name`.
+
+### VendorServiceOption
+
+The admin-managed Services list (eDiscovery, Forensic, Review, Custom development, Forensic accounting, ITAR at the start) a vendor's services are picked from, maintained on the Admin Lists page. A service that vendors use is deactivated, not deleted.
+
+- **Module:** Vendors. **Area:** Vendors.
+- **Scripts:** created by script 73 (starter rows by script 75).
+- **Report login (`lpt_report_reader`):** allow.
+- **Primary key:** `PK_VendorServiceOption` (VendorServiceOptionId), int identity.
+- **Columns (9; `?` = nullable):** `VendorServiceOptionId int`, `Name nvarchar(100)`, `SortOrder int`, `IsActive bit`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
+- **Foreign keys (2):**
+  - `FK_VendorServiceOption_CreatedBy`: `CreatedByUserId` to `AppUser(UserId)`
+  - `FK_VendorServiceOption_ModifiedBy`: `ModifiedByUserId` to `AppUser(UserId)`
+- **Indexes and unique constraints (2):** `IX_VendorServiceOption_Sort` (SortOrder); `UQ_VendorServiceOption_Name` (Name) - unique.
+- **Check constraints (1):** `CK_VendorServiceOption_Name`.
+
+### VendorAreaOption
+
+The admin-managed Areas list (US, EU, Asia at the start) a vendor's areas are picked from, maintained on the Admin Lists page. An area that vendors use is deactivated, not deleted.
+
+- **Module:** Vendors. **Area:** Vendors.
+- **Scripts:** created by script 73 (starter rows by script 75).
+- **Report login (`lpt_report_reader`):** allow.
+- **Primary key:** `PK_VendorAreaOption` (VendorAreaOptionId), int identity.
+- **Columns (9; `?` = nullable):** `VendorAreaOptionId int`, `Name nvarchar(100)`, `SortOrder int`, `IsActive bit`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
+- **Foreign keys (2):**
+  - `FK_VendorAreaOption_CreatedBy`: `CreatedByUserId` to `AppUser(UserId)`
+  - `FK_VendorAreaOption_ModifiedBy`: `ModifiedByUserId` to `AppUser(UserId)`
+- **Indexes and unique constraints (2):** `IX_VendorAreaOption_Sort` (SortOrder); `UQ_VendorAreaOption_Name` (Name) - unique.
+- **Check constraints (1):** `CK_VendorAreaOption_Name`.
+
+### VendorServiceChoice
+
+One service chosen for a vendor (multi-select).
+
+- **Module:** Vendors. **Area:** Vendors.
+- **Scripts:** created by script 73.
+- **Report login (`lpt_report_reader`):** allow.
+- **Primary key:** `PK_VendorServiceChoice` (VendorId, VendorServiceOptionId).
+- **Columns (2; `?` = nullable):** `VendorId int`, `VendorServiceOptionId int`.
+- **Foreign keys (2):**
+  - `FK_VendorServiceChoice_Option`: `VendorServiceOptionId` to `VendorServiceOption(VendorServiceOptionId)`
+  - `FK_VendorServiceChoice_Vendor`: `VendorId` to `Vendor(VendorId)` (delete: cascade)
+- **Indexes and unique constraints (1):** `IX_VendorServiceChoice_Option` (VendorServiceOptionId,VendorId).
+
+### VendorAreaChoice
+
+One area chosen for a vendor (multi-select).
+
+- **Module:** Vendors. **Area:** Vendors.
+- **Scripts:** created by script 73.
+- **Report login (`lpt_report_reader`):** allow.
+- **Primary key:** `PK_VendorAreaChoice` (VendorId, VendorAreaOptionId).
+- **Columns (2; `?` = nullable):** `VendorId int`, `VendorAreaOptionId int`.
+- **Foreign keys (2):**
+  - `FK_VendorAreaChoice_Option`: `VendorAreaOptionId` to `VendorAreaOption(VendorAreaOptionId)`
+  - `FK_VendorAreaChoice_Vendor`: `VendorId` to `Vendor(VendorId)` (delete: cascade)
+- **Indexes and unique constraints (1):** `IX_VendorAreaChoice_Option` (VendorAreaOptionId,VendorId).
+
+### VendorTechAi
+
+One AI system or service a vendor uses (free text), in the order entered.
+
+- **Module:** Vendors. **Area:** Vendors.
+- **Scripts:** created by script 73.
+- **Report login (`lpt_report_reader`):** allow.
+- **Primary key:** `PK_VendorTechAi` (VendorTechAiId), int identity.
+- **Columns (4; `?` = nullable):** `VendorTechAiId int`, `VendorId int`, `Name nvarchar(200)`, `SortOrder int`.
+- **Foreign keys (1):**
+  - `FK_VendorTechAi_Vendor`: `VendorId` to `Vendor(VendorId)` (delete: cascade)
+- **Indexes and unique constraints (1):** `UQ_VendorTechAi_Name` (VendorId,Name) - unique.
+- **Check constraints (1):** `CK_VendorTechAi_Name`.
+
+### VendorContact
+
+A person of the People list at a vendor, with one current flag (`NONE`, `RECOMMENDED`, `DO_NOT_HIRE`), the date it was reported, who reported it and a note. A contact without a flag carries no date, reporter or note. Earlier flags are in the audit trail (object type `VendorContact`).
+
+- **Module:** Vendors. **Area:** Vendors.
+- **Scripts:** created by script 74.
+- **Report login (`lpt_report_reader`):** allow.
+- **Primary key:** `PK_VendorContact` (VendorContactId), int identity.
+- **Columns (12; `?` = nullable):** `VendorContactId int`, `VendorId int`, `PersonId int`, `FlagCode varchar(12)`, `ReportedOn date?`, `ReportedByUserId int?`, `Note nvarchar(2000)?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
+- **Foreign keys (5):**
+  - `FK_VendorContact_CreatedBy`: `CreatedByUserId` to `AppUser(UserId)`
+  - `FK_VendorContact_ModifiedBy`: `ModifiedByUserId` to `AppUser(UserId)`
+  - `FK_VendorContact_Person`: `PersonId` to `Person(PersonId)`
+  - `FK_VendorContact_ReportedBy`: `ReportedByUserId` to `AppUser(UserId)`
+  - `FK_VendorContact_Vendor`: `VendorId` to `Vendor(VendorId)` (delete: cascade)
+- **Indexes and unique constraints (2):** `IX_VendorContact_Person` (PersonId); `UQ_VendorContact_VendorPerson` (VendorId,PersonId) - unique.
+- **Check constraints (2):** `CK_VendorContact_Flag`, `CK_VendorContact_Report`.
+
+### VendorMatter
+
+A vendor linked to a matter (who and when). No cascade from the vendor: a vendor with links cannot be deleted. Link and unlink are audited with the matter as scope.
+
+- **Module:** Vendors. **Area:** Vendors.
+- **Scripts:** created by script 74.
+- **Report login (`lpt_report_reader`):** allow.
+- **Primary key:** `PK_VendorMatter` (VendorId, MatterId).
+- **Columns (4; `?` = nullable):** `VendorId int`, `MatterId int`, `LinkedAt datetime2`, `LinkedByUserId int?`.
+- **Foreign keys (3):**
+  - `FK_VendorMatter_LinkedBy`: `LinkedByUserId` to `AppUser(UserId)`
+  - `FK_VendorMatter_Matter`: `MatterId` to `Matter(MatterId)`
+  - `FK_VendorMatter_Vendor`: `VendorId` to `Vendor(VendorId)`
+- **Indexes and unique constraints (1):** `IX_VendorMatter_Matter` (MatterId,VendorId).
 
 ## Area: Availability and Calendar
 

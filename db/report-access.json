@@ -380,6 +380,46 @@
       "reason": "Business data that reports may read."
     },
     {
+      "name": "Vendor",
+      "access": "allow",
+      "reason": "Business data that reports may read (vendor names, websites, categories and notes)."
+    },
+    {
+      "name": "VendorAreaChoice",
+      "access": "allow",
+      "reason": "Business data that reports may read (the areas chosen for a vendor)."
+    },
+    {
+      "name": "VendorAreaOption",
+      "access": "allow",
+      "reason": "Business data that reports may read (the Areas pick list)."
+    },
+    {
+      "name": "VendorContact",
+      "access": "allow",
+      "reason": "Business data that reports may read (a person at a vendor with the Recommended or Do Not Hire flag, date and note); reports are gated by a report-level permission."
+    },
+    {
+      "name": "VendorMatter",
+      "access": "allow",
+      "reason": "Business data that reports may read (which vendor is linked to which matter), like dbo.Matter itself."
+    },
+    {
+      "name": "VendorServiceChoice",
+      "access": "allow",
+      "reason": "Business data that reports may read (the services chosen for a vendor)."
+    },
+    {
+      "name": "VendorServiceOption",
+      "access": "allow",
+      "reason": "Business data that reports may read (the Services pick list)."
+    },
+    {
+      "name": "VendorTechAi",
+      "access": "allow",
+      "reason": "Business data that reports may read (the AI systems or services a vendor uses)."
+    },
+    {
       "name": "WorkflowDefinition",
       "access": "allow",
       "reason": "Business data that reports may read."

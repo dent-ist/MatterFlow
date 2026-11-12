@@ -232,6 +232,21 @@
       "description": "Create, edit and deactivate people, including the quick Add New Person in pickers"
     },
     {
+      "code": "Vendor.View",
+      "group": "Vendors",
+      "description": "See the Vendors page, vendor details, and the Vendors panel on the matter Summary tab"
+    },
+    {
+      "code": "Vendor.Manage",
+      "group": "Vendors",
+      "description": "Create, edit and delete vendors; add and edit their contacts and contact notes; maintain the Services and Areas lists"
+    },
+    {
+      "code": "Vendor.Link",
+      "group": "Vendors",
+      "description": "Link and unlink vendors on a matter. Needs Vendor.View and Matter.View"
+    },
+    {
       "code": "User.View",
       "group": "Organization",
       "description": "View the user list and access queue"

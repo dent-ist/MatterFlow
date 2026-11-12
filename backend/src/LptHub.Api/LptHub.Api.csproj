@@ -33,6 +33,7 @@
     <ProjectReference Include="..\Modules\LptHub.Notifications\LptHub.Notifications.csproj" />
     <ProjectReference Include="..\Modules\LptHub.Notes\LptHub.Notes.csproj" />
     <ProjectReference Include="..\Modules\LptHub.Productions\LptHub.Productions.csproj" />
+    <ProjectReference Include="..\Modules\LptHub.Vendors\LptHub.Vendors.csproj" />
     <ProjectReference Include="..\Modules\LptHub.Reports\LptHub.Reports.csproj" />
   </ItemGroup>
 </Project>

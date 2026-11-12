@@ -2,7 +2,7 @@
 
 [[_TOC_]]
 
-**What this page is for.** Every permission code of the application, what it allows, which starter roles hold it by default and where it is enforced. The source of truth is `contracts/permissions.json` (73 permissions in 14 groups); this page is built from it, from `backend/src/Modules/LptHub.Identity/Seeding/StarterRoles.cs` and from a search of the backend and frontend source for each code.
+**What this page is for.** Every permission code of the application, what it allows, which starter roles hold it by default and where it is enforced. The source of truth is `contracts/permissions.json` (76 permissions in 15 groups); this page is built from it, from `backend/src/Modules/LptHub.Identity/Seeding/StarterRoles.cs` and from a search of the backend and frontend source for each code.
 
 How to read it:
 
@@ -107,6 +107,16 @@ How to read it:
 | `People.Manage` | Create, edit and deactivate people, including the quick Add New Person in pickers | Director, Project Manager | `PeopleController` | not used yet (People page: issue #1375) |
 
 `GET /people/lookup` (the picker source) accepts `People.View`, `People.Manage` or `Matter.Edit`, so a person who may edit a matter team can pick people without seeing the People page.
+
+## Vendors
+
+| Code | Meaning | Default roles | Backend | Frontend |
+|---|---|---|---|---|
+| `Vendor.View` | See the Vendors page, vendor details, and the Vendors panel on the matter Summary tab | Director, Project Manager, Pod Lead | `VendorsController`, `MatterVendorsController`, `VendorServicesController`, `VendorAreasController` | not used yet (Vendors pages: issues #1378 and #1379) |
+| `Vendor.Manage` | Create, edit and delete vendors; add and edit their contacts and contact notes; maintain the Services and Areas lists | Director | `VendorsController`, `VendorServicesController`, `VendorAreasController` | not used yet (issues #1378 and #1379) |
+| `Vendor.Link` | Link and unlink vendors on a matter. Needs Vendor.View and Matter.View | Director, Project Manager | `MatterVendorsController` | not used yet (issues #1378 and #1379) |
+
+The server asks for the stacked rights, not only the one named: linking and unlinking need `Vendor.Link`, `Vendor.View` and `Matter.View`; the matter's vendor list and a vendor's matter list need `Vendor.View` and `Matter.View`. `GET /vendors/lookup` (the combobox) accepts `Vendor.View`, `Vendor.Link` or `Vendor.Manage`, and the Services and Areas lists accept `Vendor.View` or `Vendor.Manage`. A matter the caller may not see (sensitive-matter rule) is a 404 on the matter side and is left out of a vendor's matter list and count.
 
 ## Configuration
 

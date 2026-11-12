@@ -673,6 +673,81 @@ erDiagram
   AppUser |o--o{ NoteTemplate : "CreatedBy, ModifiedBy"
 :::
 
+## Vendors
+
+Tables: `Vendor`, `VendorServiceOption`, `VendorAreaOption`, `VendorServiceChoice`, `VendorAreaChoice`, `VendorTechAi`, `VendorContact`, `VendorMatter`.
+
+A `Vendor` (epic #1373) has services and areas chosen from two admin lists (`VendorServiceOption`, `VendorAreaOption`, through `VendorServiceChoice` and `VendorAreaChoice`), a free-text Tech AI list, contacts (a `Person` with a flag, `VendorContact`) and links to matters (`VendorMatter`, no cascade: a linked vendor cannot be deleted). The choices, Tech AI rows and contacts go with the vendor.
+
+::: mermaid
+erDiagram
+  Vendor {
+    int VendorId PK
+    nvarchar_200 Name "unique"
+    varchar_12 CategoryCode "PREFERRED or BLACKLISTED"
+  }
+  VendorServiceOption {
+    int VendorServiceOptionId PK
+    nvarchar_100 Name "unique"
+    bit IsActive
+  }
+  VendorAreaOption {
+    int VendorAreaOptionId PK
+    nvarchar_100 Name "unique"
+    bit IsActive
+  }
+  VendorServiceChoice {
+    int VendorId PK
+    int VendorServiceOptionId PK
+  }
+  VendorAreaChoice {
+    int VendorId PK
+    int VendorAreaOptionId PK
+  }
+  VendorTechAi {
+    int VendorTechAiId PK
+    int VendorId FK
+    nvarchar_200 Name
+  }
+  VendorContact {
+    int VendorContactId PK
+    int VendorId FK
+    int PersonId FK
+    varchar_12 FlagCode "NONE, RECOMMENDED, DO_NOT_HIRE"
+    date ReportedOn
+    int ReportedByUserId FK
+  }
+  VendorMatter {
+    int VendorId PK
+    int MatterId PK
+    int LinkedByUserId FK
+  }
+  Person {
+    int PersonId PK
+  }
+  Matter {
+    int MatterId PK
+  }
+  AppUser {
+    int UserId PK
+  }
+  Vendor ||--o{ VendorServiceChoice : "VendorId"
+  VendorServiceOption ||--o{ VendorServiceChoice : "VendorServiceOptionId"
+  Vendor ||--o{ VendorAreaChoice : "VendorId"
+  VendorAreaOption ||--o{ VendorAreaChoice : "VendorAreaOptionId"
+  Vendor ||--o{ VendorTechAi : "VendorId"
+  Vendor ||--o{ VendorContact : "VendorId"
+  Person ||--o{ VendorContact : "PersonId"
+  Vendor ||--o{ VendorMatter : "VendorId"
+  Matter ||--o{ VendorMatter : "MatterId"
+  AppUser |o--o{ VendorContact : "ReportedBy"
+  AppUser |o--o{ VendorMatter : "LinkedBy"
+  AppUser |o--o{ Vendor : "CreatedBy, ModifiedBy"
+  AppUser |o--o{ VendorServiceOption : "CreatedBy, ModifiedBy"
+  AppUser |o--o{ VendorAreaOption : "CreatedBy, ModifiedBy"
+  AppUser |o--o{ VendorContact : "CreatedBy, ModifiedBy"
+:::
+
 ## Availability and Calendar
 
 Tables: `UserAvailability`, `UserWorkHour`, `UserAbsence`, `HolidayCalendar`, `Holiday`.
