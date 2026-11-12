@@ -76,6 +76,13 @@ export const NAV_ITEMS: NavItem[] = [
     child: true,
   },
   {
+    // People (epic #1373, #1375): the shared address book that matter teams and vendor contacts pick from. In the main menu, not Administration (Project Managers keep it as they work).
+    label: 'People',
+    icon: pageIcon('people'),
+    path: '/people',
+    permissions: ['People.View'],
+  },
+  {
     label: 'Pod Work',
     icon: pageIcon('pod-work'),
     path: '/pods/work',

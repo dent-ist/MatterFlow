@@ -92,6 +92,11 @@ export const routes: Routes = [
         loadChildren: () => import('./features/assets/assets.routes').then((m) => m.ASSETS_ROUTES),
       },
       {
+        path: 'people',
+        canActivate: [permissionGuard('People.View')],
+        loadChildren: () => import('./features/people/people.routes').then((m) => m.PEOPLE_ROUTES),
+      },
+      {
         path: 'reports',
         // The people-facing Reports pages (#718, #719): the list and the run page. Report.Run only; whether the person's role is assigned to a
         // report is the server's decision (the page shows "You don't have access to this report."). A person without it gets the 403 page and no request.

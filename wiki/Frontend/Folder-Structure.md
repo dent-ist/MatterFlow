@@ -52,6 +52,7 @@
 | `my-work` | My Work page | 2 |
 | `notes` | Notes tab, note editor (Tiptap) and tag chip | 4 |
 | `notifications` | Notifications page | 5 |
+| `people` | People page and the Person dialog (the person picker is in `shared/ui`) | 5 |
 | `pod-work` | Pod Work page | 5 |
 | `productions` | Productions tab | 2 |
 | `profile` | My Profile: availability, work hours, notification switches | 4 |
