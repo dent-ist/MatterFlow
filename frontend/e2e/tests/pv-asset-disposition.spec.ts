@@ -101,7 +101,10 @@ test.describe('Asset disposition (PM v2)', () => {
     await expect(page.getByRole('radio', { name: /^Pending Disposition/ })).toBeDisabled();
     await page.getByRole('radio', { name: /^Inactive/ }).check();
     await page.getByLabel(/^Note/).fill('Disposed by mistake');
-    await page.getByRole('dialog').getByRole('button', { name: 'Set Asset Inactive' }).click();
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: 'Change Disposition', exact: true })
+      .click();
     await expect(page.locator('[data-disposition-badge]')).toHaveCount(0);
     await expect(page.locator('[data-disposition-change]')).toHaveCount(2);
   });

@@ -203,6 +203,8 @@ test.describe('Workflow version page: sticky action bar (VP1, #357)', () => {
     const more = bar(page).getByRole('button', { name: 'More version actions' });
     await more.focus();
     await page.keyboard.press('Enter');
+    // Wait for the menu to take focus: a second Enter sent before that lands on the button again and closes the menu.
+    await expect(page.getByRole('menuitem', { name: 'Retire Version' })).toBeFocused();
     await page.keyboard.press('Enter');
     const dialog = page.getByRole('dialog', { name: 'Retire v1' });
     await expect(dialog).toBeVisible();

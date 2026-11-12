@@ -116,7 +116,7 @@ test.describe('Assets final verification (#517)', () => {
     void seed;
   });
 
-  test('Tab stops: Skip to table first, one stop per row without Matter.View, two with it', async ({
+  test('Tab stops: Skip to table first, one stop per row with Asset.View only, four for a System Admin', async ({
     page,
     personas,
     asUser,
@@ -135,7 +135,7 @@ test.describe('Assets final verification (#517)', () => {
         );
     await expect(page.locator('tbody tr[data-record-id]').first()).toBeVisible();
     measure('Tab stops per row for a System Admin (review: 3)', await stops(page));
-    expect(await stops(page)).toBe(3); // the select box for bulk disposition (#866), the name and the matter link
+    expect(await stops(page)).toBe(4); // the select box for bulk disposition (#866), the name, the matter link and the row menu (#1185)
     const viewer = await personas.create({ label: 'finalstops', permissions: ['Asset.View'] });
     const plain = await asUser(viewer.username);
     await plain.goto(`/assets?name=${token}&size=50`);
