@@ -4,14 +4,12 @@ using LptHub.SharedKernel.Results;
 namespace LptHub.Organization.Application;
 
 /// <summary>
-/// Input rules of the matter fields (epic #1298): the DMS and DFS paths (a UNC path or an http/https address; drive letters are refused; UI spec section 3.3),
-/// team member names and e-mail addresses. Every value is trimmed; the functions return the cleaned value or a validation error against the request field.
+/// Input rules of the matter fields (epic #1298): the DMS and DFS paths (a UNC path or an http/https address; drive letters are refused; UI spec section 3.3).
+/// The value is trimmed; the function returns the cleaned value or a validation error against the request field.
 /// </summary>
 internal static partial class MatterFieldRules
 {
     public const int MaxPathLength = 1000;
-    public const int MaxNameLength = 200;
-    public const int MaxEmailLength = 254;
 
     /// <summary>Field codes of <see cref="ErrorCodes.InvalidPath"/>.</summary>
     public const string PathTooLong = "PATH_TOO_LONG";
@@ -100,42 +98,6 @@ internal static partial class MatterFieldRules
             message,
             new Dictionary<string, IReadOnlyList<FieldError>> { [field] = [new FieldError(fieldCode, message)] });
 
-    /// <summary>A team member's name: required, trimmed, at most 200 characters, no control characters.</summary>
-    public static Result<string> CleanName(string? value, string field = "name")
-    {
-        var text = value?.Trim();
-        if (string.IsNullOrEmpty(text))
-            return Error.Validation(field, "REQUIRED", "Enter a name.");
-        if (text.Length > MaxNameLength)
-            return Error.Validation(field, "TOO_LONG", $"Use at most {MaxNameLength} characters.");
-        if (text.Any(char.IsControl))
-            return Error.Validation(field, "INVALID", "The name cannot contain control characters.");
-        return text;
-    }
-
-    /// <summary>A team member's e-mail address: required, trimmed, a single plain address (no display name or list), at most 254 characters.</summary>
-    public static Result<string> CleanEmail(string? value, string field = "email")
-    {
-        var text = value?.Trim();
-        if (string.IsNullOrEmpty(text))
-            return EmailError(field, "REQUIRED", "Enter an e-mail address.");
-        if (text.Length > MaxEmailLength)
-            return EmailError(field, "TOO_LONG", $"Use at most {MaxEmailLength} characters.");
-        if (!Email().IsMatch(text) || text.Contains("..", StringComparison.Ordinal))
-            return EmailError(field, "INVALID", "Enter a valid e-mail address like name@example.com.");
-        return text;
-    }
-
-    private static Error EmailError(string field, string fieldCode, string message) =>
-        new(
-            ErrorType.Validation,
-            ErrorCodes.InvalidEmail,
-            message,
-            new Dictionary<string, IReadOnlyList<FieldError>> { [field] = [new FieldError(fieldCode, message)] });
-
     [GeneratedRegex("^[A-Za-z]:", RegexOptions.CultureInvariant)]
     private static partial Regex DriveLetter();
-
-    [GeneratedRegex(@"^[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*@([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,63}$", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 200)]
-    private static partial Regex Email();
 }

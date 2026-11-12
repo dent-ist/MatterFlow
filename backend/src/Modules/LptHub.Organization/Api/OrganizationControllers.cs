@@ -196,15 +196,15 @@ public class MattersController(MatterService matters, CustomFieldValues customFi
 }
 
 /// <summary>
-/// A matter's team (epic #1298): typed-in contacts (name, e-mail, title), not user accounts. Reading needs <c>Matter.View</c> (and the sensitive-matter rule),
-/// changing needs <c>Matter.Edit</c>. A matter the caller may not see is reported as 404.
+/// A matter's team (epic #1298, People #1376): people of the shared People list with their title on the matter, not a way to grant access. Reading needs <c>Matter.View</c>
+/// (and the sensitive-matter rule), changing needs <c>Matter.Edit</c>. A matter the caller may not see is reported as 404.
 /// </summary>
 [ApiController]
 [Route("api/v1/matters/{matterId:int}/team")]
 [Produces("application/json")]
 public class MatterTeamController(MatterTeamService team) : ControllerBase
 {
-    /// <summary>Lists one page of the team. Sort: name (default), email, title (minus sign for descending); page and pageSize as everywhere (default 25, max 100).</summary>
+    /// <summary>Lists one page of the team. Sort: name (default), email, title on the matter (minus sign for descending); page and pageSize as everywhere (default 25, max 100).</summary>
     [HttpGet(Name = "ListMatterTeam")]
     [Authorize(Policy = OrganizationPolicies.MatterView)]
     [ProducesResponseType<PagedResult<MatterTeamMemberResponse>>(StatusCodes.Status200OK, "application/json")]
@@ -217,8 +217,8 @@ public class MatterTeamController(MatterTeamService team) : ControllerBase
     }
 
     /// <summary>
-    /// Adds a person to the team. The title must be an active Team Title. 400 <c>INVALID_EMAIL</c> for a malformed address; 409 <c>DUPLICATE_TEAM_EMAIL</c>
-    /// (field <c>email</c>, <c>meta.existingId</c> = the member who has it) when the address, compared without regard to case, is already on this matter's team.
+    /// Adds a person of the People list to the team. The title must be an active Team Title and the person an active person (400 on <c>personId</c> or <c>teamTitleId</c>);
+    /// 409 <c>DUPLICATE_TEAM_PERSON</c> (field <c>personId</c>, <c>meta.existingId</c> = the member who has them) when the person is already on this matter's team.
     /// </summary>
     [HttpPost(Name = "AddMatterTeamMember")]
     [Authorize(Policy = OrganizationPolicies.MatterEdit)]
@@ -228,7 +228,7 @@ public class MatterTeamController(MatterTeamService team) : ControllerBase
             await team.AddAsync(matterId, request, cancellationToken),
             m => Created($"/api/v1/matters/{matterId}/team/{m.Id}", m));
 
-    /// <summary>Changes a team member (name, e-mail, title; all replaced). Same checks as add; editing a row to its own e-mail is not a duplicate. A retired title is accepted only when the member already has it.</summary>
+    /// <summary>Changes a team member's title on the matter (the person stays: remove the row and add another to change it). A retired title is accepted only when the member already has it.</summary>
     [HttpPut("{memberId:int}", Name = "UpdateMatterTeamMember")]
     [Authorize(Policy = OrganizationPolicies.MatterEdit)]
     [ProducesResponseType<MatterTeamMemberResponse>(StatusCodes.Status200OK, "application/json")]

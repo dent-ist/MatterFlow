@@ -29267,8 +29267,7 @@ export interface AddTaskCommentRequest {
 }
 
 export interface AddTeamMemberRequest {
-    name: string;
-    email: string;
+    personId?: number;
     teamTitleId?: number;
 
     [key: string]: any;
@@ -31725,8 +31724,13 @@ export interface MatterSummaryResponse {
 export interface MatterTeamMemberResponse {
     id: number;
     matterId: number;
+    personId: number;
     name: string;
-    email: string;
+    personType: string;
+    isSystemUser: boolean;
+    personTitle: string | undefined;
+    email: string | undefined;
+    companyName: string | undefined;
     title: MatterListRef;
     sortOrder: number;
     rowVersion: string;
@@ -34899,8 +34903,6 @@ export interface UpdateTaskTypeRequest {
 }
 
 export interface UpdateTeamMemberRequest {
-    name: string;
-    email: string;
     teamTitleId?: number;
     rowVersion: string;
 
@@ -35530,7 +35532,7 @@ export enum ApiProblemDetailsCode {
     MANAGER_DUPLICATE = "MANAGER_DUPLICATE",
     INVALID_PATH = "INVALID_PATH",
     INVALID_EMAIL = "INVALID_EMAIL",
-    DUPLICATE_TEAM_EMAIL = "DUPLICATE_TEAM_EMAIL",
+    DUPLICATE_TEAM_PERSON = "DUPLICATE_TEAM_PERSON",
     SYSTEM_PERSON_READ_ONLY = "SYSTEM_PERSON_READ_ONLY",
     VENDOR_LINKED_TO_MATTERS = "VENDOR_LINKED_TO_MATTERS",
     VENDOR_BLACKLISTED_CONFIRMATION_REQUIRED = "VENDOR_BLACKLISTED_CONFIRMATION_REQUIRED",

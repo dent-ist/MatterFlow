@@ -299,10 +299,9 @@ describe('MatterDetailPage', () => {
       'Assets',
       'Productions',
       'Notes',
-      'Team',
       'Activities',
     ]);
-    expect(el().querySelectorAll('[role=tab] .pi').length).toBe(8);
+    expect(el().querySelectorAll('[role=tab] .pi').length).toBe(7);
     // Productions and Notes open their own tabs (MD-11, MD-13).
     await openTab('productions');
     expect(el().querySelector('[data-productions-tab]')).not.toBeNull();
@@ -315,7 +314,7 @@ describe('MatterDetailPage', () => {
 
     expect(
       Array.from(el().querySelectorAll('[role=tab]')).map((t) => t.textContent!.trim()),
-    ).toEqual(['Summary', 'Tasks', 'Projects (1)', 'Team (3)']); // Assets needs Asset.View; Team is for every viewer (epic #1298)
+    ).toEqual(['Summary', 'Tasks', 'Projects (1)']); // Assets needs Asset.View; the Team is a panel of the Summary, not a tab (#1376)
     // The first tab (Overview) is selected on open and loads no task list.
     expect(tab('Summary').getAttribute('aria-selected')).toBe('true');
     // Without Task.View and Asset.View the Overview has no sections, so the details are open at once.
@@ -572,7 +571,7 @@ describe('MatterDetailPage', () => {
 
   it('has no strip and asks for no numbers without Task.View, and the tab is still complete', async () => {
     await create(['Matter.View']);
-    // The summary is asked for once: it carries the Team tab number (epic #1298); no task numbers are shown without Task.View.
+    // The summary is asked for once: it carries the Assets tab number; no task numbers are shown without Task.View.
     expect(matters.getMatterSummary).toHaveBeenCalledTimes(1);
     expect(el().querySelector('[data-strip]')).toBeNull();
     expect(el().querySelector('[role=alert]')).toBeNull();

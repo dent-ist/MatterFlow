@@ -49,7 +49,6 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
         assets: /^\s*Assets \(0\)\s*$/,
         productions: /^\s*Productions/,
         notes: /^\s*Notes/,
-        team: /^\s*Team/,
         activities: /^\s*Activities\s*$/,
       }),
     );

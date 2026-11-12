@@ -219,7 +219,7 @@ export class FormDialog {
   readonly ownSecondary = input(false);
   /** The dialog opens on its primary button, not on the first field (the publish and retire questions). */
   readonly focusPrimary = input(false);
-  /** The id of the field that takes focus on opening, when it is not the first one (Edit Team Member: Name, not the optional "Fill from a User" search). */
+  /** The id of the field that takes focus on opening, when it is not the first one (Edit Person: the title of a system user, not the locked name). */
   readonly focusId = input('');
 
   readonly visible = model(false);

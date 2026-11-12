@@ -28,6 +28,8 @@ public sealed class MatterFieldsApiTests(SqlServerFixture sql) : IAsyncLifetime
 
     private static int Id(JsonElement e) => e.GetProperty("id").GetInt32();
 
+    private static int PId(JsonElement person) => person.GetProperty("personId").GetInt32();
+
     private static string[] Names(JsonElement list) => [.. list.EnumerateArray().Select(i => i.GetProperty("name").GetString()!)];
 
     private async Task<JsonElement> MatterAsync(int? id = null) =>
@@ -287,47 +289,63 @@ public sealed class MatterFieldsApiTests(SqlServerFixture sql) : IAsyncLifetime
             "INVALID_PATH");
     }
 
+    /// <summary>A person of the People list (External unless said otherwise); returns the person record.</summary>
+    private async Task<JsonElement> PersonAsync(string first, string last, string email, string type = "EXTERNAL") =>
+        await OkAsync(
+            await Admin.PostAsJsonAsync("/api/v1/people", new { firstName = first, lastName = last, personType = type, title = "Partner", email, companyName = type == "EXTERNAL" ? "Hartman & Pike LLP" : null }),
+            HttpStatusCode.Created);
+
     [Fact]
-    public async Task Team_members_are_added_edited_sorted_paged_and_removed_with_case_insensitive_duplicate_emails_refused()
+    public async Task Team_members_are_people_added_retitled_sorted_paged_and_removed_and_a_person_is_on_a_matter_once()
     {
         var attorney = await ItemIdAsync("team-titles", "Attorney");
         var paralegal = await ItemIdAsync("team-titles", "Paralegal");
         var url = $"/api/v1/matters/{_w.MatterId}/team";
+        var annPerson = await PersonAsync("Ann", "Lee", "ann.lee@firm.example");
+        var benPerson = await PersonAsync("Ben", "Ortiz", "ben@vendor.example");
+        var gonePerson = await PersonAsync("Gone", "Person", "gone@vendor.example");
+        (await Admin.PutAsJsonAsync($"/api/v1/people/{PId(gonePerson)}", new { firstName = "Gone", lastName = "Person", personType = "EXTERNAL", companyName = "Hartman & Pike LLP", isActive = false, rowVersion = gonePerson.GetProperty("rowVersion").GetString() })).EnsureSuccessStatusCode();
 
-        var ann = await OkAsync(await Admin.PostAsJsonAsync(url, new { name = "  Ann Lee ", email = " Ann.Lee@Firm.com ", teamTitleId = attorney }), HttpStatusCode.Created);
+        var ann = await OkAsync(await Admin.PostAsJsonAsync(url, new { personId = PId(annPerson), teamTitleId = attorney }), HttpStatusCode.Created);
         ann.GetProperty("name").GetString().ShouldBe("Ann Lee");
-        ann.GetProperty("email").GetString().ShouldBe("Ann.Lee@Firm.com");
+        ann.GetProperty("email").GetString().ShouldBe("ann.lee@firm.example");
+        ann.GetProperty("personType").GetString().ShouldBe("EXTERNAL");
+        ann.GetProperty("isSystemUser").GetBoolean().ShouldBeFalse();
+        ann.GetProperty("personTitle").GetString().ShouldBe("Partner");
+        ann.GetProperty("companyName").GetString().ShouldBe("Hartman & Pike LLP");
         ann.GetProperty("title").GetProperty("name").GetString().ShouldBe("Attorney");
-        var ben = await OkAsync(await Admin.PostAsJsonAsync(url, new { name = "Ben Ortiz", email = "ben@vendor.example", teamTitleId = paralegal }), HttpStatusCode.Created);
+        var ben = await OkAsync(await Admin.PostAsJsonAsync(url, new { personId = PId(benPerson), teamTitleId = paralegal }), HttpStatusCode.Created);
 
-        var dup = await ProblemAsync(await Admin.PostAsJsonAsync(url, new { name = "Other Ann", email = "ANN.LEE@firm.COM", teamTitleId = paralegal }), HttpStatusCode.Conflict, "DUPLICATE_TEAM_EMAIL");
+        // The same person twice is a conflict that names the existing row; a missing, deactivated or unknown choice is a 400.
+        var dup = await ProblemAsync(await Admin.PostAsJsonAsync(url, new { personId = PId(annPerson), teamTitleId = paralegal }), HttpStatusCode.Conflict, "DUPLICATE_TEAM_PERSON");
         dup.GetProperty("meta").GetProperty("existingId").GetInt32().ShouldBe(Id(ann));
-        await ProblemAsync(await Admin.PostAsJsonAsync(url, new { name = "X", email = "not-an-email", teamTitleId = paralegal }), HttpStatusCode.BadRequest, "INVALID_EMAIL");
-        (await Admin.PostAsJsonAsync(url, new { name = "X", email = "x@y.com", teamTitleId = 9999 })).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
-        (await Admin.PostAsJsonAsync(url, new { name = " ", email = "x@y.com", teamTitleId = paralegal })).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await Admin.PostAsJsonAsync(url, new { personId = 999999, teamTitleId = paralegal })).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await Admin.PostAsJsonAsync(url, new { personId = PId(gonePerson), teamTitleId = paralegal })).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await Admin.PostAsJsonAsync(url, new { personId = PId(annPerson), teamTitleId = 9999 })).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
 
-        // Editing to its own e-mail (other case) is fine; taking Ben's is a duplicate.
-        var edited = await OkAsync(await Admin.PutAsJsonAsync($"{url}/{Id(ann)}", new { name = "Ann Lee", email = "ann.lee@firm.com", teamTitleId = paralegal, rowVersion = ann.GetProperty("rowVersion").GetString() }));
+        // Only the title is edited; a stale row version is refused.
+        var edited = await OkAsync(await Admin.PutAsJsonAsync($"{url}/{Id(ann)}", new { teamTitleId = paralegal, rowVersion = ann.GetProperty("rowVersion").GetString() }));
         edited.GetProperty("title").GetProperty("name").GetString().ShouldBe("Paralegal");
-        await ProblemAsync(await Admin.PutAsJsonAsync($"{url}/{Id(ann)}", new { name = "Ann Lee", email = "BEN@vendor.example", teamTitleId = paralegal, rowVersion = edited.GetProperty("rowVersion").GetString() }), HttpStatusCode.Conflict, "DUPLICATE_TEAM_EMAIL");
-        await ProblemAsync(await Admin.PutAsJsonAsync($"{url}/{Id(ann)}", new { name = "Stale", email = "ann.lee@firm.com", teamTitleId = paralegal, rowVersion = ann.GetProperty("rowVersion").GetString() }), HttpStatusCode.Conflict, "CONCURRENCY_CONFLICT");
+        edited.GetProperty("name").GetString().ShouldBe("Ann Lee");
+        await ProblemAsync(await Admin.PutAsJsonAsync($"{url}/{Id(ann)}", new { teamTitleId = attorney, rowVersion = ann.GetProperty("rowVersion").GetString() }), HttpStatusCode.Conflict, "CONCURRENCY_CONFLICT");
 
-        // The same e-mail on another matter is fine (owner decision).
+        // The same person on another matter is fine.
         var other = await OkAsync(
             await Admin.PostAsJsonAsync("/api/v1/matters", new { clientId = (await MatterAsync()).GetProperty("clientId").GetInt32(), matterNumber = "880", name = "Other" }),
             HttpStatusCode.Created);
-        (await Admin.PostAsJsonAsync($"/api/v1/matters/{other.GetProperty("matterId").GetInt32()}/team", new { name = "Ann Lee", email = "ann.lee@firm.com", teamTitleId = attorney })).StatusCode.ShouldBe(HttpStatusCode.Created);
+        (await Admin.PostAsJsonAsync($"/api/v1/matters/{other.GetProperty("matterId").GetInt32()}/team", new { personId = PId(annPerson), teamTitleId = attorney })).StatusCode.ShouldBe(HttpStatusCode.Created);
 
-        // Sort (name default, title, descending) and paging.
+        // Sort (name default, descending, email) and paging.
         var byName = await OkAsync(await Admin.GetAsync(url));
         byName.GetProperty("total").GetInt32().ShouldBe(2);
         byName.GetProperty("items").EnumerateArray().Select(m => m.GetProperty("name").GetString()).ShouldBe(["Ann Lee", "Ben Ortiz"]);
         (await OkAsync(await Admin.GetAsync(url + "?sort=-name"))).GetProperty("items")[0].GetProperty("name").GetString().ShouldBe("Ben Ortiz");
         (await OkAsync(await Admin.GetAsync(url + "?sort=-email&pageSize=1&page=2"))).GetProperty("items")[0].GetProperty("name").GetString().ShouldBe("Ann Lee");
+        (await OkAsync(await Admin.GetAsync(url + "?sort=title"))).GetProperty("items")[0].GetProperty("title").GetProperty("name").GetString().ShouldBe("Paralegal");
         (await Admin.GetAsync(url + "?sort=bogus")).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         (await OkAsync(await Admin.GetAsync($"/api/v1/matters/{_w.MatterId}/summary"))).GetProperty("teamMemberCount").GetInt32().ShouldBe(2);
 
-        // The In Use count of a title counts team rows; remove is a real delete and is idempotent; every change is audited.
+        // The In Use count of a title counts team rows; remove is a real delete and is idempotent; every change is audited with the person's name.
         (await OkAsync(await Admin.GetAsync("/api/v1/team-titles"))).EnumerateArray().First(i => Id(i) == paralegal).GetProperty("inUseCount").GetInt32().ShouldBe(2);
         (await Admin.DeleteAsync($"{url}/{Id(ben)}")).StatusCode.ShouldBe(HttpStatusCode.NoContent);
         (await Admin.DeleteAsync($"{url}/{Id(ben)}")).StatusCode.ShouldBe(HttpStatusCode.NoContent);
@@ -344,9 +362,10 @@ public sealed class MatterFieldsApiTests(SqlServerFixture sql) : IAsyncLifetime
     {
         var url = $"/api/v1/matters/{_w.MatterId}/team";
         var attorney = await ItemIdAsync("team-titles", "Attorney");
+        var person = await PersonAsync("Perm", "Check", "perm.check@vendor.example");
         var viewer = await _h.UserWithAsync(@"KE\tviewer", "Matter.View");
         (await viewer.GetAsync(url)).StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await viewer.PostAsJsonAsync(url, new { name = "A", email = "a@b.com", teamTitleId = attorney })).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await viewer.PostAsJsonAsync(url, new { personId = PId(person), teamTitleId = attorney })).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         var nobody = await _h.UserWithAsync(@"KE\tnobody", "Task.View");
         (await nobody.GetAsync(url)).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         (await Admin.GetAsync("/api/v1/matters/999999/team")).StatusCode.ShouldBe(HttpStatusCode.NotFound);

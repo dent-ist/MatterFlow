@@ -885,7 +885,7 @@ async function ensureManagers(admin, ctx, opts, summary) {
 }
 
 /**
- * Matter fields (epic #1298): Matter Type, Current State, DMS/DFS paths and a Team on the Demo matters, with a spread of cases for the Matters list, its
+ * Matter fields (epic #1298): Matter Type, Current State, DMS/DFS paths and a Team (people from the People list) on the Demo matters, with a spread of cases for the Matters list, its
  * filters (including "Not Set") and the matter page: every fourth matter has no type and no state, some have only a web address, some no paths, and the
  * team size runs from none to four (a person outside the firm among them). Only matters that carry none of the new fields yet are touched, so a re-run, or a
  * change somebody made by hand, is never overwritten.
@@ -901,12 +901,18 @@ async function ensureMatterFields(admin, ctx, opts, summary) {
   const types = active(await admin.get('/api/v1/matter-types'));
   const states = active(await admin.get('/api/v1/current-states'));
   const titles = active(await admin.get('/api/v1/team-titles'));
-  const people = [
-    ['Ann Lee', 'ann.lee@demo.example'],
-    ['Ben Ortiz', 'ben.ortiz@demo.example'],
-    ['Carla Nguyen', 'carla.nguyen@demo.example'],
-    ['Dev Patel (outside counsel)', 'dev.patel@outside-counsel.example'],
+  // The team is a list of People records (issue #1376): the four demo people are created in People once (found again by e-mail on a re-run); the last one is outside the firm.
+  const wanted = [
+    { firstName: 'Ann', lastName: 'Lee', personType: 'INTERNAL', title: 'Associate', email: 'ann.lee@demo.example' },
+    { firstName: 'Ben', lastName: 'Ortiz', personType: 'INTERNAL', title: 'Paralegal', email: 'ben.ortiz@demo.example' },
+    { firstName: 'Carla', lastName: 'Nguyen', personType: 'INTERNAL', title: 'Case Manager', email: 'carla.nguyen@demo.example' },
+    { firstName: 'Dev', lastName: 'Patel', personType: 'EXTERNAL', title: 'Outside Counsel', email: 'dev.patel@outside-counsel.example', companyName: 'Patel & Associates' },
   ];
+  const people = [];
+  for (const w of wanted) {
+    const found = (await admin.get(`/api/v1/people?q=${encodeURIComponent(w.email)}&pageSize=10`)).items.find((p) => (p.email ?? '').toLowerCase() === w.email);
+    people.push(found ?? (await admin.post('/api/v1/people', w)));
+  }
   const matters = ctx.matters.filter((m) => m.matterId !== null);
   for (let i = 0; i < matters.length; i++) {
     const current = await admin.get(`/api/v1/matters/${matters[i].matterId}`);
@@ -932,8 +938,7 @@ async function ensureMatterFields(admin, ctx, opts, summary) {
     if (team.total > 0) continue;
     const size = i % 5; // 0 to 4 people
     for (let k = 0; k < size; k++) {
-      const [name, email] = people[k];
-      await admin.post(`/api/v1/matters/${current.matterId}/team`, { name, email, teamTitleId: titles[(i + k) % titles.length].id });
+      await admin.post(`/api/v1/matters/${current.matterId}/team`, { personId: people[k].personId, teamTitleId: titles[(i + k) % titles.length].id });
       summary.teamMembersAdded++;
     }
   }

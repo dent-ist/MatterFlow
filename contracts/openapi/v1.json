@@ -20677,21 +20677,13 @@
         }
       },
       "AddTeamMemberRequest": {
-        "required": [
-          "name",
-          "email"
-        ],
         "type": "object",
         "properties": {
-          "name": {
-            "maxLength": 200,
-            "minLength": 0,
-            "type": "string"
-          },
-          "email": {
-            "maxLength": 254,
-            "minLength": 0,
-            "type": "string"
+          "personId": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer",
+            "format": "int32"
           },
           "teamTitleId": {
             "maximum": 2147483647,
@@ -20883,7 +20875,7 @@
               "MANAGER_DUPLICATE",
               "INVALID_PATH",
               "INVALID_EMAIL",
-              "DUPLICATE_TEAM_EMAIL",
+              "DUPLICATE_TEAM_PERSON",
               "SYSTEM_PERSON_READ_ONLY",
               "VENDOR_LINKED_TO_MATTERS",
               "VENDOR_BLACKLISTED_CONFIRMATION_REQUIRED",
@@ -29672,8 +29664,13 @@
         "required": [
           "id",
           "matterId",
+          "personId",
           "name",
+          "personType",
+          "isSystemUser",
+          "personTitle",
           "email",
+          "companyName",
           "title",
           "sortOrder",
           "rowVersion"
@@ -29688,11 +29685,36 @@
             "type": "integer",
             "format": "int32"
           },
+          "personId": {
+            "type": "integer",
+            "format": "int32"
+          },
           "name": {
             "type": "string"
           },
-          "email": {
+          "personType": {
             "type": "string"
+          },
+          "isSystemUser": {
+            "type": "boolean"
+          },
+          "personTitle": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "email": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "companyName": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "title": {
             "$ref": "#/components/schemas/MatterListRef"
@@ -41644,22 +41666,10 @@
       },
       "UpdateTeamMemberRequest": {
         "required": [
-          "name",
-          "email",
           "rowVersion"
         ],
         "type": "object",
         "properties": {
-          "name": {
-            "maxLength": 200,
-            "minLength": 0,
-            "type": "string"
-          },
-          "email": {
-            "maxLength": 254,
-            "minLength": 0,
-            "type": "string"
-          },
           "teamTitleId": {
             "maximum": 2147483647,
             "minimum": 1,

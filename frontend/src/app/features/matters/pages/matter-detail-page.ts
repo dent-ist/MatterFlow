@@ -41,7 +41,6 @@ import { ProjectPanel } from '../../projects/ui/project-panel';
 import { ProjectTasksPanel } from '../../projects/ui/project-tasks-panel';
 import { MatterActivities } from '../ui/matter-activities';
 import { MatterSummary } from '../ui/matter-summary';
-import { MatterTeamTab } from '../ui/matter-team-tab';
 import { MatterEventPanel } from '../ui/matter-event-panel';
 import { AddCommentDialog } from '../../../shared/matter-actions/add-comment-dialog';
 import { ManagerTarget, MatterManagersDialog } from '../ui/matter-managers-dialog';
@@ -83,7 +82,6 @@ type Tab = MatterTabKey;
     ScopedTasks,
     MatterProjects,
     MatterSummary,
-    MatterTeamTab,
     MatterEventPanel,
     ProductionsTab,
     NotesTab,
@@ -217,14 +215,6 @@ type Tab = MatterTabKey;
                     [sensitive]="m.isSensitive"
                     [aiAllowed]="m.aiAllowed"
                     (changed)="refreshTabCounts()"
-                  />
-                }
-                @case ('team') {
-                  <mf-matter-team-tab
-                    [matterId]="m.matterId"
-                    [matterRef]="m.matterRef"
-                    [canEdit]="canEdit()"
-                    (changed)="refreshTeamCount()"
                   />
                 }
                 @case ('activities') {
@@ -400,8 +390,6 @@ export class MatterDetailPage {
   /** The Productions and Notes tab numbers (their own summary endpoints); null until known or when the viewer may not see them. */
   protected readonly productionCount = signal<number | null>(null);
   protected readonly noteCount = signal<number | null>(null);
-  /** The Team tab number (`teamMemberCount` of the matter summary); null until known. Every viewer of the matter may see the team. */
-  protected readonly teamCount = signal<number | null>(null);
   /**
    * The tab strip. Projects and Assets are offered only with their View permission (a person who may not see them has no tab to open),
    * and a count is shown only when the viewer may see what it counts (no fake zero without Task.View).
@@ -414,8 +402,6 @@ export class MatterDetailPage {
       assets: this.assetCount(),
       productions: this.productionCount(),
       notes: this.noteCount(),
-      // "(--)" while the number is on its way (UI spec 4.1).
-      team: this.teamCount() ?? '--',
     };
     return visibleMatterTabs((code) => this.auth.has(code)).map((t) => {
       const tab: MfTab = { key: t.key, label: t.label, icon: t.icon };
@@ -659,19 +645,10 @@ export class MatterDetailPage {
     }
   }
 
-  /** The team changed on the Team tab: the tab number comes from the summary again; a failure keeps the old number. */
-  protected refreshTeamCount(): void {
-    const id = this.matter()?.matterId;
-    if (id === undefined) return;
-    firstValueFrom(this.api.getMatterSummary(id))
-      .then((s) => this.teamCount.set(s.teamMemberCount))
-      .catch(() => undefined);
-  }
-
   private fetchAll(id: number) {
     return Promise.all([
       firstValueFrom(this.api.getMatter(id)),
-      // The Assets and Team tab numbers; a failure only leaves the tabs without one.
+      // The Assets tab number; a failure only leaves the tab without one.
       firstValueFrom(this.api.getMatterSummary(id)).catch(() => null),
       this.auth.has('Project.View')
         ? // One request at the API's page maximum; the Projects tab sorts them itself (natural order).
@@ -698,7 +675,6 @@ export class MatterDetailPage {
   >): void {
     this.matter.set(matter);
     this.assetCount.set(this.auth.has('Asset.View') ? (summary?.assetCount ?? null) : null);
-    this.teamCount.set(summary?.teamMemberCount ?? null);
     this.projects.set(projects?.items ?? []);
     this.projectsTotal.set(projects?.total ?? 0);
   }

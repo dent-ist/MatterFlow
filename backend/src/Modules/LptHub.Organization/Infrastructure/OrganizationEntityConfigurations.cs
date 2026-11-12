@@ -75,8 +75,7 @@ internal sealed class MatterTeamMemberConfiguration : IEntityTypeConfiguration<M
     public void Configure(EntityTypeBuilder<MatterTeamMember> b)
     {
         b.ToTable("MatterTeamMember");
-        b.Property(x => x.Name).HasMaxLength(200).IsRequired();
-        b.Property(x => x.Email).HasMaxLength(254).IsRequired(); // the column is case-insensitive (script 64), so the unique index below ignores case
-        b.HasIndex(x => new { x.MatterId, x.Email }).IsUnique().HasDatabaseName("UQ_MatterTeamMember_MatterEmail");
+        // A person is on a matter's team once (script 76); the foreign key to the People table lives in the database only (Identity owns the table).
+        b.HasIndex(x => new { x.MatterId, x.PersonId }).IsUnique().HasDatabaseName("UQ_MatterTeamMember_MatterPerson");
     }
 }

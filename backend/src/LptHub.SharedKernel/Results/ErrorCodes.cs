@@ -31,11 +31,11 @@ public static class ErrorCodes
     /// <summary>A matter's DMS or DFS path is not a UNC path (<c>\\server\share\...</c>) or an http/https address (drive letters are refused), or is too long (epic #1298).</summary>
     public const string InvalidPath = "INVALID_PATH";
 
-    /// <summary>A team member's e-mail address is not valid (epic #1298).</summary>
+    /// <summary>An e-mail address is not valid (a person of the People list).</summary>
     public const string InvalidEmail = "INVALID_EMAIL";
 
-    /// <summary>The e-mail address is already on the matter's team (compared without regard to case); edit that member instead.</summary>
-    public const string DuplicateTeamEmail = "DUPLICATE_TEAM_EMAIL";
+    /// <summary>The person is already on the matter's team; change that member's title instead.</summary>
+    public const string DuplicateTeamPerson = "DUPLICATE_TEAM_PERSON";
 
     /// <summary>A person linked to a user: name, e-mail and type follow the user and the person cannot be deactivated here (People, epic #1373).</summary>
     public const string SystemPersonReadOnly = "SYSTEM_PERSON_READ_ONLY";

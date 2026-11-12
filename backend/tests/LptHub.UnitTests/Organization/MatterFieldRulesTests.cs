@@ -4,7 +4,7 @@ using Shouldly;
 
 namespace LptHub.UnitTests.Organization;
 
-/// <summary>The input rules of the matter fields (epic #1298, UI spec section 3.3): paths, team names and e-mail addresses.</summary>
+/// <summary>The input rules of the matter fields (epic #1298, UI spec section 3.3): the DMS and DFS paths.</summary>
 public class MatterFieldRulesTests
 {
     [Theory]
@@ -94,67 +94,5 @@ public class MatterFieldRulesTests
         var error = MatterFieldRules.CleanPath("https://h/" + new string('a', 991), "dmsPath").Error!;
         error.Code.ShouldBe(ErrorCodes.InvalidPath);
         error.FieldErrors!["dmsPath"][0].Code.ShouldBe(MatterFieldRules.PathTooLong);
-    }
-
-    [Theory]
-    [InlineData("ann@firm.com")]
-    [InlineData("Ann.Lee+matter@sub.vendor.example")]
-    [InlineData("  ben@vendor.io  ")]
-    public void Valid_emails_are_trimmed_and_kept_as_typed(string input)
-    {
-        var result = MatterFieldRules.CleanEmail(input);
-
-        result.IsSuccess.ShouldBeTrue();
-        result.Value.ShouldBe(input.Trim());
-    }
-
-    [Theory]
-    [InlineData("")]
-    [InlineData("   ")]
-    [InlineData("ann")]
-    [InlineData("ann@firm")]
-    [InlineData("@firm.com")]
-    [InlineData("ann@@firm.com")]
-    [InlineData("ann lee@firm.com")]
-    [InlineData("Ann <ann@firm.com>")]
-    [InlineData("a@b.com, c@d.com")]
-    [InlineData("ann..lee@firm.com")]
-    [InlineData(".ann@firm.com")]
-    public void Invalid_emails_are_refused(string input)
-    {
-        var error = MatterFieldRules.CleanEmail(input).Error!;
-
-        error.Code.ShouldBe(ErrorCodes.InvalidEmail);
-        error.FieldErrors!.ShouldContainKey("email");
-    }
-
-    [Fact]
-    public void An_email_over_254_characters_is_refused()
-    {
-        var email = new string('a', 250) + "@b.com";
-
-        MatterFieldRules.CleanEmail(email).Error!.Code.ShouldBe(ErrorCodes.InvalidEmail);
-    }
-
-    [Theory]
-    [InlineData("", false)]
-    [InlineData("  ", false)]
-    [InlineData("Ann Lee", true)]
-    [InlineData("  Ann Lee  ", true)]
-    [InlineData("Ann\nLee", false)]
-    public void Names_are_required_trimmed_and_free_of_control_characters(string input, bool valid)
-    {
-        var result = MatterFieldRules.CleanName(input);
-
-        result.IsSuccess.ShouldBe(valid);
-        if (valid)
-            result.Value.ShouldBe(input.Trim());
-    }
-
-    [Fact]
-    public void A_name_over_200_characters_is_refused()
-    {
-        MatterFieldRules.CleanName(new string('n', 201)).IsFailure.ShouldBeTrue();
-        MatterFieldRules.CleanName(new string('n', 200)).IsSuccess.ShouldBeTrue();
     }
 }
