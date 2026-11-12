@@ -51,7 +51,7 @@ window.MF = (function () {
       svc: ['Review', 'Translation'], area: ['EU', 'UK'], ai: ['Reveal AI classification'],
       note: 'GDPR-compliant review centre in Frankfurt. Bilingual (German, English) reviewers.',
       contacts: [{ pid: 'p12', flag: null }],
-      links: [['m2', '04/14/2026', 'Priya Nair']], updated: '08/21/2026' },
+      links: [['m2', '04/14/2026', 'Priya Nair'], ['m1', '06/08/2026', 'Maria Alvarez']], updated: '08/21/2026' },
     { id: 'v4', name: 'Pacific Document Solutions', site: 'pacificdocs.example', cat: 'Blacklisted',
       svc: ['eDiscovery', 'Review'], area: ['Asia Pacific'], ai: [],
       note: 'Blacklisted 09/14/2026: two missed production deadlines and media shipped unencrypted. Existing matters were transitioned out. Review before any new engagement.',
@@ -69,7 +69,7 @@ window.MF = (function () {
     { id: 'v7', name: 'Orbis Legal Staffing', site: 'orbislegal.example', cat: 'Preferred',
       svc: ['Review', 'Managed Services'], area: ['US'], ai: [],
       note: 'Contract review attorneys, minimum 2 week engagement.',
-      contacts: [], links: [['m4', '08/05/2026', 'Maria Alvarez']], updated: '08/05/2026' },
+      contacts: [], links: [['m4', '08/05/2026', 'Maria Alvarez'], ['m1', '09/15/2026', 'Maria Alvarez']], updated: '08/05/2026' },
     { id: 'v8', name: 'Delta Data Forensics', site: 'deltaforensics.example', cat: 'Blacklisted',
       svc: ['Forensic'], area: ['US'], ai: [],
       note: 'Blacklisted 10/02/2026 after a chain-of-custody gap on a hospital imaging job. Client complaint on file.',
@@ -82,22 +82,22 @@ window.MF = (function () {
     { id: 'v10', name: 'Harbor Analytics', site: 'harboranalytics.example', cat: 'Preferred',
       svc: ['eDiscovery', 'Custom Development'], area: ['US', 'Canada'], ai: ['Azure OpenAI (GPT-4 class)', 'Relativity aiR for Review'],
       note: 'Analytics and technology-assisted review. Data stays in the firm tenant.',
-      contacts: [], links: [['m2', '04/16/2026', 'Sofia Rossi']], updated: '09/03/2026' },
+      contacts: [], links: [['m2', '04/16/2026', 'Sofia Rossi'], ['m1', '07/01/2026', 'Sofia Rossi']], updated: '09/03/2026' },
   ];
 
   /* Matter 1 team (Matter > Team). */
   const TEAM = [
     { pid: 'p1', title: 'Case Manager' }, { pid: 'p6', title: 'Lead Attorney' }, { pid: 'p4', title: 'Technical Lead' },
-    { pid: 'p7', title: 'Client Contact' }, { pid: 'p8', title: 'Opposing Counsel' },
+    { pid: 'p7', title: 'Client Contact' }, { pid: 'p8', title: 'Opposing Counsel' }, { pid: 'p3', title: 'Case Manager' }, { pid: 'p5', title: 'Technical Lead' },
   ];
 
   /* Roles x permissions (proposal). Existing role names from the app. i = implied by another ticked permission. */
   const ROLES = ['System Admin', 'Director', 'Project Manager', 'Pod Lead', 'Data Technician', 'Data Scientist', 'SME Intake Coordinator'];
   const PERMS = [
-    { group: 'Vendors', code: 'Vendor.View', short: 'See vendors and the matter Vendors tab', desc: 'See the Vendors page, vendor details, and the Vendors tab on a matter', roles: [1, 1, 1, 1, 0, 0, 0] },
+    { group: 'Vendors', code: 'Vendor.View', short: 'See vendors and the matter Vendors box', desc: 'See the Vendors page, vendor details, and the Vendors box on the matter Summary tab', roles: [1, 1, 1, 1, 0, 0, 0] },
     { group: 'Vendors', code: 'Vendor.Manage', short: 'Create, edit and delete vendors and contacts', desc: 'Create, edit and delete vendors; add and edit their contacts and contact notes; maintain the Services and Areas lists', roles: [1, 1, 0, 0, 0, 0, 0] },
     { group: 'Vendors', code: 'Vendor.Link', short: 'Link and unlink vendors on a matter', desc: 'Link and unlink vendors on a matter (Add Vendor). Needs Vendor.View and Matter.View', roles: [1, 1, 1, 0, 0, 0, 0] },
-    { group: 'People', code: 'People.View', short: 'See the People page', desc: 'See the People page. Pickers on the Team tab and vendor contacts work for anyone who may edit them', roles: [1, 1, 1, 1, 0, 0, 1] },
+    { group: 'People', code: 'People.View', short: 'See the People page', desc: 'See the People page. Pickers in the Team box and vendor contacts work for anyone who may edit them', roles: [1, 1, 1, 1, 0, 0, 1] },
     { group: 'People', code: 'People.Manage', short: 'Create, edit and delete people', desc: 'Create, edit and delete people, including the quick "Add New Person" in pickers', roles: [1, 1, 1, 0, 0, 0, 0] },
   ];
 

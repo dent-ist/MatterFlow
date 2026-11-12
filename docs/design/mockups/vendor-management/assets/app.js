@@ -21,13 +21,16 @@
       ['vendor-delete-blocked', 'Delete Vendor (blocked, in use)', { page: 'vendors', dialog: 'deleteVendor', dv: 'v1' }],
     ]],
     ['Matter', [
-      ['matter-vendors', 'Matter > Vendors tab', { page: 'matterVendors' }],
-      ['matter-vendors-empty', 'Matter > Vendors tab, empty', { page: 'matterVendors', mvEmpty: true }],
-      ['matter-picker', 'Add Vendor picker', { page: 'matterVendors', dialog: 'picker', pk: { sel: ['v3', 'v5'] } }],
-      ['matter-picker-warn', 'Add Vendor picker, blacklisted selected', { page: 'matterVendors', dialog: 'picker', pk: { sel: ['v3', 'v4'], cat: 'all' } }],
-      ['matter-team', 'Matter > Team tab', { page: 'matterTeam' }],
-      ['matter-team-add', 'Add Team Member: pick a person', { page: 'matterTeam', dialog: 'teamAdd', pp: { open: true, q: '' } }],
-      ['matter-team-new', 'Add Team Member: add new person inline', { page: 'matterTeam', dialog: 'teamAdd', tm: { newOpen: true } }],
+      ['matter-summary', 'Matter > Summary: Team and Vendors boxes', { page: 'matterSummary' }],
+      ['matter-summary-empty', 'Matter > Summary: both boxes empty', { page: 'matterSummary', teamEmpty: true }],
+      ['matter-team-all', 'Team: Show All (read only)', { page: 'matterSummary', dialog: 'listDlg', ld: { kind: 'team', edit: false } }],
+      ['matter-team-edit', 'Team: Edit', { page: 'matterSummary', dialog: 'listDlg', ld: { kind: 'team', edit: true } }],
+      ['matter-team-add', 'Add Team Member: pick a person', { page: 'matterSummary', dialog: 'teamAdd', pp: { open: true, q: '' } }],
+      ['matter-team-new', 'Add Team Member: add new person inline', { page: 'matterSummary', dialog: 'teamAdd', tm: { newOpen: true } }],
+      ['matter-vendors-all', 'Vendors: Show All (read only)', { page: 'matterSummary', dialog: 'listDlg', ld: { kind: 'vendors', edit: false } }],
+      ['matter-vendors-edit', 'Vendors: Edit', { page: 'matterSummary', dialog: 'listDlg', ld: { kind: 'vendors', edit: true } }],
+      ['matter-picker', 'Add Vendors picker', { page: 'matterSummary', dialog: 'picker', pk: { sel: ['v9', 'v5'] } }],
+      ['matter-picker-warn', 'Add Vendors picker, blacklisted selected', { page: 'matterSummary', dialog: 'picker', pk: { sel: ['v9', 'v4'], cat: 'all' } }],
     ]],
     ['People', [
       ['people', 'People page', { page: 'people' }],
@@ -38,10 +41,10 @@
       ['permissions', 'Role permission matrix', { page: 'permissions' }],
       ['noperm-summary', 'Summary: what each missing permission does', { page: 'without' }],
       ['noperm-hidden', 'No Vendor.View: nav hidden, address blocked', { page: 'vendors', persona: 'none' }],
-      ['noperm-matter', 'No Vendor.View: matter has no Vendors tab', { page: 'matterTeam', persona: 'none' }],
+      ['noperm-matter', 'No Vendor.View: Vendors box hidden', { page: 'matterSummary', persona: 'none' }],
       ['noperm-readonly', 'Vendor.View only: read-only drawer', { page: 'vendors', persona: 'ro', drawer: 'v1', dtab: 'contacts' }],
-      ['noperm-link', 'No Vendor.Link: Add Vendor disabled, explained', { page: 'matterVendors', persona: 'ro' }],
-      ['noperm-people', 'No People.Manage: Add New Person disabled', { page: 'matterTeam', persona: 'ro', dialog: 'teamAdd', pp: { open: true, q: '' } }],
+      ['noperm-link', 'No Vendor.Link: Edit disabled, reason shown', { page: 'matterSummary', persona: 'ro' }],
+      ['noperm-people', 'No People.Manage: Add New Person disabled', { page: 'matterSummary', persona: 'ro', dialog: 'teamAdd', pp: { open: true, q: '' } }],
     ]],
   ];
   const FLAT = SCREENS.flatMap((g) => g[1]);
@@ -49,7 +52,7 @@
   const blank = () => ({ page: 'vendors', drawer: null, dtab: 'overview', dialog: null, dv: null, dctx: null, menu: null, mvEmpty: false,
     f: { q: '', cat: 'all', svc: [], area: [] },
     pk: { q: '', cat: 'all', svc: [], area: [], sel: [], ack: false },
-    pp: { open: false, q: '' }, tm: { newOpen: false, picked: null, ptype: 'External' }, pe: 'new', pf: { q: '', type: 'all' }, noteFlag: null, noteSeg: null, toast: null,
+    teamEmpty: false, ld: { kind: 'team', edit: false }, pp: { open: false, q: '' }, tm: { newOpen: false, picked: null, ptype: 'External' }, pe: 'new', pf: { q: '', type: 'all' }, noteFlag: null, noteSeg: null, toast: null,
     cvSel: { cat: 'Preferred', svc: ['eDiscovery', 'Review', 'Forensic'], area: ['US', 'EU'] }, keep: null });
   let S = Object.assign(blank(), { persona: qs.get('as') || 'full', guide: false });
 
@@ -65,6 +68,7 @@
       else if (k === 'pk') S.pk = Object.assign(S.pk, o.pk);
       else if (k === 'pp') S.pp = Object.assign(S.pp, o.pp);
       else if (k === 'tm') S.tm = Object.assign(S.tm, o.tm);
+      else if (k === 'ld') S.ld = o.ld;
       else S[k] = o[k];
     });
     if (hit[0] === 'vendor-note') S.noteFlag = 'DNH';
@@ -126,7 +130,7 @@
     const newTag = '<span class="new mk-only">NEW</span>';
     return '<nav class="nav" aria-label="Main"><div class="logo"><i>MF</i>MatterFlow</div>' +
       dead('chart-bar', 'Dashboard') + dead('briefcase', 'My Matters') + dead('list-check', 'My Work') + dead('building', 'Clients') +
-      live('matter-team', 'folder', 'Matters', cur.startsWith('matter')) + dead('sitemap', 'Projects', 'sub') + dead('database', 'Assets', 'sub') +
+      live('matter-summary', 'folder', 'Matters', cur.startsWith('matter')) + dead('sitemap', 'Projects', 'sub') + dead('database', 'Assets', 'sub') +
       (pe.view ? live('vendors', 'truck', 'Vendors', cur === 'vendors', newTag) : '') +
       (pe.pview ? live('people', 'address-book', 'People', cur === 'people', newTag) : '') +
       dead('users', 'Pod Work') + dead('list', 'Task Queue') + dead('chart-bar', 'Reports') +
@@ -168,7 +172,7 @@
       '<div class="pager"><span>1 to ' + rows.length + ' of ' + rows.length + '</span><span class="sp"></span><span>Rows per page: 25</span></div></div></main>';
   }
   function noAccess(what, perm) {
-    return '<main class="main">' + head('lock', 'Access Denied', null, '') + '<div class="frame"><div class="state">' + ic('lock') + '<p>You do not have access to ' + what + '.</p><small>Your role does not include <code>' + perm + '</code>. If you need it, ask an administrator to add it to your role. The ' + what + ' menu item is hidden for you, so this page only appears if you open its address directly.</small><a class="btn" href="#matter-team">Go to Matters</a></div></div></main>';
+    return '<main class="main">' + head('lock', 'Access Denied', null, '') + '<div class="frame"><div class="state">' + ic('lock') + '<p>You do not have access to ' + what + '.</p><small>Your role does not include <code>' + perm + '</code>. If you need it, ask an administrator to add it to your role. The ' + what + ' menu item is hidden for you, so this page only appears if you open its address directly.</small><a class="btn" href="#matter-summary">Go to Matters</a></div></div></main>';
   }
 
   /* ---------- Vendor drawer ---------- */
@@ -194,9 +198,9 @@
     } else {
       body = '<div class="sect"><h3>Matters</h3><span class="cnt">' + v.links.length + '</span></div>' +
         (v.links.length ? '<div class="frame" style="flex:none;box-shadow:none"><table><colgroup><col style="width:110px"><col><col style="width:130px"><col style="width:96px"><col style="width:120px"></colgroup><thead><tr><th>CM Number</th><th>Matter</th><th>Client</th><th>Linked</th><th>Linked By</th></tr></thead><tbody>' +
-          v.links.map((l) => { const m = D.matter(l[0]); return '<tr><td><a class="link mono" style="font-family:var(--mf-font-mono)" href="#matter-vendors">' + m.cm + '</a></td><td title="' + esc(m.name) + '">' + esc(m.name) + '</td><td>' + esc(m.client) + '</td><td>' + l[1] + '</td><td>' + esc(l[2]) + '</td></tr>'; }).join('') + '</tbody></table></div>' +
-          '<p class="sm muted" style="margin:0">Vendors are linked from the matter: open a matter, then Vendors, then Add Vendor.</p>'
-          : '<div class="state">' + ic('folder') + '<p>Not linked to any matter.</p><small>Link it from a matter\'s Vendors tab. A vendor with no matters can be deleted.</small></div>');
+          v.links.map((l) => { const m = D.matter(l[0]); return '<tr><td><a class="link mono" style="font-family:var(--mf-font-mono)" href="#matter-summary">' + m.cm + '</a></td><td title="' + esc(m.name) + '">' + esc(m.name) + '</td><td>' + esc(m.client) + '</td><td>' + l[1] + '</td><td>' + esc(l[2]) + '</td></tr>'; }).join('') + '</tbody></table></div>' +
+          '<p class="sm muted" style="margin:0">Vendors are linked from the matter: open a matter, Summary, then Edit on the Vendors box.</p>'
+          : '<div class="state">' + ic('folder') + '<p>Not linked to any matter.</p><small>Link it from a matter\'s Summary tab. A vendor with no matters can be deleted.</small></div>');
     }
     return '<div class="scrim scrim--drawer" data-a="close"><aside class="drawer" role="dialog" aria-label="Vendor ' + esc(v.name) + '" data-stop="1"><header><h2 style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(v.name) + '</h2>' + catChip(v.cat) + '<span class="sp"></span>' +
       (pe.manage ? iconBtn('pencil', 'edit|' + v.id, 'Edit vendor') + iconBtn('trash', 'del|' + v.id, 'Delete vendor') : '') + iconBtn('times', 'close', 'Close') + '</header>' +
@@ -241,7 +245,7 @@
     return dialog('Contact Note', esc(pname(p)) + ', ' + esc(v.name), '', body, cancelSave('Save Note'));
   }
 
-  /* person picker (used by Team tab and vendor Add Contact) */
+  /* person picker (used by Team box and vendor Add Contact) */
   function pickerHtml(excl, tagFor) {
     const pe = P(); const q = S.pp.q.trim().toLowerCase();
     const list = D.PEOPLE.filter((p) => !q || (pname(p) + ' ' + p.email + ' ' + p.company + ' ' + p.title).toLowerCase().includes(q));
@@ -295,7 +299,7 @@
 
   /* vendor picker (matter) */
   function pickerDialog() {
-    const k = S.pk; const linked = ['v1', 'v2', 'v8'];
+    const k = S.pk; const linked = m1Vendors().map((v) => v.id);
     const rows = D.VENDORS.filter((v) => vendorMatch(v, k)).sort((a, b) => a.name.localeCompare(b.name));
     const sel = k.sel; const selBl = sel.map((i) => D.vendor(i)).filter((v) => v.cat === 'Blacklisted');
     const list = rows.map((v) => {
@@ -335,44 +339,63 @@
     const d = S.dialog;
     if (d === 'newVendor') h += vendorDialog(true); else if (d === 'editVendor') h += vendorDialog(false);
     else if (d === 'contactNote') h += noteDialog(); else if (d === 'addContact') h += addContactDialog(); else if (d === 'deleteVendor') h += deleteDialog();
-    else if (d === 'picker') h += pickerDialog(); else if (d === 'teamAdd') h += teamDialog(); else if (d === 'personEdit') h += personDialog();
+    else if (d === 'listDlg') h += listDialog(); else if (d === 'picker') h += pickerDialog(); else if (d === 'teamAdd') h += teamDialog(); else if (d === 'personEdit') h += personDialog();
     if (S.toast) h += '<div class="toast" role="status"><b>' + S.toast + '</b></div>';
     return h;
   }
 
-  /* ---------- matter pages ---------- */
-  function matterShell(tab, content) {
-    const pe = P();
-    const tabs = [['summary', 'Summary', 'home', ''], ['tasks', 'Tasks', 'check-square', ' (14)'], ['projects', 'Projects', 'folder', ' (2)'], ['assets', 'Assets', 'database', ' (9)'], ['productions', 'Productions', 'send', ' (3)'], ['notes', 'Notes', 'file-edit', ' (6)'], ['team', 'Team', 'address-book', ' (' + D.TEAM.length + ')'],
-      ...(pe.view ? [['vendors', 'Vendors', 'truck', ' (' + (S.mvEmpty ? 0 : 3) + ')']] : []), ['activities', 'Activities', 'history', '']];
-    return '<main class="main"><div class="crumb"><a href="#matter-team">Matters</a>' + ic('chevron-right').replace('pi ', 'pi xs ') + '<span class="cur">10482-0017</span></div>' +
+  /* ---------- matter Summary tab ---------- */
+  const m1Vendors = () => D.VENDORS.filter((v) => v.links.some((l) => l[0] === 'm1')).sort((a, b) => (a.cat === b.cat ? a.name.localeCompare(b.name) : a.cat === 'Blacklisted' ? -1 : 1));
+  const cap = () => (window.innerHeight >= 900 ? 5 : 4);
+  function matterShell(content) {
+    const tabs = [['summary', 'Summary', 'home', ''], ['tasks', 'Tasks', 'check-square', ' (14)'], ['projects', 'Projects', 'folder', ' (2)'], ['assets', 'Assets', 'database', ' (9)'], ['productions', 'Productions', 'send', ' (3)'], ['notes', 'Notes', 'file-edit', ' (6)'], ['activities', 'Activities', 'history', '']];
+    return '<main class="main"><div class="crumb"><a href="#matter-summary">Matters</a>' + ic('chevron-right').replace('pi ', 'pi xs ') + '<span class="cur">10482-0017</span></div>' +
       '<div class="ph"><span class="tile">' + ic('folder') + '</span><h1>Acme Holdings v. Beta Corp</h1><span class="chip chip--ok">' + ic('check-circle') + 'Active</span><span class="sp"></span><button class="btn">' + ic('pencil') + 'Edit</button><button class="btn">' + ic('history') + 'Activity</button><button class="btn btn--primary">' + ic('plus') + 'New Task</button></div>' +
-      '<div class="sub"><span class="mono" style="font-family:var(--mf-font-mono)">CM 10482-0017</span><span class="sep">|</span><span>Client: <a class="link" href="#matter-team">Acme Holdings</a></span><span class="sep">|</span><span>Primary PM: Maria Alvarez</span><span class="sep">|</span><span>Matter Type: Litigation</span></div>' +
-      '<div class="tabs" role="tablist">' + tabs.map((x) => '<a class="tab" role="tab" href="' + (x[0] === 'team' ? '#matter-team' : x[0] === 'vendors' ? '#matter-vendors' : '#' + (S.screen || 'matter-team')) + '" ' + (x[0] === 'team' || x[0] === 'vendors' ? '' : 'data-dead="1"') + ' aria-selected="' + (x[0] === tab) + '">' + ic(x[2]) + x[1] + x[3] + '</a>').join('') + '</div>' + content + '</main>';
+      '<div class="sub"><span class="mono" style="font-family:var(--mf-font-mono)">CM 10482-0017</span><span class="sep">|</span><span>Client: <a class="link" href="#matter-summary">Acme Holdings</a></span><span class="sep">|</span><span>Primary PM: Maria Alvarez</span></div>' +
+      '<div class="tabs" role="tablist">' + tabs.map((x) => '<a class="tab" role="tab" href="#matter-summary" data-dead="1" aria-selected="' + (x[0] === 'summary') + '">' + ic(x[2]) + x[1] + x[3] + '</a>').join('') + '</div>' + content + '</main>';
   }
-  function teamPage() {
-    const body = D.TEAM.map((t) => {
-      const p = D.person(t.pid);
-      return '<tr><td><span class="two"><button class="btn btn--name">' + pname(p) + '</button></span><span class="two">' + esc(p.title) + '</span></td><td>' + typeChip(p) + '</td><td title="' + esc(p.email) + '">' + esc(p.email) + '</td><td>' + esc(t.title) + '</td><td>' + esc(p.company || 'Law firm') + '</td><td class="act"><button class="btn btn--icon" aria-label="Remove ' + pname(p) + '">' + ic('trash') + '</button></td></tr>';
-    }).join('');
-    return matterShell('team', '<div class="controls"><span class="sm muted">' + D.TEAM.length + ' team members. People are picked from the shared People list.</span><span class="sp"></span>' + btn('Add Member', 'dlg|teamAdd', { cls: 'btn--primary', icon: 'plus' }) + '</div>' +
-      '<div class="frame"><div class="scroll"><table><colgroup><col><col style="width:140px"><col style="width:var(--mf-col-email-w)"><col style="width:var(--mf-col-title-w)"><col style="width:180px"><col style="width:var(--mf-col-actions-w)"></colgroup><thead><tr><th>Name</th><th>Type</th><th>Email</th><th>Title</th><th>Company</th><th class="act"><span class="sr">Actions</span></th></tr></thead><tbody>' + body + '</tbody></table></div><div class="pager"><span>1 to ' + D.TEAM.length + ' of ' + D.TEAM.length + '</span><span class="sp"></span><span>Rows per page: 25</span></div></div>');
+  const tl = (arr) => arr;
+  function teamRows() { return S.teamEmpty ? [] : D.TEAM.map((t) => ({ t, p: D.person(t.pid) })); }
+  function boxTeam() {
+    const rows = teamRows(), n = rows.length, c = cap();
+    const list = rows.slice(0, c).map((r) => '<li class="bx-row">' + av(r.p, true) + '<span class="bx-main"><b>' + pname(r.p) + '</b></span><span class="bx-role" title="' + esc(r.t.title) + '">' + esc(r.t.title) + '</span>' + typeChip(r.p).replace('chip ', 'chip bx-chip ') + '</li>').join('');
+    return '<section class="card bx" aria-label="Team"><div class="bx-h"><h3>Team</h3><span class="cnt">' + n + '</span><span class="sp"></span>' + btn('Edit', 'ld|team|1', { icon: 'pencil' }) + '</div>' +
+      (n ? '<ul class="bx-list" style="min-height:' + c * 36 + 'px">' + list + '</ul>' + (n > c ? '<div class="bx-f"><button class="btn btn--text" data-a="ld|team|0">Show All ' + n + '</button></div>' : '')
+        : '<div class="bx-empty"><span class="muted">No team members yet.</span>' + btn('Add Member', 'dlg|teamAdd', { cls: 'btn--text' }) + '</div>') + '</section>';
   }
-  function mvPage() {
-    const pe = P(); const ids = S.mvEmpty ? [] : ['v1', 'v2', 'v8']; const vs = ids.map((i) => D.vendor(i)); const bl = vs.filter((v) => v.cat === 'Blacklisted');
-    const addBtn = pe.link ? btn('Add Vendor', 'dlg|picker', { cls: 'btn--primary', icon: 'plus' }) : '<button class="btn" disabled aria-disabled="true" aria-describedby="whylink">' + ic('plus') + 'Add Vendor</button>';
-    const why = pe.link ? '' : '<span class="why" id="whylink">' + ic('lock') + 'Adding vendors needs the Vendor.Link permission. Ask an administrator to add it to your role.</span>';
-    const rows = vs.map((v) => {
-      const cons = v.contacts.map((c) => D.person(c.pid)); const l = v.links.find((x) => x[0] === 'm1');
-      return '<tr class="' + (v.cat === 'Blacklisted' ? 'row-warn' : '') + '"><td><span class="two"><button class="btn btn--name" data-a="goto|vendor-drawer">' + esc(v.name) + '</button></span><span class="two" style="font-family:var(--mf-font-mono)">' + esc(v.site) + '</span></td><td>' + catChip(v.cat) + '</td><td>' + tagsShort(v.svc, 22) + '</td><td>' + tagsShort(v.area, 9) + '</td>' +
-        '<td title="' + esc(cons.map(pname).join(', ')) + '">' + (cons.length ? pname(cons[0]) + (cons.length > 1 ? ' +' + (cons.length - 1) : '') : '<span class="muted">None</span>') + (flagged(v, 'DNH') ? ' <span style="color:var(--mf-danger)" title="Contact flagged Do Not Hire">' + ic('flag') + '</span>' : '') + '</td>' +
-        '<td><span class="two">' + l[1] + '</span><span class="two">' + esc(l[2]) + '</span></td><td class="act">' + (pe.link ? '<button class="btn btn--icon" aria-label="Unlink ' + esc(v.name) + '" title="Unlink vendor">' + ic('minus-circle') + '</button>' : '') + '</td></tr>';
-    }).join('');
-    const content = '<div class="controls"><span class="sm muted">' + (vs.length ? vs.length + ' vendors linked to this matter.' : 'No vendors linked yet.') + '</span><span class="sp"></span>' + why + addBtn + '</div>' +
-      (bl.length ? '<div class="banner banner--bad" role="note">' + ic('exclamation-triangle') + '<span class="txt"><b>' + bl[0].name + ' is Blacklisted</b> (' + bl[0].updated + '). It was linked before it was blacklisted. Review the vendor before more work goes to it.</span><button class="btn btn--text" data-a="goto|vendor-drawer">View Vendor</button></div>' : '') +
-      '<div class="frame">' + (vs.length ? '<div class="scroll"><table><colgroup><col style="width:240px"><col style="width:132px"><col style="width:220px"><col style="width:130px"><col style="width:190px"><col style="width:150px"><col style="width:var(--mf-col-actions-w)"></colgroup><thead><tr><th>Vendor</th><th>Category</th><th>Services</th><th>Areas</th><th>Contacts</th><th>Linked</th><th class="act"><span class="sr">Actions</span></th></tr></thead><tbody>' + rows + '</tbody></table></div><div class="pager"><span>1 to ' + vs.length + ' of ' + vs.length + '</span><span class="sp"></span><span>Rows per page: 25</span></div>'
-        : '<div class="state">' + ic('truck') + '<p>No vendors linked to this matter.</p><small>Link the firms working on it so everyone knows who to call and who to avoid. Blacklisted vendors are shown with a warning, not hidden.</small>' + (pe.link ? btn('Add Vendor', 'dlg|picker', { cls: 'btn--primary', icon: 'plus' }) : '') + '</div>') + '</div>';
-    return matterShell('vendors', content);
+  function boxVendors() {
+    const pe = P(); if (!pe.view) return '';
+    const vs = S.teamEmpty ? [] : m1Vendors(), n = vs.length, c = cap(), bl = vs.filter((v) => v.cat === 'Blacklisted');
+    const list = vs.slice(0, c).map((v) => '<li class="bx-row ' + (v.cat === 'Blacklisted' ? 'bx-warn' : '') + '"><span class="bx-main"><button class="btn btn--name" data-a="goto|vendor-drawer" title="' + esc(v.name) + '">' + esc(v.name) + '</button></span>' + (flagged(v, 'DNH') ? '<span style="color:var(--mf-danger)" title="Contact flagged Do Not Hire">' + ic('flag') + '</span>' : '') + catChip(v.cat).replace('chip ', 'chip bx-chip ') + '</li>').join('');
+    const edit = pe.link ? btn('Edit', 'ld|vendors|1', { icon: 'pencil' }) : '<button class="btn" disabled aria-disabled="true" aria-describedby="whylink">' + ic('pencil') + 'Edit</button>';
+    return '<section class="card bx" aria-label="Vendors"><div class="bx-h"><h3>Vendors</h3><span class="cnt">' + n + '</span>' + (bl.length ? '<span class="chip chip--bad bx-chip" title="' + esc(bl.map((v) => v.name).join(', ')) + '">' + ic('exclamation-triangle') + bl.length + ' Blacklisted</span>' : '') + '<span class="sp"></span>' + edit + '</div>' +
+      (n ? '<ul class="bx-list" style="min-height:' + c * 36 + 'px">' + list + '</ul>' + (!pe.link ? '<div class="bx-f"><span class="why" id="whylink">' + ic('lock') + 'Needs Vendor.Link to change. Ask an administrator.</span><span class="sp"></span>' + (n > c ? '<button class="btn btn--text" data-a="ld|vendors|0">Show All ' + n + '</button>' : '') + '</div>' : (n > c ? '<div class="bx-f"><button class="btn btn--text" data-a="ld|vendors|0">Show All ' + n + '</button></div>' : ''))
+        : '<div class="bx-empty"><span class="muted">No vendors linked yet.</span>' + (pe.link ? btn('Add Vendor', 'dlg|picker', { cls: 'btn--text' }) : '<span class="why" id="whylink">' + ic('lock') + 'Needs Vendor.Link.</span>') + '</div>') + '</section>';
+  }
+  function summaryPage() {
+    const tiles = [['Hard Drives', 'database', 'slate', 12], ['Email Sets', 'at', 'blue', 4], ['Cloud Sources', 'globe', 'teal', 6], ['Chat Exports', 'comments', 'violet', 3], ['Production Volumes', 'box', 'orange', 3]];
+    const f = (l, v, wide) => '<div class="df ' + (wide ? 'wide' : '') + '"><span class="dl">' + l + '</span><span class="dv">' + v + '</span></div>';
+    const boxes = boxTeam() + boxVendors();
+    return matterShell('<ul class="ms-tiles">' + tiles.map((t) => '<li class="card ms-tile"><span class="tt" style="background:var(--mf-tt-' + t[2] + ')">' + ic(t[1]) + '</span><span class="nm">' + t[0] + '</span><span class="ct">' + t[3] + '</span></li>').join('') + '</ul>' +
+      '<div class="card ms-details"><div class="bx-h"><h3>Details</h3></div><div class="ms-fields">' +
+      f('CM Number', '<span class="ms-cm">10482-0017</span>') + f('Client', '<a class="link mono" href="#matter-summary">1048</a> Acme Holdings') + f('Matter Number', '<span class="mono">0017</span>') + f('Matter Name', 'Acme Holdings v. Beta Corp') +
+      f('Matter Type', 'Litigation') + f('Current State', 'Collection') + f('DMS Path', '<span class="mono">\\\\fs01\\dms\\Matters\\1048\\0017\\Acme v. Beta</span> <button class="btn btn--text">Copy</button>', 1) + f('DFS Path', '<span class="mono">https://dfs.example.com/matters/1048/0017</span> <button class="btn btn--text">Copy</button>', 1) +
+      f('Status', '<span class="chip chip--ok">' + ic('check-circle') + 'Active</span>') + f('Primary PM', av(D.person('p1'), true) + ' Maria Alvarez') + f('Secondary PM', av(D.person('p3'), true) + ' Priya Nair') + f('AI Allowed', '<span class="chip">' + ic('sparkles') + 'Yes</span>') + f('Created', '02/03/2026') + f('Last Changed', '11/10/2026') +
+      '</div></div><div class="bxrow ' + (P().view ? '' : 'one') + '">' + boxes + '</div>');
+  }
+  function listDialog() {
+    const pe = P(); const k = S.ld; const edit = k.edit;
+    if (k.kind === 'team') {
+      const rows = teamRows();
+      const body = '<div class="frame" style="box-shadow:none;flex:none"><table><colgroup><col><col style="width:124px"><col style="width:190px"><col style="width:176px">' + (edit ? '<col style="width:var(--mf-col-actions-w)">' : '') + '</colgroup><thead><tr><th>Name</th><th>Type</th><th>Email</th><th>Title</th>' + (edit ? '<th class="act"><span class="sr">Remove</span></th>' : '') + '</tr></thead><tbody>' +
+        rows.map((r) => '<tr><td><span class="two"><b>' + pname(r.p) + '</b></span><span class="two">' + esc(r.p.title) + (r.p.company ? ', ' + esc(r.p.company) : '') + '</span></td><td>' + typeChip(r.p) + '</td><td title="' + esc(r.p.email) + '">' + esc(r.p.email) + '</td><td>' + (edit ? '<span class="inp" style="height:32px"><select aria-label="Title for ' + pname(r.p) + '"><option>' + esc(r.t.title) + '</option></select></span>' : esc(r.t.title)) + '</td>' + (edit ? '<td class="act"><button class="btn btn--icon" aria-label="Remove ' + pname(r.p) + '">' + ic('trash') + '</button></td>' : '') + '</tr>').join('') + '</tbody></table></div>';
+      return dialog('Team (' + rows.length + ')', 'Acme Holdings v. Beta Corp (10482-0017)', 'dlg--lg', body, edit ? '<button class="btn" data-a="close">Cancel</button><span class="mid">Titles and removals save with Save Changes.</span><button class="btn" data-a="dlg|teamAdd">' + ic('plus') + 'Add Member</button><button class="btn btn--primary" data-a="save|Save Changes" style="margin-left:8px">Save Changes</button>' : '<span class="sp"></span><button class="btn btn--primary" data-a="close">Close</button>');
+    }
+    const vs = m1Vendors(); const bl = vs.filter((v) => v.cat === 'Blacklisted');
+    const body = (bl.length ? '<div class="banner banner--bad" style="margin-bottom:12px" role="note">' + ic('exclamation-triangle') + '<span class="txt"><b>' + esc(bl[0].name) + ' is Blacklisted</b> (' + bl[0].updated + '). It was linked before it was blacklisted. Review it before more work goes to it.</span><button class="btn btn--text" data-a="goto|vendor-drawer">View Vendor</button></div>' : '') +
+      '<div class="frame" style="box-shadow:none;flex:none"><table><colgroup><col><col style="width:124px"><col style="width:150px"><col style="width:130px"><col style="width:100px">' + (edit ? '<col style="width:var(--mf-col-actions-w)">' : '') + '</colgroup><thead><tr><th>Vendor</th><th>Category</th><th>Services</th><th>Contacts</th><th>Linked</th>' + (edit ? '<th class="act"><span class="sr">Unlink</span></th>' : '') + '</tr></thead><tbody>' +
+      vs.map((v) => { const cons = v.contacts.map((c) => D.person(c.pid)); const l = v.links.find((x) => x[0] === 'm1'); return '<tr class="' + (v.cat === 'Blacklisted' ? 'row-warn' : '') + '"><td><span class="two"><b>' + esc(v.name) + '</b></span><span class="two" style="font-family:var(--mf-font-mono)">' + esc(v.site) + '</span></td><td>' + catChip(v.cat) + '</td><td>' + tagsShort(v.svc, 16) + '</td><td>' + (cons.length ? pname(cons[0]) + (cons.length > 1 ? ' +' + (cons.length - 1) : '') : '<span class="muted">None</span>') + '</td><td><span class="two">' + l[1] + '</span><span class="two">' + esc(l[2]) + '</span></td>' + (edit ? '<td class="act"><button class="btn btn--icon" aria-label="Unlink ' + esc(v.name) + '">' + ic('minus-circle') + '</button></td>' : '') + '</tr>'; }).join('') + '</tbody></table></div>';
+    return dialog('Vendors (' + vs.length + ')', 'Acme Holdings v. Beta Corp (10482-0017)', 'dlg--lg', body, edit ? '<button class="btn" data-a="close">Cancel</button><span class="mid">Unlinking saves with Save Changes.</span><button class="btn" data-a="dlg|picker">' + ic('plus') + 'Add Vendor</button><button class="btn btn--primary" data-a="save|Save Changes" style="margin-left:8px">Save Changes</button>' : '<span class="sp"></span><button class="btn btn--primary" data-a="close">Close</button>');
   }
 
   /* ---------- People page ---------- */
@@ -405,13 +428,13 @@
   }
   function withoutPage() {
     const rows = [
-      ['Vendor.View missing', 'Vendors menu item hidden. Opening the address shows Access Denied.', 'No Vendors tab.', 'Not reachable.'],
-      ['Vendor.View only (no Manage)', 'Page and detail panel are read only: no New Vendor, row menu, Edit, Delete, Add Contact or Edit Note. Flags and notes stay readable.', 'Vendors tab readable.', 'Not reachable.'],
-      ['Vendor.Link missing', 'Unchanged.', 'Add Vendor shown disabled with the reason beside it. No Unlink button.', 'Add Vendor picker not reachable.'],
-      ['People.Manage missing', 'People page is read only: no New Person, no row menu, no Edit.', 'Team tab unchanged (Add Member needs Matter.Edit as today).', '"Add New Person" shown disabled with the reason. Existing people can still be picked.'],
-      ['People.View missing', 'People menu item hidden. Opening the address shows Access Denied.', 'Team tab unchanged.', 'Pickers still list everyone, for anyone who may edit a team or a vendor contact.'],
+      ['Vendor.View missing', 'Vendors menu item hidden. Opening the address shows Access Denied.', 'Vendors box hidden; the Team box fills the row.', 'Not reachable.'],
+      ['Vendor.View only (no Manage)', 'Page and detail panel are read only: no New Vendor, row menu, Edit, Delete, Add Contact or Edit Note. Flags and notes stay readable.', 'Vendors box readable.', 'Not reachable.'],
+      ['Vendor.Link missing', 'Unchanged.', 'Edit on the Vendors box shown disabled with the reason in the box footer. No Unlink.', 'Add Vendors picker not reachable.'],
+      ['People.Manage missing', 'People page is read only: no New Person, no row menu, no Edit.', 'Team box unchanged (Edit needs Matter.Edit as today).', '"Add New Person" shown disabled with the reason. Existing people can still be picked.'],
+      ['People.View missing', 'People menu item hidden. Opening the address shows Access Denied.', 'Team box unchanged.', 'Pickers still list everyone, for anyone who may edit a team or a vendor contact.'],
     ];
-    return '<main class="main">' + head('lock', 'What a Person Without a Permission Sees', null, '', 'Rule of thumb: a whole page is hidden when the person has no business there; an action that is the point of a tab they can read is shown disabled, with the reason in plain text next to it.') +
+    return '<main class="main">' + head('lock', 'What a Person Without a Permission Sees', null, '', 'Rule of thumb: a whole page is hidden when the person has no business there; an action that is the point of a box they can read is shown disabled, with the reason in plain text next to it.') +
       '<div class="frame"><div class="scroll"><table><colgroup><col style="width:200px"><col style="width:34%"><col style="width:24%"><col></colgroup><thead><tr><th>Missing</th><th>Menu and page</th><th>On the matter</th><th>Pickers and dialogs</th></tr></thead><tbody>' +
       rows.map((r) => '<tr>' + r.map((c, i) => '<td style="height:auto;padding:12px;vertical-align:top;white-space:normal;' + (i === 0 ? 'font-weight:600' : '') + '">' + (i === 0 ? '<code>' + c.split(' ')[0] + '</code><div class="sm" style="font-weight:400">' + c.split(' ').slice(1).join(' ') + '</div>' : c) + '</td>').join('') + '</tr>').join('') + '</tbody></table></div></div>' +
       '<div class="controls"><span class="sm muted">Open the "No ..." screens in the guide to see each state in place.</span></div></main>';
@@ -427,7 +450,7 @@
   /* ---------- render + events ---------- */
   function render() {
     const pe = P(); let main;
-    if (S.page === 'vendors') main = vendorsPage(); else if (S.page === 'people') main = peoplePage(); else if (S.page === 'matterVendors') main = mvPage(); else if (S.page === 'matterTeam') main = teamPage(); else if (S.page === 'without') main = withoutPage(); else main = permPage();
+    if (S.page === 'vendors') main = vendorsPage(); else if (S.page === 'people') main = peoplePage(); else if (S.page === 'matterSummary') main = summaryPage(); else if (S.page === 'without') main = withoutPage(); else main = permPage();
     $root.innerHTML = '<div class="app">' + nav() + top() + main + '</div>' + overlays() + guide();
     document.querySelectorAll('.mk-only').forEach((e) => { if (document.body.classList.contains('nochrome')) e.style.display = 'none'; });
     if (S.keep) { const el = document.querySelector('[data-keep="' + S.keep + '"]'); if (el) { el.focus(); const n = el.value.length; try { el.setSelectionRange(n, n); } catch (e) { /* ignore */ } } }
@@ -445,6 +468,7 @@
     guide: () => { S.guide = !S.guide; },
     drawer: (id) => { if (P().view) { S.drawer = id; S.dtab = 'overview'; S.menu = null; } },
     dtab: (t) => { S.dtab = t; },
+    ld: (kind, e) => { S.ld = { kind, edit: e === '1' }; S.dialog = 'listDlg'; S.menu = null; },
     dlg: (n) => { S.dialog = n; S.menu = null; S.pp = { open: false, q: '' }; S.tm = { newOpen: false, picked: null }; if (n === 'newVendor') S.cvSel = { cat: 'Preferred', svc: [], area: [] }; if (n === 'picker') S.pk = { q: '', cat: 'all', svc: [], area: [], sel: [], ack: false }; if (n === 'personEdit') S.pe = 'new'; if (n === 'deleteVendor') S.dv = S.drawer; },
     menu: (id) => { S.menu = S.menu === id ? null : id; },
     ddset: (id, val) => setDd(id, val),
