@@ -60,12 +60,12 @@ test.describe('Global Create task (#625)', () => {
     }
   });
 
-  test('the Edit pages keep the global button; /tasks/new still hides it; leaving a record brings it back', async ({
+  test('the New Matter page keeps the global button; /tasks/new still hides it; leaving a record brings it back', async ({
     page,
     seed,
   }) => {
     const matter = await seed.matter({ client: await seed.client() });
-    await page.goto(`/matters/${matter.matterId}/edit`);
+    await page.goto('/matters/new');
     await expect(global(page)).toHaveCount(1);
     await page.goto('/tasks/new');
     await expect(global(page)).toHaveCount(0);
