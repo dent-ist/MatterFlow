@@ -53,13 +53,16 @@ async function collectUi(page: Page, fx: PmFixtures): Promise<Omit<Facts, 'api'>
   );
 
   await page.goto(`/matters/${fx.m.primary.matterId}`);
-  await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
+  // The record header replaces a skeleton (which has a heading too) once the matter is loaded: wait for the header itself, because the menu is looked for
+  // with a plain count that does not wait (on a busy runner it found no menu button while the skeleton was still shown).
+  await expect(page.locator('mf-matter-header')).toBeVisible();
   await page.waitForLoadState('networkidle');
   let headerMenu: string[] = [];
   // The matter header has the Create menu too (also a `data-overflow`): the header menu here is More actions.
   const overflow = page.locator('mf-matter-header [data-overflow][aria-label^="More actions"]');
   if ((await overflow.count()) > 0) {
     await overflow.click();
+    await expect(page.locator('[role=menuitem]').first()).toBeVisible();
     headerMenu = (await page.locator('[role=menuitem]').allInnerTexts()).map((t) => t.trim());
     await page.keyboard.press('Escape');
   }
@@ -88,7 +91,18 @@ async function collectApi(who: Api, fx: PmFixtures): Promise<Record<string, numb
 const PM_MENU = ['My Matters', 'My Work', 'Clients', 'Matters', 'Projects', 'Assets', 'Task Queue'];
 // The Project Manager role holds Report.Run (owner decision 8, #784), so its menu ends with Reports; the fixture people who are built from a list
 // of permissions without Report.Run (`pmNoAssign`, `pmNoTask`) keep PM_MENU.
-const PM_ROLE_MENU = [...PM_MENU, 'Reports'];
+// It also holds People.View (#1375: Project Managers keep the People page as they work), so People follows Assets in the menu.
+const PM_ROLE_MENU = [
+  'My Matters',
+  'My Work',
+  'Clients',
+  'Matters',
+  'Projects',
+  'Assets',
+  'People',
+  'Task Queue',
+  'Reports',
+];
 const FOUR_TABS = ['Overview', 'Calendar', 'Assets', 'Metrics', 'Activity']; // the five tabs of the UI update (epic #953); Metrics holds Breakdown and Data
 
 test.describe('Permission matrix of the Project Manager views', () => {

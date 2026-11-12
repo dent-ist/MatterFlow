@@ -411,7 +411,12 @@ test.describe('Final verification (#240)', () => {
     await expect(page.locator('mf-bar-list').first()).toBeVisible();
     await expect(page.locator('mf-stacked-bar').first()).toBeVisible();
     // Every card starts as bars; the view switch (Bars, Pie, Table) goes to the table.
+    // The four cards load their numbers separately and a card draws its view switch with its numbers: wait for all four before switching (a read that came
+    // first found the Age card still empty and counted no Age rows), then for the rows of each table.
+    await expect(page.locator('[data-view="table"]')).toHaveCount(4);
     for (const toggle of await page.locator('[data-view="table"]').all()) await toggle.click();
+    for (const card of await page.locator('mf-bar-list, mf-stacked-bar').all())
+      await expect(card.locator('tbody tr').first()).toBeVisible();
     const rows = await page.evaluate(() =>
       Array.from(document.querySelectorAll('mf-bar-list, mf-stacked-bar')).flatMap((card) =>
         Array.from(card.querySelectorAll('tbody tr'))
@@ -428,7 +433,15 @@ test.describe('Final verification (#240)', () => {
           .filter((r) => r.link),
       ),
     );
-    expect(rows.length, 'Breakdown rows with a link').toBeGreaterThanOrEqual(12);
+    // How many rows there are depends on the data this test seeded, not on a fixed number: one Priority row for each ACTIVE priority it filed a task on, the
+    // statuses New, In Progress and On Hold, its two task types, and the five age bands. A fixed total of 12 hid which card was short (CI had 10, probably with no Age rows at
+    // all, because the Age card was read before it had its numbers), so each card has its own floor and the message names the counts.
+    const perCard = (card: string) => rows.filter((r) => r.card === card).length;
+    const counts = `rows with a link by card: Priority ${perCard('Priority')}, Status ${perCard('Status')}, Task Type ${perCard('Task Type')}, Age ${perCard('Age')}`;
+    expect(perCard('Priority'), counts).toBeGreaterThanOrEqual(priorities.length);
+    expect(perCard('Status'), counts).toBeGreaterThanOrEqual(3);
+    expect(perCard('Task Type'), counts).toBeGreaterThanOrEqual(2);
+    expect(perCard('Age'), counts).toBeGreaterThanOrEqual(5);
     for (const r of rows) {
       expect(await total(r.link!), `${r.card}: ${r.label} (${r.link})`).toBe(r.count);
       checked.push(`${r.card} ${r.label}=${r.count}`);

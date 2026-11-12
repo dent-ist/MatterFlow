@@ -267,15 +267,22 @@ test.describe('My Matters QA: states and focus', () => {
     const page = await asUser(w.pm.username);
     await page.goto(`/my-matters?tab=calendar&month=${inDays(2).slice(0, 7)}`);
     await settle(page);
+    // Escape is pressed only once the dialog has taken the focus (it is ready for the keyboard then): right after the dialog appears the focus is still on the
+    // page, and an Escape that early can come before the dialog listens for it, which leaves the dialog open and the focus nowhere near the button.
+    const dialogReady = async () => {
+      await expect(page.getByRole('dialog')).toBeVisible();
+      await expect(page.getByRole('dialog').locator(':focus')).toHaveCount(1);
+    };
     await page.locator('[data-add-event]').click();
-    await expect(page.getByRole('dialog')).toBeVisible();
+    await dialogReady();
     await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(page.locator('[data-add-event]')).toBeFocused();
     await page.locator('#mm-new-btn').click();
     await page.getByRole('menuitem', { name: /New calendar item/i }).click();
-    await expect(page.getByRole('dialog')).toBeVisible();
+    await dialogReady();
     await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(page.locator('#mm-new-btn')).toBeFocused();
     await page.goto('/my-matters?tab=assets');
     await settle(page);

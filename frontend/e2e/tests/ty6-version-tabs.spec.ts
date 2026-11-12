@@ -58,6 +58,9 @@ test.describe('Version page tabs and switcher (#399)', () => {
     // Used by is a separate step in history only through the address, which is replaced: Back leaves the page.
     await tab(page, 'Steps').click();
     await expect(page).not.toHaveURL(/tab=/);
+    // The arrow key works from the selected tab: wait until the page shows Steps as selected (the address changes a moment before the tab state does).
+    await expect(tab(page, 'Steps')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('[data-steps]')).toBeVisible();
     // Arrow keys move between the two tabs.
     await tab(page, 'Steps').focus();
     await page.keyboard.press('ArrowRight');
