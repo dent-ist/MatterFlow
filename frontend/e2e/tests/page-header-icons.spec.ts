@@ -37,8 +37,10 @@ test.describe('Page header icons', () => {
       page.getByRole('heading', { name: 'Search Results', level: 1 }).locator('i[data-page-icon]'),
     ).toHaveClass(/pi-search/);
     await page.goto('/this-page-does-not-exist');
-    await expect(page.getByRole('heading', { level: 1 }).locator('i[data-page-icon]')).toHaveClass(
-      /pi-compass/,
-    );
+    // The not-found page is the shared state card (#1193): its icon is the tile above the title, not a glyph inside the heading.
+    await expect(
+      page.getByRole('heading', { name: "We couldn't find that.", level: 1 }),
+    ).toBeVisible();
+    await expect(page.locator('[data-state-page] .sp__tile i')).toHaveClass(/pi-compass/);
   });
 });

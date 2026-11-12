@@ -32,10 +32,14 @@ export function asDropdown(button: Locator): Dropdown {
       await expect(page.locator('.dd-panel [role="listbox"]')).toBeVisible({ timeout: 3000 });
     }).toPass({ timeout: 20_000 });
   };
+  // An Escape pressed right after the list opened can reach it before its key handler is registered and is lost (the same race `support/views.ts`
+  // describes for the More menu): press again until the panel is gone, only while the button still reports the list as open.
   const close = async () => {
-    if ((await button.getAttribute('aria-expanded')) === 'true')
-      await page.keyboard.press('Escape');
-    await expect(page.locator('.dd-panel')).toHaveCount(0);
+    await expect(async () => {
+      if ((await button.getAttribute('aria-expanded')) === 'true')
+        await page.keyboard.press('Escape');
+      await expect(page.locator('.dd-panel')).toHaveCount(0, { timeout: 1500 });
+    }).toPass({ timeout: 15_000 });
   };
   return Object.assign(button, {
     async selectOption(choice: string | { label?: string; value?: string }): Promise<void> {

@@ -87,7 +87,8 @@ test.describe('Assets list defects (WP-AS1)', () => {
     const popup = page.context().waitForEvent('page');
     await link.click({ modifiers: ['Control'] });
     const tab = await popup;
-    await expect(tab).toHaveURL(new RegExp(`/assets/${rows.plain.assetId}$`));
+    // A new tab loads the whole app cold (nothing cached in it yet): on a busy runner the address is committed late (empty for over 10 s in CI).
+    await expect(tab).toHaveURL(new RegExp(`/assets/${rows.plain.assetId}$`), { timeout: 45_000 });
     await tab.close();
 
     await link.press('Enter');

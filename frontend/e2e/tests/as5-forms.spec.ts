@@ -96,9 +96,15 @@ test.describe('Asset forms (WP-AS5)', () => {
     await expect(page.locator('#asset-name')).toHaveValue(`Created ${token}`);
 
     await page.getByRole('button', { name: 'Create Asset' }).click();
+    // The toast (summary and the asset's name, #1144; a type without numbering says "Asset saved") lives 4 s: look for it first, before the
+    // asset page has loaded, so a slow page load cannot outlast it.
+    const toast = page.locator('[data-toast-summary]', { hasText: 'Asset saved' });
+    await expect(toast).toBeVisible();
+    await expect(
+      page.locator('[data-toast-detail]', { hasText: `Created ${token}` }),
+    ).toBeVisible();
     await expect(page).toHaveURL(/\/assets\/\d+$/);
     await expect(page.getByRole('heading', { level: 1, name: `Created ${token}` })).toBeVisible();
-    await expect(page.getByText(`Asset Created ${token} saved`)).toBeVisible();
 
     await page.goto(`/assets/new?matterId=${matter.matterId}`);
     await page.getByRole('button', { name: 'Cancel' }).click();

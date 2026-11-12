@@ -54,10 +54,15 @@ test.describe('Quick views are one toolbar (#236)', () => {
     const tag = uid();
     await seed.task(world, { title: `Keys task ${tag}` });
     const page = await asUser('ke\\kekim');
-    await page.setViewportSize({ width: 1366, height: 768 });
+    // 1920 wide: the first toolbar line has room for the views there (at 1366 it holds All Open and More only, the rest sit in the More menu, #755),
+    // and this test walks the buttons of the strip with the arrow keys and presses two of them.
+    await page.setViewportSize({ width: 1920, height: 1080 });
     const queue = new TaskQueuePage(page);
     await queue.open();
     await expect(page.locator('[data-task]').first()).toBeVisible();
+    await expect
+      .poll(() => toolbar(page).locator('> button[data-view]').count())
+      .toBeGreaterThan(3);
 
     await expect(toolbar(page)).toHaveAttribute('aria-orientation', 'horizontal');
     expect(await stops(page)).toBe(1);
@@ -83,7 +88,7 @@ test.describe('Quick views are one toolbar (#236)', () => {
     await expect(buttons.nth(n - 1)).toBeFocused();
     await page.keyboard.press('Home');
     await expect(buttons.nth(0)).toBeFocused();
-    await shot(page, 'toolbar-focus-1366');
+    await shot(page, 'toolbar-focus-1920');
 
     // Space and Enter press the view; counts stay in the accessible names.
     await page.keyboard.press('ArrowRight');

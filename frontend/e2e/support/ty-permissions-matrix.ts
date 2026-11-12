@@ -546,6 +546,10 @@ export function registerListsAuditMatrix(): void {
               : canPr
                 ? '/admin/lists/priorities'
                 : '/admin/lists/status-labels';
+          // The menu item opens the Lists page, which redirects to the first list it may show: the address is waited for, not read at once.
+          await page
+            .waitForURL((u) => u.pathname.endsWith(first), { timeout: 10_000 })
+            .catch(() => undefined);
           if (!page.url().endsWith(first)) problems.push(`Lists menu item opened ${page.url()}`);
           if (await isForbiddenPage(page)) problems.push('Lists menu item: the 403 page');
           if (seen.failed.length > 0)
