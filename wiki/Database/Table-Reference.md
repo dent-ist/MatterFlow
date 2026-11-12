@@ -356,10 +356,10 @@ A project inside a matter, with custom fields.
 
 ### MatterCategory
 
-Admin-managed list: the Matter Category a matter can carry (optional, a single choice; `Matter.MatterCategoryId`). Names are unique; a used item is deactivated, an unused one may be deleted. The list starts empty and is filled on the Admin Lists page.
+Admin-managed list: the Matter Category a matter can carry (optional, a single choice; `Matter.MatterCategoryId`). Names are unique; a used item is deactivated, an unused one may be deleted. Script 70 seeds the starter categories; the list is then maintained on the Admin Lists page.
 
 - **Module:** Configuration. **Area:** Clients, Matters and Projects.
-- **Scripts:** created by script 68.
+- **Scripts:** created by script 68; seeded by script 70.
 - **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_MatterCategory` (MatterCategoryId), int identity.
 - **Columns (8; `?` = nullable):** `MatterCategoryId int`, `Name nvarchar(100)`, `SortOrder int`, `IsActive bit`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
