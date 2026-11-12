@@ -77,6 +77,9 @@ test.describe('#235: a closed row is only reopened', () => {
     const queue = new TaskQueuePage(page);
     await queue.open('?status=COMPLETED');
     await queue.titleFilter.fill(`QDone ${token}`);
+    // The filter is applied by the server after a short pause. On a shared database the unfiltered page may already show this row, so wait
+    // until the list is only this row: a click before that lands on a row that is then replaced, and its menu closes with it.
+    await expect(page.locator('[data-task]')).toHaveCount(1);
     const row = queue.row(`QDone ${token}`);
     await expect(row).toHaveCount(1);
     await row.getByRole('button', { name: /change status of/ }).click();
@@ -86,6 +89,7 @@ test.describe('#235: a closed row is only reopened', () => {
 
     await queue.open('?status=IN_PROGRESS');
     await queue.titleFilter.fill(`QOpen ${token}`);
+    await expect(page.locator('[data-task]')).toHaveCount(1);
     const open = queue.row(`QOpen ${token}`);
     await expect(open).toHaveCount(1);
     await open.getByRole('button', { name: /change status of/ }).click();

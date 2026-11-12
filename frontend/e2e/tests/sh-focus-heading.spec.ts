@@ -46,7 +46,9 @@ test.describe('Focus lands on the heading of the 403 and the 404 (#610)', () => 
     await page.goto('/no-such-page');
     const h1 = page.getByRole('heading', { name: NOT_FOUND, level: 1 });
     await expect(h1).toBeFocused();
-    // The heading is the first thing the next Tab leaves: "Go to ..." comes after it.
+    // The next Tab leaves the heading for Copy address (state page, #1193); "Go to ..." comes after it.
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('button', { name: 'Copy address' })).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(page.locator('[data-back-link]')).toBeFocused();
 

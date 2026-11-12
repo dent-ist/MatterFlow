@@ -5,7 +5,7 @@ import { axeAvailable, axeBestPractice } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 
 /**
- * App shell SH1 (epic #585), #592: a long display name is clamped (header stays 57 px) and a name that differs from the account only by case
+ * App shell SH1 (epic #585), #592: a long display name is clamped (header stays 53 px, the top bar of SH-01 #1044) and a name that differs from the account only by case
  * is shown once. With E2E_SCREENSHOTS set the run writes screenshots to docs/ux/shell-review/fixes/sh1-critical.
  */
 const OUT = process.env['E2E_SCREENSHOTS'];
@@ -57,7 +57,7 @@ test.describe('Header user name (#592)', () => {
     for (const a of accounts) expect(a.trim().toLowerCase()).not.toBe(name.toLowerCase());
   });
 
-  test('a 66 character name keeps the header 57 px high at both desktop sizes and ends in an ellipsis; the tooltip has the full name', async ({
+  test('a 66 character name keeps the header 53 px high at both desktop sizes and ends in an ellipsis; the tooltip has the full name', async ({
     page,
     asUser,
   }) => {
@@ -74,7 +74,7 @@ test.describe('Header user name (#592)', () => {
       const trigger = long.getByTestId('user-menu');
       await expect(trigger).toBeVisible();
       expect(await headerHeight(long), `header at ${w}`).toBe(normal);
-      expect(normal).toBe(57);
+      expect(normal).toBe(53);
       await noSidewaysScroll(long);
       await expect(trigger).toHaveAttribute('title', /.{60,}/);
       if (w >= 481) {

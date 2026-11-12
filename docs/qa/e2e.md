@@ -39,6 +39,8 @@ npm run e2e -- -g SCN-015        # any Playwright argument goes through (grep, -
 
 Browser: with a normal machine run `npx playwright install chromium` once and leave `E2E_CHROMIUM_PATH` unset. `@playwright/test` is pinned to 1.56.1, which expects Chromium build 1194; installing the dependency never downloads a browser (`PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` is safe).
 
+Font: the suite measures text widths (reserved count widths, status badges, one-line rows), so the machine must resolve the app's font stack (`"Segoe UI", system-ui, ...`) to **Inter**, as the cloud sandbox does (package `fonts-inter` plus a fontconfig alias of `system-ui`, `Segoe UI` and `sans-serif` to Inter). With the Linux default (DejaVu Sans, about 10 % wider) 8 specs fail that pass otherwise (`wp9-fixed-layout`, `wp13-narrow-rule` x2, `wp16-more-views`, `wp9-density`, `lc08-tab-controls`, `profile-pf3-layout`, `column-filters-work-lists` quick views). `.github/workflows/e2e.yml` installs the font in the step "Install the test font". To check a machine: `fc-match system-ui` must print Inter. To reproduce a CI failure of this kind on a machine that has Inter, point `FONTCONFIG_FILE` at a fontconfig that lists only the DejaVu and Liberation directories.
+
 Working against a stack you already run (for example while writing a test):
 
 ```bash

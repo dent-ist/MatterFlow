@@ -247,17 +247,15 @@ test.describe('More views (WP16)', () => {
         }),
       );
       widths[w] = boxes.length - 1;
-      if (w >= 1100) {
-        // One line: every button of the strip and the buttons at the right share the line.
-        expect(new Set(boxes.map((b) => b.top)).size, `strip on one line at ${w}`).toBe(1);
-        const bar = (await page.locator('[data-grid-toolbar]').boundingBox())!;
-        expect(bar.height, `row 2 at ${w}`).toBeLessThanOrEqual(48);
-        // The strip follows Search, Filters and Other filters and ends before Columns (LC-01).
-        const columns = (await page.getByRole('button', { name: /^Columns/ }).boundingBox())!;
-        const filters = (await page.locator('[data-filters-toggle]').boundingBox())!;
-        expect(boxes[0].right).toBeGreaterThan(filters.x);
-        expect(boxes[boxes.length - 1].right).toBeLessThan(columns.x);
-      }
+      // One line: every button of the strip and the buttons at the right share the line.
+      expect(new Set(boxes.map((b) => b.top)).size, `strip on one line at ${w}`).toBe(1);
+      const bar = (await page.locator('[data-grid-toolbar]').boundingBox())!;
+      expect(bar.height, `row 2 at ${w}`).toBeLessThanOrEqual(48);
+      // The strip follows Search, Filters and Other filters and ends before Columns (LC-01).
+      const columns = (await page.getByRole('button', { name: /^Columns/ }).boundingBox())!;
+      const filters = (await page.locator('[data-filters-toggle]').boundingBox())!;
+      expect(boxes[0].right).toBeGreaterThan(filters.x);
+      expect(boxes[boxes.length - 1].right).toBeLessThan(columns.x);
       // Every view is reachable: in the strip or in More, none is lost.
       const inMore: string[] = [];
       await moreButton(page).click();

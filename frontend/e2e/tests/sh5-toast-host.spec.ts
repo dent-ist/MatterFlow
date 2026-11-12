@@ -24,7 +24,9 @@ const SIZES = [
   { name: '1920x1080', width: 1920, height: 1080 },
 ] as const;
 
-const AVAILABILITY = /\/api\/v1\/me\/availability/;
+// "I'm Back" ends the current Out of office entry with POST /users/{id}/absences/{id}/back (Out of office epic #1074). The dialog's own save
+// is a quiet request (the dialog shows the server's message under the dates), so "I'm Back" is the user-menu action that ends in an error toast.
+const BACK = /\/api\/v1\/users\/\d+\/absences\/\d+\/back/;
 
 async function openOutOfOfficeDialog(page: Page): Promise<Locator> {
   await page.getByRole('button', { name: /account menu/ }).click();
@@ -33,6 +35,22 @@ async function openOutOfOfficeDialog(page: Page): Promise<Locator> {
     .getByRole('menuitem', { name: 'Set Out of Office' })
     .click();
   return page.getByRole('dialog', { name: 'Set out of office' });
+}
+
+async function chooseFromAccountMenu(page: Page, item: string): Promise<void> {
+  await page.getByRole('button', { name: /account menu/ }).click();
+  await page
+    .getByRole('menu', { name: 'Your account' })
+    .getByRole('menuitem', { name: item })
+    .click();
+}
+
+/** Sets the person out of office through the real dialog and waits for the success toast, so "I'm Back" is offered afterwards. */
+async function goOutOfOffice(page: Page): Promise<void> {
+  const dialog = await openOutOfOfficeDialog(page);
+  await dialog.getByRole('button', { name: 'Set Out of Office', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Set out of office' })).toHaveCount(0);
+  await expect(page.locator('[data-toast][data-severity="success"]')).toHaveCount(1);
 }
 
 async function noSideScroll(page: Page): Promise<void> {
@@ -63,10 +81,19 @@ test.describe('SH-B: the one toast host', () => {
     await me.setViewportSize({ width: 1366, height: 768 });
     await me.goto('/my-work');
 
-    // An error first: the save fails.
+    // Out of office is set for real; the success toast sits in the polite status region.
+    await goOutOfOffice(me);
+    const ok = me.locator('[role="status"] [data-toast][data-severity="success"]');
+    await expect(ok).toHaveCount(1);
+    await expect(ok).toContainText('Out of office set');
+    await expect(ok).not.toHaveAttribute('role', 'alert');
+    await ok.locator('[data-toast-close]').click();
+    await expect(toasts(me)).toHaveCount(0);
+
+    // Then "I'm Back" fails: the error toast is assertive.
     let fail = true;
-    await me.route(AVAILABILITY, (route) =>
-      fail && route.request().method() !== 'GET'
+    await me.route(BACK, (route) =>
+      fail
         ? route.fulfill({
             status: 500,
             contentType: 'application/problem+json',
@@ -74,8 +101,7 @@ test.describe('SH-B: the one toast host', () => {
           })
         : route.continue(),
     );
-    const dialog = await openOutOfOfficeDialog(me);
-    await dialog.getByRole('button', { name: 'Set Out of Office', exact: true }).click();
+    await chooseFromAccountMenu(me, "I'm Back");
     const error = me.locator('[data-toast][data-severity="error"]');
     await expect(error).toHaveCount(1);
     await expect(error).toHaveAttribute('role', 'alert');
@@ -89,11 +115,11 @@ test.describe('SH-B: the one toast host', () => {
 
     // Then it works: success, in the polite status region.
     fail = false;
-    await dialog.getByRole('button', { name: 'Set Out of Office', exact: true }).click();
-    const ok = me.locator('[role="status"] [data-toast][data-severity="success"]');
-    await expect(ok).toHaveCount(1);
-    await expect(ok).toContainText('Out of office set');
-    await expect(ok).not.toHaveAttribute('role', 'alert');
+    await chooseFromAccountMenu(me, "I'm Back");
+    const back = me.locator('[role="status"] [data-toast][data-severity="success"]');
+    await expect(back).toHaveCount(1);
+    await expect(back).toContainText('Welcome back');
+    await expect(back).not.toHaveAttribute('role', 'alert');
     await shot(me, 'toast-error-and-success-1366x768');
   });
 
@@ -104,31 +130,38 @@ test.describe('SH-B: the one toast host', () => {
     const { username } = await seed.user(['Data Technician'], 'shb-many');
     const me = await asUser(username);
     await me.goto('/my-work');
+    await goOutOfOffice(me);
+    await me.locator('[data-toast][data-severity="success"] [data-toast-close]').click();
+    await expect(toasts(me)).toHaveCount(0);
     let n = 0;
     let distinct = false;
-    await me.route(AVAILABILITY, (route) =>
-      route.request().method() === 'GET'
-        ? route.continue()
-        : route.fulfill({
-            status: 400,
-            contentType: 'application/problem+json',
-            body: JSON.stringify({
-              title: 'Bad',
-              status: 400,
-              detail: distinct ? `Failure number ${++n}` : 'The same failure',
-            }),
-          }),
+    await me.route(BACK, (route) =>
+      route.fulfill({
+        status: 400,
+        contentType: 'application/problem+json',
+        body: JSON.stringify({
+          title: 'Bad',
+          status: 400,
+          detail: distinct ? `Failure number ${++n}` : 'The same failure',
+        }),
+      }),
     );
-    const dialog = await openOutOfOfficeDialog(me);
-    const save = dialog.getByRole('button', { name: 'Set Out of Office', exact: true });
-    for (let i = 0; i < 5; i++) await save.click();
     const same = me.locator('[data-toast][data-severity="error"]');
+    for (let i = 1; i <= 5; i++) {
+      await chooseFromAccountMenu(me, "I'm Back");
+      // Each failure is shown before the next try, so the five are five answers and not one click counted twice.
+      if (i === 1) await expect(same).toHaveCount(1);
+      else await expect(same.locator('[data-toast-count]')).toHaveText(`x${i}`);
+    }
     await expect(same).toHaveCount(1);
     await expect(same.locator('[data-toast-count]')).toHaveText('x5');
 
     distinct = true;
     await me.waitForTimeout(5100);
-    for (let i = 0; i < 5; i++) await save.click();
+    for (let i = 1; i <= 5; i++) {
+      await chooseFromAccountMenu(me, "I'm Back");
+      await expect(me.getByText(`Failure number ${i}`)).toHaveCount(1);
+    }
     await expect(toasts(me)).toHaveCount(3);
     await expect(toasts(me).last()).toContainText('Failure number 5');
   });
@@ -179,21 +212,22 @@ test.describe('SH-B: the one toast host', () => {
       const me = await asUser(username);
       await me.setViewportSize({ width: size.width, height: size.height });
       await me.goto('/my-work');
-      await me.route(AVAILABILITY, (route) =>
-        route.request().method() === 'GET'
-          ? route.continue()
-          : route.fulfill({
-              status: 400,
-              contentType: 'application/problem+json',
-              body: JSON.stringify({ title: 'Bad', status: 400, detail: 'That did not save.' }),
-            }),
+      await goOutOfOffice(me);
+      await me.route(BACK, (route) =>
+        route.fulfill({
+          status: 400,
+          contentType: 'application/problem+json',
+          body: JSON.stringify({ title: 'Bad', status: 400, detail: 'That did not save.' }),
+        }),
       );
-      const dialog = await openOutOfOfficeDialog(me);
-      await dialog.getByRole('button', { name: 'Set Out of Office', exact: true }).click();
+      await chooseFromAccountMenu(me, "I'm Back");
       await expect(me.locator('[data-toast][data-severity="error"]')).toHaveCount(1);
-      await me.unroute(AVAILABILITY);
-      await dialog.getByRole('button', { name: 'Set Out of Office', exact: true }).click();
+      await me.unroute(BACK);
+      await chooseFromAccountMenu(me, "I'm Back");
+      // "Welcome back" replaces "Out of office set" (same key), the error toast stays: both severities are open for axe.
+      await expect(me.getByText('Welcome back')).toBeVisible();
       await expect(me.locator('[data-toast][data-severity="success"]')).toHaveCount(1);
+      await expect(me.locator('[data-toast][data-severity="error"]')).toHaveCount(1);
       await noSideScroll(me);
       if (axeAvailable()) expect(await axeViolations(me), 'axe with toasts open').toEqual([]);
       await shot(me, `toasts-open-${size.name}`);

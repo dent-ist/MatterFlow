@@ -84,14 +84,16 @@ test.describe('The 403 page keeps the address (#598)', () => {
 
     const copy = page.getByRole('button', { name: 'Copy address' });
     await expect(copy).toBeVisible();
-    // Keyboard only: Tab from the page heading reaches the primary "Go to ..." link, then Copy address.
+    // Keyboard only (state page, #1193): Tab from the page heading reaches Copy address (it sits in the "Asked for" line), then the "Go to ..." link.
     await page.locator('h1').evaluate((h) => {
       h.setAttribute('tabindex', '-1');
       (h as HTMLElement).focus();
     });
     await page.keyboard.press('Tab');
-    await expect(page.locator('[data-back-link]')).toBeFocused();
+    await expect(copy).toBeFocused();
     await page.keyboard.press('Tab');
+    await expect(page.locator('[data-back-link]')).toBeFocused();
+    await page.keyboard.press('Shift+Tab');
     await expect(copy).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(page.getByRole('status').filter({ hasText: 'Copied' })).toBeAttached();

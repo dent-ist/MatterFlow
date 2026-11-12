@@ -109,6 +109,34 @@ jobs:
       - name: Install Chromium for Playwright
         working-directory: frontend
         run: npx playwright install --with-deps chromium
+      # The suite measures text widths (reserved count widths, chip and badge widths, one-line rows). The app's font stack is "Segoe UI", system-ui,
+      # ...; on the runner that resolves to DejaVu Sans, which is about 10 % wider than Inter, the font the development machines and the cloud sandbox
+      # resolve it to (fonts-inter plus the same fontconfig alias). Without this step 8 specs that pass on a development machine fail here
+      # (status badge "In Progress" 115 > 110 px, the quick-view count reserve, the tab count, the toolbar row of the Productions tab, ...) (#1359).
+      - name: Install the test font (Inter, as on the development machines)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq fonts-inter
+          sudo mkdir -p /etc/fonts/conf.d
+          sudo tee /etc/fonts/conf.d/56-prefer-inter.conf >/dev/null <<'EOF'
+          <?xml version="1.0"?>
+          <!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
+          <!-- Must sort after 49-sansserif.conf and before 58-dejavu-lgc-sans.conf and 60-latin.conf, the first files that prefer another font for sans-serif. -->
+          <fontconfig>
+            <alias><family>system-ui</family><prefer><family>Inter</family></prefer></alias>
+            <alias><family>ui-sans-serif</family><prefer><family>Inter</family></prefer></alias>
+            <alias><family>-apple-system</family><prefer><family>Inter</family></prefer></alias>
+            <alias><family>BlinkMacSystemFont</family><prefer><family>Inter</family></prefer></alias>
+            <alias><family>SF Pro Text</family><prefer><family>Inter</family></prefer></alias>
+            <alias><family>SF Pro Display</family><prefer><family>Inter</family></prefer></alias>
+            <alias><family>Segoe UI</family><prefer><family>Inter</family></prefer></alias>
+            <alias><family>Helvetica Neue</family><prefer><family>Inter</family></prefer></alias>
+            <alias><family>sans-serif</family><prefer><family>Inter</family></prefer></alias>
+          </fontconfig>
+          EOF
+          sudo fc-cache -f
+          fc-match system-ui
+          fc-match "Segoe UI" | grep -q Inter || { echo "::error::system-ui does not resolve to Inter"; exit 1; }
       - name: Select the spec files of this shard
         if: matrix.shard
         id: select

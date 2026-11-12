@@ -18,12 +18,17 @@ test.describe('Tooltip open, axe 0 (#1268)', () => {
       expect(axeAvailable(), 'set E2E_AXE_PATH to axe.min.js').toBe(true);
       const w = await mmWorld(seed, personas, 'tip1268');
       const a = await w.matter('Alpha');
+      // The tree of clients and matters (the owner of the tooltip) exists only for a person with more than one matter. With one it shows
+      // for an instant (the page starts with the tree) and goes when the matter count arrives, which made this test a race.
+      await w.matter('Beta');
       await w.task(a, { title: 'Tip task' });
       const page = await asUser(w.pm.username);
       await page.setViewportSize(size);
       await page.goto('/my-matters');
       const owner = page.locator('[data-tree-collapse]');
       await expect(owner).toBeVisible();
+      // The tree has its data before the pointer goes there, so nothing re-renders under it.
+      await expect(page.getByRole('treeitem').first()).toBeVisible();
       await owner.hover();
       const tip = page.locator('[role="tooltip"]');
       await expect(tip).toHaveText('Collapse to rail');

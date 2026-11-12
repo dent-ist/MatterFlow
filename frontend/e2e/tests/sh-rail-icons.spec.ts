@@ -46,12 +46,13 @@ test.describe('Icon rail (#623)', () => {
       const n = await links.count();
       for (let i = 0; i < n; i++) {
         await expect(links.nth(i)).toHaveAttribute('data-tip', /.+/);
+        // Both desktop sizes show the full 220 px panel (the 56 px rail is 640 to 1099 px only): icons are --mf-nav-icon, 19 px.
         expect(
           await links
             .nth(i)
             .locator('i')
             .evaluate((e) => getComputedStyle(e).fontSize),
-        ).toBe('21px');
+        ).toBe('19px');
       }
     }
   });

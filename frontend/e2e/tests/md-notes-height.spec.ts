@@ -290,20 +290,25 @@ test.describe('Notes height toggle (#1342)', () => {
       await page.mouse.move(5, 400);
       await btn.click();
     }
-    // Both toggles share the pressed look: same fill when on.
+    // Both toggles share the pressed look: same fill when on. Both are pressed and the pointer is away (no hover fill, no colour transition
+    // under way) before the fills are read; on a slow machine the first read came before the second toggle had taken its look.
     await page.locator('[data-note-wide]').click();
     await toggle(page).click();
-    const fills = await page.evaluate(() =>
-      ['[data-note-wide]', '[data-note-height]'].map((s) => {
+    await expect(page.locator('[data-note-wide]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(toggle(page)).toHaveAttribute('aria-pressed', 'true');
+    await page.mouse.move(5, 400);
+    const fill = (sel: string) =>
+      page.evaluate((s) => {
         const el = document.querySelector(s)!;
         return (
           getComputedStyle(el).backgroundColor +
           '|' +
           getComputedStyle(el.querySelector('i')!).color
         );
-      }),
-    );
-    expect(fills[0]).toBe(fills[1]);
+      }, sel);
+    await expect
+      .poll(async () => (await fill('[data-note-wide]')) === (await fill('[data-note-height]')))
+      .toBe(true);
   });
 
   test('folded: an edit error, the save state and the buttons stay visible; a sensitive bar stays; no page scroll', async ({

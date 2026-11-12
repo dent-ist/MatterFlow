@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { Page } from '@playwright/test';
-import { MyWorkPage, PodWorkPage, TaskQueuePage } from '../pages/queues.pages';
+import { MyWorkPage, TaskQueuePage } from '../pages/queues.pages';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { Seeder, uid } from '../support/seed';
@@ -195,17 +195,15 @@ test.describe('Priority and Status triggers (#202)', () => {
         });
         expect(spill, `${density} at ${name}`).toEqual([]);
       }
-      if (width >= 768) {
-        const widths = await page.evaluate(() => {
-          const w: Record<string, number> = {};
-          document
-            .querySelectorAll<HTMLElement>('thead tr:first-child th')
-            .forEach((t) => (w[t.dataset['col']!] = t.getBoundingClientRect().width));
-          return w;
-        });
-        expect(widths['priority']).toBeLessThanOrEqual(112.5);
-        expect(widths['status']).toBeLessThanOrEqual(140.5);
-      }
+      const widths = await page.evaluate(() => {
+        const w: Record<string, number> = {};
+        document
+          .querySelectorAll<HTMLElement>('thead tr:first-child th')
+          .forEach((t) => (w[t.dataset['col']!] = t.getBoundingClientRect().width));
+        return w;
+      });
+      expect(widths['priority']).toBeLessThanOrEqual(112.5);
+      expect(widths['status']).toBeLessThanOrEqual(140.5);
       // Keyboard: the P and S keys still open the menus (WP12b selectors).
       await page.locator('[data-task] a.wt-title').first().focus();
       await page.keyboard.press('p');
