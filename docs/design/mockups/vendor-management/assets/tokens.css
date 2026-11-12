@@ -1,0 +1,555 @@
+/* Tokens: copy of docs/ux/tokens.css (light theme). Icons: PrimeIcons 8 subset, embedded. */
+/* MatterFlow design tokens (light theme, Phase 1). Contrast ratios noted are against --mf-surface (#FFFFFF) unless stated. */
+:root {
+  /* Neutrals */
+  --mf-bg: #f5f6f8; /* app background */
+  --mf-surface: #ffffff; /* cards, tables */
+  --mf-surface-alt: #eef0f4; /* table header, zebra hover */
+  --mf-row-hover: #eaf0fb; /* the row under the pointer in every grid (MD-28); text 4.5:1 and links checked on it, never the only signal of selection or focus */
+  --mf-border: #c9ced8; /* 1.7:1 decorative borders only */
+  --mf-border-strong: #6b7280; /* 4.8:1 input borders (WCAG 1.4.11 >=3:1) */
+  --mf-text: #1b1f27; /* 16.0:1 */
+  --mf-text-muted: #4b5563; /* 7.6:1 */
+  --mf-text-disabled: #6b7280; /* 4.8:1 (disabled text exempt, kept legible) */
+  /* Brand / interactive */
+  --mf-primary: #1f4e9c; /* 7.9:1 on white; white text on it 7.9:1 */
+  --mf-primary-hover: #173c79;
+  --mf-link: #1f4e9c;
+  --mf-focus: #b45309; /* focus ring colour, 2px solid + 2px offset; >=3:1 on bg and surface */
+  --mf-selected-bg: #e3ecfa;
+  /* Navigation panel (MM-43 #939, MM-58 #950): dark navy, clearly apart from the page (--mf-bg) and the header (--mf-surface); light text and
+     icons. Contrast (WCAG 1.4.3) on --mf-nav-bg #1A3556: text 10.9:1, muted text (headings, version) 7.0:1, hover text on #2B4B75 7.8:1
+     (muted 5.0:1), selected text #17324F on the white pill 13.1:1, focus ring #FFC15A 7.7:1 (5.5:1 on hover; needs 3:1). The selected item is a
+     white pill (rounded square in the rail) with bold type, never colour alone and never a thick border. The pending badge keeps its red with a
+     white ring. Dark theme values: see the [data-theme="dark"] block below (the app has no dark theme yet). */
+  --mf-nav-bg: #1a3556;
+  --mf-nav-text: #eaf1fa;
+  --mf-nav-text-muted: #b4c3d8;
+  --mf-nav-hover-bg: #2b4b75;
+  --mf-nav-selected-bg: #ffffff;
+  --mf-nav-selected-fg: #17324f;
+  --mf-nav-border: #3e5c86;
+  --mf-nav-focus: #ffc15a;
+  /* Feedback */
+  --mf-danger: #b42318;
+  --mf-danger-bg: #fdecea;
+  --mf-warning: #8a4b00;
+  --mf-warning-bg: #fff4db;
+  --mf-success: #146c2e;
+  --mf-success-bg: #e5f5ea;
+  --mf-info: #1f4e9c;
+  --mf-info-bg: #e3ecfa;
+  /* Status badges (text / bg / border) */
+  /* Priority badges: default set; admin may override colour but must pass 4.5:1 (validated in designer) */
+  --mf-pr-critical-fg: #ffffff;
+  --mf-pr-critical-bg: #b42318;
+  --mf-pr-high-fg: #5c2e00;
+  --mf-pr-high-bg: #ffd9a8;
+  --mf-pr-normal-fg: #1b1f27;
+  --mf-pr-normal-bg: #e3e7ee;
+  --mf-pr-low-fg: #3b4350;
+  --mf-pr-low-bg: #f1f3f6;
+  /* Due */
+  --mf-due-overdue: #b42318;
+  --mf-due-soon: #8a4b00;
+  --mf-asap: #1f4e9c;
+  /* Typography */
+  --mf-font:
+    "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --mf-font-mono:
+    Consolas, "Cascadia Mono", monospace; /* matter numbers, task refs */
+  --mf-fs-xs: 12px;
+  --mf-fs-sm: 13px;
+  --mf-fs-md: 14px;
+  --mf-fs-lg: 16px;
+  --mf-fs-h3: 18px;
+  --mf-fs-h2: 22px;
+  --mf-fs-h1: 28px;
+  --mf-lh: 1.45;
+  /* Spacing (4px base) */
+  --mf-s1: 4px;
+  --mf-s2: 8px;
+  --mf-s3: 12px;
+  --mf-s4: 16px;
+  --mf-s5: 24px;
+  --mf-s6: 32px;
+  --mf-s7: 48px;
+  /* Radius roles (UI update 2, D-01): 4 --mf-radius controls (button, input, search, dropdown trigger, segmented outer corners, checkbox);
+     8 --mf-radius-lg menus, popovers, tooltips, inner boxes; 12 --mf-radius-xl cards, grid frames, dialogs; 6 the navigation pill only (--mf-nav-item-radius; the --mf-radius-md token is retired, #1229);
+     --mf-radius-pill chips and tags; 50% avatars and dots. */
+  --mf-radius: 4px;
+  --mf-radius-lg: 8px;
+  --mf-row-h: 36px; /* menu items and picker options; tables use --mf-grid-row-h (44) and --mf-grid-row-h-compact (36) */
+  --mf-row-h-compact: 32px;
+  --mf-target-min: 24px; /* WCAG 2.2 target size, exceeds 2.1; the one value (styles.scss no longer overrides it) */
+  --mf-tab-h: 40px; /* every mf-tabs strip, normal and dense (D-15) */
+  --mf-fs-figure: 24px; /* big number in a card or tile */
+  --mf-fs-figure-lg: 32px; /* big number in a drawer tile or KPI */
+  --mf-tile-size: 32px; /* page title icon tile (D-21) */
+  /* Dialog and drawer widths (D-32, D-33) */
+  --mf-dialog-w-sm: 416px;
+  --mf-dialog-w: 576px;
+  --mf-dialog-w-lg: 768px;
+  --mf-drawer-w: 520px;
+  --mf-drawer-w-wide: 720px;
+  /* Work grid (mf-task-table: Task Queue, My Work, Pod Work, Matter and Project task lists; ux-spec 5.2). These are the documented
+     numbers; the grid's styles (task-table.scss, src/styles/_tables.scss) carry them as literals, so change both together.
+     --mf-row-h above is for generic tables and pickers, not the work grid. */
+  --mf-grid-row-h: 44px; /* Comfortable row, exact, in every state (2 px padding, 1 px line, at most 39 px of content) */
+  --mf-grid-row-h-compact: 36px; /* Compact row, exact, one line per cell */
+  --mf-grid-line-h: 18px; /* the two-line cells (Title, Due): two lines are 36 px */
+  --mf-grid-head-h: 40px; /* header row and inline filter row */
+  --mf-grid-group-h: 36px; /* Due-sort divider rows, both densities */
+  /* Work grid column widths in CSS px at the default zoom (the grid applies them in rem at the app's 14 px root, so text zoom scales them).
+     -w default, -min and -max a user may resize to (columns panel, header menu, drag). The Title is the spring: no width, 160 px minimum,
+     never stored. A unit test (column-prefs.spec.ts) keeps these equal to WORK_COLUMNS in column-prefs.ts. */
+  --mf-col-actions-w: 48px; /* the row-action column of every grid: fixed, never resized, never stored (#1245) */
+  --mf-col-count-w: 96px; /* a count column (Matters, Open Tasks, Overdue): D-43 */
+  --mf-col-ref-w: 100px;
+  --mf-col-ref-min: 80px;
+  --mf-col-ref-max: 120px;
+  --mf-col-matter-w: 142px;
+  --mf-col-matter-min: 112px;
+  --mf-col-matter-max: 320px;
+  --mf-col-onHoldReason-w: 176px;
+  --mf-col-onHoldReason-min: 120px;
+  --mf-col-onHoldReason-max: 280px;
+  --mf-col-matterName-w: 160px;
+  --mf-col-matterName-min: 112px;
+  --mf-col-matterName-max: 360px;
+  --mf-col-client-w: 140px;
+  --mf-col-matter-type-w: 160px; /* Matters list, optional Matter Type column (off by default, #1301) */
+  --mf-col-current-state-w: 160px; /* Matters list, optional Current State column (off by default, #1301) */
+  --mf-col-email-w: 320px; /* Matter Team grid, Email */
+  --mf-col-title-w: 176px; /* Matter Team grid, Title */
+  --mf-col-client-min: 96px;
+  --mf-col-client-max: 280px;
+  --mf-col-project-w: 140px;
+  --mf-col-project-min: 96px;
+  --mf-col-project-max: 280px;
+  --mf-col-type-w: 128px;
+  --mf-col-type-min: 96px;
+  --mf-col-type-max: 260px;
+  --mf-col-workflow-w: 150px;
+  --mf-col-workflow-min: 96px;
+  --mf-col-workflow-max: 280px;
+  --mf-col-progress-w: 120px;
+  --mf-col-progress-min: 120px;
+  --mf-col-progress-max: 320px;
+  --mf-col-priority-w: 112px;
+  --mf-col-priority-min: 96px;
+  --mf-col-priority-max: 160px;
+  --mf-col-pod-w: 140px;
+  --mf-col-pod-min: 96px;
+  --mf-col-pod-max: 280px;
+  --mf-col-assignee-w: 136px;
+  --mf-col-assignee-min: 112px;
+  --mf-col-assignee-max: 240px;
+  --mf-col-creator-w: 140px;
+  --mf-col-creator-min: 96px;
+  --mf-col-creator-max: 280px;
+  --mf-col-requestor-w: 140px;
+  --mf-col-requestor-min: 96px;
+  --mf-col-requestor-max: 280px;
+  --mf-col-due-w: 152px;
+  --mf-col-due-min: 120px;
+  --mf-col-due-max: 200px;
+  --mf-col-status-w: 140px;
+  --mf-col-status-min: 112px;
+  --mf-col-status-max: 200px;
+  --mf-col-closed-w: 104px;
+  --mf-col-closed-min: 88px;
+  --mf-col-closed-max: 160px;
+  --mf-col-age-w: 64px;
+  --mf-col-age-min: 56px;
+  --mf-col-age-max: 100px;
+  --mf-col-created-w: 104px;
+  --mf-col-created-min: 88px;
+  --mf-col-created-max: 160px;
+  --mf-col-updated-w: 120px;
+  --mf-col-updated-min: 96px;
+  --mf-col-updated-max: 180px;
+  --mf-col-title-min: 120px;
+  --mf-col-assignee-pod-work-w: 160px; /* Assignee on Pod Work, where the "Assign to me" icon button shares the cell (#1227) */
+  --mf-narrow-title-min: 200px; /* the narrow-box rule: autoHide columns drop out while the Title would be narrower than this */
+  /* Clients, Matters and Projects (epic #245, ux-spec 5.9 and S05 to S07): NO token was added. The record pages and lists are built on the
+     tokens above. Numbers they rely on: record lists use the Comfortable work-grid row height (grid-row-h, 44px, in page.scss for .pg-table);
+     the record header title is the H2 size (fs-h2, 22px) and the H3 size (fs-h3, 18px) below 640px; the crumb is fs-sm (13px); the
+     Sensitive note is one 32px line; the summary strip is 28px plus 8px of margin; a phone card is at least 64px; copy button and count
+     hit areas on a card are 44px; every other target is at least target-min (24px). Phone breakpoint 640px (639px is cards, 640px is the
+     table); the Matters Client column shows from 900px and the Projects Client column from 1100px. These are literals in the component
+     styles (record-header.scss, record-card-list.scss, client-overview.scss), like the work grid's, so change docs and styles together. */
+  /* Task page (Task Detail epic #288, ux-spec S10 and S09): NO token was added. The page is built on the tokens above. Numbers it relies on:
+     the facts strip (src/styles/_facts-strip.scss, mf-task-facts and its skeleton) is one rounded box of six tiles with 1px dividers drawn by
+     the gap over --mf-border: six across from 1100px, three by two from 640px, two by three below; a tile is at least 54px tall (label
+     fs-xs, value fs-md semibold); the title is the H2 size (22px, 18px below 640px) in the shared record header (--rh-fs); the Task tab strip
+     is dense (2.5rem tabs, 4px below, #347); the Details panel and its disclosure switch at 1100px
+     (DETAIL_WIDE_QUERY); the Workflow head is one row of at most 56px; the Description is cut at 12 lines (line height 1.4); the Edit dialog
+     is 720px wide; the Create task column is 720px with one input width, --mf-field-max (default 480px for every other form). Status and
+     Hold colours follow section T of the decisions addendum (grey, never a warning colour, for the status note). Phone breakpoint 640px.
+     These are literals in the component styles, like the work grid's, so change docs and styles together. */
+  --mf-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.12);
+  --mf-shadow-2: 0 4px 16px rgba(0, 0, 0, 0.18);
+}
+/* ==========================================================================================================================================
+   UI update (epic #953, UI-01 #954): the shared theme layer, "option A" of the owner decision: ONE set of tokens in code that every component
+   reads. Three layers, so a theme editor or a dark theme can later change values without touching a component:
+     1. Palette   --mf-p-<hue>[-bg|-solid|-line]     raw hues; only this layer and the neutrals above hold hex values.
+     2. Semantic  --mf-sem-<meaning>-*               what a colour MEANS (overdue, at risk, info, healthy, needs a person, critical, neutral).
+     3. Component --mf-status-*, --mf-event-*, --mf-nav-*, --mf-chip-*   the look of one thing; they point at layer 2 or 1 with var().
+   Components use layers 2 and 3 (or the neutrals/feedback tokens above); a component never contains a colour literal (checked by
+   frontend/scripts/check-theme-colours.mjs; contrast of every pairing below checked by check-theme-contrast.mjs). No dark theme and no editor yet.
+   Guide, contrast table and the "change one token" example: docs/ux/theme-guide.md.
+   ========================================================================================================================================== */
+:root {
+  /* 1. Palette. For each hue: text colour on its tint (-fg, 4.5:1 or better), the tint (-bg), a solid for dots, bars and icons on white
+     (-solid, 3:1 or better) and a hairline (-line, decorative). */
+  --mf-p-red-fg: #b42318;
+  --mf-p-red-bg: #fdecea;
+  --mf-p-red-solid: #c62828;
+  --mf-p-red-line: #f4c7c2;
+  --mf-p-amber-fg: #8a4b00;
+  --mf-p-amber-bg: #fff4db;
+  --mf-p-amber-solid: #b45309;
+  --mf-p-amber-line: #f1d9a0;
+  --mf-p-blue-fg: #1f4e9c;
+  --mf-p-blue-bg: #e3ecfa;
+  --mf-p-blue-solid: #1f4e9c;
+  --mf-p-blue-line: #c3d5f2;
+  --mf-p-teal-fg: #0b6b5f;
+  --mf-p-teal-bg: #ddf3ef;
+  --mf-p-teal-solid: #0f766e;
+  --mf-p-teal-line: #b5e0d9;
+  --mf-p-violet-fg: #5b3fa6;
+  --mf-p-violet-bg: #efeafb;
+  --mf-p-violet-solid: #6d4bc2;
+  --mf-p-violet-line: #d6cbf1;
+  --mf-p-orange-fg: #9a3a06;
+  --mf-p-orange-bg: #fdebdc;
+  --mf-p-orange-solid: #c2410c;
+  --mf-p-orange-line: #f5cdae;
+  --mf-p-slate-fg: #475569;
+  --mf-p-slate-bg: #eef1f5;
+  --mf-p-slate-solid: #475569;
+  --mf-p-slate-line: #cbd2dc;
+
+  /* 2. Semantic colours (what the colour says). Red = overdue, amber = at risk, blue = information, teal = healthy / done, violet = needs a
+     person, deep orange = critical, slate = neutral. Colour is never the only signal: the UI always adds an icon or a word. */
+  --mf-sem-overdue-fg: var(--mf-p-red-fg);
+  --mf-sem-overdue-bg: var(--mf-p-red-bg);
+  --mf-sem-overdue-solid: var(--mf-p-red-solid);
+  --mf-sem-overdue-line: var(--mf-p-red-line);
+  --mf-sem-risk-fg: var(--mf-p-amber-fg);
+  --mf-sem-risk-bg: var(--mf-p-amber-bg);
+  --mf-sem-risk-solid: var(--mf-p-amber-solid);
+  --mf-sem-risk-line: var(--mf-p-amber-line);
+  --mf-sem-info-fg: var(--mf-p-blue-fg);
+  --mf-sem-info-bg: var(--mf-p-blue-bg);
+  --mf-sem-info-solid: var(--mf-p-blue-solid);
+  --mf-sem-info-line: var(--mf-p-blue-line);
+  --mf-sem-healthy-fg: var(--mf-p-teal-fg);
+  --mf-sem-healthy-bg: var(--mf-p-teal-bg);
+  --mf-sem-healthy-solid: var(--mf-p-teal-solid);
+  --mf-sem-healthy-line: var(--mf-p-teal-line);
+  /* Note tag chips (MD-36, #1049): a light tint of the colour, dark text and a solid dot. The same ten colours as the Task Type palette. */
+  --mf-tag-slate-bg: #e3e7ee;
+  --mf-tag-slate-fg: #2f3846;
+  --mf-tag-slate-dot: #5b6678;
+  --mf-tag-blue-bg: #dce8fb;
+  --mf-tag-blue-fg: #173c79;
+  --mf-tag-blue-dot: #2b66c4;
+  --mf-tag-teal-bg: #d5f0ee;
+  --mf-tag-teal-fg: #0b4f4a;
+  --mf-tag-teal-dot: #0a7d72;
+  --mf-tag-green-bg: #ddf1e2;
+  --mf-tag-green-fg: #14532d;
+  --mf-tag-green-dot: #1f7a3a;
+  --mf-tag-amber-bg: #fdebb8;
+  --mf-tag-amber-fg: #5c3b00;
+  --mf-tag-amber-dot: #a8590a;
+  --mf-tag-orange-bg: #ffe0cc;
+  --mf-tag-orange-fg: #6b2a00;
+  --mf-tag-orange-dot: #b8400c;
+  --mf-tag-red-bg: #fbdad6;
+  --mf-tag-red-fg: #7a1b12;
+  --mf-tag-red-dot: #c62828;
+  --mf-tag-rose-bg: #fadcea;
+  --mf-tag-rose-fg: #7a1546;
+  --mf-tag-rose-dot: #bf1a5a;
+  --mf-tag-violet-bg: #e9e0fa;
+  --mf-tag-violet-fg: #45248a;
+  --mf-tag-violet-dot: #6a45c0;
+  --mf-tag-indigo-bg: #dfe3fa;
+  --mf-tag-indigo-fg: #2a2f85;
+  --mf-tag-indigo-dot: #4650c0;
+  --mf-tag-neutral-bg: #eef0f4;
+  --mf-tag-neutral-fg: #3b4350;
+  --mf-tag-neutral-dot: #5b6678;
+  /* Note text colours (MD-30, #1034): the fixed palette of the Notes editor; each is dark enough for 4.5:1 on a card and on the quote tint. */
+  --mf-note-red: var(--mf-p-red-fg);
+  --mf-note-orange: var(--mf-p-orange-fg);
+  --mf-note-amber: var(--mf-p-amber-fg);
+  --mf-note-green: #146c2e;
+  --mf-note-teal: var(--mf-p-teal-fg);
+  --mf-note-blue: var(--mf-p-blue-fg);
+  --mf-note-violet: var(--mf-p-violet-fg);
+  --mf-note-slate: var(--mf-p-slate-fg);
+  --mf-sem-person-fg: var(--mf-p-violet-fg);
+  --mf-sem-person-bg: var(--mf-p-violet-bg);
+  --mf-sem-person-solid: var(--mf-p-violet-solid);
+  --mf-sem-person-line: var(--mf-p-violet-line);
+  --mf-sem-critical-fg: var(--mf-p-orange-fg);
+  --mf-sem-critical-bg: var(--mf-p-orange-bg);
+  --mf-sem-critical-solid: var(--mf-p-orange-solid);
+  --mf-sem-critical-line: var(--mf-p-orange-line);
+  --mf-sem-neutral-fg: var(--mf-p-slate-fg);
+  --mf-sem-neutral-bg: var(--mf-p-slate-bg);
+  --mf-sem-neutral-solid: var(--mf-p-slate-solid);
+  --mf-sem-neutral-line: var(--mf-p-slate-line);
+  /* Calendar coverage (epic #1074, decision AT): the traffic light of a day, an alias over the semantic hues so a theme editor changes one place.
+     Good = healthy, Watch = risk, Low = critical (orange), Critical = overdue (red); a closed or non-working day is neutral. Colour is never the
+     only signal: every cell also prints the level word and an icon. */
+  --mf-cov-good-bg: var(--mf-sem-healthy-bg);
+  --mf-cov-good-fg: var(--mf-sem-healthy-fg);
+  --mf-cov-good-solid: var(--mf-sem-healthy-solid);
+  --mf-cov-watch-bg: var(--mf-sem-risk-bg);
+  --mf-cov-watch-fg: var(--mf-sem-risk-fg);
+  --mf-cov-watch-solid: var(--mf-sem-risk-solid);
+  --mf-cov-low-bg: var(--mf-sem-critical-bg);
+  --mf-cov-low-fg: var(--mf-sem-critical-fg);
+  --mf-cov-low-solid: var(--mf-sem-critical-solid);
+  --mf-cov-crit-bg: var(--mf-sem-overdue-bg);
+  --mf-cov-crit-fg: var(--mf-sem-overdue-fg);
+  --mf-cov-crit-solid: var(--mf-sem-overdue-solid);
+  /* Closed and Non-working day cells (and their legend chips): a slate tint a step darker than the grid heading (--mf-surface-alt), so a closed day never looks like
+     the weekday header (#1225). Text on it: --mf-cov-none-fg 5.8:1, red weekend and holiday numbers (--mf-danger) 5.0:1. */
+  --mf-cal-off-bg: #dde2ea;
+  --mf-cov-none-bg: var(--mf-cal-off-bg);
+  --mf-cov-none-fg: var(--mf-sem-neutral-fg);
+  --mf-border-soft: #d5d9e1; /* hairlines inside cards (decorative) */
+  --mf-border-mid: #c0c6d1; /* control and chip outlines that are not the only cue */
+
+  /* 3a. Task status (New, In Progress, On Hold, Completed, Cancelled) as used by the new My Matters and every converted page.
+     fg / bg / line per status. (The older old-st-* tokens were retired in TH-13, #995.) */
+  --mf-status-new-fg: #2b4a78;
+  --mf-status-new-bg: #ffffff;
+  --mf-status-new-line: #8ea2c2;
+  --mf-status-progress-fg: var(--mf-sem-info-fg);
+  --mf-status-progress-bg: var(--mf-sem-info-bg);
+  --mf-status-progress-line: var(--mf-sem-info-line);
+  --mf-status-hold-fg: var(--mf-sem-neutral-fg);
+  --mf-status-hold-bg: var(--mf-sem-neutral-bg);
+  --mf-status-hold-line: var(--mf-sem-neutral-line);
+  --mf-status-done-fg: var(--mf-sem-healthy-fg);
+  --mf-status-done-bg: var(--mf-sem-healthy-bg);
+  --mf-status-done-line: var(--mf-sem-healthy-line);
+  --mf-status-cancel-fg: #374151;
+  --mf-status-cancel-bg: #e5e7eb;
+  --mf-status-cancel-line: #c9ced8;
+
+  /* 3b. Calendar event types (8 fixed types; code list and icon keys come from the API, GET /matter-event-types): text/icon colour on its tint. */
+  --mf-event-court-fg: #1e3a8a;
+  --mf-event-court-bg: #e4e9f7;
+  --mf-event-trial-fg: #86198f;
+  --mf-event-trial-bg: #f6e4f8;
+  --mf-event-deposition-fg: #0b627d;
+  --mf-event-deposition-bg: #d9eff5;
+  --mf-event-production-fg: #4d6310;
+  --mf-event-production-bg: #e9f1ce;
+  --mf-event-filing-fg: #a3194f;
+  --mf-event-filing-bg: #fbe3ec;
+  --mf-event-mediation-fg: #17683a;
+  --mf-event-mediation-bg: #daf1e2;
+  --mf-event-meeting-fg: #6b4600;
+  --mf-event-meeting-bg: #f3e8cf;
+  --mf-event-other-fg: var(--mf-sem-neutral-fg);
+  --mf-event-other-bg: #e8ecf1;
+
+  /* 3c. Navigation panel (colours are the ones above: --mf-nav-*). Geometry of the new menu: a 36 px row with 6 px corners, 19 px icons, 220 px panel,
+     a 56 px rail. The selected item is a white 6 px rounded row with bold type, never a coloured left border. */
+  --mf-nav-w: 220px;
+  --mf-nav-rail-w: 56px;
+  --mf-nav-item-h: 36px;
+  --mf-nav-item-radius: 6px; /* the only 6 px radius (SH-01, #1044; owner decision, #1229) */
+  --mf-nav-icon: 19px;
+  --mf-nav-indent: 36px; /* Projects and Assets under Matters */
+  --mf-nav-heading: #b4c3d8; /* ADMINISTRATION heading (same as --mf-nav-text-muted: 7.0:1 on the panel) */
+
+  /* Radius scale. --mf-radius (4px) and --mf-radius-lg (8px) above stay. */
+  --mf-radius-xl: 12px;
+  --mf-radius-pill: 999px;
+
+  /* Type scale. Body 14 px (--mf-fs-md); page title 22 px (--mf-fs-h2) on every page. */
+  /* Icon sizes (US-06, #1097): ONE scale for every icon of the shared components (the app grows together). xs: tiny marks (a remove x, a sort arrow); sm: chips, badges and icons beside small text;
+     md: buttons, toolbar and row action buttons (dense areas); lg: tabs, switches and the section icon in the page header tile. Shared code never sets an icon size in px or rem (scripts/check-icon-sizes.mjs). */
+  --mf-icon-xs: 12px;
+  --mf-icon-sm: 16px;
+  --mf-icon-md: 18px;
+  --mf-icon-lg: 20px;
+  --mf-icon-xl: 24px; /* ONLY the icon of an empty, error or system-page state block (D-51, D-53; spec 15.2, #1223); controls, tabs, switches and chips stay on xs to lg */
+  --mf-fs-title-lg: 22px;
+  --mf-fs-chip: 12px;
+  --mf-fw-semibold: 600;
+  --mf-fw-bold: 700;
+
+  /* Density: control and chip heights. A later "compact" density only changes these. */
+  --mf-ctl-h: 36px; /* the one control height: button, segmented switch, dropdown, search, input, icon button (36 x 36) */
+  --mf-ctl-h-sm: 32px; /* dense: inside a table cell, the inline filter row, cell editors (was 30) */
+  --mf-chip-h: 26px;
+  --mf-gutter: 16px; /* page gutter of the fixed pages */
+
+  /* Shadows. --mf-shadow-1 and --mf-shadow-2 above stay. */
+  --mf-shadow-card:
+    0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.06);
+  --mf-shadow-pop:
+    0 12px 32px rgba(16, 24, 40, 0.18), 0 2px 6px rgba(16, 24, 40, 0.1);
+
+  /* Focus ring (WCAG 2.4.7 / 1.4.11): 2px solid, 2px offset; --mf-focus on the page, --mf-nav-focus on the navy panel. */
+  --mf-focus-width: 2px;
+  --mf-focus-offset: 2px;
+
+  /* PrimeNG toasts (the preset reads these; values as before). */
+  --mf-toast-success-bg: #e6f4ea;
+  --mf-toast-success-border: #9ed2ad;
+  --mf-toast-success-fg: #14532d;
+  --mf-toast-success-hover: #cde9d5;
+  --mf-toast-info-bg: #e3ecfa;
+  --mf-toast-info-border: #9db9e6;
+  --mf-toast-info-fg: #173c79;
+  --mf-toast-info-hover: #c5d6f2;
+  --mf-toast-warn-bg: #fef3c7;
+  --mf-toast-warn-border: #ebc663;
+  --mf-toast-warn-fg: #78350f;
+  --mf-toast-warn-hover: #fce79a;
+  --mf-toast-error-bg: #fdecea;
+  --mf-toast-error-border: #f4b6ae;
+  --mf-toast-error-fg: #7f1710;
+  --mf-toast-error-hover: #fadbd7;
+  --mf-toast-detail: #1b1f27;
+  --mf-white: #ffffff;
+  --mf-black: #000000; /* print text */
+  --mf-danger-strong: #7f1710; /* hover of a solid danger button (white text 12:1) */
+  --mf-danger-deep: #64120d; /* pressed state of a solid danger button */
+  --mf-primary-contrast: var(--mf-white); /* text on --mf-primary (7.9:1) */
+  --mf-active: var(--mf-p-teal-solid); /* the "active matter" dot of the tree */
+  --mf-tip-bg: #1b1f27; /* tooltip: dark panel, white text 16.0:1 */
+  --mf-tip-fg: #ffffff;
+  --mf-fs-h1-compact: var(--mf-fs-h2); /* fixed-page title, 22 px (the 19 px --mf-fs-title is gone) */
+  --mf-btn-secondary-border: #6b7280;
+}
+/* Dark-theme values of the navigation panel (MM-43, MM-58): a deeper navy. Contrast on #101F33: text 14.6:1, muted 9.3:1, hover text on #1F3A5C
+   10.2:1, focus ring #FFC15A 10.3:1; the selected pill stays white with #17324F text (13.1:1). */
+:root[data-theme="dark"] {
+  --mf-row-hover: #243247;
+  --mf-nav-bg: #101f33;
+  --mf-nav-hover-bg: #1f3a5c;
+  --mf-nav-border: #2e4768;
+}
+:focus-visible {
+  outline: 2px solid var(--mf-focus);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* UI update round 2 (UI-20, #971): the solid fill behind the white glyph of a task type chip, one per named Task Type colour (contrast with --mf-white 3:1 or better for the icon;
+   checked by check-theme-contrast.mjs). A type with no colour takes one of these by its id, so the colour is stable. */
+:root {
+  --mf-tt-slate: #475569;
+  --mf-tt-blue: #1f4e9c;
+  --mf-tt-teal: #0f766e;
+  --mf-tt-green: #15803d;
+  --mf-tt-amber: #b45309;
+  --mf-tt-orange: #c2410c;
+  --mf-tt-red: #c62828;
+  --mf-tt-rose: #be185d;
+  --mf-tt-violet: #6d4bc2;
+  --mf-tt-indigo: #4f46e5;
+}
+
+/* Chart colours (theme rollout TH-01, #983): the hand-built SVG charts and the heat map read these tokens, never a hex value. Values are the proven
+   ones of the former chart-palette.ts / stacked-bar.ts / coverage-model.ts (Okabe-Ito based series, 3:1 on the card and the weekend shade, colour-blind
+   distance checked by trend-palette.spec.ts); each series also keeps its own dash pattern, marker shape and hatch so colour is never the only signal. */
+:root {
+  --mf-chart-1: #0072b2;
+  --mf-chart-2: #c2410c;
+  --mf-chart-3: #00795a;
+  --mf-chart-4: #b0306f;
+  --mf-chart-5: #8a6a00;
+  --mf-chart-6: #6b3fa0;
+  --mf-chart-7: #2f8fbf;
+  --mf-chart-8: #6b7280;
+  /* Age bands (one blue hue, light to dark: older is darker) with the text colour that sits on each fill (4.5:1 or better). */
+  --mf-ramp-1-bg: #dce8f8;
+  --mf-ramp-2-bg: #b5cdf0;
+  --mf-ramp-3-bg: #84a8e0;
+  --mf-ramp-4-bg: #3b6ab4;
+  --mf-ramp-5-bg: #25498a;
+  --mf-ramp-6-bg: #16356b;
+  --mf-ramp-1-fg: #102a54;
+  --mf-ramp-2-fg: #102a54;
+  --mf-ramp-3-fg: #102a54;
+  --mf-ramp-4-fg: #ffffff;
+  --mf-ramp-5-fg: #ffffff;
+  --mf-ramp-6-fg: #ffffff;
+  /* Heat map of completed tasks (Users, coverage): four blue steps with their text colour. */
+  --mf-heat-1-bg: #e8f0fb;
+  --mf-heat-2-bg: #bbd2f3;
+  --mf-heat-3-bg: #7faae6;
+  --mf-heat-4-bg: #1f4e9c;
+  --mf-heat-1-fg: #1b1f27;
+  --mf-heat-2-fg: #1b1f27;
+  --mf-heat-3-fg: #1b1f27;
+  --mf-heat-4-fg: #ffffff;
+  /* Hatch lines drawn over a series fill (white, 60 %): the pattern layer of the charts. */
+  /* A tab or bar that floats over content (swimlane toolbar, sticky column edge). */
+  --mf-shadow-edge: 2px 0 4px -2px rgba(0, 0, 0, 0.25);
+}
+
+/* Shades for scroll shadows, sticky bars and sheets (theme rollout TH-02, #984): black at a fixed opacity, so no component writes rgb(0 0 0 / n). */
+:root {
+  --mf-shade-soft: rgba(0, 0, 0, 0.18);
+  --mf-shade-mid: rgba(0, 0, 0, 0.28);
+  --mf-scrim: rgba(0, 0, 0, 0.4);
+  --mf-shadow-sheet: 0 -6px 24px rgba(0, 0, 0, 0.25);
+  --mf-shadow-bar: 0 -3px 6px -4px var(--mf-shade-soft);
+  --mf-shadow-sticky: 0 4px 6px -3px var(--mf-shade-mid);
+}
+
+/* Dashboard v4 (epic #1063, DB-05 and DB-06): the capacity ramp of the battery (lighter = more free; the same four blues as the heat map) and the unassigned-wait ramp of the gauge
+   (level 0 to 5). Words, numbers and icons always say the same thing, so colour is never the only signal. */
+:root {
+  --mf-cap-0: var(--mf-heat-1-bg);
+  --mf-cap-1: var(--mf-heat-2-bg);
+  --mf-cap-2: var(--mf-heat-3-bg);
+  --mf-cap-3: var(--mf-heat-4-bg);
+  --mf-cap-0-fg: var(--mf-heat-1-fg);
+  --mf-cap-1-fg: var(--mf-heat-2-fg);
+  --mf-cap-2-fg: var(--mf-heat-3-fg);
+  --mf-cap-3-fg: var(--mf-heat-4-fg);
+  /* DB-12 (#1086): the REMAINING capacity steps of the battery: healthy at 50% and more, then one step each time it falls below 40, 30, 20 and 10 percent (yellow-green, amber, orange,
+     red, dark red). The text inside the battery sits on its own pill in the step colour; the status word and icon say the same, so colour is never the only signal. */
+  --mf-rem-0: #0f766e;
+  --mf-rem-1: #c8d93a;
+  --mf-rem-2: #f5b82e;
+  --mf-rem-3: #f08a24;
+  --mf-rem-4: #c62828;
+  --mf-rem-5: #7f1d1d;
+  --mf-rem-0-fg: #ffffff;
+  --mf-rem-1-fg: #1b1f27;
+  --mf-rem-2-fg: #1b1f27;
+  --mf-rem-3-fg: #1b1f27;
+  --mf-rem-4-fg: #ffffff;
+  --mf-rem-5-fg: #ffffff;
+  --mf-wait-0: var(--mf-p-teal-solid);
+  --mf-wait-1: var(--mf-p-amber-line);
+  --mf-wait-2: var(--mf-p-amber-solid);
+  --mf-wait-3: var(--mf-p-orange-solid);
+  --mf-wait-4: var(--mf-p-red-solid);
+  --mf-wait-5: var(--mf-tag-red-fg);
+}
+
