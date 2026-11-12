@@ -101,8 +101,10 @@ describe('PersonPicker', () => {
     await settle(f);
     return ev;
   }
-  const options = (f: { nativeElement: unknown }) =>
-    Array.from(el(f).querySelectorAll<HTMLElement>('[role=option]'));
+  // The list is a floating panel in the body (like the shared dropdown), not inside the picker.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- same shape as the other helpers
+  const options = (_f?: unknown) =>
+    Array.from(document.body.querySelectorAll<HTMLElement>('[role=option]'));
 
   it('is a named combobox that searches People as the person types', async () => {
     const f = await start();
@@ -113,7 +115,9 @@ describe('PersonPicker', () => {
     expect(api.lookupPeople).toHaveBeenCalledWith('lau');
     expect(box.getAttribute('aria-expanded')).toBe('true');
     expect(box.getAttribute('aria-controls')).toBe('pick-list');
-    expect(el(f).querySelector('[role=listbox]')!.getAttribute('aria-label')).toBe('Person');
+    expect(document.body.querySelector('[role=listbox]')!.getAttribute('aria-label')).toBe(
+      'Person',
+    );
   });
 
   it('shows the Internal, External or System User badge, the title and the company or email in every option', async () => {
@@ -127,6 +131,18 @@ describe('PersonPicker', () => {
     expect(second.querySelector('[data-person-kind]')!.textContent!.trim()).toBe('System User');
   });
 
+  it('draws the list in the body as 36 px single-line options with the shared dropdown look, never inside the field', async () => {
+    const f = await start();
+    await type(f, 'a');
+    const list = document.body.querySelector<HTMLElement>('[data-person-panel]')!;
+    expect(list.parentElement).toBe(document.body);
+    expect(el(f).querySelector('[role=listbox]')).toBeNull();
+    expect(getComputedStyle(list).position).toBe('fixed');
+    for (const o of options(f))
+      expect(o.querySelectorAll('br, [data-second-line]')).toHaveLength(0);
+    expect(document.body.querySelector('[data-person-panel] .pp__avatar')).toBeNull();
+  });
+
   it('picks with the standard keys only: Arrow Down, Enter, and Escape closes the list', async () => {
     const f = await start();
     await type(f, 'a');
@@ -137,7 +153,7 @@ describe('PersonPicker', () => {
     await key(f, 'ArrowUp');
     const escape = await key(f, 'Escape');
     expect(escape.defaultPrevented).toBe(true);
-    expect(el(f).querySelector('[role=listbox]')).toBeNull();
+    expect(document.body.querySelector('[role=listbox]')).toBeNull();
     await key(f, 'ArrowDown');
     await key(f, 'ArrowDown');
     await key(f, 'Enter');
@@ -204,10 +220,10 @@ describe('PersonPicker', () => {
     const g = await start(['People.View', 'People.Manage']);
     api.lookupPeople.mockReturnValue(apiError(500, { status: 500, code: 'INTERNAL_ERROR' }));
     await type(g, 'zz');
-    expect(el(g).querySelector('[data-person-note]')!.textContent).toContain(
+    expect(document.body.querySelector('[data-person-note]')!.textContent).toContain(
       PERSON_PICKER_MESSAGES.failed,
     );
-    expect(el(g).querySelector('[role=listbox]')).toBeNull();
+    expect(document.body.querySelector('[role=listbox]')).toBeNull();
     expect(input(g).hasAttribute('aria-controls')).toBe(false);
   });
 
@@ -221,16 +237,18 @@ describe('PersonPicker', () => {
       await type(f, 'Laura Whitfeld');
       expect(api.findSimilarPeople).toHaveBeenCalledWith('Laura', 'Whitfeld');
       const rows = options(f);
-      expect(el(f).querySelector('[data-group]')!.textContent).toBe('Did you mean this person?');
+      expect(document.body.querySelector('[data-group]')!.textContent).toBe(
+        'Did you mean this person?',
+      );
       expect(rows[0].textContent).toContain('Laura Whitfield');
       expect(rows[1].hasAttribute('data-create')).toBe(true);
-      expect(rows[1].textContent).toContain('+ Create "Laura Whitfeld"');
+      expect(rows[1].textContent).toContain('Create "Laura Whitfeld"');
     });
 
     it('does not offer Create for a name that is already a person', async () => {
       const f = await start();
       await type(f, 'Laura Whitfield');
-      expect(el(f).querySelector('[data-create]')).toBeNull();
+      expect(document.body.querySelector('[data-create]')).toBeNull();
       expect(api.findSimilarPeople).not.toHaveBeenCalled();
     });
 
@@ -239,7 +257,7 @@ describe('PersonPicker', () => {
       const notify = vi.spyOn(TestBed.inject(NotificationService), 'success');
       api.lookupPeople.mockReturnValue(ok([]));
       await type(f, 'Dana Whitaker');
-      el(f)
+      document.body
         .querySelector('[data-create]')!
         .dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
       await settle(f);
@@ -272,7 +290,7 @@ describe('PersonPicker', () => {
       const f = await start();
       api.lookupPeople.mockReturnValue(ok([]));
       await type(f, 'Dana');
-      el(f)
+      document.body
         .querySelector('[data-create]')!
         .dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
       await settle(f);
@@ -306,7 +324,7 @@ describe('PersonPicker', () => {
       );
       await type(f, 'Laura Whitfeld');
       const open = async () => {
-        el(f)
+        document.body
           .querySelector('[data-create]')!
           .dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
         await settle(f);
@@ -333,10 +351,13 @@ describe('PersonPicker', () => {
       const f = await start(['People.View']);
       api.lookupPeople.mockReturnValue(ok([]));
       await type(f, 'Dana Whitaker');
-      const create = el(f).querySelector<HTMLElement>('[data-create]')!;
+      const create = document.body.querySelector<HTMLElement>('[data-create]')!;
       expect(create.getAttribute('aria-disabled')).toBe('true');
       expect(create.textContent).toContain('Create "Dana Whitaker" (not available)');
-      expect(create.textContent).toContain(PERSON_PICKER_MESSAGES.noPermission);
+      expect(create.getAttribute('aria-describedby')).toBe('pick-why');
+      expect(document.body.querySelector('#pick-why')!.textContent).toContain(
+        PERSON_PICKER_MESSAGES.noPermission,
+      );
       create.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
       await settle(f);
       expect(el(f).querySelector('[data-person-new]')).toBeNull();

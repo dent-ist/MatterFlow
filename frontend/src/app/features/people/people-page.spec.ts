@@ -98,8 +98,8 @@ describe('PeoplePage', () => {
   /** Calls of the list itself (the hidden-inactive count asks for one row). */
   const listCalls = (size: number) =>
     api.listPeople.mock.calls.filter((c: unknown[]) => c[4] === size).length;
-  const menuItem = (id: string) =>
-    document.body.querySelector<HTMLElement>(`[role=menuitem][data-action="${id}"]`);
+  /** The one row icon button (Deactivate or Reactivate); a system user's row has none. */
+  const toggles = (el: HTMLElement) => el.querySelectorAll<HTMLButtonElement>('[data-row-toggle]');
 
   it('shows "-" in the count chip while the list loads and the total once it is there', async () => {
     const loading = await create(['People.View'], {}, NEVER);
@@ -115,7 +115,7 @@ describe('PeoplePage', () => {
     ).toContain('3');
   });
 
-  it('is the People page: header with the description, then a grid of Name, Type, Title or Role, Company and Status', async () => {
+  it('is the People page: header with the description, then a grid of Name, Email, Type, Title or Role and Company (Status is optional)', async () => {
     const f = await create();
     const el: HTMLElement = f.nativeElement;
     expect(el.querySelector('h1')!.textContent).toContain('People');
@@ -123,13 +123,11 @@ describe('PeoplePage', () => {
       'The shared address book for matter teams and vendor contacts.',
     );
     const heads = Array.from(el.querySelectorAll('thead th')).map((h) => h.textContent!.trim());
-    expect(heads).toEqual(
-      expect.arrayContaining(['Name', 'Type', 'Title or Role', 'Company', 'Status']),
-    );
+    expect(heads).toEqual(['Name', 'Email', 'Type', 'Title or Role', 'Company', 'Actions']);
     expect(api.listPeople).toHaveBeenCalledWith(undefined, undefined, true, 1, 50, undefined);
   });
 
-  it('shows the name button with the email under it, the type badge, the title and the company', async () => {
+  it('shows the name button, the email in its own column, the type badge, the title and the company', async () => {
     const f = await create();
     const el: HTMLElement = f.nativeElement;
     const [first, second, third] = rows(el);
@@ -151,8 +149,9 @@ describe('PeoplePage', () => {
     expect(third.querySelector('[data-person-kind]')!.getAttribute('data-person-kind')).toBe(
       'internal',
     );
-    expect(third.querySelector('[data-person-email]')).toBeNull();
-    expect(first.textContent).toContain('Active');
+    expect(third.querySelector('[data-person-email]')!.textContent).toContain('None');
+    expect(first.querySelector('[data-person-name]')!.textContent).not.toContain('@');
+    expect(el.querySelector('thead')!.textContent).not.toContain('Status');
   });
 
   it('searches, filters by type and status, and sorts through the API', async () => {
@@ -163,7 +162,12 @@ describe('PeoplePage', () => {
     expect(api.listPeople).toHaveBeenLastCalledWith('laura', 'EXTERNAL', false, 1, 50, '-title');
     const el: HTMLElement = f.nativeElement;
     expect(ddSelect(el, 'Filter by Type').value).toBe('EXTERNAL');
-    expect(ddSelect(el, 'Filter by Status').value).toBe('inactive');
+    // Status is an optional column: its filter keeps working and shows as a chip.
+    expect(
+      Array.from(el.querySelectorAll('[data-chip]'))
+        .map((c) => c.textContent)
+        .join(' '),
+    ).toContain('Inactive');
     expect((el.querySelector('[data-list-search] input') as HTMLInputElement).value).toBe('laura');
   });
 
@@ -181,11 +185,13 @@ describe('PeoplePage', () => {
   });
 
   describe('permissions', () => {
-    it('People.Manage: New Person in the header, a "..." menu per row, and the name opens Edit Person', async () => {
+    it('People.Manage: New Person in the header, one icon button per person row (none on a system user), and the name opens Edit Person', async () => {
       const f = await create();
       const el: HTMLElement = f.nativeElement;
       expect(el.querySelector('[data-new-person]')).not.toBeNull();
-      expect(el.querySelectorAll('[data-row-actions] [data-overflow]')).toHaveLength(3);
+      expect(toggles(el)).toHaveLength(2);
+      expect(el.querySelectorAll('[data-row-actions]')).toHaveLength(3);
+      expect(el.querySelector('[data-overflow]')).toBeNull();
       el.querySelector<HTMLButtonElement>('[data-person-name]')!.click();
       await settle(f);
       expect(document.body.querySelector('[data-panel-title]')!.textContent).toContain(
@@ -194,7 +200,7 @@ describe('PeoplePage', () => {
       expect(document.body.textContent).toContain('Laura Whitfield');
     });
 
-    it('People.View only: no New Person, no row menu, the name opens a read-only view with one Close button', async () => {
+    it('People.View only: no New Person, no row actions, the name opens a read-only view with one Close button', async () => {
       const f = await create(['People.View']);
       const el: HTMLElement = f.nativeElement;
       expect(el.querySelector('[data-new-person]')).toBeNull();
@@ -222,34 +228,29 @@ describe('PeoplePage', () => {
     });
   });
 
-  describe('row menu', () => {
-    async function openMenu(f: Awaited<ReturnType<typeof create>>, index: number) {
-      const trigger = (f.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>(
-        '[data-row-actions] [data-overflow]',
-      )[index];
-      trigger.click();
+  describe('row action', () => {
+    async function press(f: Awaited<ReturnType<typeof create>>, index: number) {
+      toggles(f.nativeElement as HTMLElement)[index].click();
       await settle(f);
     }
 
-    it('has Edit Person and Deactivate Person for a person, and only Edit Person for a system user', async () => {
+    it('is one icon button named for the person, and a click on the row opens the person', async () => {
       const f = await create();
-      await openMenu(f, 0);
-      expect(menuItem('edit')).not.toBeNull();
-      expect(menuItem('deactivate')).not.toBeNull();
-      TestBed.resetTestingModule();
-      const g = await create();
-      await openMenu(g, 1);
-      expect(menuItem('edit')).not.toBeNull();
-      expect(menuItem('deactivate')).toBeNull();
+      const el: HTMLElement = f.nativeElement;
+      expect(toggles(el)[0].getAttribute('aria-label')).toBe('Deactivate Laura Whitfield');
+      expect(toggles(el)[1].getAttribute('aria-label')).toBe('Deactivate Helen Park');
+      el.querySelector<HTMLElement>('tbody tr td:nth-child(3)')!.click();
+      await settle(f);
+      expect(document.body.querySelector('[data-panel-title]')!.textContent).toContain(
+        'Edit Person',
+      );
     });
 
     it('deactivates without a question, reloads, and offers Undo that reactivates', async () => {
       const f = await create();
       const undo = TestBed.inject(UndoService);
       api.updatePerson.mockReturnValue(ok({ ...laura, isActive: false, rowVersion: 'RV2' }));
-      await openMenu(f, 0);
-      menuItem('deactivate')!.click();
-      await settle(f);
+      await press(f, 0);
       expect(api.updatePerson).toHaveBeenCalledWith(11, {
         firstName: 'Laura',
         lastName: 'Whitfield',
@@ -271,14 +272,14 @@ describe('PeoplePage', () => {
       );
     });
 
-    it('reactivates an inactive person from the menu', async () => {
+    it('reactivates an inactive person from the icon button', async () => {
       const f = await create(undefined, { status: 'all' }, ok(page({ ...laura, isActive: false })));
       const notify = vi.spyOn(TestBed.inject(NotificationService), 'success');
       api.updatePerson.mockReturnValue(ok({ ...laura, isActive: true }));
-      await openMenu(f, 0);
-      expect(menuItem('deactivate')).toBeNull();
-      menuItem('reactivate')!.click();
-      await settle(f);
+      expect(toggles(f.nativeElement)[0].getAttribute('aria-label')).toBe(
+        'Reactivate Laura Whitfield',
+      );
+      await press(f, 0);
       expect(notify).toHaveBeenCalledWith(
         'Person reactivated',
         'Laura Whitfield is offered in pickers again.',
@@ -291,9 +292,7 @@ describe('PeoplePage', () => {
       api.updatePerson.mockReturnValue(
         apiError(409, { status: 409, code: 'CONCURRENCY_CONFLICT' }),
       );
-      await openMenu(f, 0);
-      menuItem('deactivate')!.click();
-      await settle(f);
+      await press(f, 0);
       expect(notify).toHaveBeenCalled();
       expect(notify.mock.calls[0][0]).toBe("Couldn't deactivate the person.");
     });

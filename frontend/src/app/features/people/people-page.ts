@@ -13,7 +13,6 @@ import { ListFilters } from '../../shared/filters/list-filters';
 import { ListToolbar } from '../../shared/filters/list-toolbar';
 import { ActiveBadge } from '../../shared/ui/badge';
 import { FixedPage } from '../../shared/ui/fixed-page';
-import { MenuAction, ActionMenu } from '../../shared/ui/action-menu';
 import { isActiveParam, parseStatus } from '../../shared/ui/list-helpers';
 import { ServerListPage } from '../../shared/ui/list-query';
 import { PageHeader } from '../../shared/ui/page-header';
@@ -34,6 +33,7 @@ import { PersonDialog } from './person-dialog';
 /** Bone widths of a skeleton row, per column key. */
 const BONES: Record<string, string> = {
   name: '14rem',
+  email: '12rem',
   type: '5rem',
   title: '8rem',
   company: '9rem',
@@ -56,9 +56,9 @@ const SORT_OPTIONS = [
 
 /**
  * People (epic #1373, issue #1375; mockup `docs/design/mockups/vendor-management`, screen `people`): the shared address book for matter teams and vendor contacts. A grid of Name (the
- * button that opens the person, email under it), Type (System User, Internal or External), Title or Role, Company and Status, with Search (name, email, company or title), the Type and
- * Status filters, sorting and paging (25, 50, 100) on the server. `People.View` reads (the name opens a read-only view); `People.Manage` adds New Person, Edit and the "..." menu with
- * Deactivate Person (a person is never deleted; a system user's person cannot be deactivated here). State lives in the address (`q`, `type`, `status`, `page`, `size`, `sort`).
+ * button that opens the person), Email, Type (System User, Internal or External), Title or Role and Company (Status is an optional column), with Search (name, email, company or title), the Type and
+ * Status filters, sorting and paging (25, 50, 100) on the server. `People.View` reads (the name opens a read-only view); `People.Manage` adds New Person and one row icon button,
+ * Deactivate or Reactivate (a person is never deleted; a system user's person cannot be deactivated here). State lives in the address (`q`, `type`, `status`, `page`, `size`, `sort`).
  */
 @Component({
   selector: 'mf-people-page',
@@ -75,7 +75,6 @@ const SORT_OPTIONS = [
     RecordColumns,
     Pager,
     ActiveBadge,
-    ActionMenu,
     PersonTypeBadge,
     PersonDialog,
     Tip,
@@ -83,7 +82,7 @@ const SORT_OPTIONS = [
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../shared/ui/page.scss',
   styles: `
-    /* Name is the spring: one clipped line for the name button and for the email under it (D-45, D-44m). */
+    /* Name is the spring: one clipped line (D-45, D-44m); Email, Title and Company keep their widths whatever the text, cut with an ellipsis. */
     td.pe-name {
       width: 100%;
       max-width: 0;
@@ -93,18 +92,11 @@ const SORT_OPTIONS = [
       line-clamp: 1;
       font-weight: 700;
     }
-    td.pe-name .pe-plain {
-      display: block;
-      font-weight: 700;
-    }
-    .pe-sub {
-      display: block;
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
-      line-height: 1.2;
-    }
     td.pe-clip {
       max-width: 0;
+    }
+    .pe-act {
+      color: var(--mf-text-muted);
     }
     .pe-none {
       color: var(--mf-text-muted);
@@ -161,6 +153,8 @@ const SORT_OPTIONS = [
           [sort]="sort()"
           [defaultSort]="defaultSort"
           [actions]="canManage()"
+          [rowClickable]="true"
+          (rowClick)="open($event)"
           (sorted)="setSort($event)"
           (retry)="load()"
           (clear)="clear()"
@@ -194,10 +188,14 @@ const SORT_OPTIONS = [
               >
                 {{ shown(p) }}
               </button>
+            </td>
+          </ng-template>
+          <ng-template mfCell="email" let-p>
+            <td class="pe-clip">
               @if (p.email) {
-                <span class="pe-sub pg-clip" data-person-email [mfTip]="p.email">{{
-                  p.email
-                }}</span>
+                <span class="pg-clip" data-person-email [mfTip]="p.email">{{ p.email }}</span>
+              } @else {
+                <span class="pe-none" data-person-email>None</span>
               }
             </td>
           </ng-template>
@@ -231,11 +229,22 @@ const SORT_OPTIONS = [
           </ng-template>
           <ng-template mfCell="actions" let-p>
             <td class="mf-col-actions" data-row-actions>
-              <mf-action-menu
-                [floating]="true"
-                [label]="'Actions for ' + shown(p)"
-                [items]="menu(p)"
-              />
+              @if (!p.isSystemUser) {
+                <button
+                  type="button"
+                  class="mf-btn mf-btn--text mf-btn--icon pe-act"
+                  data-row-toggle
+                  [attr.aria-label]="(p.isActive ? 'Deactivate ' : 'Reactivate ') + shown(p)"
+                  [mfTip]="(p.isActive ? 'Deactivate ' : 'Reactivate ') + shown(p)"
+                  (click)="setActive(p, !p.isActive)"
+                >
+                  <i
+                    class="pi"
+                    [class]="p.isActive ? 'pi-ban' : 'pi-replay'"
+                    aria-hidden="true"
+                  ></i>
+                </button>
+              }
             </td>
           </ng-template>
           <div mfGridFoot>
@@ -275,21 +284,42 @@ export class PeoplePage extends ServerListPage<PersonDto> {
   protected readonly bones = BONES;
   protected readonly personKey = (p: PersonDto): number => p.personId;
 
+  /** Default columns at 1366: Name 200+, Email 320, Type 140, Title or Role 176, Company 140, actions 48 = 1024 of the 1098 px; Status is one click away in Columns (D-43a). */
   protected readonly gridDefs = computed((): RecordGridColumn[] => [
     // The spring: no width, so it takes the free room in every state (#1245).
     { key: 'name', label: 'Name', locked: true, sort: 'name', minWidth: '200px' },
     {
+      key: 'email',
+      label: 'Email',
+      width: 'var(--mf-col-email-w)',
+      minWidth: 'var(--mf-col-email-w)',
+    },
+    {
       key: 'type',
       label: 'Type',
       sort: 'type',
-      width: '140px',
-      minWidth: '140px',
+      width: 'var(--mf-col-status-w)',
+      minWidth: 'var(--mf-col-status-w)',
     },
-    { key: 'title', label: 'Title or Role', sort: 'title', width: '180px', minWidth: '180px' },
-    { key: 'company', label: 'Company', sort: 'company', width: '200px', minWidth: '200px' },
+    {
+      key: 'title',
+      label: 'Title or Role',
+      sort: 'title',
+      width: 'var(--mf-col-title-w)',
+      minWidth: 'var(--mf-col-title-w)',
+    },
+    {
+      key: 'company',
+      label: 'Company',
+      sort: 'company',
+      width: 'var(--mf-col-client-w)',
+      minWidth: 'var(--mf-col-client-w)',
+    },
     {
       key: 'status',
       label: 'Status',
+      defaultHidden: true,
+      extra: true,
       width: 'var(--mf-col-status-w)',
       minWidth: 'var(--mf-col-status-w)',
     },
@@ -319,6 +349,7 @@ export class PeoplePage extends ServerListPage<PersonDto> {
     noun: 'people',
     defs: this.defs,
     openByDefault: true,
+    visibleColumns: this.columns,
   });
 
   protected readonly dialogOpen = signal(false);
@@ -372,33 +403,8 @@ export class PeoplePage extends ServerListPage<PersonDto> {
     this.dialogOpen.set(true);
   }
 
-  /** The "..." menu of a row (`People.Manage`): Edit Person, and Deactivate or Reactivate Person (never for a system user: the user is deactivated instead). */
-  protected menu(p: PersonDto): MenuAction[] {
-    const items: MenuAction[] = [
-      { id: 'edit', label: 'Edit Person', icon: 'pi-pencil', run: () => this.open(p) },
-    ];
-    if (!p.isSystemUser) {
-      items.push(
-        p.isActive
-          ? {
-              id: 'deactivate',
-              label: 'Deactivate Person',
-              icon: 'pi-ban',
-              run: () => void this.setActive(p, false),
-            }
-          : {
-              id: 'reactivate',
-              label: 'Reactivate Person',
-              icon: 'pi-replay',
-              run: () => void this.setActive(p, true),
-            },
-      );
-    }
-    return items;
-  }
-
   /** A person is never deleted: deactivating hides them from pickers and is undone from the toast (D-34, reversible). */
-  private async setActive(p: PersonDto, active: boolean): Promise<void> {
+  protected async setActive(p: PersonDto, active: boolean): Promise<void> {
     try {
       const saved = await firstValueFrom(this.api.updatePerson(p.personId, this.body(p, active)));
       if (active) {

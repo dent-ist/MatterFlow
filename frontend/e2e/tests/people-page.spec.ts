@@ -52,6 +52,11 @@ test.describe('People page (#1375)', () => {
     // New Person (External is the default; Company Name shows for External).
     await page.locator('[data-new-person] button, button[data-new-person]').first().click();
     await expect(dialog(page).locator('[data-panel-title]')).toContainText('New Person');
+    // The dialog opens clean; leaving an empty required field says nothing; Create Person does (ux-spec 5: required is checked on submit).
+    await expect(dialog(page).locator('[role=alert]')).toHaveCount(0);
+    await dialog(page).locator('#person-first').focus();
+    await dialog(page).locator('#person-last').focus();
+    await expect(dialog(page).locator('[role=alert]')).toHaveCount(0);
     await dialog(page).getByRole('button', { name: 'Create Person' }).click();
     await expect(dialog(page)).toContainText('Enter a first name.');
     await expect(dialog(page)).toContainText('Enter a last name.');
@@ -71,6 +76,9 @@ test.describe('People page (#1375)', () => {
     await expect(row.locator('[data-person-kind]')).toHaveText('External');
     await expect(row.locator('[data-person-title]')).toHaveText('Court Reporter');
     await expect(row.locator('[data-person-company]')).toHaveText(`Tester Reporting ${token}`);
+    // Name and Email are two columns.
+    await expect(page.getByRole('columnheader', { name: 'Email' })).toHaveCount(1);
+    await expect(row.locator('[data-person-name]')).not.toContainText('@');
     await expect(row.locator('[data-person-email]')).toHaveText(
       `${first.toLowerCase()}@tester.example`,
     );
@@ -84,21 +92,18 @@ test.describe('People page (#1375)', () => {
     await expect(row.locator('[data-person-title]')).toHaveText('Senior Reporter');
 
     // Deactivate (no question), the Undo toast, and the Status filter.
-    await row.locator('[data-overflow]').click();
-    await page.getByRole('menuitem', { name: 'Deactivate Person' }).click();
+    await row.getByRole('button', { name: `Deactivate ${first} Tester` }).click();
     await expect(page.getByText(`${first} Tester deactivated.`)).toBeVisible();
     await expect(row).toHaveCount(0);
     await page.getByRole('button', { name: 'Undo' }).click();
     await expect(page.getByText('Person reactivated')).toBeVisible();
     await expect(row).toHaveCount(1);
-    await row.locator('[data-overflow]').click();
-    await page.getByRole('menuitem', { name: 'Deactivate Person' }).click();
+    await row.getByRole('button', { name: `Deactivate ${first} Tester` }).click();
     await expect(row).toHaveCount(0);
     await page.goto(`/people?q=${first}&status=inactive`);
     await expect(row).toHaveCount(1);
-    await expect(row).toContainText('Inactive');
-    await row.locator('[data-overflow]').click();
-    await page.getByRole('menuitem', { name: 'Reactivate Person' }).click();
+    await expect(page.locator('[data-chip]')).toContainText('Inactive');
+    await row.getByRole('button', { name: `Reactivate ${first} Tester` }).click();
     await expect(page.getByText('Person reactivated')).toBeVisible();
     void seed;
   });
@@ -140,7 +145,41 @@ test.describe('People page (#1375)', () => {
       await expect(page.locator('[data-person-name]')).toHaveCount(2);
       await axeClean(page, `People page at ${size.width}`);
       await shot(page, 'list');
+      // The default columns fit the frame: no sideways scroll inside the grid either (D-43a).
+      const overflow = await page.evaluate(() => {
+        const area = document.querySelector('.mf-scroll-area') as HTMLElement | null;
+        return area ? area.scrollWidth - area.clientWidth : -1;
+      });
+      expect(overflow, `grid scroll at ${size.width}`).toBeGreaterThan(-1);
+      expect(overflow, `grid scroll at ${size.width}`).toBeLessThanOrEqual(0);
       await noSideScroll(page, `People page at ${size.width}`);
+    }
+  });
+
+  test('New Person dialog at both desktop sizes: large two-column form, help follows the choice, axe', async ({
+    page,
+  }) => {
+    for (const size of SIZES) {
+      await page.setViewportSize(size);
+      await page.goto('/people');
+      await page.locator('[data-new-person] button, button[data-new-person]').first().click();
+      const d = dialog(page);
+      await expect(d.locator('[data-type-help]')).toContainText(
+        'External: works outside the firm.',
+      );
+      const box = await d.locator('#person-first').boundingBox();
+      const last = await d.locator('#person-last').boundingBox();
+      expect(Math.abs(box!.y - last!.y)).toBeLessThan(2); // side by side
+      expect((await d.boundingBox())!.width).toBeCloseTo(768, 0);
+      await d.locator('[data-type="INTERNAL"]').click();
+      await expect(d.locator('#person-company')).toHaveCount(0);
+      await expect(d.locator('[data-type-help]')).toContainText('Internal: works at the firm.');
+      await d.locator('[data-type="EXTERNAL"]').click();
+      await expect(d.locator('#person-company')).toBeVisible();
+      await axeClean(page, `New Person dialog at ${size.width}`);
+      await shot(page, 'new-person');
+      await d.getByRole('button', { name: 'Cancel' }).click();
+      await expect(d).toHaveCount(0);
     }
   });
 
@@ -155,10 +194,7 @@ test.describe('People page (#1375)', () => {
     await page.goto(`/people?q=${encodeURIComponent(name.split('\\').pop() ?? name)}`);
     const row = page.locator('tbody tr').first();
     await expect(row.locator('[data-person-kind]')).toHaveText('System User');
-    await row.locator('[data-overflow]').click();
-    await expect(page.getByRole('menuitem', { name: 'Edit Person' })).toBeVisible();
-    await expect(page.getByRole('menuitem', { name: 'Deactivate Person' })).toHaveCount(0);
-    await page.keyboard.press('Escape');
+    await expect(row.locator('[data-row-toggle]')).toHaveCount(0);
     await row.locator('[data-person-name]').click();
     await expect(dialog(page).locator('[data-system-banner]')).toContainText(
       'This person is a system user.',

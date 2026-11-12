@@ -38,7 +38,7 @@ export const PERSON_MESSAGES = {
 const EMAIL_SHAPE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
 
 /**
- * New Person / Edit Person (epic #1373, issue #1375; mockup screen `person-new`, `person-user`): a 576 px `mf-form-dialog` with First Name, Last Name, Internal or External,
+ * New Person / Edit Person (epic #1373, issue #1375; mockup screen `person-new`, `person-user`): a 768 px (large, two-column) `mf-form-dialog` with First Name, Last Name, Internal or External,
  * Title or Role, Email, Company Name (External only) and Comments. A system user opens with the account's name, email and type as plain text (they follow the user; the API refuses
  * a change) and a banner that points to Administration > Users; Title or Role and Comments stay editable. Without `People.Manage` the same dialog is a read-only view
  * with one Close button.
@@ -48,10 +48,17 @@ const EMAIL_SHAPE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
   imports: [FormDialog, TextField, Segmented, PersonTypeBadge, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
+    /* A large dialog (768 px) is the standard two-column form (D-32, D-35): First and Last Name, Title and Email side by side. */
     .pd__form {
-      display: flex;
-      flex-direction: column;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: var(--mf-s4);
+    }
+    .pd__wide {
+      grid-column: 1 / -1;
+    }
+    .pd__seg {
+      width: fit-content;
     }
     .pd__value {
       margin: 0;
@@ -67,6 +74,7 @@ const EMAIL_SHAPE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
   `,
   template: `
     <mf-form-dialog
+      size="large"
       [title]="dialogTitle()"
       [subtitle]="subtitle()"
       [primaryLabel]="person() ? 'Save Changes' : 'Create Person'"
@@ -81,7 +89,7 @@ const EMAIL_SHAPE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
     >
       <form class="pd__form" novalidate (submit)="$event.preventDefault(); save()" data-person-form>
         @if (locked() && canManage()) {
-          <p class="pg-banner pg-banner--info" role="status" data-system-banner>
+          <p class="pg-banner pg-banner--info pd__wide" role="status" data-system-banner>
             <i class="pi pi-lock" aria-hidden="true"></i>
             <span
               >This person is a system user. Name, email and type come from the user account; change
@@ -112,6 +120,12 @@ const EMAIL_SHAPE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
               <mf-person-type-badge [person]="{ personType: type(), isSystemUser: locked() }" />
             </p>
           </div>
+          @if (type() === 'EXTERNAL') {
+            <div class="mf-field" data-plain-field="company">
+              <span class="mf-field__label">Company</span>
+              <p class="pd__value" [class.pd__none]="!company()">{{ company() || 'None' }}</p>
+            </div>
+          }
         } @else {
           <mf-text-field
             inputId="person-first"
@@ -119,7 +133,6 @@ const EMAIL_SHAPE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
             [required]="true"
             [maxLength]="100"
             [error]="firstError()"
-            (blurred)="touched.set(true)"
             [(value)]="first"
           />
           <mf-text-field
@@ -128,12 +141,17 @@ const EMAIL_SHAPE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
             [required]="true"
             [maxLength]="100"
             [error]="lastError()"
-            (blurred)="touched.set(true)"
             [(value)]="last"
           />
           <div class="mf-field">
             <span class="mf-field__label" id="person-type-label">Internal or External</span>
-            <div mfSegmented role="group" aria-labelledby="person-type-label" data-person-type>
+            <div
+              mfSegmented
+              class="pd__seg"
+              role="group"
+              aria-labelledby="person-type-label"
+              data-person-type
+            >
               <button
                 type="button"
                 class="mf-btn"
@@ -155,10 +173,19 @@ const EMAIL_SHAPE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
             </div>
             <span class="mf-field__help" data-type-help>{{
               type() === 'EXTERNAL'
-                ? 'External: works outside the firm, for example a client, a vendor or opposing counsel.'
+                ? 'External: works outside the firm. Add their company.'
                 : 'Internal: works at the firm. A MatterFlow login is managed on the Users page.'
             }}</span>
           </div>
+          @if (type() === 'EXTERNAL') {
+            <mf-text-field
+              inputId="person-company"
+              label="Company"
+              [maxLength]="200"
+              [error]="fieldError('companyName')"
+              [(value)]="company"
+            />
+          }
         }
         @if (canManage()) {
           <mf-text-field
@@ -186,38 +213,24 @@ const EMAIL_SHAPE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
             type="email"
             [maxLength]="254"
             [error]="emailError()"
-            (blurred)="touched.set(true)"
+            (blurred)="emailTouched.set(true)"
             [(value)]="email"
           />
         }
-        @if (type() === 'EXTERNAL') {
-          @if (plain()) {
-            <div class="mf-field" data-plain-field="company">
-              <span class="mf-field__label">External Company Name</span>
-              <p class="pd__value" [class.pd__none]="!company()">{{ company() || 'None' }}</p>
-            </div>
-          } @else {
-            <mf-text-field
-              inputId="person-company"
-              label="External Company Name"
-              [maxLength]="200"
-              [error]="fieldError('companyName')"
-              [(value)]="company"
-            />
-          }
-        }
         @if (canManage()) {
-          <mf-text-field
-            inputId="person-comments"
-            label="Comments"
-            [multiline]="true"
-            [maxLength]="2000"
-            [counter]="true"
-            [error]="fieldError('comments')"
-            [(value)]="comments"
-          />
+          <div class="pd__wide">
+            <mf-text-field
+              inputId="person-comments"
+              label="Comments"
+              [multiline]="true"
+              [maxLength]="2000"
+              [counter]="true"
+              [error]="fieldError('comments')"
+              [(value)]="comments"
+            />
+          </div>
         } @else {
-          <div class="mf-field" data-plain-field="comments">
+          <div class="mf-field pd__wide" data-plain-field="comments">
             <span class="mf-field__label">Comments</span>
             <p class="pd__value" [class.pd__none]="!comments()">{{ comments() || 'None' }}</p>
           </div>
@@ -245,7 +258,7 @@ export class PersonDialog {
   protected readonly email = signal('');
   protected readonly company = signal('');
   protected readonly comments = signal('');
-  protected readonly touched = signal(false);
+  protected readonly emailTouched = signal(false);
   protected readonly submitted = signal(false);
   protected readonly busy = signal(false);
   protected readonly error = signal('');
@@ -269,22 +282,18 @@ export class PersonDialog {
   protected readonly firstError = computed(
     () =>
       this.server()['firstName'] ??
-      ((this.touched() || this.submitted()) && this.first().trim() === ''
-        ? PERSON_MESSAGES.first
-        : null),
+      (this.submitted() && this.first().trim() === '' ? PERSON_MESSAGES.first : null),
   );
   protected readonly lastError = computed(
     () =>
       this.server()['lastName'] ??
-      ((this.touched() || this.submitted()) && this.last().trim() === ''
-        ? PERSON_MESSAGES.last
-        : null),
+      (this.submitted() && this.last().trim() === '' ? PERSON_MESSAGES.last : null),
   );
   protected readonly emailError = computed(() => {
     const value = this.email().trim();
     return (
       this.server()['email'] ??
-      ((this.touched() || this.submitted()) && value !== '' && !EMAIL_SHAPE.test(value)
+      ((this.emailTouched() || this.submitted()) && value !== '' && !EMAIL_SHAPE.test(value)
         ? PERSON_MESSAGES.email
         : null)
     );
@@ -328,7 +337,7 @@ export class PersonDialog {
         this.email.set(p?.email ?? '');
         this.company.set(p?.companyName ?? '');
         this.comments.set(p?.comments ?? '');
-        this.touched.set(false);
+        this.emailTouched.set(false);
         this.submitted.set(false);
         this.server.set({});
         this.error.set('');

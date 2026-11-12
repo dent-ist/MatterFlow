@@ -19,6 +19,7 @@ import { QuietRequests } from '../../core/http/interceptors';
 import { Segmented } from './segmented';
 import { TextField } from './text-field';
 import { PersonTypeBadge } from './person-type';
+import { Tip } from './tip';
 
 /** Words of the form (D-20, D-35): one place so the specs and the picker agree. */
 export const PERSON_FORM_MESSAGES = {
@@ -46,7 +47,7 @@ export function splitName(text: string): { first: string; last: string } {
  */
 @Component({
   selector: 'mf-person-new-form',
-  imports: [TextField, Segmented, PersonTypeBadge],
+  imports: [TextField, Segmented, PersonTypeBadge, Tip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: `
     :host {
@@ -82,16 +83,12 @@ export function splitName(text: string): { first: string; last: string } {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
+    /* The hint is a plain group of rows (D-11a sub-heading, 36 px rows), not a second banner (D-10a: a banner is one line). */
     .pn__similar {
       margin: 0;
-      padding: var(--mf-s3);
-      border: 1px solid var(--mf-sem-info-line);
-      border-radius: var(--mf-radius-lg);
-      background: var(--mf-sem-info-bg);
-      color: var(--mf-sem-info-fg);
     }
     .pn__similar-head {
-      margin: 0 0 var(--mf-s2);
+      margin: 0 0 var(--mf-s1);
       font-size: var(--mf-fs-md);
       font-weight: var(--mf-fw-bold);
     }
@@ -104,22 +101,29 @@ export function splitName(text: string): { first: string; last: string } {
       display: flex;
       align-items: center;
       gap: var(--mf-s2);
-      min-height: var(--mf-ctl-h);
+      min-height: var(--mf-row-h);
     }
     .pn__who {
       flex: 1 1 auto;
       min-width: 0;
-      display: flex;
-      flex-direction: column;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .pn__who b {
       font-weight: var(--mf-fw-semibold);
     }
     .pn__who span {
+      margin-left: var(--mf-s2);
+      color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+    }
+    .pn__seg {
+      width: fit-content;
+    }
+    .pn__similar,
+    .pn__wide {
+      grid-column: 1 / -1;
     }
     .pn__foot {
       display: flex;
@@ -144,7 +148,7 @@ export function splitName(text: string): { first: string; last: string } {
           <ul>
             @for (s of similar(); track s.person.personId) {
               <li data-similar-item>
-                <span class="pn__who"
+                <span class="pn__who" [mfTip]="s.person.displayName + ', ' + meta(s.person)"
                   ><b>{{ s.person.displayName }}</b
                   ><span>{{ meta(s.person) }}</span></span
                 >
@@ -190,6 +194,7 @@ export function splitName(text: string): { first: string; last: string } {
           <span class="mf-field__label" [id]="prefix() + '-type-label'">Internal or External</span>
           <div
             mfSegmented
+            class="pn__seg"
             role="group"
             [attr.aria-labelledby]="prefix() + '-type-label'"
             data-person-type
@@ -213,16 +218,28 @@ export function splitName(text: string): { first: string; last: string } {
               External
             </button>
           </div>
+          <span class="mf-field__help" data-type-help>{{
+            type() === 'EXTERNAL'
+              ? 'External: works outside the firm. Add their company.'
+              : 'Internal: works at the firm.'
+          }}</span>
         </div>
         @if (type() === 'EXTERNAL') {
           <mf-text-field
             [inputId]="prefix() + '-company'"
-            label="Company Name"
+            label="Company"
             [maxLength]="200"
             [error]="serverFields()['companyName'] || null"
             [(value)]="company"
           />
         }
+        <mf-text-field
+          [inputId]="prefix() + '-title-role'"
+          label="Title or Role"
+          [maxLength]="200"
+          [error]="serverFields()['title'] || null"
+          [(value)]="title"
+        />
         <mf-text-field
           [inputId]="prefix() + '-email'"
           label="Email"
@@ -231,13 +248,6 @@ export function splitName(text: string): { first: string; last: string } {
           [error]="emailError()"
           (blurred)="touch('email')"
           [(value)]="email"
-        />
-        <mf-text-field
-          [inputId]="prefix() + '-title-role'"
-          label="Title or Role"
-          [maxLength]="200"
-          [error]="serverFields()['title'] || null"
-          [(value)]="title"
         />
       </form>
       @if (error()) {
@@ -290,12 +300,12 @@ export class PersonNewForm {
   protected readonly firstError = computed(
     () =>
       this.serverFields()['firstName'] ??
-      (this.shows('first') && this.first().trim() === '' ? PERSON_FORM_MESSAGES.first : null),
+      (this.submitted() && this.first().trim() === '' ? PERSON_FORM_MESSAGES.first : null),
   );
   protected readonly lastError = computed(
     () =>
       this.serverFields()['lastName'] ??
-      (this.shows('last') && this.last().trim() === '' ? PERSON_FORM_MESSAGES.last : null),
+      (this.submitted() && this.last().trim() === '' ? PERSON_FORM_MESSAGES.last : null),
   );
   protected readonly emailError = computed(() => {
     const value = this.email().trim();
@@ -331,6 +341,7 @@ export class PersonNewForm {
     void this.check();
   }
 
+  /** Format errors show after the field is left (blur) or on submit; required fields only on submit (ux-spec 5: validate on blur for format, on submit for required). */
   private shows(name: string): boolean {
     return this.submitted() || this.touched().has(name);
   }

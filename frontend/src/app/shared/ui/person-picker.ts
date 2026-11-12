@@ -1,14 +1,22 @@
+import { DOCUMENT } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
+  EmbeddedViewRef,
   OnDestroy,
+  TemplateRef,
+  ViewContainerRef,
   computed,
+  effect,
   inject,
   input,
   model,
   output,
   signal,
+  untracked,
+  viewChild,
 } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import {
@@ -22,8 +30,8 @@ import { QuietRequests } from '../../core/http/interceptors';
 import { NotificationService } from '../../core/notify/notification.service';
 import { PersonNewForm, splitName } from './person-new-form';
 import { PersonTypeBadge } from './person-type';
-import { personInitials } from './person-initials';
 import { shortAccountName } from './person-name';
+import { Tip } from './tip';
 
 /** The words of the picker (D-20, D-44x): one place, so the specs and the pages that use it agree. */
 export const PERSON_PICKER_MESSAGES = {
@@ -64,7 +72,7 @@ export function lookupItemOf(p: PersonDto): PersonLookupItem {
 
 /**
  * The person combobox (epic #1373, issue #1375; the mockup `docs/design/mockups/vendor-management`, "Edit Team"): type to search People (`GET /api/v1/people/lookup`: name, email, company
- * or title), pick one. Every option shows the avatar initials, the name, "title, company or email" and the Internal, External or System User badge. Free text is never a value:
+ * or title), pick one. Every option is one 36 px line: the name, a muted "title, company or email" (cut with an ellipsis, the whole is the tooltip) and "title, company or email" and the Internal, External or System User badge. Free text is never a value:
  * `selected` is set only by picking a record (the page reads `draftChange` to say "Choose a person from the list." when text is typed and nothing is picked).
  *
  * With `People.Manage` a typed name that is not in People also offers `+ Create "name"`, which opens the inline `mf-person-new-form` (saves with `POST /api/v1/people` and selects the
@@ -81,7 +89,7 @@ export function lookupItemOf(p: PersonDto): PersonLookupItem {
  */
 @Component({
   selector: 'mf-person-picker',
-  imports: [PersonTypeBadge, PersonNewForm],
+  imports: [PersonTypeBadge, PersonNewForm, Tip],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: './form-field.scss',
   styles: `
@@ -105,120 +113,113 @@ export function lookupItemOf(p: PersonDto): PersonLookupItem {
     .pp__box .mf-field__input {
       padding-left: calc(var(--mf-s3) + var(--mf-icon-md) + var(--mf-s2));
     }
-    /* In the flow, not floating: a dialog body scrolls and would clip a floating list; the list pushes the content below it down while it is open. */
-    .pp__list {
-      margin: var(--mf-s1) 0 0;
-      padding: var(--mf-s1);
-      list-style: none;
-      max-height: 18rem;
-      overflow-y: auto;
-      background: var(--mf-surface);
+    .pp__new {
+      margin-top: var(--mf-s2);
+    }
+    .pp__chosen {
+      display: flex;
+      align-items: center;
+      gap: var(--mf-s2);
+      min-height: var(--mf-ctl-h);
+      padding: var(--mf-s1) var(--mf-s3);
       border: 1px solid var(--mf-border-soft);
       border-radius: var(--mf-radius-lg);
-      box-shadow: var(--mf-shadow-pop);
+      background: var(--mf-surface);
     }
-    .pp__note {
-      padding: var(--mf-s3);
+    .pp__chosen .pi {
+      flex: none;
       color: var(--mf-text-muted);
+      font-size: var(--mf-icon-md);
+    }
+    .pp__grow {
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .pp__name {
+      font-weight: var(--mf-fw-semibold);
+    }
+    .pp__meta {
+      margin-left: var(--mf-s2);
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
+    }
+    /* The list is drawn in the body, like the shared dropdown (see the panel template): the styles follow it there. */
+    .pp__panel {
+      position: fixed;
+      z-index: 3000;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid var(--mf-border-soft);
+      border-radius: var(--mf-radius-lg);
+      background: var(--mf-surface);
+      box-shadow: var(--mf-shadow-pop);
+      color: var(--mf-text);
       font-size: var(--mf-fs-md);
     }
-    .pp__group {
+    .pp__list {
+      flex: 1;
+      margin: 0;
+      padding: var(--mf-s1);
+      overflow: auto;
+      list-style: none;
+    }
+    .pp__gh {
       padding: var(--mf-s2) var(--mf-s3) var(--mf-s1);
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
       font-weight: var(--mf-fw-semibold);
     }
+    .pp__why {
+      padding: 0 var(--mf-s3) var(--mf-s2);
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm);
+    }
+    .pp__note {
+      padding: var(--mf-s3);
+      color: var(--mf-text-muted);
+    }
     .pp__opt {
       display: flex;
       align-items: center;
-      gap: var(--mf-s3);
-      min-height: 48px;
+      gap: var(--mf-s2);
+      min-height: var(--mf-row-h);
+      box-sizing: border-box;
       padding: var(--mf-s1) var(--mf-s3);
       border-radius: var(--mf-radius);
       cursor: pointer;
     }
+    .pp__opt > .pi {
+      flex: none;
+      color: var(--mf-text-muted);
+      font-size: var(--mf-icon-md);
+    }
     .pp__opt:hover {
-      background: var(--mf-row-hover);
+      background: var(--mf-surface-alt);
     }
     .pp__opt--active {
       background: var(--mf-selected-bg);
-      box-shadow: inset 0 0 0 2px var(--mf-primary);
     }
     .pp__opt[aria-disabled='true'] {
       color: var(--mf-text-disabled);
-      cursor: default;
+      cursor: not-allowed;
+    }
+    .pp__opt[aria-disabled='true'] .pp__meta,
+    .pp__opt[aria-disabled='true'] > .pi {
+      color: var(--mf-text-disabled);
     }
     .pp__opt[aria-disabled='true']:hover {
       background: transparent;
     }
-    .pp__avatar {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      flex: none;
-      width: 28px;
-      height: 28px;
-      border-radius: var(--mf-radius-pill);
-      background: var(--mf-sem-info-bg);
-      color: var(--mf-sem-info-fg);
-      font-size: var(--mf-fs-xs);
-      font-weight: var(--mf-fw-bold);
-    }
-    .pp__avatar--add {
-      background: var(--mf-primary);
-      color: var(--mf-primary-contrast);
-    }
-    .pp__avatar--off {
-      background: var(--mf-surface-alt);
-      color: var(--mf-text-disabled);
-    }
-    .pp__txt {
-      flex: 1 1 auto;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-    }
-    .pp__name {
-      font-weight: var(--mf-fw-semibold);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .pp__create .pp__name {
+    .pp__create .pp__grow {
       color: var(--mf-link);
+      font-weight: var(--mf-fw-semibold);
     }
-    .pp__meta {
-      color: var(--mf-text-muted);
-      font-size: var(--mf-fs-sm);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .pp__opt[aria-disabled='true'] .pp__name,
-    .pp__opt[aria-disabled='true'] .pp__meta {
+    .pp__create[aria-disabled='true'] .pp__grow {
       color: var(--mf-text-disabled);
-    }
-    /* The reason of a disabled Create option is a sentence: it wraps (the names stay on one line). */
-    .pp__opt[aria-disabled='true'] .pp__meta[data-create-note] {
-      white-space: normal;
-    }
-    .pp__chosen {
-      display: flex;
-      align-items: center;
-      gap: var(--mf-s3);
-      min-height: var(--mf-ctl-h);
-      padding: var(--mf-s2) var(--mf-s3);
-      border: 1px solid var(--mf-border-soft);
-      border-radius: var(--mf-radius-lg);
-      background: var(--mf-surface);
-    }
-    .pp__name-line {
-      display: flex;
-      align-items: center;
-      gap: var(--mf-s2);
-    }
-    .pp__new {
-      margin-top: var(--mf-s2);
     }
   `,
   template: `
@@ -231,14 +232,12 @@ export function lookupItemOf(p: PersonDto): PersonLookupItem {
       </label>
       @if (selected(); as s) {
         <div class="pp__chosen" data-chosen>
-          <span class="pp__avatar" aria-hidden="true">{{ initials(s.displayName) }}</span>
-          <span class="pp__txt">
-            <span class="pp__name-line"
-              ><span class="pp__name" data-chosen-name>{{ shown(s.displayName) }}</span
-              ><mf-person-type-badge [person]="s"
-            /></span>
-            <span class="pp__meta">{{ metaOf(s, true) }}</span>
-          </span>
+          <i class="pi pi-user" aria-hidden="true"></i>
+          <span class="pp__grow" [mfTip]="detail(s)"
+            ><span class="pp__name" data-chosen-name>{{ shown(s.displayName) }}</span
+            ><span class="pp__meta">{{ metaOf(s) }}</span></span
+          >
+          <mf-person-type-badge [person]="s" />
           @if (!locked()) {
             <button
               type="button"
@@ -254,7 +253,7 @@ export function lookupItemOf(p: PersonDto): PersonLookupItem {
         </div>
       } @else {
         <div class="pp__box">
-          <div class="pp__field">
+          <div class="pp__field" #box>
             <i class="pi pi-search" aria-hidden="true"></i>
             <input
               #field
@@ -268,7 +267,9 @@ export function lookupItemOf(p: PersonDto): PersonLookupItem {
               [placeholder]="placeholder()"
               [disabled]="disabled()"
               [attr.aria-expanded]="showList()"
-              [attr.aria-controls]="listShown() ? inputId() + '-list' : null"
+              [attr.aria-controls]="
+                listShown() && open() && !creating() ? inputId() + '-list' : null
+              "
               [attr.aria-activedescendant]="activeId()"
               [attr.aria-invalid]="error() ? 'true' : null"
               [attr.aria-describedby]="describedBy()"
@@ -279,75 +280,6 @@ export function lookupItemOf(p: PersonDto): PersonLookupItem {
               (blur)="close()"
             />
           </div>
-          @if (open() && !creating()) {
-            @if (listShown()) {
-              <ul
-                class="pp__list"
-                role="listbox"
-                [attr.aria-label]="label()"
-                [id]="inputId() + '-list'"
-                data-person-list
-              >
-                @for (r of rows(); track r.id; let i = $index) {
-                  @if (r.heading) {
-                    <li class="pp__group" role="presentation" data-group>{{ r.heading }}</li>
-                  }
-                  <li
-                    class="pp__opt"
-                    role="option"
-                    [id]="inputId() + '-opt-' + i"
-                    [class.pp__opt--active]="i === active()"
-                    [class.pp__create]="r.kind === 'create'"
-                    [attr.aria-selected]="i === active()"
-                    [attr.aria-disabled]="r.disabled ? 'true' : null"
-                    [attr.data-person-id]="r.person?.personId ?? null"
-                    [attr.data-create]="r.kind === 'create' ? '' : null"
-                    (mousedown)="$event.preventDefault(); choose(r)"
-                  >
-                    @if (r.kind === 'create') {
-                      <span
-                        class="pp__avatar"
-                        [class.pp__avatar--add]="!r.disabled"
-                        [class.pp__avatar--off]="!!r.disabled"
-                        aria-hidden="true"
-                        ><i class="pi" [class]="r.disabled ? 'pi-lock' : 'pi-plus'"></i
-                      ></span>
-                      <span class="pp__txt">
-                        <span class="pp__name">{{
-                          r.disabled
-                            ? 'Create "' + r.text + '" (not available)'
-                            : '+ Create "' + r.text + '"'
-                        }}</span>
-                        <span class="pp__meta" data-create-note>{{
-                          r.disabled || 'Saved to People and selected here'
-                        }}</span>
-                      </span>
-                    } @else {
-                      <span
-                        class="pp__avatar"
-                        [class.pp__avatar--off]="!!r.disabled"
-                        aria-hidden="true"
-                        >{{ initials(r.person!.displayName) }}</span
-                      >
-                      <span class="pp__txt">
-                        <span class="pp__name">{{ shown(r.person!.displayName) }}</span>
-                        <span class="pp__meta">{{ metaOf(r.person!, false) }}</span>
-                      </span>
-                      @if (r.disabled) {
-                        <span class="pp__meta" data-option-note>{{ r.disabled }}</span>
-                      } @else {
-                        <mf-person-type-badge [person]="r.person!" />
-                      }
-                    }
-                  </li>
-                }
-              </ul>
-            } @else {
-              <div class="pp__list pp__note" role="status" data-person-note>
-                {{ note() }}
-              </div>
-            }
-          }
         </div>
         @if (creating()) {
           <div class="pp__new">
@@ -370,6 +302,77 @@ export function lookupItemOf(p: PersonDto): PersonLookupItem {
         </p>
       }
     </div>
+
+    <ng-template #panelTpl>
+      <div
+        class="pp__panel"
+        data-person-panel
+        [style.left.px]="pos().left"
+        [style.top.px]="pos().above ? null : pos().top"
+        [style.bottom.px]="pos().above ? pos().bottom : null"
+        [style.width.px]="pos().width"
+        [style.maxHeight.px]="pos().maxHeight"
+      >
+        @if (listShown()) {
+          <ul
+            class="pp__list"
+            role="listbox"
+            [attr.aria-label]="label()"
+            [id]="inputId() + '-list'"
+            data-person-list
+          >
+            @for (r of rows(); track r.id; let i = $index) {
+              @if (r.heading) {
+                <li class="pp__gh" role="presentation" data-group>{{ r.heading }}</li>
+              }
+              <li
+                class="pp__opt"
+                role="option"
+                [id]="inputId() + '-opt-' + i"
+                [class.pp__opt--active]="i === active()"
+                [class.pp__create]="r.kind === 'create'"
+                [attr.aria-selected]="i === active()"
+                [attr.aria-disabled]="r.disabled ? 'true' : null"
+                [attr.aria-describedby]="
+                  r.kind === 'create' && r.disabled ? inputId() + '-why' : null
+                "
+                [attr.data-person-id]="r.person?.personId ?? null"
+                [attr.data-create]="r.kind === 'create' ? '' : null"
+                [mfTip]="r.kind === 'create' ? r.disabled || null : detail(r.person!)"
+                (mousedown)="$event.preventDefault(); choose(r)"
+              >
+                @if (r.kind === 'create') {
+                  <i class="pi" [class]="r.disabled ? 'pi-lock' : 'pi-plus'" aria-hidden="true"></i>
+                  <span class="pp__grow">{{
+                    r.disabled
+                      ? 'Create "' + r.text + '" (not available)'
+                      : 'Create "' + r.text + '"'
+                  }}</span>
+                } @else {
+                  <i class="pi pi-user" aria-hidden="true"></i>
+                  <span class="pp__grow"
+                    ><span class="pp__name">{{ shown(r.person!.displayName) }}</span
+                    ><span class="pp__meta">{{ metaOf(r.person!) }}</span></span
+                  >
+                  @if (r.disabled) {
+                    <span class="pp__meta" data-option-note>{{ r.disabled }}</span>
+                  } @else {
+                    <mf-person-type-badge [person]="r.person!" />
+                  }
+                }
+              </li>
+              @if (r.kind === 'create' && r.disabled) {
+                <li class="pp__why" role="presentation" [id]="inputId() + '-why'" data-create-note>
+                  {{ r.disabled }}
+                </li>
+              }
+            }
+          </ul>
+        } @else {
+          <div class="pp__note" role="status" data-person-note>{{ note() }}</div>
+        }
+      </div>
+    </ng-template>
   `,
 })
 export class PersonPicker implements OnDestroy {
@@ -403,6 +406,19 @@ export class PersonPicker implements OnDestroy {
   private readonly quiet = inject(QuietRequests);
   private readonly notify = inject(NotificationService);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly doc = inject(DOCUMENT);
+  private readonly vcr = inject(ViewContainerRef);
+  private readonly tpl = viewChild.required<TemplateRef<unknown>>('panelTpl');
+  private readonly box = viewChild<ElementRef<HTMLElement>>('box');
+  private view: EmbeddedViewRef<unknown> | null = null;
+  protected readonly pos = signal({
+    left: 0,
+    top: 0,
+    bottom: 0,
+    above: false,
+    width: 280,
+    maxHeight: 320,
+  });
 
   protected readonly canCreate = computed(() => this.auth.has('People.Manage'));
   protected readonly text = signal('');
@@ -477,22 +493,84 @@ export class PersonPicker implements OnDestroy {
     return parts.length ? parts.join(' ') : null;
   });
 
+  constructor() {
+    inject(DestroyRef).onDestroy(() => this.destroyPanel());
+    // The list is a floating panel in the body, like the shared dropdown (it is never clipped by a scrolling dialog body): drawn while the list is open.
+    effect(() => {
+      const wanted = this.open() && !this.creating() && !!this.box();
+      this.rows();
+      this.note();
+      untracked(() => (wanted ? this.showPanel() : this.destroyPanel()));
+    });
+  }
+
   ngOnDestroy(): void {
     clearTimeout(this.timer);
   }
+
+  private showPanel(): void {
+    const box = this.box()?.nativeElement;
+    if (!box) return;
+    const r = box.getBoundingClientRect();
+    const view = this.doc.defaultView;
+    const vw = view?.innerWidth ?? 1024;
+    const vh = view?.innerHeight ?? 768;
+    const below = vh - r.bottom - 16;
+    const above = r.top - 16;
+    const flip = below < 200 && above > below;
+    const cap =
+      20 * (parseFloat(view?.getComputedStyle(this.doc.documentElement).fontSize ?? '') || 14);
+    this.pos.set({
+      left: Math.max(8, Math.min(r.left, vw - r.width - 8)),
+      top: r.bottom + 4,
+      bottom: vh - r.top + 4,
+      above: flip,
+      width: Math.min(r.width, vw - 16),
+      maxHeight: flip ? Math.min(cap, above) : Math.max(120, Math.min(cap, below)),
+    });
+    if (this.view) {
+      this.view.detectChanges();
+      return;
+    }
+    this.view = this.vcr.createEmbeddedView(this.tpl());
+    this.view.detectChanges();
+    for (const node of this.view.rootNodes) this.doc.body.appendChild(node as Node);
+    view?.addEventListener('resize', this.away);
+    view?.addEventListener('scroll', this.scrolled, true);
+  }
+
+  private destroyPanel(): void {
+    if (!this.view) return;
+    const view = this.doc.defaultView;
+    view?.removeEventListener('resize', this.away);
+    view?.removeEventListener('scroll', this.scrolled, true);
+    this.view.destroy();
+    this.view = null;
+  }
+
+  private readonly away = (): void => this.close();
+  /** A scroll outside the list moves the field away from it: the list closes (the list's own scroll does not). */
+  private readonly scrolled = (e: Event): void => {
+    const panel = this.view?.rootNodes.find((n) => n instanceof HTMLElement) as
+      HTMLElement | undefined;
+    if (!(e.target instanceof Node && panel?.contains(e.target))) this.close();
+  };
 
   /** D-62: a bare Windows account is shown without its domain. */
   protected shown(name: string): string {
     return shortAccountName(name);
   }
 
-  protected initials(name: string): string {
-    return personInitials(name);
+  /** The one muted line after the name: title, then company or email (cut with an ellipsis; the whole is the tooltip). */
+  protected metaOf(p: PersonLookupItem): string {
+    return [p.title, p.companyName || p.email].filter(Boolean).join(', ');
   }
 
-  protected metaOf(p: PersonLookupItem, withEmail: boolean): string {
-    const first = p.companyName || p.email;
-    return [p.title, first, withEmail && p.companyName ? p.email : null].filter(Boolean).join(', ');
+  /** Tooltip: everything known about the person. */
+  protected detail(p: PersonLookupItem): string {
+    return [shortAccountName(p.displayName), p.title, p.companyName, p.email]
+      .filter(Boolean)
+      .join(', ');
   }
 
   protected onInput(event: Event): void {

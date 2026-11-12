@@ -68,7 +68,7 @@ describe('PersonDialog', () => {
     return f;
   }
 
-  it('New Person: a 576 px form with First Name, Last Name, Internal or External, Title or Role, Email, Company Name and Comments', async () => {
+  it('New Person: a large (768 px) two-column form with First Name, Last Name, Internal or External, Company, Title or Role, Email and Comments', async () => {
     await start();
     expect(q('[data-panel-title]')!.textContent).toContain('New Person');
     const labels = Array.from(
@@ -81,10 +81,46 @@ describe('PersonDialog', () => {
     expect(labels).toContain('Internal or External');
     expect(labels).toContain('Title or Role');
     expect(labels.join('|')).toContain('Email');
-    expect(labels).toContain('External Company Name');
+    expect(labels).toContain('Company');
     expect(labels.join('|')).toContain('Comments');
     expect(q('[data-type="EXTERNAL"]')!.getAttribute('aria-pressed')).toBe('true');
     expect(q('.mf-formdlg')).not.toBeNull();
+    // Large size (D-32): the two-column form of D-35; optional fields carry no mark.
+    expect(getComputedStyle(q('.mf-formdlg')!).width).toBe('var(--mf-dialog-w-lg)');
+    expect(getComputedStyle(q('[data-person-form]')!).gridTemplateColumns).toContain('repeat(2');
+    expect(labels.join('|')).not.toContain('optional');
+  });
+
+  it('opens clean: no error before the person has touched the form; format on blur, required on submit', async () => {
+    const f = await start();
+    const form = q('[data-person-form]')!;
+    expect(form.querySelector('[role=alert]')).toBeNull();
+    // Leaving an empty required field shows nothing yet (ux-spec 5: required is checked on submit).
+    (q('#person-first') as HTMLInputElement).dispatchEvent(new Event('blur'));
+    await settle(f);
+    expect(form.querySelector('[role=alert]')).toBeNull();
+    // A bad email shows once the field is left.
+    type('person-email', 'not-an-email');
+    (q('#person-email') as HTMLInputElement).dispatchEvent(new Event('blur'));
+    await settle(f);
+    expect(form.textContent).toContain(PERSON_MESSAGES.email);
+    expect(form.textContent).not.toContain(PERSON_MESSAGES.first);
+    save();
+    await settle(f);
+    expect(form.textContent).toContain(PERSON_MESSAGES.first);
+    expect(form.textContent).toContain(PERSON_MESSAGES.last);
+  });
+
+  it('the help under Internal or External follows the choice, and Company is only for External', async () => {
+    const f = await start();
+    expect(q('[data-type-help]')!.textContent).toContain(
+      'External: works outside the firm. Add their company.',
+    );
+    expect(q('#person-company')).not.toBeNull();
+    (q('[data-type="INTERNAL"]') as HTMLButtonElement).click();
+    await settle(f);
+    expect(q('[data-type-help]')!.textContent).toContain('Internal: works at the firm.');
+    expect(q('#person-company')).toBeNull();
   });
 
   it('hides the company for an Internal person and sends none', async () => {
