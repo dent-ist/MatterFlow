@@ -49,6 +49,7 @@ import {
 import { EntityPicker, PickerOption } from '../../../shared/ui/entity-picker';
 import { FormDialog } from '../../../shared/ui/form-dialog';
 import { NumberInput, numberProblem } from '../../../shared/ui/number-input';
+import { TagChips } from '../../../shared/ui/tag-chips';
 import { TextField } from '../../../shared/ui/text-field';
 import { AI_OPTIONS } from './matter-ai';
 
@@ -58,6 +59,21 @@ function clientOption(c: ClientResponse): PickerOption {
 
 function idText(ref: MatterListRef | undefined): string {
   return ref ? String(ref.id) : '';
+}
+
+/** The ids of a matter's Matter Types as the dropdown holds them (text), in the order the API lists them. */
+function idTexts(refs: readonly MatterListRef[] | undefined): string[] {
+  return (refs ?? []).map((r) => String(r.id));
+}
+
+/** Whether two id lists hold the same ids, whatever the order. */
+function sameIds(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((id) => b.includes(id));
+}
+
+/** The Matter Type ids the API takes (the full set; an empty list clears it). */
+function typeIdsToSend(values: readonly string[]): number[] {
+  return values.map(Number).filter((id) => Number.isInteger(id) && id > 0);
 }
 
 /** The id a pick-list dropdown holds (`''` is "Not Set") as the id the API takes (undefined clears the field). */
@@ -90,9 +106,32 @@ export function pickListItems(
 }
 
 /**
+ * The choices of the Matter Types multi-select (epic #1368): the ACTIVE items in the administrator's order, no "Not Set" row (nothing chosen is "Not Set"). A type the matter
+ * already has that was deactivated since shows as "Name (inactive)" for as long as it stays chosen (unchecking it removes it from the list for good); it is never offered to a
+ * matter that does not have it.
+ */
+export function pickListItemsMulti(
+  list: readonly MatterListItemView[],
+  current: readonly MatterListRef[],
+  selected: readonly string[],
+): DropdownItem[] {
+  const active = list.filter((i) => i.isActive).sort((a, b) => a.sortOrder - b.sortOrder);
+  const kept = current.filter(
+    (c) => selected.includes(String(c.id)) && !active.some((i) => i.id === c.id),
+  );
+  return [
+    ...kept.map((c) => ({
+      value: String(c.id),
+      label: c.isActive ? c.name : `${c.name} (inactive)`,
+    })),
+    ...active.map((i) => ({ value: String(i.id), label: i.name })),
+  ];
+}
+
+/**
  * THE matter form (MD-43, #1061; owner decision 2026-11-03): one pop-up for "+ New Matter" and for Edit on the Summary, so the same information is entered the same way.
  * Fields, in this order: Client, Matter number, CM Number (a read-only preview of client number plus matter number, never typed), Matter name, Sensitive matter, AI allowed,
- * Matter Type, Current State, DMS Path, DFS Path (epic #1298; the four are optional and "Not Set" is the first choice of the two lists) and the custom fields. On Save the four
+ * Matter Types (several can be chosen, epic #1368), Current State, DMS Path, DFS Path (epic #1298; the four are optional and "Not Set" is the first choice of the two lists) and the custom fields. On Save the four
  * are sent as full values (the API treats them so: leaving one out clears it), starting from the matter's own. Labels, help texts, validation messages, the unsaved-changes question and the footer (Cancel left, primary right) are the same in both modes.
  *
  * New (`matter` null): Client and Matter number are editable (`clientId` preselects the client, from a Client page). Edit (`matter` given): Client and Matter number sit in the
@@ -111,6 +150,7 @@ export function pickListItems(
     EntityPicker,
     NumberInput,
     TextField,
+    TagChips,
     CustomFieldsEditor,
     RouterLink,
   ],
@@ -315,18 +355,25 @@ export function pickListItems(
         </div>
 
         <div class="mf-field">
-          <label class="mf-field__label" for="matter-type">Matter Type</label>
+          <label class="mf-field__label" for="matter-type">Matter Types</label>
           <mf-dropdown
             field
+            [multi]="true"
             buttonId="matter-type"
-            label="Matter Type"
+            label="Matter Types"
+            placeholder="Not Set"
             data-matter-type
             [items]="typeItems()"
             [search]="typeItems().length > 10"
-            [value]="matterTypeId()"
-            (valueChange)="matterTypeId.set($any($event))"
+            [values]="matterTypeIds()"
+            (valuesChange)="chooseTypes($any($event))"
           />
-          <span class="mf-field__help">Optional. What kind of matter this is.</span>
+          @if (chosenTypeNames().length > 1) {
+            <mf-tag-chips label="Chosen matter types" [tags]="chosenTypeNames()" [max]="8" />
+          }
+          <span class="mf-field__help"
+            >Optional. What kind of matter this is; choose as many as apply.</span
+          >
         </div>
 
         <div class="mf-field">
@@ -434,8 +481,9 @@ export class MatterFormDialog {
   protected readonly name = signal('');
   protected readonly isSensitive = signal(false);
   protected readonly aiAllowed = signal<MatterAiAllowed>(MatterAiAllowed.No);
-  /** Matter Type and Current State: the chosen item's id as text, `''` for "Not Set". */
-  protected readonly matterTypeId = signal('');
+  /** Matter Types: the ids of the chosen items as text (none = Not Set). */
+  protected readonly matterTypeIds = signal<readonly string[]>([]);
+  /** Current State: the chosen item's id as text, `''` for "Not Set". */
   protected readonly currentStateId = signal('');
   protected readonly dmsPath = signal('');
   protected readonly dfsPath = signal('');
@@ -445,8 +493,15 @@ export class MatterFormDialog {
   private readonly types = signal<readonly MatterListItemView[]>([]);
   private readonly states = signal<readonly MatterListItemView[]>([]);
   protected readonly typeItems = computed(() =>
-    pickListItems(this.types(), this.matter()?.matterType, this.matterTypeId()),
+    pickListItemsMulti(this.types(), this.matter()?.matterTypes ?? [], this.matterTypeIds()),
   );
+  /** The names of the chosen types in the list's order, for the chips under the control. */
+  protected readonly chosenTypeNames = computed(() => {
+    const chosen = this.matterTypeIds();
+    return this.typeItems()
+      .filter((i) => chosen.includes(i.value))
+      .map((i) => i.label);
+  });
   protected readonly stateItems = computed(() =>
     pickListItems(this.states(), this.matter()?.currentState, this.currentStateId()),
   );
@@ -525,7 +580,7 @@ export class MatterFormDialog {
         this.number().trim() !== '' ||
         this.name().trim() !== '' ||
         this.isSensitive() ||
-        this.matterTypeId() !== '' ||
+        this.matterTypeIds().length > 0 ||
         this.currentStateId() !== '' ||
         this.dmsPath().trim() !== '' ||
         this.dfsPath().trim() !== '' ||
@@ -536,7 +591,7 @@ export class MatterFormDialog {
       this.name() !== m.name ||
       this.isSensitive() !== m.isSensitive ||
       this.aiAllowed() !== (m.aiAllowed ?? MatterAiAllowed.No) ||
-      this.matterTypeId() !== idText(m.matterType) ||
+      !sameIds(this.matterTypeIds(), idTexts(m.matterTypes)) ||
       this.currentStateId() !== idText(m.currentState) ||
       this.dmsPath().trim() !== (m.dmsPath ?? '') ||
       this.dfsPath().trim() !== (m.dfsPath ?? '') ||
@@ -565,7 +620,7 @@ export class MatterFormDialog {
         this.name.set(m?.name ?? '');
         this.isSensitive.set(m?.isSensitive ?? false);
         this.aiAllowed.set(m?.aiAllowed ?? MatterAiAllowed.No);
-        this.matterTypeId.set(idText(m?.matterType));
+        this.matterTypeIds.set(idTexts(m?.matterTypes));
         this.currentStateId.set(idText(m?.currentState));
         this.dmsPath.set(m?.dmsPath ?? '');
         this.dfsPath.set(m?.dfsPath ?? '');
@@ -591,6 +646,15 @@ export class MatterFormDialog {
         }
       });
     });
+  }
+
+  /** The chosen Matter Types, kept in the order of the list (not the order of the clicks), so the button, the chips and the request all read the same. */
+  protected chooseTypes(values: readonly string[]): void {
+    this.matterTypeIds.set(
+      this.typeItems()
+        .map((i) => i.value)
+        .filter((v) => values.includes(v)),
+    );
   }
 
   protected fieldError(key: string): string | null {
@@ -696,7 +760,7 @@ export class MatterFormDialog {
           name: this.name().trim(),
           isSensitive: this.isSensitive(),
           aiAllowed: this.aiAllowed(),
-          matterTypeId: listId(this.matterTypeId()),
+          matterTypeIds: typeIdsToSend(this.matterTypeIds()),
           currentStateId: listId(this.currentStateId()),
           dmsPath: pathToSend(this.dmsPath()),
           dfsPath: pathToSend(this.dfsPath()),
@@ -736,8 +800,8 @@ export class MatterFormDialog {
           name: this.name().trim(),
           isSensitive: this.isSensitive(),
           aiAllowed: this.aiAllowed(),
-          // Matter Type, Current State and the two paths are FULL values on PUT (leaving one out clears it): they start from the matter's own and are always sent.
-          matterTypeId: listId(this.matterTypeId()),
+          // Matter Types, Current State and the two paths are FULL values on PUT (leaving one out clears it): they start from the matter's own and are always sent.
+          matterTypeIds: typeIdsToSend(this.matterTypeIds()),
           currentStateId: listId(this.currentStateId()),
           dmsPath: pathToSend(this.dmsPath()),
           dfsPath: pathToSend(this.dfsPath()),

@@ -34,6 +34,16 @@ internal sealed class MatterConfiguration : IEntityTypeConfiguration<Matter>
     }
 }
 
+internal sealed class MatterMatterTypeConfiguration : IEntityTypeConfiguration<MatterMatterType>
+{
+    public void Configure(EntityTypeBuilder<MatterMatterType> b)
+    {
+        b.ToTable("MatterMatterType");
+        b.HasKey(x => new { x.MatterId, x.MatterTypeId }).HasName("PK_MatterMatterType");
+        b.HasIndex(x => new { x.MatterTypeId, x.MatterId }).HasDatabaseName("IX_MatterMatterType_MatterType");
+    }
+}
+
 internal sealed class ProjectConfiguration : IEntityTypeConfiguration<Project>
 {
     public void Configure(EntityTypeBuilder<Project> b)

@@ -267,8 +267,8 @@ public sealed class MatterListUsage(DbContext db) : IMatterListUsage
     {
         var rows = kind switch
         {
-            MatterListKind.MatterType => await db.Set<Matter>().AsNoTracking().Where(m => m.MatterTypeId != null)
-                .GroupBy(m => m.MatterTypeId!.Value).Select(g => new { Id = g.Key, Count = g.Count() }).ToListAsync(cancellationToken),
+            MatterListKind.MatterType => await db.Set<MatterMatterType>().AsNoTracking()
+                .GroupBy(t => t.MatterTypeId).Select(g => new { Id = g.Key, Count = g.Count() }).ToListAsync(cancellationToken),
             MatterListKind.MatterCategory => await db.Set<Matter>().AsNoTracking().Where(m => m.MatterCategoryId != null)
                 .GroupBy(m => m.MatterCategoryId!.Value).Select(g => new { Id = g.Key, Count = g.Count() }).ToListAsync(cancellationToken),
             MatterListKind.CurrentState => await db.Set<Matter>().AsNoTracking().Where(m => m.CurrentStateId != null)

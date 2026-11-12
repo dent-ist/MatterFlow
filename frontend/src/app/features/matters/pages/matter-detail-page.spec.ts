@@ -409,7 +409,7 @@ describe('MatterDetailPage', () => {
       'Client',
       'Matter Number',
       'Matter Name',
-      'Matter Type',
+      'Matter Types',
       'Current State',
       'DMS Path',
       'DFS Path',

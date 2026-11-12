@@ -247,6 +247,7 @@ describe('MatterFormPage', () => {
         name: 'Renamed',
         isSensitive: true,
         aiAllowed: 'No',
+        matterTypeIds: [],
         rowVersion: 'BBBB',
       });
     });
@@ -302,6 +303,7 @@ describe('MatterFormPage', () => {
         name: 'Merger Review',
         isSensitive: true,
         aiAllowed: 'No',
+        matterTypeIds: [],
         confirmLossOfAccess: true,
         rowVersion: 'BBBB',
       });

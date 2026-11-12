@@ -79,7 +79,7 @@ test.describe('Matter page: Team tab and Details fields (#1301)', () => {
     await noSideScroll(page, 'Team tab at 1366');
   });
 
-  test('Details card shows Matter Type, Current State, DMS Path and DFS Path with Copy and a link for web addresses', async ({
+  test('Details card shows Matter Types, Current State, DMS Path and DFS Path with Copy and a link for web addresses', async ({
     page,
     seed,
   }) => {
@@ -100,7 +100,7 @@ test.describe('Matter page: Team tab and Details fields (#1301)', () => {
       name: fresh.name,
       isSensitive: fresh.isSensitive,
       rowVersion: fresh.rowVersion,
-      matterTypeId: type.id,
+      matterTypeIds: [type.id],
       currentStateId: state.id,
       dmsPath: '\\\\fs01\\dms\\Matters\\1234\\Acme v. Beta',
       dfsPath: 'https://dfs.example.com/matters/1234/0056',

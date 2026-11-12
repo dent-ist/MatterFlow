@@ -19,7 +19,7 @@ test.describe('Matters list: columns and resize (MD-21)', () => {
     const texts = (await heads.allTextContents()).map((t) => t.trim());
     expect(texts).toContain('CM Number');
     // Epic #1298 (owner, 2026-11-08): Matter Type and Current State are default; the PMs and the counts are one click away in Columns.
-    expect(texts).toContain('Matter Type');
+    expect(texts).toContain('Matter Types');
     expect(texts).toContain('Current State');
     expect(texts).not.toContain('Primary PM');
     expect(texts).not.toContain('Secondary PM');

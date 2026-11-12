@@ -910,7 +910,7 @@ async function ensureMatterFields(admin, ctx, opts, summary) {
   const matters = ctx.matters.filter((m) => m.matterId !== null);
   for (let i = 0; i < matters.length; i++) {
     const current = await admin.get(`/api/v1/matters/${matters[i].matterId}`);
-    const untouched = !current.matterType && !current.currentState && !current.dmsPath && !current.dfsPath;
+    const untouched = !(current.matterTypes ?? []).length && !current.currentState && !current.dmsPath && !current.dfsPath;
     if (untouched) {
       const none = i % 4 === 3;
       const ref = current.matterRef.replace('-', '/');
@@ -919,7 +919,8 @@ async function ensureMatterFields(admin, ctx, opts, summary) {
         isSensitive: current.isSensitive,
         rowVersion: current.rowVersion,
         aiAllowed: current.aiAllowed,
-        matterTypeId: none || types.length === 0 ? undefined : types[i % types.length].id,
+        // One type for most matters, two for every third one (a matter can carry several Matter Types).
+        matterTypeIds: none || types.length === 0 ? [] : [...new Set(i % 3 === 0 ? [types[i % types.length].id, types[(i + 1) % types.length].id] : [types[i % types.length].id])],
         currentStateId: none || states.length === 0 ? undefined : states[i % states.length].id,
         dmsPath: i % 3 === 2 ? undefined : i % 2 === 0 ? `\\\\fs01\\dms\\Matters\\${ref.replace('/', '\\')}` : `https://dms.demo.example/matters/${ref}`,
         dfsPath: i % 3 === 1 ? undefined : i % 2 === 0 ? `https://dfs.demo.example/matters/${ref}` : `\\\\fs02\\dfs\\Matters\\${ref.replace('/', '\\')}`,

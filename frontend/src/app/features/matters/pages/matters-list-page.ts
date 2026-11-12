@@ -534,8 +534,8 @@ const BONES: Record<string, string> = {
             </ng-template>
             <ng-template mfCell="matterType" let-m>
               <td class="ml-list" data-cell="matterType">
-                @if (m.matterType; as t) {
-                  <span class="pg-clip" [attr.title]="t.name">{{ t.name }}</span>
+                @if (m.matterTypes.length > 0) {
+                  <span class="pg-clip" [attr.title]="typesText(m)">{{ typesText(m) }}</span>
                 } @else {
                   <span class="ml-muted">Not set</span>
                 }
@@ -783,7 +783,7 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
       // 180 + 200 + 140 + 160 + 160 + 160 + 48 = 1048 of 1098 px (D-43a).
       {
         key: 'matterType',
-        label: 'Matter Type',
+        label: 'Matter Types',
         sort: 'matterType',
         width: 'var(--mf-col-matter-type-w)',
         minWidth: 'var(--mf-col-matter-type-w)',
@@ -935,7 +935,7 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
     { value: 'name', label: 'Matter Name' },
     { value: 'clientNumber', label: 'Client' },
     { value: 'primaryManager', label: 'Primary PM' },
-    { value: 'matterType', label: 'Matter Type' },
+    { value: 'matterType', label: 'Matter Types' },
     { value: 'currentState', label: 'Current State' },
     ...(this.counts()
       ? [
@@ -976,7 +976,7 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
       { key: 'client', label: 'Client', column: 'client', type: 'text' },
       this.managerDef('primaryManager', 'Primary PM'),
       this.managerDef('secondaryManager', 'Secondary PM'),
-      this.pickListDef('matterType', 'Matter Type', 'matterTypeId', 'matterTypeNone', this.types),
+      this.pickListDef('matterType', 'Matter Types', 'matterTypeId', 'matterTypeNone', this.types),
       this.pickListDef(
         'currentState',
         'Current State',
@@ -1207,6 +1207,11 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
     } catch {
       // The filter then offers only "Any" and "None".
     }
+  }
+
+  /** The Matter Types of a row as one line, in the order of the Matter Types list ("Litigation, Investigation"); the full line is the tooltip. */
+  protected typesText(m: MatterResponse): string {
+    return m.matterTypes.map((t) => t.name).join(', ');
   }
 
   /** "PM: Ann / Bob" on a phone card; only what is set, nothing at all for a matter without a manager. */

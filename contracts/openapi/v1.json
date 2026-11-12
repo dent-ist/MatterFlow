@@ -24245,14 +24245,16 @@
             ],
             "format": "int32"
           },
-          "matterTypeId": {
-            "maximum": 2147483647,
-            "minimum": 1,
+          "matterTypeIds": {
+            "maxItems": 50,
             "type": [
               "null",
-              "integer"
+              "array"
             ],
-            "format": "int32"
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
           },
           "matterCategoryId": {
             "maximum": 2147483647,
@@ -28001,6 +28003,7 @@
           "rowVersion",
           "createdAtUtc",
           "modifiedAtUtc",
+          "matterTypes",
           "aiAllowed"
         ],
         "type": "object",
@@ -28115,6 +28118,12 @@
             ],
             "format": "date-time"
           },
+          "matterTypes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MatterListRef"
+            }
+          },
           "onHoldTaskCount": {
             "type": [
               "null",
@@ -28131,16 +28140,6 @@
           },
           "aiAllowed": {
             "$ref": "#/components/schemas/MatterAiAllowed"
-          },
-          "matterType": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/MatterListRef"
-              }
-            ]
           },
           "currentState": {
             "oneOf": [
@@ -38919,14 +38918,16 @@
           "rowVersion": {
             "type": "string"
           },
-          "matterTypeId": {
-            "maximum": 2147483647,
-            "minimum": 1,
+          "matterTypeIds": {
+            "maxItems": 50,
             "type": [
               "null",
-              "integer"
+              "array"
             ],
-            "format": "int32"
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
           },
           "matterCategoryId": {
             "maximum": 2147483647,

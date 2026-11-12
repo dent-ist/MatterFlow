@@ -451,8 +451,8 @@ export class MatterFormPage implements HasUnsavedChanges {
               name: this.name().trim(),
               isSensitive: this.isSensitive(),
               aiAllowed: this.aiAllowed(),
-              // Matter Type, Current State and the two paths are full values on PUT (omitting one clears it): this page has no fields for them, so it sends the current ones.
-              matterTypeId: this.original()!.matterType?.id,
+              // Matter Types, Current State and the two paths are full values on PUT (omitting one clears it): this page has no fields for them, so it sends the current ones.
+              matterTypeIds: this.original()!.matterTypes.map((t) => t.id),
               currentStateId: this.original()!.currentState?.id,
               dmsPath: this.original()!.dmsPath ?? undefined,
               dfsPath: this.original()!.dfsPath ?? undefined,

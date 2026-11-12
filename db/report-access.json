@@ -115,6 +115,11 @@
       "reason": "Calendar items of a matter (hearings, deadlines); shown through the application's visibility rule only, not report data."
     },
     {
+      "name": "MatterMatterType",
+      "access": "allow",
+      "reason": "Business data that reports may read (the Matter Types of a matter)."
+    },
+    {
       "name": "MatterTeamMember",
       "access": "deny",
       "reason": "Typed-in contacts of a matter's team (outside people's names and e-mails); shown through the application's matter visibility rule only, not report data."

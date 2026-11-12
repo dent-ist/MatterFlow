@@ -235,9 +235,9 @@ import { IntPipe } from '../../../shared/ui/number-format';
         <div mfDetailField label="Matter Name">
           <span data-matter-name>{{ matter().name }}</span>
         </div>
-        <div mfDetailField label="Matter Type">
-          @if (matter().matterType; as t) {
-            <span class="ms__clip" data-matter-type [mfTip]="listTip(t)">{{ t.name }}</span>
+        <div mfDetailField label="Matter Types">
+          @if (matter().matterTypes.length > 0) {
+            <span class="ms__clip" data-matter-type [mfTip]="typesTip()">{{ typesText() }}</span>
           } @else {
             <span class="ms__none" data-matter-type>Not set</span>
           }
@@ -372,6 +372,20 @@ export class MatterSummary {
     (this.assetsLoader.data() ?? []).filter((t) => t.count > 0),
   );
   protected readonly ai = computed(() => aiLabel(this.matter().aiAllowed));
+
+  /** The Matter Types as one line, in the order of the Matter Types list: "Litigation, Investigation". */
+  protected readonly typesText = computed(() =>
+    this.matter()
+      .matterTypes.map((t) => t.name)
+      .join(', '),
+  );
+
+  /** The tooltip of the Matter Types: every name, an item an administrator has since deactivated marked "(inactive)". */
+  protected readonly typesTip = computed(() =>
+    this.matter()
+      .matterTypes.map((t) => this.listTip(t))
+      .join(', '),
+  );
 
   /** The tooltip of a Matter Type or Current State: the full name, with " (inactive)" for an item an administrator has since deactivated (the cell shows the plain name). */
   protected listTip(t: { name: string; isActive: boolean }): string {

@@ -110,13 +110,13 @@ public sealed class MatterService(
                 {
                     rows = rows.Where(r => r.Matter.ClientNumber == number || r.Matter.MatterNumber == number
                         || r.Matter.Name.Contains(q) || r.ClientName.Contains(q)
-                        || (r.Matter.MatterTypeId != null && typeIds.Contains(r.Matter.MatterTypeId.Value))
+                        || db.Set<MatterMatterType>().Any(t => t.MatterId == r.Matter.Id && typeIds.Contains(t.MatterTypeId))
                         || (r.Matter.CurrentStateId != null && stateIds.Contains(r.Matter.CurrentStateId.Value)));
                 }
                 else
                 {
                     rows = rows.Where(r => r.Matter.Name.Contains(q) || r.ClientName.Contains(q)
-                        || (r.Matter.MatterTypeId != null && typeIds.Contains(r.Matter.MatterTypeId.Value))
+                        || db.Set<MatterMatterType>().Any(t => t.MatterId == r.Matter.Id && typeIds.Contains(t.MatterTypeId))
                         || (r.Matter.CurrentStateId != null && stateIds.Contains(r.Matter.CurrentStateId.Value)));
                 }
             }
@@ -162,12 +162,14 @@ public sealed class MatterService(
                    };
         }
 
-        // Sorting by type or state needs the names / positions inside the statement too (a left join on the list keys the Configuration module offers).
+        // Sorting by type or state needs the names / positions inside the statement too (a join on the list keys the Configuration module offers). A matter with
+        // several types sorts by its first one in the list's order (then by name), the matters without a type last.
         if (sort.Any(f => f.Field is SortMatterType or SortCurrentState))
         {
+            var typeKeys = from mt in db.Set<MatterMatterType>().AsNoTracking()
+                           join k in lists.Keys(MatterListKind.MatterType) on mt.MatterTypeId equals k.Id
+                           select new { mt.MatterId, k.Name, k.SortOrder };
             rows = from r in rows
-                   join t in lists.Keys(MatterListKind.MatterType) on r.Matter.MatterTypeId equals (int?)t.Id into typeRows
-                   from t in typeRows.DefaultIfEmpty()
                    join st in lists.Keys(MatterListKind.CurrentState) on r.Matter.CurrentStateId equals (int?)st.Id into stateRows
                    from st in stateRows.DefaultIfEmpty()
                    select new MatterRow
@@ -180,8 +182,8 @@ public sealed class MatterService(
                        Overdue = r.Overdue,
                        PrimaryManagerName = r.PrimaryManagerName,
                        SecondaryManagerName = r.SecondaryManagerName,
-                       MatterTypeName = t.Name,
-                       MatterTypeOrder = (int?)t.SortOrder,
+                       MatterTypeName = typeKeys.Where(t => t.MatterId == r.Matter.Id).OrderBy(t => t.SortOrder).ThenBy(t => t.Name).Select(t => t.Name).FirstOrDefault(),
+                       MatterTypeOrder = typeKeys.Where(t => t.MatterId == r.Matter.Id).Min(t => (int?)t.SortOrder),
                        CurrentStateName = st.Name,
                        CurrentStateOrder = (int?)st.SortOrder,
                    };
@@ -221,7 +223,7 @@ public sealed class MatterService(
             ? await taskCounts.ForKeysAsync(TaskCountScope.Matter, [.. items.Select(r => r.Matter.Id)], ct)
             : new Dictionary<int, TaskCountRow>();
         var people = await ManagersAsync(items.Select(r => r.Matter), ct);
-        var names = await LoadListsAsync(ct);
+        var names = await LoadListsAsync(items.Select(r => r.Matter.Id), ct);
         IReadOnlyDictionary<int, MatterStateCounts> states = canCount
             ? await taskCounts.MatterStatesAsync([.. items.Select(r => r.Matter.Id)], ct)
             : new Dictionary<int, MatterStateCounts>();
@@ -275,7 +277,7 @@ public sealed class MatterService(
             return OrganizationSupport.NotFound("Matter");
 
         var (open, overdue) = await CountsOfAsync(id, ct);
-        return ToResponse(row, open, overdue, await ManagersAsync([row.Matter], ct), await custom.ReadAsync(CustomFieldTarget.Matter, id, ct), dropped, names: await LoadListsAsync(ct));
+        return ToResponse(row, open, overdue, await ManagersAsync([row.Matter], ct), await custom.ReadAsync(CustomFieldTarget.Matter, id, ct), dropped, names: await LoadListsAsync([id], ct));
     }
 
     /// <summary>
@@ -315,7 +317,7 @@ public sealed class MatterService(
             return OrganizationSupport.NotFound("Matter");
 
         var (open, overdue) = await CountsOfAsync(row.Matter.Id, ct);
-        return ToResponse(row, open, overdue, await ManagersAsync([row.Matter], ct), await custom.ReadAsync(CustomFieldTarget.Matter, row.Matter.Id, ct), [], names: await LoadListsAsync(ct));
+        return ToResponse(row, open, overdue, await ManagersAsync([row.Matter], ct), await custom.ReadAsync(CustomFieldTarget.Matter, row.Matter.Id, ct), [], names: await LoadListsAsync([row.Matter.Id], ct));
     }
 
     public async Task<Result<MatterResponse>> CreateAsync(CreateMatterRequest request, CancellationToken ct)
@@ -352,7 +354,7 @@ public sealed class MatterService(
                 "A sensitive matter needs a project manager, or be created by someone who can see all sensitive matters.");
         }
 
-        var fields = await CheckFieldsAsync(request.MatterTypeId, request.MatterCategoryId, request.CurrentStateId, request.DmsPath, request.DfsPath, null, ct);
+        var fields = await CheckFieldsAsync(request.MatterTypeIds, [], request.MatterCategoryId, request.CurrentStateId, request.DmsPath, request.DfsPath, null, ct);
         if (fields.IsFailure)
             return fields.Error!;
 
@@ -380,7 +382,6 @@ public sealed class MatterService(
             Name = request.Name.Trim(),
             IsSensitive = request.IsSensitive,
             AiAllowed = request.AiAllowed,
-            MatterTypeId = request.MatterTypeId,
             MatterCategoryId = request.MatterCategoryId,
             CurrentStateId = request.CurrentStateId,
             DmsPath = fields.Value.Dms,
@@ -424,12 +425,16 @@ public sealed class MatterService(
                 await db.SaveChangesAsync(ct);
             }
 
-            if (request.MatterTypeId is not null || request.MatterCategoryId is not null || request.CurrentStateId is not null)
+            if (fields.Value.Types.Length > 0 || request.MatterCategoryId is not null || request.CurrentStateId is not null)
             {
-                // Created with a type or state: the events carry the matter id (known only now).
-                var names = await LoadListsAsync(ct);
-                if (request.MatterTypeId is { } typeId)
-                    AuditListChange(matter, OrganizationAuditEvents.MatterTypeChanged, "MatterType", "Matter Type", null, names.Types.GetValueOrDefault(typeId)?.Name);
+                // Created with types, a category or a state: the type rows and the events carry the matter id (known only now).
+                var names = await LoadListsAsync(null, ct);
+                if (fields.Value.Types.Length > 0)
+                {
+                    db.Set<MatterMatterType>().AddRange(fields.Value.Types.Select(t => new MatterMatterType { MatterId = matter.Id, MatterTypeId = t }));
+                    AuditListChange(matter, OrganizationAuditEvents.MatterTypeChanged, "MatterType", "Matter Types", null, NamesOf(names.Types, fields.Value.Types));
+                }
+
                 if (request.MatterCategoryId is { } categoryId)
                     AuditListChange(matter, OrganizationAuditEvents.MatterCategoryChanged, "MatterCategory", "Matter Category", null, names.Categories.GetValueOrDefault(categoryId)?.Name);
                 if (request.CurrentStateId is { } stateId)
@@ -484,7 +489,8 @@ public sealed class MatterService(
                 new Dictionary<string, object?> { ["willLoseAccess"] = true });
         }
 
-        var fields = await CheckFieldsAsync(request.MatterTypeId, request.MatterCategoryId, request.CurrentStateId, request.DmsPath, request.DfsPath, matter, ct);
+        var typeRows = await db.Set<MatterMatterType>().Where(t => t.MatterId == id).ToListAsync(ct);
+        var fields = await CheckFieldsAsync(request.MatterTypeIds, [.. typeRows.Select(t => t.MatterTypeId)], request.MatterCategoryId, request.CurrentStateId, request.DmsPath, request.DfsPath, matter, ct);
         if (fields.IsFailure)
             return fields.Error!;
 
@@ -515,13 +521,19 @@ public sealed class MatterService(
         matter.IsSensitive = request.IsSensitive;
         if (request.AiAllowed is { } aiAllowed)
             matter.AiAllowed = aiAllowed;
-        if (matter.MatterTypeId != request.MatterTypeId || matter.MatterCategoryId != request.MatterCategoryId || matter.CurrentStateId != request.CurrentStateId)
+        var typesChanged = !fields.Value.Types.ToHashSet().SetEquals(typeRows.Select(t => t.MatterTypeId));
+        if (typesChanged || matter.MatterCategoryId != request.MatterCategoryId || matter.CurrentStateId != request.CurrentStateId)
         {
-            var names = await LoadListsAsync(ct);
-            if (matter.MatterTypeId != request.MatterTypeId)
+            var names = await LoadListsAsync(null, ct);
+            if (typesChanged)
             {
-                AuditListChange(matter, OrganizationAuditEvents.MatterTypeChanged, "MatterType", "Matter Type", NameOf(names.Types, matter.MatterTypeId), NameOf(names.Types, request.MatterTypeId));
-                matter.MatterTypeId = request.MatterTypeId;
+                AuditListChange(matter, OrganizationAuditEvents.MatterTypeChanged, "MatterType", "Matter Types", NamesOf(names.Types, typeRows.Select(t => t.MatterTypeId)), NamesOf(names.Types, fields.Value.Types));
+                db.Set<MatterMatterType>().RemoveRange(typeRows.Where(t => !fields.Value.Types.Contains(t.MatterTypeId)));
+                var have = typeRows.Select(t => t.MatterTypeId).ToHashSet();
+                db.Set<MatterMatterType>().AddRange(fields.Value.Types.Where(t => !have.Contains(t)).Select(t => new MatterMatterType { MatterId = id, MatterTypeId = t }));
+
+                // The type rows are not part of the matter row: touch it, so the row version moves and "modified" shows the change like any other edit.
+                db.Entry(matter).Property(m => m.ModifiedAtUtc).IsModified = true;
             }
 
             if (matter.MatterCategoryId != request.MatterCategoryId)
@@ -775,26 +787,54 @@ public sealed class MatterService(
         OrganizationSupport.Encode(r.Matter.RowVersion),
         OrganizationSupport.Utc(r.Matter.CreatedAtUtc),
         OrganizationSupport.Utc(r.Matter.ModifiedAtUtc),
+        names is null ? [] : names.TypesOf(r.Matter.Id),
         states?.OnHold,
         states?.AtRisk,
         r.Matter.AiAllowed,
-        names is null ? null : MatterListNames.RefOf(names.Types, r.Matter.MatterTypeId),
         names is null ? null : MatterListNames.RefOf(names.States, r.Matter.CurrentStateId),
         r.Matter.DmsPath,
         r.Matter.DfsPath,
         names is null ? null : MatterListNames.RefOf(names.Categories, r.Matter.MatterCategoryId));
 
-    /// <summary>The names of the Matter Type and Current State items (inactive ones too), for the answers.</summary>
+    /// <summary>The names of the Matter Type, Matter Category and Current State items (inactive ones too), and which types the loaded matters carry, for the answers.</summary>
     private sealed record MatterLists(
         IReadOnlyDictionary<int, MatterListItemInfo> Types,
         IReadOnlyDictionary<int, MatterListItemInfo> States,
-        IReadOnlyDictionary<int, MatterListItemInfo> Categories);
+        IReadOnlyDictionary<int, MatterListItemInfo> Categories,
+        IReadOnlyDictionary<int, int[]> TypeIdsByMatter)
+    {
+        /// <summary>The Matter Types of a matter as lists show them: in the order of the Matter Types list, then by name.</summary>
+        public IReadOnlyList<MatterListRef> TypesOf(int matterId) =>
+            TypeIdsByMatter.TryGetValue(matterId, out var ids)
+                ? [.. OrderedTypes(Types, ids).Select(i => new MatterListRef(i.Id, i.Name, i.IsActive))]
+                : [];
+    }
 
-    private async Task<MatterLists> LoadListsAsync(CancellationToken ct) =>
-        new(
-            await MatterListNames.LoadAsync(lists, MatterListKind.MatterType, ct),
+    /// <summary>Loads the list names; with <paramref name="matterIds"/> also the Matter Types of those matters (one statement).</summary>
+    private async Task<MatterLists> LoadListsAsync(IEnumerable<int>? matterIds, CancellationToken ct)
+    {
+        var types = await MatterListNames.LoadAsync(lists, MatterListKind.MatterType, ct);
+        var ids = matterIds is null ? [] : matterIds.Distinct().ToArray();
+        IReadOnlyDictionary<int, int[]> byMatter = ids.Length == 0
+            ? new Dictionary<int, int[]>()
+            : (await db.Set<MatterMatterType>().AsNoTracking().Where(t => ids.Contains(t.MatterId)).ToListAsync(ct))
+                .GroupBy(t => t.MatterId).ToDictionary(g => g.Key, g => g.Select(t => t.MatterTypeId).ToArray());
+        return new(
+            types,
             await MatterListNames.LoadAsync(lists, MatterListKind.CurrentState, ct),
-            await MatterListNames.LoadAsync(lists, MatterListKind.MatterCategory, ct));
+            await MatterListNames.LoadAsync(lists, MatterListKind.MatterCategory, ct),
+            byMatter);
+    }
+
+    /// <summary>The chosen items in the order of their list (position, then name); an id the list no longer knows is shown as "Item n" last.</summary>
+    private static IEnumerable<MatterListItemInfo> OrderedTypes(IReadOnlyDictionary<int, MatterListItemInfo> items, IEnumerable<int> ids) =>
+        ids.Distinct()
+            .Select(id => items.TryGetValue(id, out var item) ? item : new MatterListItemInfo(id, $"Item {id.ToString(CultureInfo.InvariantCulture)}", int.MaxValue, false))
+            .OrderBy(i => i.SortOrder).ThenBy(i => i.Name, StringComparer.Ordinal);
+
+    /// <summary>The names of the chosen items, in list order, joined with ", " for the audit text; null when none.</summary>
+    private static string? NamesOf(IReadOnlyDictionary<int, MatterListItemInfo> items, IEnumerable<int> ids) =>
+        OrderedTypes(items, ids).Select(i => i.Name).ToArray() is { Length: > 0 } names ? string.Join(", ", names) : null;
 
     private static MatterManagerResponse? PersonOf(IReadOnlyDictionary<int, MatterManagerResponse> people, int? userId) =>
         userId is { } id ? people.GetValueOrDefault(id) : null;
@@ -840,13 +880,16 @@ public sealed class MatterService(
     }
 
     /// <summary>Matter Type and Current State filters: any of the chosen ids, and/or "Not Set" (no value). Without any of them the rows are untouched.</summary>
-    private static IQueryable<MatterRow> ApplyFieldFilters(IQueryable<MatterRow> rows, MatterListQuery query)
+    private IQueryable<MatterRow> ApplyFieldFilters(IQueryable<MatterRow> rows, MatterListQuery query)
     {
         if (query.MatterTypeId is { Length: > 0 } || query.MatterTypeNone == true)
         {
             var ids = query.MatterTypeId ?? [];
             var none = query.MatterTypeNone == true;
-            rows = rows.Where(r => (r.Matter.MatterTypeId != null && ids.Contains(r.Matter.MatterTypeId.Value)) || (none && r.Matter.MatterTypeId == null));
+
+            // A matter with several types matches when any of them is chosen; "Not Set" is a matter without any type.
+            rows = rows.Where(r => db.Set<MatterMatterType>().Any(t => t.MatterId == r.Matter.Id && ids.Contains(t.MatterTypeId))
+                || (none && !db.Set<MatterMatterType>().Any(t => t.MatterId == r.Matter.Id)));
         }
 
         if (query.CurrentStateId is { Length: > 0 } || query.CurrentStateNone == true)
@@ -866,11 +909,11 @@ public sealed class MatterService(
     /// Checks the new matter fields: the chosen type and state (see <see cref="CheckChoiceAsync"/>) and cleans both paths. An unchanged stored path is accepted as it is
     /// (a value saved before the rules tightened does not block saving other changes).
     /// </summary>
-    private async Task<Result<(string? Dms, string? Dfs)>> CheckFieldsAsync(int? typeId, int? categoryId, int? stateId, string? dms, string? dfs, Matter? current, CancellationToken ct)
+    private async Task<Result<(string? Dms, string? Dfs, int[] Types)>> CheckFieldsAsync(IReadOnlyCollection<int>? typeIds, IReadOnlyCollection<int> currentTypeIds, int? categoryId, int? stateId, string? dms, string? dfs, Matter? current, CancellationToken ct)
     {
-        var type = await CheckChoiceAsync(MatterListKind.MatterType, typeId, current?.MatterTypeId, "matterTypeId", "matter type", ct);
-        if (type.IsFailure)
-            return type.Error!;
+        var types = await CheckTypesAsync(typeIds, currentTypeIds, ct);
+        if (types.IsFailure)
+            return types.Error!;
 
         var category = await CheckChoiceAsync(MatterListKind.MatterCategory, categoryId, current?.MatterCategoryId, "matterCategoryId", "matter category", ct);
         if (category.IsFailure)
@@ -888,7 +931,32 @@ public sealed class MatterService(
         if (cleanDfs.IsFailure)
             return cleanDfs.Error!;
 
-        return (cleanDms.Value, cleanDfs.Value);
+        return (cleanDms.Value, cleanDfs.Value, types.Value);
+    }
+
+    /// <summary>
+    /// The chosen Matter Types (epic #1368): each must exist and, unless the matter already has it, be active. Repeated ids count once. An empty or missing list means "no type".
+    /// Returns the distinct ids.
+    /// </summary>
+    private async Task<Result<int[]>> CheckTypesAsync(IReadOnlyCollection<int>? typeIds, IReadOnlyCollection<int> currentTypeIds, CancellationToken ct)
+    {
+        var wanted = (typeIds ?? []).Distinct().ToArray();
+        if (wanted.Length == 0)
+            return wanted;
+
+        var known = (await lists.ListAsync(MatterListKind.MatterType, true, ct)).ToDictionary(i => i.Id);
+        foreach (var id in wanted)
+        {
+            if (currentTypeIds.Contains(id))
+                continue;
+
+            if (!known.TryGetValue(id, out var item))
+                return Error.Validation("matterTypeIds", "NOT_FOUND", "Choose the matter types from the list.");
+            if (!item.IsActive)
+                return Error.Validation("matterTypeIds", "INACTIVE", $"The matter type '{item.Name}' is no longer offered. Choose another.");
+        }
+
+        return wanted;
     }
 
     private static bool Unchanged(string? sent, string? stored) => stored is not null && string.Equals(sent?.Trim(), stored, StringComparison.Ordinal);

@@ -433,7 +433,7 @@ test.describe('WP9 list columns', () => {
         [
           `/matters?name=${w.token}`,
           'Matters list',
-          ['CM Number', 'Matter Name', 'Client', 'Matter Type', 'Current State', 'Status'],
+          ['CM Number', 'Matter Name', 'Client', 'Matter Types', 'Current State', 'Status'],
         ],
         [
           `/projects?name=${w.token}`,
