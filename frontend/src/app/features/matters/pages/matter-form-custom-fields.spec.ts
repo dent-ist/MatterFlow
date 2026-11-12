@@ -13,7 +13,7 @@ import {
   withPermissions,
 } from '../../../shared/testing/org-testing';
 import { MatterForm } from '../ui/matter-form';
-import { MatterCreatePage } from './matter-create-page';
+import { MatterFormPage } from './matter-form-page';
 
 describe('New and Edit Matter: custom fields', () => {
   /** The New Matter page when no matter is given, else the matter form with that matter (what the Edit Matter pop-up holds). */
@@ -44,7 +44,7 @@ describe('New and Edit Matter: custom fields', () => {
     await TestBed.inject(AuthStore).ensureLoaded();
     const fixture: ComponentFixture<unknown> = matter
       ? TestBed.createComponent(MatterForm)
-      : TestBed.createComponent(MatterCreatePage);
+      : TestBed.createComponent(MatterFormPage);
     if (matter) fixture.componentRef.setInput('matter', matter);
     for (const [key, value] of Object.entries(inputs)) fixture.componentRef.setInput(key, value);
     await settle(fixture);

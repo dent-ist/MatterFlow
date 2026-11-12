@@ -31,9 +31,9 @@ test.describe('Matter form (MD-43)', () => {
 
     // New Matter is a full page (epic #1368, #1371); Edit stays the pop-up. Both hold the same matter form.
     await page.goto(`/matters/new?clientId=${client.clientId}`);
-    const form = page.locator('[data-matter-create]');
+    const form = page.locator('[data-matter-form]');
     await expect(page.getByRole('heading', { level: 1, name: 'New Matter' })).toBeVisible();
-    const created = await fieldLabels(page, '[data-matter-create]');
+    const created = await fieldLabels(page, '[data-matter-form]');
     expect(created.slice(0, 4)).toEqual(['Client', 'Matter Number', 'CM Number', 'Matter Name']);
     expect(created).toContain('Matter Types');
     expect(created).toContain('Matter Category');
@@ -49,9 +49,10 @@ test.describe('Matter form (MD-43)', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/matters/${matter.matterId}`);
     await page.locator('[data-edit-matter]').click();
-    const dialog = page.locator('.mf-formdlg');
-    await expect(dialog).toContainText('Edit Matter');
-    expect(await fieldLabels(page, '.mf-formdlg')).toEqual(created);
+    const dialog = page.locator('[data-matter-form]');
+    await expect(page.getByRole('heading', { level: 1, name: 'Edit Matter' })).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`/matters/${matter.matterId}/edit$`));
+    expect(await fieldLabels(page, '[data-matter-form]')).toEqual(created);
     // Client and Matter number are in the same places, locked; the CM Number shows the current one.
     await expect(dialog.locator('#matter-number')).toBeDisabled();
     await expect(dialog.locator('[data-cm-value]')).toHaveText(matter.matterRef);
@@ -70,7 +71,7 @@ test.describe('Matter form (MD-43)', () => {
     const matter = await seed.matter({ client, number: '00021', name: `Num matter ${uid()}` });
     await page.goto(`/matters/${matter.matterId}`);
     await page.locator('[data-edit-matter]').click();
-    const dialog = page.locator('.mf-formdlg');
+    const dialog = page.locator('[data-matter-form]');
     await expect(dialog.locator('#matter-number')).toBeDisabled();
 
     // Cancel keeps it locked.
@@ -111,8 +112,8 @@ test.describe('Matter form (MD-43)', () => {
     const p = await asUser(user.username);
     await p.goto(`/matters/${world.matter.matterId}`);
     await p.locator('[data-edit-matter]').click();
-    await expect(p.locator('.mf-formdlg #matter-number')).toBeDisabled();
-    await expect(p.locator('.mf-formdlg [data-change-number]')).toHaveCount(0);
+    await expect(p.locator('[data-matter-form] #matter-number')).toBeDisabled();
+    await expect(p.locator('[data-matter-form] [data-change-number]')).toHaveCount(0);
     void page;
   });
 });
