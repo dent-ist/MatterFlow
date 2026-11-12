@@ -5,7 +5,7 @@ import { SIZES } from '../support/labels';
 import { uid } from '../support/seed';
 
 /**
- * Epic #1298 / #1301: the Edit Matter dialog (Matter Type, Current State, DMS and DFS paths with their messages; saving never clears them), the Matters list
+ * Epic #1298 / #1301: the Edit Matter page (Matter Types, Current State, DMS and DFS paths with their messages; saving never clears them), the Matters list
  * columns and filters (off by default, Not Set), and the Administration > Matter Lists page.
  */
 test.describe('Matter fields: dialog, list and Matter Lists (#1301)', () => {
@@ -36,8 +36,8 @@ test.describe('Matter fields: dialog, list and Matter Lists (#1301)', () => {
     await page.setViewportSize(SIZES[1]);
     await page.goto(`/matters/${matter.matterId}`);
     await page.getByRole('button', { name: 'Edit' }).first().click();
-    const dialog = page.locator('.mf-formdlg');
-    await expect(dialog.locator('[data-panel-title]')).toContainText('Edit Matter'); // the title carries the CM Number as its subtitle
+    const dialog = page.locator('[data-matter-form]'); // the Edit Matter page (epic #1368, #1381)
+    await expect(page.getByRole('heading', { level: 1, name: 'Edit Matter' })).toBeVisible();
     await expect(dialog.locator('#matter-type')).toContainText('Not Set');
 
     await dialog.locator('#matter-dms-path').fill('C:\\Matters\\1234');
@@ -55,7 +55,7 @@ test.describe('Matter fields: dialog, list and Matter Lists (#1301)', () => {
     await expect(dialog.locator('#matter-type')).toContainText(`Type ${token} +1`);
     await dropdownById(dialog, 'matter-category').selectOption({ label: `Category ${token}` });
     await dropdownById(dialog, 'matter-state').selectOption({ label: `State ${token}` });
-    if (axeAvailable()) expect(await axeViolations(page), 'Edit Matter dialog').toEqual([]);
+    if (axeAvailable()) expect(await axeViolations(page), 'Edit Matter page').toEqual([]);
     await dialog.getByRole('button', { name: 'Save Changes' }).click();
     // Several types show in one line, in the order of the Matter Types list.
     await expect(page.locator('[data-summary-details] [data-matter-type]')).toHaveText(

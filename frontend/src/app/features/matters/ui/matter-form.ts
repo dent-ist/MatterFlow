@@ -129,8 +129,8 @@ export function pickListItemsMulti(
 
 /**
  * THE matter form (MD-43, #1061; owner decision 2026-11-03): one set of fields, in one order, for creating a matter and for editing one, so the same information is entered
- * the same way. Epic #1368 moved creating to a full page (`MatterCreatePage`, route `/matters/new`); editing stays the pop-up on the Summary (`MatterFormDialog`); both hold this
- * component and show its busy flag, error and Save in their own chrome.
+ * the same way. Epic #1368 moved creating (#1371) and editing (#1381) to one full page (`MatterFormPage`, routes `/matters/new` and `/matters/:id/edit`), which holds this
+ * component and shows its busy flag, error and Save in the page's own chrome.
  * Fields, in this order: Client, Matter number, CM Number (a read-only preview of client number plus matter number, never typed), Matter name, Sensitive matter, AI allowed,
  * Matter Types (several can be chosen), Matter Category (one), Current State, DMS Path, DFS Path (epic #1298; all optional and "Not Set" is the first choice of the single lists)
  * and the custom fields. On Save the Types, Category, State and the two paths are sent as full values (the API treats them so: leaving one out clears it), starting from the
@@ -460,7 +460,7 @@ export function pickListItemsMulti(
 export class MatterForm {
   /** The matter to edit; null makes the form "New matter". */
   readonly matter = input<MatterResponse | null>(null);
-  /** True while the form is on screen (a dialog host sets it to its `visible`): each time it turns true the fields start again from the matter (or empty). */
+  /** True while the form is on screen: each time it turns true the fields start again from the matter (or empty). */
   readonly active = input(true);
   /** New mode: preselects the client (a link from a Client page); null for none. */
   readonly clientId = input<number | null>(null);
@@ -528,7 +528,7 @@ export class MatterForm {
       this.fieldError('dfsPath') ||
       (this.dfsTouched() || this.submitted() ? pathProblem(this.dfsPath()) : null),
   );
-  /** The host shows these in its own chrome (the dialog's footer, the page's banner and buttons). */
+  /** The host shows these in its own chrome (the page's banner and buttons). */
   readonly busy = signal(false);
   readonly error = signal('');
   protected readonly submitted = signal(false);
@@ -878,7 +878,7 @@ export class MatterForm {
     if (errors.conflict) {
       this.error.set(
         this.isEdit()
-          ? 'This matter was changed by someone else. Close the dialog and reopen it.'
+          ? 'This matter was changed by someone else. Reload the page and try again.'
           : 'This matter was changed by someone else.',
       );
     }

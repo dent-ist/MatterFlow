@@ -24,6 +24,7 @@ async function snap(page: Page, name: string): Promise<void> {
 
 const KEYS = [
   'matter-types',
+  'matter-categories',
   'current-states',
   'team-titles',
   'priorities',
@@ -39,7 +40,7 @@ for (const size of SIZES) {
       await page.setViewportSize(size);
     });
 
-    test('catalogue, search, no-match and the eight lists', async ({ page }) => {
+    test('catalogue, search, no-match and the nine lists', async ({ page }) => {
       for (const key of KEYS) {
         await page.goto(`/admin/lists/${key}`);
         await expect(page.locator('[data-list-body] tbody tr').first()).toBeVisible();

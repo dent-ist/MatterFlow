@@ -83,7 +83,7 @@ test.describe('New matter page (epic #1368, #1371; it was the pop-up of MD-22)',
     await expect(page).toHaveURL(/\/matters\/new$/);
     await expect(page.getByRole('heading', { level: 1, name: 'New Matter' })).toBeVisible();
     await expect(page.getByRole('dialog')).toHaveCount(0);
-    const buttons = page.locator('[data-matter-create] .pg-actions button');
+    const buttons = page.locator('[data-matter-form] .pg-actions button');
     await expect(buttons.first()).toHaveText('Cancel');
     await expect(buttons.last()).toHaveText('Create Matter');
     await shot(page, 'new-matter-page-1366x768');
@@ -100,7 +100,7 @@ test.describe('New matter page (epic #1368, #1371; it was the pop-up of MD-22)',
 
     await page.goto(`/matters/new?clientId=${client.clientId}`);
     await expect(page.getByRole('heading', { level: 1, name: 'New Matter' })).toBeVisible();
-    await expect(page.locator('[data-matter-create]')).toContainText(client.clientNumber);
+    await expect(page.locator('[data-matter-form]')).toContainText(client.clientNumber);
     // Opened directly, Cancel has no page to go back to: the Matters list.
     await page.getByRole('button', { name: 'Cancel' }).click();
     await expect(page).toHaveURL(/\/matters$/);
@@ -124,7 +124,8 @@ test.describe('Matter detail tabs: Summary, Projects, Assets, Productions, butto
     await expect(page.locator('[data-add-event]')).toHaveCount(0);
     await shot(page, 'summary-1366x768');
     await page.locator('[data-edit-matter]').click();
-    await expect(page.locator('.mf-formdlg')).toContainText('Edit Matter');
+    await expect(page.getByRole('heading', { level: 1, name: 'Edit Matter' })).toBeVisible(); // a full page (epic #1368, #1381)
+    await expect(page).toHaveURL(/\/matters\/\d+\/edit$/);
     await expect(page.locator('.mf-slide')).toHaveCount(0);
   });
 

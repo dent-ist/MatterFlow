@@ -87,14 +87,7 @@ test.describe('the Lists page (epic #1314)', () => {
   for (const [key, label, newLabel] of LISTS) {
     test(`${label}: opens at /admin/lists/${key} with its header, sentence, rule and rows`, async ({
       page,
-      admin,
     }) => {
-      // The Matter Categories list starts empty (no starter rows), so the smoke test adds one.
-      if (key === 'matter-categories')
-        await admin.post('/api/v1/matter-categories', {
-          name: `Smoke ${Date.now()}`,
-          isActive: true,
-        });
       await page.setViewportSize(SIZES[1]);
       await page.goto(`/admin/lists/${key}`);
       await expect(page.getByRole('heading', { level: 2 })).toHaveText(label);

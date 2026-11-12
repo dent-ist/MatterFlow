@@ -205,8 +205,8 @@ public sealed class MatterFieldsApiTests(SqlServerFixture sql) : IAsyncLifetime
     [Fact]
     public async Task Matter_Category_is_a_managed_list_a_single_optional_choice_on_the_matter_and_changes_are_audited_with_names()
     {
-        // The list starts empty (the owner fills it on the Lists page), is managed with MatterList.Manage and read with Matter.View.
-        Names(await OkAsync(await Admin.GetAsync("/api/v1/matter-categories"))).ShouldBeEmpty();
+        // The list starts with the starter categories (script 70), is managed with MatterList.Manage and read with Matter.View.
+        Names(await OkAsync(await Admin.GetAsync("/api/v1/matter-categories"))).ShouldBe(["Litigation", "Investigation", "Regulatory Inquiry", "Arbitration", "Second Request", "Internal Review", "Other"]);
         var manager = await _h.UserWithAsync(@"KE\mcat", "MatterList.Manage");
         var advisory = await OkAsync(await manager.PostAsJsonAsync("/api/v1/matter-categories", new { name = "Advisory" }), HttpStatusCode.Created);
         var dispute = await OkAsync(await manager.PostAsJsonAsync("/api/v1/matter-categories", new { name = "Dispute" }), HttpStatusCode.Created);
@@ -234,7 +234,7 @@ public sealed class MatterFieldsApiTests(SqlServerFixture sql) : IAsyncLifetime
         await OkAsync(await manager.PutAsJsonAsync($"/api/v1/matter-categories/{Id(dispute)}", new { name = "Dispute", isActive = false, rowVersion = row.GetProperty("rowVersion").GetString() }));
         var shown = await MatterAsync();
         shown.GetProperty("matterCategory").GetProperty("isActive").GetBoolean().ShouldBeFalse();
-        var other = await OkAsync(await manager.PostAsJsonAsync("/api/v1/matter-categories", new { name = "Other", isActive = false }), HttpStatusCode.Created);
+        var other = await OkAsync(await manager.PostAsJsonAsync("/api/v1/matter-categories", new { name = "Dormant", isActive = false }), HttpStatusCode.Created);
         (await UpdateAsync(shown, new { matterCategoryId = Id(other) })).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         (await UpdateAsync(shown, new { matterCategoryId = 9999 })).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
 

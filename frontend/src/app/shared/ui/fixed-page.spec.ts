@@ -114,6 +114,7 @@ const NORMAL_URLS = [
   '/clients/new',
   '/clients/7/edit',
   '/matters/new',
+  '/matters/7/edit',
   '/projects/new',
   '/projects/7/edit',
   '/assets/new',

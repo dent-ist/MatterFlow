@@ -39,7 +39,6 @@ import { MatterHeader } from '../ui/matter-header';
 import { MatterTabKey, matterTabFromParam, visibleMatterTabs } from '../ui/matter-tabs';
 import { ProjectPanel } from '../../projects/ui/project-panel';
 import { ProjectTasksPanel } from '../../projects/ui/project-tasks-panel';
-import { MatterFormDialog } from '../ui/matter-form-dialog';
 import { MatterActivities } from '../ui/matter-activities';
 import { MatterSummary } from '../ui/matter-summary';
 import { MatterTeamTab } from '../ui/matter-team-tab';
@@ -86,7 +85,6 @@ type Tab = MatterTabKey;
     MatterSummary,
     MatterTeamTab,
     MatterEventPanel,
-    MatterFormDialog,
     ProductionsTab,
     NotesTab,
     AddCommentDialog,
@@ -289,15 +287,6 @@ type Tab = MatterTabKey;
               />
             }
 
-            @if (editUsed()) {
-              <mf-matter-form-dialog
-                [matter]="m"
-                [(visible)]="editOpen"
-                (saved)="edited($event)"
-                (lostAccess)="go('/matters')"
-              />
-            }
-
             @if (canAssign()) {
               <mf-matter-managers-dialog
                 [targets]="[managerTarget(m)]"
@@ -396,8 +385,6 @@ export class MatterDetailPage {
       (me !== undefined && (m.primaryManager?.userId === me || m.secondaryManager?.userId === me))
     );
   });
-  protected readonly editOpen = signal(false);
-  protected readonly editUsed = signal(false);
   protected readonly canEdit = computed(() => this.auth.has('Matter.Edit'));
   protected readonly projectTasksOpen = signal(false);
   protected readonly projectTasksUsed = signal(false);
@@ -626,15 +613,9 @@ export class MatterDetailPage {
     this.eventOpen.set(true);
   }
 
+  /** Edit Matter is a full page (epic #1368, #1381); its Cancel and Save come back here. */
   protected openEdit(): void {
-    this.editUsed.set(true);
-    this.editOpen.set(true);
-  }
-
-  /** The matter was saved in the panel: show the saved state (the open-task count is not part of the answer, keep ours). */
-  protected edited(updated: MatterResponse): void {
-    this.matter.update((m) => ({ ...updated, openTaskCount: m?.openTaskCount }));
-    this.reloadTick.update((n) => n + 1);
+    void this.router.navigate(['/matters', this.matter()!.matterId, 'edit']);
   }
 
   protected openProjectTasks(p: ProjectResponse): void {

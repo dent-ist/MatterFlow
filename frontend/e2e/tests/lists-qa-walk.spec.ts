@@ -23,6 +23,12 @@ const dlg = (page: Page) => page.getByRole('dialog');
 
 const NAME_LISTS = [
   { key: 'matter-types', label: 'Matter Types', add: 'New Matter Type', hasDelete: true },
+  {
+    key: 'matter-categories',
+    label: 'Matter Categories',
+    add: 'New Matter Category',
+    hasDelete: true,
+  },
   { key: 'current-states', label: 'Current States', add: 'New State', hasDelete: true },
   { key: 'team-titles', label: 'Team Titles', add: 'New Title', hasDelete: true },
   { key: 'on-hold-reasons', label: 'On-Hold Reasons', add: 'New Reason', hasDelete: false },
