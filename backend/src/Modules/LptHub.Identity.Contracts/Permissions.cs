@@ -184,6 +184,16 @@ public static class Permissions
         public const string ManageMembers = "Pod.ManageMembers";
     }
 
+    /// <summary>People permissions (epic #1373): the shared list of people used by matter teams and vendor contacts.</summary>
+    public static class People
+    {
+        /// <summary>See the People page. Pickers work for anyone who may edit a team or a vendor contact.</summary>
+        public const string View = "People.View";
+
+        /// <summary>Create, edit and deactivate people, including the quick Add New Person in pickers.</summary>
+        public const string Manage = "People.Manage";
+    }
+
     /// <summary>User permissions.</summary>
     public static class User
     {
@@ -363,6 +373,8 @@ public static class Permissions
         Pod.View,
         Pod.Manage,
         Pod.ManageMembers,
+        People.View,
+        People.Manage,
         User.View,
         User.Manage,
         User.ManageAvailability,

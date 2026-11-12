@@ -222,6 +222,16 @@
       "description": "Manage pod membership"
     },
     {
+      "code": "People.View",
+      "group": "People",
+      "description": "See the People page. Pickers work for anyone who may edit a team or a vendor contact"
+    },
+    {
+      "code": "People.Manage",
+      "group": "People",
+      "description": "Create, edit and deactivate people, including the quick Add New Person in pickers"
+    },
+    {
       "code": "User.View",
       "group": "Organization",
       "description": "View the user list and access queue"

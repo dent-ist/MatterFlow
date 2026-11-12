@@ -47,6 +47,8 @@ export const PERMISSIONS = [
   'Pod.View',
   'Pod.Manage',
   'Pod.ManageMembers',
+  'People.View',
+  'People.Manage',
   'User.View',
   'User.Manage',
   'User.ManageAvailability',
