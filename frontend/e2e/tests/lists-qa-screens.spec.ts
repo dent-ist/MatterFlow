@@ -141,7 +141,7 @@ for (const size of SIZES) {
       );
       await three.setViewportSize(size);
       await three.goto('/admin/lists');
-      await expect(three.getByRole('option')).toHaveCount(3);
+      await expect(three.getByRole('option')).toHaveCount(4);
       await snap(three, 'catalogue-no-search');
     });
   });

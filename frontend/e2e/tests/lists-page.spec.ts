@@ -231,7 +231,7 @@ test.describe('views by permission (UI spec 3.4)', () => {
     );
     await matterOnly.setViewportSize(SIZES[0]);
     await matterOnly.goto('/admin/lists');
-    await expect(matterOnly.getByRole('option')).toHaveCount(3);
+    await expect(matterOnly.getByRole('option')).toHaveCount(4);
     await expect(matterOnly.getByRole('searchbox', { name: 'Find a list' })).toHaveCount(0);
     await shot(matterOnly, 'lists-no-search');
   });
