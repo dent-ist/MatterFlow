@@ -83,7 +83,7 @@ describe('AppShell header search', () => {
       expect(flagOf(MATTERS_ROUTES, ':matterId')).toBe(true);
       expect(flagOf(PROJECTS_ROUTES, ':projectId')).toBe(true);
       for (const [routes, paths] of [
-        [MATTERS_ROUTES, ['', 'new']],
+        [MATTERS_ROUTES, ['', 'new', ':matterId/edit']],
         [PROJECTS_ROUTES, ['', 'new', ':projectId/edit']],
         [CLIENTS_ROUTES, ['', 'new', ':clientId/edit', ':clientId']],
       ] as const) {

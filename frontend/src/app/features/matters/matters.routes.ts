@@ -2,7 +2,7 @@ import { Routes } from '@angular/router';
 import { permissionGuard } from '../../core/auth/guards';
 import { unsavedChangesGuard } from '../../shared/guards/unsaved-changes.guard';
 
-/** Matters (UX S06). `new` is matched before `:matterId`; it is the full-page New Matter form. Editing is the pop-up on the Matter page. */
+/** Matters (UX S06). `new` is matched before `:matterId`; it is the full-page New Matter form, `:matterId/edit` the full-page Edit Matter (same component and form). */
 export const MATTERS_ROUTES: Routes = [
   {
     path: '',
@@ -16,7 +16,15 @@ export const MATTERS_ROUTES: Routes = [
     title: 'New Matter',
     canActivate: [permissionGuard('Matter.Create')],
     canDeactivate: [unsavedChangesGuard],
-    loadComponent: () => import('./pages/matter-create-page').then((m) => m.MatterCreatePage),
+    loadComponent: () => import('./pages/matter-form-page').then((m) => m.MatterFormPage),
+  },
+  {
+    // Epic #1368 (#1381): editing a matter is a full page too, like the Client pages (it was the pop-up on the Matter page).
+    path: ':matterId/edit',
+    title: 'Edit Matter',
+    canActivate: [permissionGuard('Matter.Edit', 'Matter.EditNumber')],
+    canDeactivate: [unsavedChangesGuard],
+    loadComponent: () => import('./pages/matter-form-page').then((m) => m.MatterFormPage),
   },
   {
     path: ':matterId',

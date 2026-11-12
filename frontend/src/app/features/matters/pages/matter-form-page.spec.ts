@@ -19,14 +19,21 @@ import {
   settle,
   withPermissions,
 } from '../../../shared/testing/org-testing';
-import { MatterCreatePage } from './matter-create-page';
+import { MatterFormPage } from './matter-form-page';
 
-describe('MatterCreatePage: New Matter as a full page (epic #1368, #1371)', () => {
-  let matters: Record<'createMatter' | 'getMatterCustomFieldForm', ReturnType<typeof vi.fn>>;
+describe('MatterFormPage: New and Edit Matter as full pages (epic #1368, #1371, #1381)', () => {
+  let matters: Record<
+    | 'createMatter'
+    | 'updateMatter'
+    | 'getMatter'
+    | 'changeMatterNumber'
+    | 'getMatterCustomFieldForm',
+    ReturnType<typeof vi.fn>
+  >;
   let clients: Record<'listClients' | 'getClient', ReturnType<typeof vi.fn>>;
   let navigate: ReturnType<typeof vi.fn>;
   let navigateByUrl: ReturnType<typeof vi.fn>;
-  let fixture: ComponentFixture<MatterCreatePage>;
+  let fixture: ComponentFixture<MatterFormPage>;
   const el = (): HTMLElement => fixture.nativeElement;
   const view = (id: number, name: string, sortOrder: number) => ({
     id,
@@ -37,9 +44,20 @@ describe('MatterCreatePage: New Matter as a full page (epic #1368, #1371)', () =
     inUseCount: 0,
   });
 
-  async function open(inputs: Record<string, string> = {}) {
+  async function open(
+    inputs: Record<string, string> = {},
+    editing = aMatter({
+      matterTypes: [{ id: 1, name: 'Litigation', isActive: true }],
+      matterCategory: { id: 4, name: 'Advisory', isActive: true },
+    }),
+  ) {
     matters = {
       createMatter: vi.fn().mockReturnValue(ok(aMatter({ matterId: 21 }))),
+      updateMatter: vi.fn().mockReturnValue(ok(aMatter())),
+      changeMatterNumber: vi
+        .fn()
+        .mockReturnValue(ok(aMatter({ matterNumber: '00099', matterRef: '00343-00099' }))),
+      getMatter: vi.fn().mockReturnValue(ok(editing)),
       getMatterCustomFieldForm: vi.fn().mockReturnValue(ok({})),
     };
     clients = {
@@ -58,7 +76,11 @@ describe('MatterCreatePage: New Matter as a full page (epic #1368, #1371)', () =
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
-        provideFakeMe(new FakeMeApi(withPermissions('Matter.View', 'Matter.Create'))),
+        provideFakeMe(
+          new FakeMeApi(
+            withPermissions('Matter.View', 'Matter.Create', 'Matter.Edit', 'Matter.EditNumber'),
+          ),
+        ),
         { provide: MattersClient, useValue: matters },
         { provide: ClientsClient, useValue: clients },
         {
@@ -79,7 +101,7 @@ describe('MatterCreatePage: New Matter as a full page (epic #1368, #1371)', () =
     navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true) as never;
     navigateByUrl = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true) as never;
     await TestBed.inject(AuthStore).ensureLoaded();
-    fixture = TestBed.createComponent(MatterCreatePage);
+    fixture = TestBed.createComponent(MatterFormPage);
     for (const [key, value] of Object.entries(inputs)) fixture.componentRef.setInput(key, value);
     await settle(fixture);
   }
@@ -272,5 +294,122 @@ describe('MatterCreatePage: New Matter as a full page (epic #1368, #1371)', () =
     type('#matter-name', 'Typed');
     await settle(fixture);
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
+  });
+
+  describe('edit (#1381)', () => {
+    it('loads the matter into the same form: heading Edit Matter, client and number locked, Save Changes', async () => {
+      await open({ matterId: '7' });
+      expect(matters.getMatter).toHaveBeenCalledWith(7);
+      expect(el().querySelector('h1')?.textContent).toContain('Edit Matter');
+      expect(el().querySelector('[data-matter-form] #matter-number')).not.toBeNull();
+      expect((el().querySelector('#matter-number') as HTMLInputElement).disabled).toBe(true);
+      expect(el().querySelector('[data-cm-value]')?.textContent).toBe('00343-00012');
+      expect(buttonByLabel(el(), 'Save Changes')).toBeDefined();
+      expect(buttonByLabel(el(), 'Create Matter')).toBeUndefined();
+      expect(el().querySelector('#matter-type')?.textContent).toContain('Litigation');
+      expect(el().querySelector('#matter-category')?.textContent).toContain('Advisory');
+      expect(document.body.querySelector('.mf-formdlg')).toBeNull();
+    });
+
+    it('saves the Matter Types as a full set and the Matter Category as one id, then returns to the matter page', async () => {
+      await open({ matterId: '7' });
+      (el().querySelector('#matter-type') as HTMLButtonElement).click();
+      await settle(fixture);
+      dropdownOption('2').click();
+      await settle(fixture);
+      expect(el().querySelector('#matter-type')?.textContent).toContain('Litigation +1');
+      buttonByLabel(el(), 'Save Changes')!.click();
+      await settle(fixture);
+      expect(matters.updateMatter).toHaveBeenCalledWith(
+        7,
+        expect.objectContaining({ matterTypeIds: [1, 2], matterCategoryId: 4 }),
+      );
+      expect(navigateByUrl).toHaveBeenCalledWith('/matters/7');
+      expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
+    });
+
+    it('clears the Matter Types when none is chosen (an empty list is the full value)', async () => {
+      await open({ matterId: '7' });
+      (el().querySelector('#matter-type') as HTMLButtonElement).click();
+      await settle(fixture);
+      dropdownOption('1').click();
+      await settle(fixture);
+      buttonByLabel(el(), 'Save Changes')!.click();
+      await settle(fixture);
+      expect(matters.updateMatter).toHaveBeenCalledWith(
+        7,
+        expect.objectContaining({ matterTypeIds: [] }),
+      );
+    });
+
+    it('asks before leaving with a changed name; Cancel goes to the matter page when opened directly', async () => {
+      await open({ matterId: '7' });
+      expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
+      type('#matter-name', 'Renamed');
+      await settle(fixture);
+      expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
+      buttonByLabel(el(), 'Cancel')!.click();
+      await settle(fixture);
+      expect(navigateByUrl).toHaveBeenCalledWith('/matters/7');
+      expect(matters.updateMatter).not.toHaveBeenCalled();
+    });
+
+    it('shows a retry when the matter cannot be loaded', async () => {
+      await open({}, aMatter());
+      TestBed.resetTestingModule();
+      matters.getMatter = vi.fn();
+      // A second page with a failing load.
+      TestBed.configureTestingModule({
+        providers: [
+          provideRouter([]),
+          provideFakeMe(new FakeMeApi(withPermissions('Matter.View', 'Matter.Edit'))),
+          {
+            provide: MattersClient,
+            useValue: {
+              getMatter: vi.fn().mockReturnValue(apiError(500, { status: 500, code: 'X' })),
+            },
+          },
+        ],
+      });
+      await TestBed.inject(AuthStore).ensureLoaded();
+      const failing = TestBed.createComponent(MatterFormPage);
+      failing.componentRef.setInput('matterId', '7');
+      await settle(failing);
+      expect(failing.nativeElement.textContent).toContain("We couldn't load that.");
+      expect(buttonByLabel(failing.nativeElement, 'Retry')).toBeDefined();
+    });
+
+    it('unlocks the matter number after a confirmation and confirms the exact result on Save (MD-43, #1061)', async () => {
+      await open({ matterId: '7' });
+      const number = () => el().querySelector<HTMLInputElement>('#matter-number')!;
+      expect(number().disabled).toBe(true);
+      el().querySelector<HTMLButtonElement>('[data-change-number]')!.click();
+      await settle(fixture);
+      const confirm = () =>
+        Array.from(
+          document.body.querySelectorAll<HTMLButtonElement>(
+            '[data-confirm-primary] button, button[data-confirm-primary]',
+          ),
+        );
+      confirm().at(-1)!.click();
+      await settle(fixture);
+      expect(number().disabled).toBe(false);
+      type('#matter-number', '99');
+      await settle(fixture);
+      expect(el().querySelector('[data-cm-value]')!.textContent).toBe('00343-00099');
+      buttonByLabel(el(), 'Save Changes')!.click();
+      await settle(fixture);
+      expect(
+        document.body.querySelector('[data-number-change-body]')!.textContent!.replace(/\s+/g, ' '),
+      ).toContain('The CM Number changes from 00343-00012 to 00343-00099,');
+      expect(matters.changeMatterNumber).not.toHaveBeenCalled();
+      confirm().at(-1)!.click();
+      await settle(fixture);
+      expect(matters.changeMatterNumber).toHaveBeenCalledWith(7, {
+        number: '99',
+        rowVersion: 'BBBB',
+      });
+      expect(matters.updateMatter).toHaveBeenCalled();
+    });
   });
 });

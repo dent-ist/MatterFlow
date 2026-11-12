@@ -82,14 +82,14 @@ test.describe('Sensitive matters: the screens', () => {
     const page = await asUser(u.people.p5.username);
     await page.goto(`/matters/${matter.matterId}`);
     await page.locator('[data-edit-matter]').click();
-    const form = page.locator('.mf-formdlg');
-    await expect(form).toContainText('Edit Matter');
+    const form = page.locator('[data-matter-form]'); // the Edit Matter page (epic #1368, #1381)
+    await expect(page.getByRole('heading', { level: 1, name: 'Edit Matter' })).toBeVisible();
     await form.getByRole('checkbox', { name: /Sensitive matter/ }).check();
     // The wording says what the flag does now.
     await expect(form).toContainText('Everyone else does not see it at all');
     await form.getByRole('button', { name: 'Save Changes' }).click();
 
-    // Asked in the dialog (the Edit Matter pop-up), not announced as an error toast: the next Save confirms.
+    // Asked on the Edit Matter page, not announced as an error toast: the next Save confirms.
     const ask = form.locator('[role="alert"]', { hasText: 'You will no longer see this matter' });
     await expect(ask).toBeVisible();
     await expect(ask).toContainText('Press Save changes again to confirm');
@@ -99,11 +99,13 @@ test.describe('Sensitive matters: the screens', () => {
     });
     await page.setViewportSize({ width: 1366, height: 768 });
 
-    // Keep it as it is: closing the pop-up saves nothing.
+    // Keep it as it is: leaving the page saves nothing (the unsaved-changes question comes first) and returns to the matter page.
     await form.getByRole('button', { name: 'Cancel' }).click();
-    await expect(form.locator('[data-panel-guard]')).toBeVisible();
-    await form.getByRole('button', { name: 'Discard' }).click();
-    await expect(form).toBeHidden();
+    await page
+      .getByRole('dialog', { name: 'Unsaved Changes' })
+      .getByRole('button', { name: 'Discard Changes' })
+      .click();
+    await expect(page).toHaveURL(new RegExp(`/matters/${matter.matterId}$`));
     expect((await admin.get<Json>(`/api/v1/matters/${matter.matterId}`)).isSensitive).toBe(false);
 
     // Confirm: saved, the list opens (the matter page would be "not found" now), and the editor no longer sees the matter.

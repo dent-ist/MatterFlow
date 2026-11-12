@@ -480,78 +480,17 @@ describe('MatterDetailPage', () => {
     expect(el().textContent).not.toContain('Next events');
   });
 
-  it('shows one Edit button on the Summary only with Matter.Edit; it opens the pop-up dialog without leaving the page', async () => {
+  it('shows one Edit button on the Summary only with Matter.Edit; it opens the full Edit Matter page (epic #1368, #1381)', async () => {
     await create(['Matter.View']);
     expect(el().querySelector('[data-edit-matter]')).toBeNull();
 
     TestBed.resetTestingModule();
     await create(['Matter.View', 'Matter.Edit']);
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     el().querySelector<HTMLButtonElement>('[data-edit-matter]')!.click();
     await settle(fixture);
-    const panel = document.body.querySelector('.mf-formdlg')!;
-    expect(panel.textContent).toContain('Edit Matter');
-    expect(panel.querySelector('#matter-name')).not.toBeNull();
-    expect(panel.querySelector('[data-ai-allowed]')).not.toBeNull();
-    expect(navigateByUrl).not.toHaveBeenCalled();
-  });
-
-  it('Edit shows Client and Matter number locked in the same places as New; the number unlocks after a confirmation and a change is confirmed again with its result (MD-43, #1061)', async () => {
-    await create(['Matter.View', 'Matter.Edit', 'Matter.EditNumber']);
-    el().querySelector<HTMLButtonElement>('[data-edit-matter]')!.click();
-    await settle(fixture);
-    const dlg = document.body.querySelector('.mf-formdlg')!;
-    const number = () => dlg.querySelector<HTMLInputElement>('#matter-number')!;
-    // Same fields as New; Client and Matter number are locked; the CM Number is a read-only preview.
-    expect(number().disabled).toBe(true);
-    expect(dlg.querySelector('#matter-client')).toBeNull(); // a locked picker shows text, not an input
-    expect(dlg.querySelector('[data-cm-value]')!.textContent).toBe('00343-00012');
-    expect(dlg.querySelector('[data-client-lock]')).not.toBeNull();
-
-    // Unlocking needs a confirmation.
-    dlg.querySelector<HTMLButtonElement>('[data-change-number]')!.click();
-    await settle(fixture);
-    expect(document.body.querySelector('[data-unlock-body]')).not.toBeNull();
-    expect(number().disabled).toBe(true);
-    document.body
-      .querySelector<HTMLButtonElement>(
-        '[data-confirm-primary] button, button[data-confirm-primary]',
-      )!
-      .click();
-    await settle(fixture);
-    expect(number().disabled).toBe(false);
-
-    // The CM Number preview follows the number; Save asks again with the exact result.
-    number().value = '99';
-    number().dispatchEvent(new Event('input'));
-    await settle(fixture);
-    expect(dlg.querySelector('[data-cm-value]')!.textContent).toBe('00343-00099');
-    dlg.querySelector<HTMLButtonElement>('[data-panel-primary] button')!.click();
-    await settle(fixture);
-    const body = document.body.querySelector('[data-number-change-body]')!;
-    expect(body.textContent!.replace(/\s+/g, ' ')).toContain(
-      'The CM Number changes from 00343-00012 to 00343-00099,',
-    );
-    expect(matters.changeMatterNumber).not.toHaveBeenCalled();
-    const confirms = document.body.querySelectorAll<HTMLButtonElement>(
-      '[data-confirm-primary] button, button[data-confirm-primary]',
-    );
-    confirms[confirms.length - 1].click();
-    await settle(fixture);
-    expect(matters.changeMatterNumber).toHaveBeenCalledWith(7, {
-      number: '99',
-      rowVersion: 'BBBB',
-    });
-    expect(matters.updateMatter).toHaveBeenCalled();
-    expect(el().querySelector('[data-summary-details] .mf-ref')!.textContent).toBe('00343-00099');
-  });
-
-  it('Edit offers no way to change the matter number without Matter.EditNumber', async () => {
-    await create(['Matter.View', 'Matter.Edit']);
-    el().querySelector<HTMLButtonElement>('[data-edit-matter]')!.click();
-    await settle(fixture);
-    const dlg = document.body.querySelector('.mf-formdlg')!;
-    expect(dlg.querySelector('[data-change-number]')).toBeNull();
-    expect(dlg.querySelector<HTMLInputElement>('#matter-number')!.disabled).toBe(true);
+    expect(navigate).toHaveBeenCalledWith(['/matters', 7, 'edit']);
+    expect(document.body.querySelector('.mf-formdlg')).toBeNull();
   });
 
   it('shows Primary PM and Secondary PM as two rows of the details (MD-23, #1027)', async () => {

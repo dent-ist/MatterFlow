@@ -5,7 +5,7 @@ using Shouldly;
 
 namespace LptHub.SchemaTests;
 
-/// <summary>Script 68 (epic #1368, issue #1369): dbo.MatterCategory (no starter rows, unique non-blank name) and the optional dbo.Matter.MatterCategoryId.</summary>
+/// <summary>Scripts 68 and 70 (epic #1368, issues #1369, #1380): dbo.MatterCategory (starter rows from script 70, unique non-blank name) and the optional dbo.Matter.MatterCategoryId.</summary>
 [Collection(SqlServerCollection.Name)]
 public class MatterCategorySchemaTests(SqlServerFixture sql)
 {
@@ -26,10 +26,10 @@ public class MatterCategorySchemaTests(SqlServerFixture sql)
     }
 
     [Fact]
-    public async Task The_list_starts_empty_names_are_unique_and_not_blank_and_the_matter_column_is_nullable()
+    public async Task The_list_starts_with_the_starter_categories_names_are_unique_and_not_blank_and_the_matter_column_is_nullable()
     {
         var cs = await MigratedAsync();
-        (await ScalarAsync(cs, "SELECT COUNT(*) FROM dbo.MatterCategory")).ShouldBe(0);
+        (await ScalarAsync(cs, "SELECT COUNT(*) FROM dbo.MatterCategory")).ShouldBe(7); // script 70
         (await ScalarAsync(cs, "SELECT c.is_nullable FROM sys.columns c WHERE c.object_id = OBJECT_ID('dbo.Matter') AND c.name = 'MatterCategoryId'")).ShouldBe(true);
 
         await ScalarAsync(cs, "INSERT dbo.MatterCategory (Name, SortOrder) VALUES (N'Advisory', 1)");
@@ -45,8 +45,24 @@ public class MatterCategorySchemaTests(SqlServerFixture sql)
         var cs = await MigratedAsync();
         await ScalarAsync(cs, "INSERT dbo.Client (ClientNumber, Name) VALUES ('00001', N'Client')");
         await ScalarAsync(cs, "INSERT dbo.MatterCategory (Name, SortOrder) VALUES (N'Advisory', 1)");
-        await ScalarAsync(cs, "INSERT dbo.Matter (ClientId, ClientNumber, MatterNumber, Name, MatterCategoryId) SELECT ClientId, ClientNumber, '00001', N'M', (SELECT MatterCategoryId FROM dbo.MatterCategory) FROM dbo.Client");
+        await ScalarAsync(cs, "INSERT dbo.Matter (ClientId, ClientNumber, MatterNumber, Name, MatterCategoryId) SELECT ClientId, ClientNumber, '00001', N'M', (SELECT MatterCategoryId FROM dbo.MatterCategory WHERE Name = N'Advisory') FROM dbo.Client");
         var ex = await Should.ThrowAsync<SqlException>(() => ScalarAsync(cs, "DELETE dbo.MatterCategory"));
         ex.Message.ShouldContain("FK_Matter_MatterCategory");
+    }
+
+    [Fact]
+    public async Task Script_70_seeds_the_seven_starter_categories_in_order_and_never_touches_an_administrators_list()
+    {
+        var cs = await MigratedAsync();
+        (await ScalarAsync(cs, "SELECT STRING_AGG(Name, ', ') WITHIN GROUP (ORDER BY SortOrder) FROM dbo.MatterCategory"))
+            .ShouldBe("Litigation, Investigation, Regulatory Inquiry, Arbitration, Second Request, Internal Review, Other");
+
+        // A database whose list the administrator already changed (everything deleted, one own item) keeps exactly that list.
+        var own = await sql.CreateDatabaseAsync();
+        var all = new EmbeddedMigrationScriptSource().ReadAll();
+        await new SchemaMigrationRunner(own, new InMemoryMigrationScriptSource(all.Where(s => !s.Name.StartsWith("70-", StringComparison.Ordinal))), new MigrationsOptions { LockTimeoutSeconds = 60 }, NullLogger<SchemaMigrationRunner>.Instance).RunAsync();
+        await ScalarAsync(own, "INSERT dbo.MatterCategory (Name, SortOrder) VALUES (N'Mine', 1)");
+        await new SchemaMigrationRunner(own, new EmbeddedMigrationScriptSource(), new MigrationsOptions { LockTimeoutSeconds = 60 }, NullLogger<SchemaMigrationRunner>.Instance).RunAsync();
+        (await ScalarAsync(own, "SELECT STRING_AGG(Name, ', ') FROM dbo.MatterCategory")).ShouldBe("Mine");
     }
 }

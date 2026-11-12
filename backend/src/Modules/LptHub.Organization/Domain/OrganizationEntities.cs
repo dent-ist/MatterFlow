@@ -70,7 +70,7 @@ public class Matter : AuditedEntity<int>, IAuditScoped
     public MatterAiAllowed AiAllowed { get; set; }
 
     // The Matter Types of a matter (epic #1368, issue #1370: zero, one or several) are the rows of MatterMatterType, not a column of this entity. The old single column
-    // dbo.Matter.MatterTypeId is kept in the database until a later script drops it; nothing maps or reads it any more.
+    // The old MatterTypeId column of the Matter table is kept in the database until a later script drops it; nothing maps or reads it any more.
 
     /// <summary>Optional Matter Category (admin list, epic #1368; a single choice). Changes are audited by <c>MATTER_CATEGORY_CHANGED</c> events with the names, not as generic field changes.</summary>
     [AuditExplicit]
