@@ -244,7 +244,7 @@ export const VENDOR_LINK_REASON = 'Needs Vendor.Link';
               <span class="vp__main">
                 <button
                   type="button"
-                  class="mf-btn mf-btn--name"
+                  class="mf-btn mf-btn--text mf-btn--name"
                   data-vendor-name
                   [mfTip]="v.name"
                   (click)="openVendor(v.vendorId)"
@@ -325,7 +325,7 @@ export const VENDOR_LINK_REASON = 'Needs Vendor.Link';
                 <span class="vp__main">
                   <button
                     type="button"
-                    class="mf-btn mf-btn--name"
+                    class="mf-btn mf-btn--text mf-btn--name"
                     [mfTip]="v.name"
                     (click)="openVendor(v.vendorId)"
                   >

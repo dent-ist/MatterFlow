@@ -85,6 +85,10 @@ test.describe('Vendors page (#1378)', () => {
       'true',
     );
     await dialog(page).locator('[data-category="PREFERRED"]').click();
+    await expect(dialog(page).locator('[data-category="PREFERRED"]')).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    ); // the draft has changed before the lists open
     await dialog(page).locator('#vendor-services').click();
     await page.getByRole('option', { name: service }).click();
     await page.keyboard.press('Escape');

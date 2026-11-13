@@ -197,7 +197,7 @@ interface VendorRow {
                 <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
                 <div class="vd__warn-body">
                   <span
-                    ><strong>Blacklisted.</strong>
+                    ><strong>Blacklisted.</strong>{{ ' ' }}
                     <span data-blacklisted-reason>{{ reasonOf(r) }}</span></span
                   >
                   <label class="vd__tick">

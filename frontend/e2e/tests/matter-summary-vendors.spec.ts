@@ -35,7 +35,11 @@ async function axeClean(page: Page, label: string) {
 }
 
 test.describe('Matter Summary: the Vendors panel (#1379)', () => {
-  const token = uid().slice(0, 6);
+  // A new token for every test (and every repeat): vendor names are unique in the shared database.
+  let token = uid().slice(0, 6);
+  test.beforeEach(() => {
+    token = uid().slice(0, 6);
+  });
 
   async function matterOf(seed: Seeder) {
     const client = await seed.client();
@@ -372,10 +376,11 @@ test.describe('Matter Summary: the Vendors panel (#1379)', () => {
     const none = await matterOf(seed);
     const one = await seed.matter({ client: await seed.client(), name: `One ${token}` });
     await link(admin, one, await vendorOf(admin, 'Only', 'NEUTRAL'));
+    await vendorOf(admin, 'Risky', 'BLACKLISTED', { note: 'Missed two deadlines.' });
     const many = await seed.matter({ client: await seed.client(), name: `Many ${token}` });
     await fullTeam(admin, many);
     await link(admin, many, await vendorOf(admin, 'Zed Bad', 'BLACKLISTED', { note: 'x' }), true);
-    for (const n of ['Alpha', 'Beta', 'Gamma', 'Delta'])
+    for (const n of ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon'])
       await link(admin, many, await vendorOf(admin, n));
     for (const size of SIZES) {
       await page.setViewportSize(size);
@@ -394,6 +399,18 @@ test.describe('Matter Summary: the Vendors panel (#1379)', () => {
       await page.locator('[data-vendors-show-all]').click();
       await shot(page, 'show-all');
       await page.keyboard.press('Escape');
+      // Edit Vendors on the one-vendor matter: the combobox open, then a Blacklisted vendor picked (reason and tick).
+      await page.goto(`/matters/${one.matterId}`);
+      await panel(page).locator('[data-vendor-edit]').click();
+      await dialog(page).locator('#vendor-add').fill(`Risky ${token}`);
+      await expect(page.locator('[role=option][data-vendor-id]').first()).toBeVisible();
+      await shot(page, 'edit-vendors-combobox');
+      await page.locator('[role=option][data-vendor-id]').first().click();
+      await expect(dialog(page).locator('[data-blacklisted-reason]')).toContainText('Missed');
+      await shot(page, 'edit-vendors-blacklisted');
+      await page.keyboard.press('Escape');
+      await dialog(page).getByRole('button', { name: 'Cancel' }).click();
+      await page.getByRole('button', { name: 'Discard Changes' }).click();
     }
   });
 });
