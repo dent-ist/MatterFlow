@@ -539,11 +539,24 @@ test.describe('Users tab: workload', () => {
     expect(size.height).toBeGreaterThanOrEqual(24);
 
     const ref = (await rows.first().locator('.mf-ref').first().textContent())!.trim();
-    await drawer.getByRole('button', { name: `Reassign ${ref}` }).click();
     // The picker prints a person without the domain of the account (the content rules of #1347).
     const idleShown = shownName(person('idle').displayName);
-    await page.getByRole('textbox', { name: 'Search People' }).fill(idleShown);
-    await page.getByRole('menuitemradio', { name: idleShown }).click();
+    const search = page.getByRole('textbox', { name: 'Search People' });
+    const person_ = page.getByRole('menuitemradio', { name: idleShown });
+    // On a loaded machine the drawer redraws once more after the click and takes the open menu with it (run 67: "element was detached" until the
+    // timeout): open the menu again if it is gone, type, and wait for the person, as a person would.
+    await expect(async () => {
+      if (!(await search.isVisible())) {
+        // Centre the icon first: a menu that opens at the edge of the window is placed again after the list arrives, and a scroll anywhere
+        // closes it (the click on the person found it "outside of the viewport" and then "detached").
+        const reassign = drawer.getByRole('button', { name: `Reassign ${ref}` });
+        await reassign.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+        await reassign.click({ timeout: 3000 });
+      }
+      await search.fill(idleShown, { timeout: 3000 });
+      await expect(person_).toBeVisible({ timeout: 5000 });
+      await person_.click({ timeout: 3000 });
+    }).toPass({ timeout: 45_000 });
     // The announcement says the full account name.
     await expect(drawer.locator('[data-drawer-live]')).toContainText(
       `${ref} reassigned to ${person('idle').displayName}`,
@@ -697,7 +710,18 @@ test.describe('Users tab: coverage', () => {
     await page.goto(scoped(extra));
     await expect(page.locator('[data-coverage-table]')).toBeVisible();
     const more = page.locator('[data-rows-more]');
-    for (let i = 0; i < 100 && (await more.count()) > 0; i++) await more.click();
+    // Each click draws 60 more rows on the next render, so the button is still there right after the click. Clicking again at once would wait for a
+    // button that is about to go (15 s timeout): after every click wait until the rows grew or the button is gone, and click with a short timeout.
+    const rows = page.locator('[data-coverage-table] tbody tr');
+    for (let i = 0; i < 200 && (await more.count()) > 0; i++) {
+      const drawn = await rows.count();
+      await more.click({ timeout: 5000 }).catch(() => undefined);
+      await expect
+        .poll(async () => (await more.count()) === 0 || (await rows.count()) > drawn, {
+          timeout: 30_000,
+        })
+        .toBe(true);
+    }
     await expect(more).toHaveCount(0);
   };
 

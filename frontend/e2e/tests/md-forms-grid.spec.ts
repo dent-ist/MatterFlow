@@ -181,6 +181,9 @@ test.describe('Matter detail tabs: Summary, Projects, Assets, Productions, butto
     expect(production.font).toBe(project.font);
     expect(production.radius).toBe(project.radius);
     await page.goto(`/matters/${world.matter.matterId}?tab=productions`);
+    // The page has to be drawn before axe reads it (a slow load was read without its level-one heading, run 67 repeat).
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await expect(page.getByRole('button', { name: /New Production/ }).first()).toBeVisible();
     await shot(page, 'productions-1366x768');
     await axeClean(page, 'productions tab');
   });
@@ -225,21 +228,15 @@ test.describe('Shared grid: Columns menu, reorder and row hover (MD-28, MD-29)',
 
     await page.reload();
     await expect(page.locator('mf-task-table tbody tr[data-task]').first()).toBeVisible();
-    expect(await heads()).toEqual(after);
+    await expect.poll(heads).toEqual(after);
 
     await page.locator('[data-grid-columns]').click();
     await page.locator('[data-grid-columns-reset]').click();
     await page.keyboard.press('Escape');
-    expect(await heads()).toEqual([
-      'Ref',
-      'Type',
-      'Title',
-      'Priority',
-      'Assignee',
-      'Due',
-      'Status',
-      'Actions',
-    ]);
+    // Reset redraws the grid on the next render: read the headings until they settle (run 67 read the order from before the Reset).
+    await expect
+      .poll(heads)
+      .toEqual(['Ref', 'Type', 'Title', 'Priority', 'Assignee', 'Due', 'Status', 'Actions']);
     await axeClean(page, 'tasks tab with the Columns menu');
   });
 

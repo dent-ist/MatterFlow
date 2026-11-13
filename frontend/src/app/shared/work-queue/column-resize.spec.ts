@@ -163,6 +163,37 @@ describe('TaskTable resize handles (#204)', () => {
     expect(document.body.classList.contains('wt-resizing')).toBe(false);
   });
 
+  it('on release the table is already in its final state before Angular renders: the minimum width grew by the drag, so the Title is not squeezed (e2e run 67)', async () => {
+    await create();
+    const minRem = () => parseFloat(table().style.getPropertyValue('--wt-min'));
+    const before = minRem();
+    fire(handle('due'), 'pointerdown', 500);
+    fire(handle('due'), 'pointermove', 530);
+    fire(handle('due'), 'pointerup', 530);
+    expect(table().style.minWidth).toBe(''); // the drag's own inline minimum is gone ...
+    expect(minRem()).toBeCloseTo(before + 30 / 14, 5); // ... and the table's variable already holds the new total
+    // Narrowing counts the same way.
+    fire(handle('due'), 'pointerdown', 500);
+    fire(handle('due'), 'pointermove', 480);
+    fire(handle('due'), 'pointerup', 480);
+    expect(minRem()).toBeCloseTo(before + 30 / 14 - 20 / 14, 5);
+  });
+
+  it('a released Title drag is a fixed Title at once: its <col> has the width variable, the grid is as wide as its columns', async () => {
+    await create();
+    const before = parseFloat(table().style.getPropertyValue('--wt-min'));
+    expect(table().classList.contains('wt--title-fixed')).toBe(false);
+    fire(handle('title'), 'pointerdown', 300);
+    fire(handle('title'), 'pointermove', 360);
+    fire(handle('title'), 'pointerup', 360);
+    expect(el.querySelector<HTMLElement>('col[data-col="title"]')!.style.width).toBe(
+      'var(--w-title)',
+    );
+    expect(table().style.getPropertyValue('--w-title')).toBe(`${180 / 14}rem`);
+    expect(table().classList.contains('wt--title-fixed')).toBe(true);
+    expect(parseFloat(table().style.getPropertyValue('--wt-min'))).toBeCloseTo(before + 60 / 14, 5);
+  });
+
   it('only the dragged column changes: the neighbours keep their widths (DB-10, #1073)', async () => {
     await create();
     const before = ['ref', 'matter', 'due', 'status'].map((k) => width(k));

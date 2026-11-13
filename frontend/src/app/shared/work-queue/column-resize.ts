@@ -147,6 +147,10 @@ export function startColumnResize(o: ColumnResizeOptions): boolean {
   const startTableWidth = table.style.width;
   const startColWidth = colEl?.style.width ?? '';
   const startMinWidth = table.style.minWidth;
+  // The table's own custom properties before the drag (rem): what the release needs to write the final state itself, see `settle`.
+  const remVar = (name: string): number => parseFloat(table.style.getPropertyValue(name));
+  const startOwnRem = remVar(`--w-${def.key}`);
+  const startTableMinRem = remVar('--wt-min');
   const apply = (): void => {
     if (colEl) colEl.style.width = `${layout.widthPx}px`;
     table.style.minWidth = `${layout.tableMinPx}px`;
@@ -199,6 +203,28 @@ export function startColumnResize(o: ColumnResizeOptions): boolean {
     if (!frame) frame = requestAnimationFrame(render);
   };
 
+  /**
+   * Angular writes the new widths on its next render, after this handler. Without this the table passes through a wrong state for one frame:
+   * `restore` has removed the drag's inline minimum width, the old `--wt-min` is still in force and the columns already add up to more than it,
+   * so the Title is squeezed to 0 to 16 px (and a Title that was just dragged is still the spring). A person hardly sees it; a script that reads
+   * the widths on the release, or starts the next drag, does (e2e run 67). So the release writes the values Angular is about to write.
+   */
+  const settle = (): void => {
+    if (!Number.isFinite(startTableMinRem)) return;
+    const newRem = layout.widthPx / rootPx;
+    // The Title counts with its minimum (7.5 rem at 14 px) while it is the spring, with its own width once it is fixed.
+    const oldRem = Number.isFinite(startOwnRem)
+      ? startOwnRem
+      : isTitle
+        ? def.minWidth / ROOT_PX
+        : startPx / rootPx;
+    table.style.setProperty('--wt-min', `${startTableMinRem - oldRem + newRem}rem`);
+    if (isTitle) {
+      colEl?.style.setProperty('width', `var(--w-${def.key})`);
+      table.classList.add('wt--title-fixed');
+    }
+  };
+
   const finish = (commit: boolean): void => {
     if (done) return;
     done = true;
@@ -223,6 +249,7 @@ export function startColumnResize(o: ColumnResizeOptions): boolean {
       // The variables first, so the column keeps its new width when the inline overrides go; Angular writes the same values next.
       table.style.setProperty(`--w-${def.key}`, `${layout.widthPx / rootPx}rem`);
       restore();
+      settle();
       // The Title is stored only when its own divider was dragged (a fixed width); another divider leaves it the spring.
       if (isTitle) o.commitTitle?.(layout.widthPx / rootPx);
       else o.commit(layout.widthPx / rootPx);
