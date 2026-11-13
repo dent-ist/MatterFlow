@@ -141,7 +141,7 @@ function today(): string {
       grid-column: 1 / -1;
       padding: var(--mf-s2) var(--mf-s3);
       border-left: 3px solid var(--mf-border-mid);
-      border-radius: var(--mf-radius-md);
+      border-radius: var(--mf-radius-lg);
       background: var(--mf-surface-alt);
     }
     .vc__note--bad {
@@ -418,7 +418,7 @@ function today(): string {
                           }
                         </div>
                         <div class="mf-field">
-                          <span class="mf-field__label">Reported By</span>
+                          <span class="mf-field__label">Reported by</span>
                           <p class="vc__plain" data-reported-by>{{ reporter(c) }}</p>
                         </div>
                         <div class="vc__wide">

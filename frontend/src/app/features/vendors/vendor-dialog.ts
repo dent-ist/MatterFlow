@@ -171,12 +171,18 @@ export function websiteHref(website: string | undefined | null): string | null {
         </div>
       }
       @if (editing()) {
-        <mf-vendor-form
-          [(draft)]="draft"
-          [services]="services()"
-          [areas]="areas()"
-          [errors]="fieldErrors()"
-        />
+        <div
+          [attr.role]="isNew() ? null : 'tabpanel'"
+          [attr.id]="isNew() ? null : 'vendor-panel'"
+          [attr.aria-labelledby]="isNew() ? null : 'vendor-tab-overview'"
+        >
+          <mf-vendor-form
+            [(draft)]="draft"
+            [services]="services()"
+            [areas]="areas()"
+            [errors]="fieldErrors()"
+          />
+        </div>
       } @else if (current(); as v) {
         <div
           role="tabpanel"
@@ -293,9 +299,9 @@ export function websiteHref(website: string | undefined | null): string | null {
                 </p>
                 <span class="vd__foot-buttons">
                   <p-button
-                    label="Close"
+                    label="Keep Vendor"
                     severity="secondary"
-                    data-panel-cancel
+                    data-delete-keep
                     (onClick)="step.set('none')"
                   />
                 </span>

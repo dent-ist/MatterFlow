@@ -107,7 +107,7 @@ describe('VendorContactsTab', () => {
     expect(el(f).querySelector('[data-contacts-empty]')!.textContent).toContain('No contacts yet.');
   });
 
-  it('Add Note opens the form inside the row (flag, date, note, Reported By), never a dialog', async () => {
+  it('Add Note opens the form inside the row (flag, date, note, Reported by), never a dialog', async () => {
     const f = await start();
     el(f).querySelector<HTMLElement>('[data-contact="21"] [data-edit-note]')!.click();
     await settle(f);
@@ -118,7 +118,7 @@ describe('VendorContactsTab', () => {
     form.querySelector<HTMLElement>('[data-flag="RECOMMENDED"]')!.click();
     await settle(f);
     expect(form.textContent).toContain('Reported Date');
-    expect(form.textContent).toContain('Reported By');
+    expect(form.textContent).toContain('Reported by');
     expect(form.querySelector('[data-reported-by]')!.textContent).toContain('You');
   });
 

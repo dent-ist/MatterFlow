@@ -338,7 +338,7 @@ describe('VendorDialog', () => {
       expect(block).toContain("can't be deleted");
       expect(block).toContain('linked to 2 matters');
       expect(btn('Delete Vendor')).toBeUndefined();
-      expect(btn('Close')).toBeDefined();
+      expect(q('[data-delete-blocked]')!.parentElement!.textContent).toContain('Keep Vendor');
       expect(api['deleteVendor']).not.toHaveBeenCalled();
     });
 

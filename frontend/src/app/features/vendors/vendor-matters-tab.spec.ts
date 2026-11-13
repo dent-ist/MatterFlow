@@ -51,7 +51,7 @@ describe('VendorMattersTab', () => {
     return { f, api, el: f.nativeElement as HTMLElement };
   }
 
-  it('lists the linked matters in the shared read-only grid: CM Number as a link, Matter, Client, Linked and Linked By', async () => {
+  it('lists the linked matters in the shared read-only grid: CM Number as a link, Matter, Client, Linked and Linked by', async () => {
     const { f, api, el } = await start();
     expect(api.listVendorMatters).toHaveBeenCalledWith(7);
     expect(el.querySelector('mf-record-grid')).not.toBeNull();
@@ -60,7 +60,7 @@ describe('VendorMattersTab', () => {
       'Matter',
       'Client',
       'Linked',
-      'Linked By',
+      'Linked by',
     ]);
     const first = el.querySelector('tbody tr')!;
     expect(first.querySelector('a.mf-ref')!.getAttribute('href')).toBe('/matters/301');
@@ -70,6 +70,14 @@ describe('VendorMattersTab', () => {
     expect(first.textContent).toContain('Maria Alvarez');
     expect(f.componentInstance.counts).toEqual([2]);
     expect(el.querySelectorAll('[data-matter-ref]')).toHaveLength(2);
+  });
+
+  it('sizes the grid frame to its rows (heading, up to six rows) because a dialog tab gives it no room', async () => {
+    const { el } = await start();
+    const min = (el.querySelector('mf-vendor-matters-tab') as HTMLElement).style.getPropertyValue(
+      '--mf-frame-min',
+    );
+    expect(min).toBe('174px'); // 40 + 3 rows (the floor) x 44 + 2
   });
 
   it('says so when the vendor is linked to no matter', async () => {

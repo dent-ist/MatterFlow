@@ -111,7 +111,7 @@ export function draftChanged(a: VendorDraft, b: VendorDraft): boolean {
     }
   `,
   template: `
-    <form class="vf" novalidate (submit)="$event.preventDefault()" data-vendor-form>
+    <div class="vf" data-vendor-form>
       <mf-text-field
         inputId="vendor-name"
         label="Name"
@@ -225,7 +225,7 @@ export function draftChanged(a: VendorDraft, b: VendorDraft): boolean {
         } @else {
           <p class="vf__ai-none" data-tech-ai-none>No AI systems added.</p>
         }
-        <div class="vf__ai-add" (keydown.enter)="$event.preventDefault(); addAi()">
+        <form class="vf__ai-add" novalidate (submit)="$event.preventDefault(); addAi()">
           <mf-text-field
             inputId="vendor-ai-new"
             label="AI System or Service"
@@ -234,10 +234,10 @@ export function draftChanged(a: VendorDraft, b: VendorDraft): boolean {
             [value]="aiText()"
             (valueChange)="aiText.set($event)"
           />
-          <button type="button" class="mf-btn vf__ai-btn" data-add-tech-ai (click)="addAi()">
+          <button type="submit" class="mf-btn vf__ai-btn" data-add-tech-ai>
             <i class="pi pi-plus" aria-hidden="true"></i> Add
           </button>
-        </div>
+        </form>
         <span class="mf-field__help">For example Relativity aiR. Add one at a time.</span>
       </div>
       <div class="vf__wide">
@@ -252,7 +252,7 @@ export function draftChanged(a: VendorDraft, b: VendorDraft): boolean {
           (valueChange)="patch({ note: $event })"
         />
       </div>
-    </form>
+    </div>
   `,
 })
 export class VendorForm {

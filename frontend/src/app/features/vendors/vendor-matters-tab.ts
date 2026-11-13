@@ -46,11 +46,14 @@ const BONES: Record<string, string> = {
   selector: 'mf-vendor-matters-tab',
   imports: [RecordGrid, RecordCell, MatterRef, NumericDatePipe, StateBlock, Button],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[style.--mf-frame-min]': 'frameMin()' },
   styles: `
     :host {
       display: block;
-      /* A small grid inside a dialog tab: no 412 px minimum frame. */
-      --mf-frame-min: 0px;
+    }
+    /* The grid table keeps 60 rem as its minimum on a page; inside the 734 px of the dialog tab it takes the width of its frame, the five columns fit. */
+    :host ::ng-deep table.tt {
+      min-width: 0;
     }
     .vm__head {
       display: flex;
@@ -162,6 +165,13 @@ export class VendorMattersTab {
   protected readonly matterKey = (m: VendorMatterResponse): number => m.matterId;
   protected readonly state = signal<LoadState>('loading');
   protected readonly rows = signal<VendorMatterResponse[]>([]);
+  /**
+   * The record grid frame fills the room its parent gives it; a dialog tab has no fixed room, so the frame is as high as its rows need: the 40 px heading, up to six 44 px rows
+   * (more rows scroll inside the frame) and the 2 px of border. Replaces the 412 px minimum of a page.
+   */
+  protected readonly frameMin = computed(
+    () => `${40 + Math.min(Math.max(this.rows().length, 3), 6) * 44 + 2}px`,
+  );
 
   protected readonly defs = computed((): RecordGridColumn[] => [
     {
@@ -174,7 +184,7 @@ export class VendorMattersTab {
     { key: 'name', label: 'Matter', minWidth: '140px' },
     { key: 'client', label: 'Client', width: 'var(--mf-col-client-w)', minWidth: '120px' },
     { key: 'linked', label: 'Linked', width: '88px', minWidth: '88px' },
-    { key: 'by', label: 'Linked By', width: '128px', minWidth: '128px' },
+    { key: 'by', label: 'Linked by', width: '128px', minWidth: '128px' },
   ]);
   /** A fixed layout: the tab is a read-only list, so there is no Columns chooser; the grid state only holds the widths. */
   protected readonly grid = new RecordGridState('vendor-matters', this.defs);

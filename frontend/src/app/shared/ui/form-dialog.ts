@@ -229,7 +229,7 @@ export class FormDialog {
   readonly focusPrimary = input(false);
   /**
    * A tabbed view dialog (large, "tabbed view dialog" of the guidelines, #1378): a fixed height (640 px, at most 90% of the window) so a tab change does not make the dialog jump, and a
-   * tab strip projected under the header (`<mf-tabs mfDialogTabs>`), outside the scrolling body.
+   * tab strip projected under the header (`mf-tabs` in the `mfDialogTabs` slot), outside the scrolling body.
    */
   readonly tabbed = input(false);
   /**
