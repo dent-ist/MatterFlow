@@ -161,7 +161,13 @@ test.describe('Create task sections (#349)', () => {
     await page.keyboard.type('needed');
     await create.whenToggle.focus();
     await page.keyboard.press('Enter');
+    // Wait until the section is open and the fields are drawn and enabled before moving focus (focus() on a field that is not yet usable is lost).
+    await expect(create.whenToggle).toHaveAttribute('aria-expanded', 'true');
+    await expect(create.priority).toBeVisible();
+    await expect(create.priority).toBeEnabled();
+    await expect(create.dueDate).toBeVisible();
     await create.priority.focus();
+    await expect(create.priority).toBeFocused();
     await page.keyboard.press('Tab'); // on to Due date
     await expect(create.dueDate).toBeFocused();
     await create.submit.focus();

@@ -46,7 +46,10 @@ test.describe('Dashboard > Calendar', () => {
   test('the Director sees the Calendar tab with a Month grid, a quiet good day, and a legend', async ({
     asUser,
     personas,
+    seed,
   }) => {
+    // The Month grid is drawn only when somebody who works tasks belongs to a pod ("No people to plan yet" otherwise, the first spec on an empty database).
+    await podWithTwo(seed);
     const director = await personas.named('director');
     const page = await asUser(director.username);
     await page.goto('/dashboard');

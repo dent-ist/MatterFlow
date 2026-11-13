@@ -63,6 +63,8 @@ for (const size of SIZES) {
       let checked = 0;
       for (let i = 0; i < count; i++) {
         await items.nth(i).click();
+        // The control of the chosen filter is drawn a moment after the click: wait for it before asking whether it holds a dropdown (count() does not wait).
+        await expect(popover(page).locator('mf-filter-control > *')).not.toHaveCount(0);
         const trigger = popover(page)
           .locator('mf-dropdown button, [aria-haspopup="listbox"]')
           .first();

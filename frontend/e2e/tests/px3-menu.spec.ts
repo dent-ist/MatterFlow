@@ -6,14 +6,14 @@ import { SIZES, noHorizontalScroll } from '../support/screens';
 
 /**
  * The menu of the Project Manager (epic #758; MM-59 #951 removed the "More" group): the one order, My Matters, My Work, Clients, Matters, Projects
- * and Assets (indented), Tasks, Reports (the Project Manager role holds Report.Run since owner decision 8 of the Reports review, #784; the item
+ * and Assets (indented), People, Vendors (the role holds People.View and Vendor.View), Tasks, Reports (the Project Manager role holds Report.Run since owner decision 8 of the Reports review, #784; the item
  * shows even when no report is assigned), and no Pod Work. Everybody who does not land on My
  * Matters has the same order with "Task Queue" and Pod Work.
  */
 test.describe('The short menu of the Project Manager', () => {
   const links = (page: Page) => page.locator('nav[aria-label="Main"] a');
 
-  test('My Matters, My Work, Clients, Matters, Projects, Assets, Task Queue, Reports; no More button and no Pod Work', async ({
+  test('My Matters, My Work, Clients, Matters, Projects, Assets, People, Vendors, Task Queue, Reports; no More button and no Pod Work', async ({
     seed,
     personas,
     asUser,
@@ -28,6 +28,7 @@ test.describe('The short menu of the Project Manager', () => {
       'Matters',
       'Projects',
       'Assets',
+      'People',
       'Vendors',
       'Task Queue',
       'Reports',
