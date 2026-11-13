@@ -844,14 +844,14 @@ test.describe('Users tab: coverage', () => {
     const first = page.locator('[data-cell][tabindex="0"]');
     await first.focus();
     const start = await first.getAttribute('data-cell');
+    // The cell is focused after the next render, not inside the key press: read the focus until it has moved.
+    const focused = () => page.evaluate(() => document.activeElement?.getAttribute('data-cell'));
     await page.keyboard.press('ArrowRight');
-    expect(await page.evaluate(() => document.activeElement?.getAttribute('data-cell'))).not.toBe(
-      start,
-    );
+    await expect
+      .poll(async () => ((await focused()) === start ? null : await focused()))
+      .toMatch(/^\d+:\d+$/);
     await page.keyboard.press('ArrowLeft');
-    expect(await page.evaluate(() => document.activeElement?.getAttribute('data-cell'))).toBe(
-      start,
-    );
+    await expect.poll(focused).toBe(start);
   });
 
   test('has no axe violations in the matrix and in the cell drawer', async ({ page }) => {

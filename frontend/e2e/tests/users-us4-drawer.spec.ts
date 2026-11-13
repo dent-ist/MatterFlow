@@ -289,7 +289,12 @@ test.describe('#440 Pods, Availability and Profile', () => {
     const pop = page.locator('[data-pods-popover]');
     await expect(pop).toBeVisible();
     await pop.getByRole('checkbox', { name: new RegExp(otherPodName) }).check();
-    // The first pod of a person with no pods is the primary one already (no "Make Primary" button then).
+    // The person is in a pod that was added without a primary one (seed), so the popover asks for a primary pod: "Make Primary" appears on the ticked row after
+    // the next render. (A person with no pods at all gets the Primary tag on the first pod at once, no button then.) Wait for either before looking.
+    const row = pop
+      .locator('li')
+      .filter({ has: page.getByRole('checkbox', { name: new RegExp(otherPodName) }) });
+    await expect(row.locator('[data-pod-primary], [data-primary-chip]')).toBeVisible();
     const makePrimary = pop.getByRole('button', { name: `Make ${otherPodName} the primary pod` });
     if ((await makePrimary.count()) > 0) await makePrimary.click();
     // Apply is aria-disabled until the choice is a change the popover accepts: wait for that instead of clicking into a disabled button.

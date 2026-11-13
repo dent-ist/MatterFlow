@@ -125,7 +125,7 @@ test.describe('Version editor: step rows (VP2, #394)', () => {
     await expect(page.locator('[data-steps] [data-live]')).toContainText(
       `Moved ${a} to position 2 of 4.`,
     );
-    expect((await titlesOf(page)).slice(0, 2)).toEqual([b, a]);
+    await expect.poll(async () => (await titlesOf(page)).slice(0, 2)).toEqual([b, a]);
     // The focus stays on the same control of the same row.
     await expect(rowMenu(page, a)).toBeFocused();
     await page.keyboard.press('Alt+ArrowUp');
@@ -133,7 +133,7 @@ test.describe('Version editor: step rows (VP2, #394)', () => {
       `Moved ${a} to position 1 of 4.`,
     );
     await expect(rowMenu(page, a)).toBeFocused();
-    expect((await titlesOf(page)).slice(0, 2)).toEqual([a, b]);
+    await expect.poll(async () => (await titlesOf(page)).slice(0, 2)).toEqual([a, b]);
     // The same from the rule badge of the row.
     await stepRow(page, a).locator('[data-rule]').focus();
     await page.keyboard.press('Alt+ArrowDown');
@@ -172,7 +172,7 @@ test.describe('Version editor: row overflow and skip rules (VP2, #395)', () => {
     await expect(page.getByRole('menuitem', { name: 'Move Up' })).toHaveCount(0); // the first row cannot move up
     await expect(page.getByRole('menuitem', { name: 'Move Down' })).toBeFocused();
     await page.keyboard.press('Enter');
-    expect((await titlesOf(page)).slice(0, 2)).toEqual([b, a]);
+    await expect.poll(async () => (await titlesOf(page)).slice(0, 2)).toEqual([b, a]);
     await expect(rowMenu(page, a)).toBeFocused();
     await expect(page.locator('[data-dirty]')).toBeVisible();
 
@@ -214,7 +214,7 @@ test.describe('Version editor: row overflow and skip rules (VP2, #395)', () => {
     // Undo with the keyboard shortcut of the toast (Alt+Z, unchanged): back at its place with its rules.
     await page.keyboard.press('Alt+KeyZ');
     await expect(page.locator('[data-step-row]')).toHaveCount(4);
-    expect((await titlesOf(page)).slice(0, 3)).toEqual([b, a, c]);
+    await expect.poll(async () => (await titlesOf(page)).slice(0, 3)).toEqual([b, a, c]);
     await expect(page.locator('[data-steps] [data-live]')).toContainText(
       `Restored ${c} at position 3 of 4.`,
     );
@@ -226,7 +226,7 @@ test.describe('Version editor: row overflow and skip rules (VP2, #395)', () => {
     await expect(stepRow(page, a).locator('[data-skip-summary]')).toContainText(
       'Skippable - Comment',
     );
-    expect((await titlesOf(page)).slice(0, 2)).toEqual([b, a]);
+    await expect.poll(async () => (await titlesOf(page)).slice(0, 2)).toEqual([b, a]);
 
     // Save, and the server has the order and the rules.
     await page.getByRole('button', { name: 'Save Draft' }).click();
