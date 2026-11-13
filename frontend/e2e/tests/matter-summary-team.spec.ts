@@ -40,7 +40,7 @@ interface Person {
 test.describe('Matter Summary: Details groups and the Team panel (#1376)', () => {
   const token = uid().slice(0, 6);
 
-  /** A matter with types, state, paths and a team of `size` people (a system user, two Internal, the rest External), titles from the admin list. */
+  /** A matter with types, state, paths and a team of `size` people (only Internal people can be on a matter team, #1383), titles from the admin list. */
   async function world(seed: Seeder, admin: Api, size: number, opts: { category?: boolean } = {}) {
     const client = await seed.client();
     const matter = await seed.matter({ client, number: '00001', name: `Acme v. Beta ${token}` });
@@ -63,9 +63,9 @@ test.describe('Matter Summary: Details groups and the Team panel (#1376)', () =>
     const specs: [string, string, string, string?, string?][] = [
       ['Maria', 'Alvarez', 'INTERNAL', 'Case Manager'],
       ['Helen', 'Park', 'INTERNAL', 'Lead Attorney'],
-      ['Victor', 'Lang', 'EXTERNAL', 'Partner', 'Hartman & Pike LLP'],
-      ['Tom', 'Becker', 'EXTERNAL', 'Technical Lead', 'Sentinel Review'],
-      ['Grace', 'Liu', 'EXTERNAL', 'Compliance Director', 'Sentinel ITAR Compliance'],
+      ['Victor', 'Lang', 'INTERNAL', 'Partner'],
+      ['Tom', 'Becker', 'INTERNAL', 'Technical Lead'],
+      ['Grace', 'Liu', 'INTERNAL', 'Compliance Director'],
     ];
     const people: Person[] = [];
     for (const [first, last, type, title, company] of specs.slice(0, size)) {
@@ -129,7 +129,7 @@ test.describe('Matter Summary: Details groups and the Team panel (#1376)', () =>
       await expect(rows(page)).toHaveCount(cap);
       await expect(page.locator('[data-team-show-all]')).toHaveCount(cap === 5 ? 0 : 1);
       await expect(rows(page).first().locator('[data-member-name]')).toContainText('Grace');
-      await expect(rows(page).first().locator('[data-person-kind]')).toHaveText('External');
+      await expect(rows(page).first().locator('[data-person-kind]')).toHaveText('Internal');
       await expect(page.locator('[data-team-edit]')).toBeVisible();
       await noSideScroll(page, `Summary at ${size.width}`);
       await axeClean(page, `Summary at ${size.width}`);
@@ -186,9 +186,8 @@ test.describe('Matter Summary: Details groups and the Team panel (#1376)', () =>
     const extra: Person = await admin.post('/api/v1/people', {
       firstName: `Laura${token}`,
       lastName: 'Whitfield',
-      personType: 'EXTERNAL',
+      personType: 'INTERNAL',
       title: 'Account Executive',
-      companyName: 'Northbridge eDiscovery',
       email: `laura.${token}@demo.example`,
     });
     await page.setViewportSize(S1366);
@@ -309,6 +308,33 @@ test.describe('Matter Summary: Details groups and the Team panel (#1376)', () =>
       page.locator('[data-team-edit], [data-team-add], [data-set-category]'),
     ).toHaveCount(0);
     await axeClean(page, 'Summary without Matter.Edit');
+  });
+
+  test('Edit Team offers Internal people only: an External person is not found, and a person created there is Internal (#1383)', async ({
+    page,
+    seed,
+    admin,
+  }) => {
+    const w = await world(seed, admin, 2);
+    const outsider: Person = await admin.post('/api/v1/people', {
+      firstName: `Olga${token}`,
+      lastName: 'Outsider',
+      personType: 'EXTERNAL',
+      companyName: 'Outside Counsel LLP',
+      email: `olga.${token}@demo.example`,
+    });
+    expect(outsider.personId).toBeGreaterThan(0);
+    await page.setViewportSize(S1366);
+    await page.goto(`/matters/${w.matter.matterId}`);
+    await panel(page).locator('[data-team-edit]').click();
+    const d = dialog(page);
+    await d.locator('#team-add').fill(`Olga${token}`);
+    await expect(page.locator('[data-create]')).toBeVisible(); // only "+ Create" is offered
+    await expect(page.locator('[role=option][data-person-id]')).toHaveCount(0);
+    // The inline form creates an Internal person and does not show the Internal or External choice.
+    await page.locator('[data-create]').click();
+    await expect(d.locator('[data-person-new]')).toBeVisible();
+    await expect(d.locator('[data-person-new] [data-person-type]')).toHaveCount(0);
   });
 
   test('Summary screenshots', async ({ page, seed, admin }) => {

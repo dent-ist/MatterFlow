@@ -8583,9 +8583,10 @@ export interface IPeopleClient {
     updatePerson(personId: number, body: UpdatePersonRequest): Observable<PersonDto>;
     /**
      * @param q (optional) 
+     * @param type (optional) 
      * @return OK
      */
-    lookupPeople(q?: string | undefined): Observable<PersonLookupItem[]>;
+    lookupPeople(q?: string | undefined, type?: string | undefined): Observable<PersonLookupItem[]>;
     /**
      * @param firstName (optional) 
      * @param lastName (optional) 
@@ -8855,14 +8856,19 @@ export class PeopleClient implements IPeopleClient {
 
     /**
      * @param q (optional) 
+     * @param type (optional) 
      * @return OK
      */
-    lookupPeople(q?: string | undefined): Observable<PersonLookupItem[]> {
+    lookupPeople(q?: string | undefined, type?: string | undefined): Observable<PersonLookupItem[]> {
         let url_ = this.baseUrl + "/api/v1/people/lookup?";
         if (q === null)
             throw new globalThis.Error("The parameter 'q' cannot be null.");
         else if (q !== undefined)
             url_ += "q=" + encodeURIComponent("" + q) + "&";
+        if (type === null)
+            throw new globalThis.Error("The parameter 'type' cannot be null.");
+        else if (type !== undefined)
+            url_ += "type=" + encodeURIComponent("" + type) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {

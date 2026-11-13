@@ -185,7 +185,7 @@ public sealed record MatterTeamMemberResponse(
 /// <summary>Adds a person of the People list to a matter's team (appended at the end).</summary>
 public sealed class AddTeamMemberRequest
 {
-    /// <summary>The People record. It must exist and be active (400 <c>NOT_FOUND</c> or <c>INACTIVE</c> on <c>personId</c>); 409 <c>DUPLICATE_TEAM_PERSON</c> when the person is already on this matter's team.</summary>
+    /// <summary>The People record. It must exist and be active (400 <c>NOT_FOUND</c>, <c>INACTIVE</c> or <c>NOT_INTERNAL</c> on <c>personId</c>; only Internal people can be on a matter team); 409 <c>DUPLICATE_TEAM_PERSON</c> when the person is already on this matter's team.</summary>
     [Range(1, int.MaxValue)]
     public int PersonId { get; init; }
 

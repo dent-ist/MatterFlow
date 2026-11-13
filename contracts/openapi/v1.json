@@ -5496,6 +5496,15 @@
               "minLength": 0,
               "type": "string"
             }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "maxLength": 10,
+              "minLength": 0,
+              "type": "string"
+            }
           }
         ],
         "responses": {

@@ -290,7 +290,7 @@ public sealed class MatterFieldsApiTests(SqlServerFixture sql) : IAsyncLifetime
     }
 
     /// <summary>A person of the People list (External unless said otherwise); returns the person record.</summary>
-    private async Task<JsonElement> PersonAsync(string first, string last, string email, string type = "EXTERNAL") =>
+    private async Task<JsonElement> PersonAsync(string first, string last, string email, string type = "INTERNAL") =>
         await OkAsync(
             await Admin.PostAsJsonAsync("/api/v1/people", new { firstName = first, lastName = last, personType = type, title = "Partner", email, companyName = type == "EXTERNAL" ? "Hartman & Pike LLP" : null }),
             HttpStatusCode.Created);
@@ -304,15 +304,15 @@ public sealed class MatterFieldsApiTests(SqlServerFixture sql) : IAsyncLifetime
         var annPerson = await PersonAsync("Ann", "Lee", "ann.lee@firm.example");
         var benPerson = await PersonAsync("Ben", "Ortiz", "ben@vendor.example");
         var gonePerson = await PersonAsync("Gone", "Person", "gone@vendor.example");
-        (await Admin.PutAsJsonAsync($"/api/v1/people/{PId(gonePerson)}", new { firstName = "Gone", lastName = "Person", personType = "EXTERNAL", companyName = "Hartman & Pike LLP", isActive = false, rowVersion = gonePerson.GetProperty("rowVersion").GetString() })).EnsureSuccessStatusCode();
+        (await Admin.PutAsJsonAsync($"/api/v1/people/{PId(gonePerson)}", new { firstName = "Gone", lastName = "Person", personType = "INTERNAL", isActive = false, rowVersion = gonePerson.GetProperty("rowVersion").GetString() })).EnsureSuccessStatusCode();
 
         var ann = await OkAsync(await Admin.PostAsJsonAsync(url, new { personId = PId(annPerson), teamTitleId = attorney }), HttpStatusCode.Created);
         ann.GetProperty("name").GetString().ShouldBe("Ann Lee");
         ann.GetProperty("email").GetString().ShouldBe("ann.lee@firm.example");
-        ann.GetProperty("personType").GetString().ShouldBe("EXTERNAL");
+        ann.GetProperty("personType").GetString().ShouldBe("INTERNAL");
         ann.GetProperty("isSystemUser").GetBoolean().ShouldBeFalse();
         ann.GetProperty("personTitle").GetString().ShouldBe("Partner");
-        ann.GetProperty("companyName").GetString().ShouldBe("Hartman & Pike LLP");
+        ann.GetProperty("companyName").GetString().ShouldBeNull();
         ann.GetProperty("title").GetProperty("name").GetString().ShouldBe("Attorney");
         var ben = await OkAsync(await Admin.PostAsJsonAsync(url, new { personId = PId(benPerson), teamTitleId = paralegal }), HttpStatusCode.Created);
 
@@ -322,6 +322,12 @@ public sealed class MatterFieldsApiTests(SqlServerFixture sql) : IAsyncLifetime
         (await Admin.PostAsJsonAsync(url, new { personId = 999999, teamTitleId = paralegal })).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         (await Admin.PostAsJsonAsync(url, new { personId = PId(gonePerson), teamTitleId = paralegal })).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         (await Admin.PostAsJsonAsync(url, new { personId = PId(annPerson), teamTitleId = 9999 })).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+
+        // Only Internal people can be on a matter team (#1383): an external person is refused with NOT_INTERNAL on personId.
+        var outsider = await PersonAsync("Olga", "Outside", "olga@vendor.example", "EXTERNAL");
+        var refused = await Admin.PostAsJsonAsync(url, new { personId = PId(outsider), teamTitleId = paralegal });
+        refused.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await refused.Content.ReadAsStringAsync()).ShouldContain("NOT_INTERNAL");
 
         // Only the title is edited; a stale row version is refused.
         var edited = await OkAsync(await Admin.PutAsJsonAsync($"{url}/{Id(ann)}", new { teamTitleId = paralegal, rowVersion = ann.GetProperty("rowVersion").GetString() }));

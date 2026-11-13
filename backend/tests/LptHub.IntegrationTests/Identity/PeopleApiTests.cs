@@ -235,6 +235,22 @@ public sealed class PeopleApiTests(SqlServerFixture sql) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task The_picker_lookup_can_ask_for_Internal_or_External_people_only()
+    {
+        await CreateAsync("Ines", "Lookuptest", "INTERNAL", "Paralegal");
+        await CreateAsync("Ernst", "Lookuptest", "EXTERNAL", null, null, "Outside Counsel");
+
+        (await JsonAsync(await As(Admin).GetAsync("/api/v1/people/lookup?q=lookuptest"))).GetArrayLength().ShouldBe(2);
+        var internals = await JsonAsync(await As(Admin).GetAsync("/api/v1/people/lookup?q=lookuptest&type=INTERNAL"));
+        internals.GetArrayLength().ShouldBe(1);
+        internals[0].GetProperty("personType").GetString().ShouldBe("INTERNAL");
+        var externals = await JsonAsync(await As(Admin).GetAsync("/api/v1/people/lookup?q=lookuptest&type=EXTERNAL"));
+        externals.GetArrayLength().ShouldBe(1);
+        externals[0].GetProperty("personType").GetString().ShouldBe("EXTERNAL");
+        (await As(Admin).GetAsync("/api/v1/people/lookup?type=NEITHER")).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
     public async Task A_user_whose_person_is_missing_gets_one_when_the_user_is_next_saved()
     {
         await UserWithAsync(@"ke\legacy", Permissions.Task.View);

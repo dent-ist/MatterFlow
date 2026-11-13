@@ -25,6 +25,7 @@ import { splitName } from './person-new-form';
     [debounceMs]="0"
     [taken]="taken()"
     [clearOnPick]="clear()"
+    [onlyType]="only()"
     [(selected)]="selected"
     (picked)="log.push('picked ' + $event.displayName)"
     (draftChange)="draft.set($event)"
@@ -34,6 +35,7 @@ class Host {
   readonly selected = signal<PersonLookupItem | null>(null);
   readonly taken = signal<number[]>([]);
   readonly clear = signal(false);
+  readonly only = signal<'INTERNAL' | 'EXTERNAL' | null>(null);
   readonly draft = signal('');
   readonly log: string[] = [];
 }
@@ -112,7 +114,7 @@ describe('PersonPicker', () => {
     expect(box.getAttribute('role')).toBe('combobox');
     expect(box.getAttribute('aria-expanded')).toBe('false');
     await type(f, 'lau');
-    expect(api.lookupPeople).toHaveBeenCalledWith('lau');
+    expect(api.lookupPeople).toHaveBeenCalledWith('lau', undefined);
     expect(box.getAttribute('aria-expanded')).toBe('true');
     expect(box.getAttribute('aria-controls')).toBe('pick-list');
     expect(document.body.querySelector('[role=listbox]')!.getAttribute('aria-label')).toBe(
@@ -250,6 +252,27 @@ describe('PersonPicker', () => {
       await type(f, 'Laura Whitfield');
       expect(document.body.querySelector('[data-create]')).toBeNull();
       expect(api.findSimilarPeople).not.toHaveBeenCalled();
+    });
+
+    it('with onlyType asks for that type only, creates that type and does not show the type choice (matter team, #1383)', async () => {
+      const f = await start();
+      f.componentInstance.only.set('INTERNAL');
+      await settle(f);
+      api.lookupPeople.mockReturnValue(ok([]));
+      await type(f, 'Dana Whitaker');
+      expect(api.lookupPeople).toHaveBeenCalledWith('Dana Whitaker', 'INTERNAL');
+      document.body
+        .querySelector('[data-create]')!
+        .dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+      await settle(f);
+      const form = el(f).querySelector('[data-person-new]')!;
+      expect(form.querySelector('[data-person-type]')).toBeNull();
+      expect(form.querySelector('#pick-new-company')).toBeNull();
+      (form.querySelector('[data-person-new-save]') as HTMLButtonElement).click();
+      await settle(f);
+      expect(api.createPerson).toHaveBeenCalledWith(
+        expect.objectContaining({ firstName: 'Dana', personType: 'INTERNAL' }),
+      );
     });
 
     it('opens the inline form with the typed name, saves with POST /people and selects the new person', async () => {

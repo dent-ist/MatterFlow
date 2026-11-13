@@ -286,6 +286,7 @@ export function lookupItemOf(p: PersonDto): PersonLookupItem {
             <mf-person-new-form
               [text]="text()"
               [prefix]="inputId() + '-new'"
+              [fixedType]="onlyType()"
               (created)="onCreated($event)"
               (useExisting)="finish($event)"
               (cancelled)="creating.set(false)"
@@ -390,6 +391,8 @@ export class PersonPicker implements OnDestroy {
   readonly takenLabel = input('On the List');
   /** The empty-row pattern (Edit Team): `picked` is emitted and the picker empties itself instead of showing the pick. */
   readonly clearOnPick = input(false);
+  /** Offer only Internal or only External people (the matter team takes Internal people only). A person created inline gets this type, and its type choice is not shown. */
+  readonly onlyType = input<'INTERNAL' | 'EXTERNAL' | null>(null);
   readonly debounceMs = input(250);
 
   /** The picked person; only a People record can be set, never typed text. */
@@ -672,7 +675,9 @@ export class PersonPicker implements OnDestroy {
     this.failed.set(false);
     try {
       const found = await firstValueFrom(
-        this.quiet.run(() => this.api.lookupPeople(typed || undefined)),
+        this.quiet.run(() =>
+          this.api.lookupPeople(typed || undefined, this.onlyType() ?? undefined),
+        ),
       );
       if (id !== this.requestId) return;
       this.people.set(found);
