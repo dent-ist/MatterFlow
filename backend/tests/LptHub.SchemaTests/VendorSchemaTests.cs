@@ -36,7 +36,7 @@ public class VendorSchemaTests(SqlServerFixture sql)
 
         var own = await sql.CreateDatabaseAsync();
         var all = new EmbeddedMigrationScriptSource().ReadAll();
-        await new SchemaMigrationRunner(own, new InMemoryMigrationScriptSource(all.Where(s => !s.Name.StartsWith("75-", StringComparison.Ordinal))), new MigrationsOptions { LockTimeoutSeconds = 60 }, NullLogger<SchemaMigrationRunner>.Instance).RunAsync();
+        await new SchemaMigrationRunner(own, new InMemoryMigrationScriptSource(all.Where(s => int.Parse(s.Name[..s.Name.IndexOf('-')], System.Globalization.CultureInfo.InvariantCulture) < 75) /* every script before 75: later scripts (76 and up) may not run ahead of it */), new MigrationsOptions { LockTimeoutSeconds = 60 }, NullLogger<SchemaMigrationRunner>.Instance).RunAsync();
         await ScalarAsync(own, "INSERT dbo.VendorServiceOption (Name, SortOrder) VALUES (N'Mine', 1)");
         await new SchemaMigrationRunner(own, new EmbeddedMigrationScriptSource(), new MigrationsOptions { LockTimeoutSeconds = 60 }, NullLogger<SchemaMigrationRunner>.Instance).RunAsync();
         (await ScalarAsync(own, "SELECT STRING_AGG(Name, ', ') FROM dbo.VendorServiceOption")).ShouldBe("Mine");

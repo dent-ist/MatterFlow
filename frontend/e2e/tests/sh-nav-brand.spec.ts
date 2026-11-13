@@ -36,6 +36,8 @@ test.describe('The menu: order, indent and names (#620, #621, MM-59)', () => {
         /^Matters$/,
         /Projects/,
         /^Assets$/,
+        /^People$/,
+        /^Vendors$/,
         /Pod Work/,
         /Task Queue/,
         /Reports/,
@@ -120,7 +122,7 @@ test.describe('The menu: order, indent and names (#620, #621, MM-59)', () => {
     await expect(nav(page).getByRole('link', { name: 'Assets', exact: true })).toHaveCount(0);
   });
 
-  test('keyboard: Tab follows the visual order (Clients, Matters, Projects, Assets, Pod Work), and Enter on "Asset Types" opens it', async ({
+  test('keyboard: Tab follows the visual order (Clients, Matters, Projects, Assets, People, Vendors, Pod Work), and Enter on "Asset Types" opens it', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
@@ -132,6 +134,10 @@ test.describe('The menu: order, indent and names (#620, #621, MM-59)', () => {
     await expect(nav(page).getByRole('link', { name: 'Projects', exact: true })).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(nav(page).getByRole('link', { name: 'Assets', exact: true })).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(nav(page).getByRole('link', { name: 'People', exact: true })).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(nav(page).getByRole('link', { name: 'Vendors', exact: true })).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(nav(page).getByRole('link', { name: 'Pod Work', exact: true })).toBeFocused();
     await nav(page).getByRole('link', { name: 'Asset Types', exact: true }).focus();

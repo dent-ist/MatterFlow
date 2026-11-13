@@ -256,6 +256,9 @@ test.describe('Landing and menus of the personas (#632)', () => {
       /^Matters$/,
       /Projects/,
       /Assets/,
+      // The role holds People.View and Vendor.View (#1375, #1378).
+      /^People$/,
+      /^Vendors$/,
       /Task Queue/,
       // The Project Manager role holds Report.Run (owner decision 8, #784).
       /Reports/,
