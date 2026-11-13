@@ -63,9 +63,11 @@ public sealed partial class PersonService(DbContext db)
     }
 
     /// <summary>Active people for a picker: best matches first (a name that starts with the typed text), at most 20. People of a deactivated user are left out.</summary>
-    public async Task<IReadOnlyList<PersonLookupItem>> LookupAsync(string? search, CancellationToken ct)
+    public async Task<IReadOnlyList<PersonLookupItem>> LookupAsync(string? search, string? type, CancellationToken ct)
     {
         var query = db.Set<Person>().AsNoTracking().Where(p => p.IsActive && (p.User == null || p.User.IsActive));
+        if (type is not null)
+            query = query.Where(p => p.PersonType == type);
         var terms = Terms(search);
         foreach (var term in terms)
         {

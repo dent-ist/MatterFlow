@@ -62,12 +62,17 @@ public class PeopleController(PersonService people) : ControllerBase
     /// deactivated user are left out. Open to everyone who may edit a matter team (<c>Matter.Edit</c>) as well as to <c>People.View</c> and <c>People.Manage</c>.
     /// </summary>
     /// <param name="q">Typed text; empty returns the first 20 by name.</param>
+    /// <param name="type">Only <c>INTERNAL</c> or only <c>EXTERNAL</c> people (a matter team takes Internal people only); omit for both.</param>
     /// <param name="cancellationToken">Request cancellation.</param>
     [HttpGet("lookup", Name = "LookupPeople")]
     [RequirePermission(Permissions.People.View + "|" + Permissions.People.Manage + "|" + Permissions.Matter.Edit)]
     [ProducesResponseType<PersonLookupItem[]>(StatusCodes.Status200OK, "application/json")]
-    public async Task<IActionResult> Lookup([FromQuery, StringLength(100)] string? q, CancellationToken cancellationToken) =>
-        Ok((await people.LookupAsync(q, cancellationToken)).ToArray());
+    public async Task<IActionResult> Lookup([FromQuery, StringLength(100)] string? q, [FromQuery, StringLength(10)] string? type, CancellationToken cancellationToken)
+    {
+        if (type is not null && type is not ("INTERNAL" or "EXTERNAL"))
+            return Failure(Error.Validation("type", "INVALID", "type must be INTERNAL or EXTERNAL."));
+        return Ok((await people.LookupAsync(q, type, cancellationToken)).ToArray());
+    }
 
     /// <summary>
     /// Duplicate hint ("Did you mean this person?"): people that resemble the one being typed, by the same e-mail, the same name (in either order)

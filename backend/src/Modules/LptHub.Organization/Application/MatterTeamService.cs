@@ -172,6 +172,8 @@ public sealed class MatterTeamService(DbContext db, IAuditWriter audit, IMatterL
             return Error.Validation("personId", "NOT_FOUND", "Choose a person from the list.");
         if (!person.IsActive)
             return Error.Validation("personId", "INACTIVE", $"{person.DisplayName} is deactivated in People. Reactivate them there first.");
+        if (person.PersonType != "INTERNAL")
+            return Error.Validation("personId", "NOT_INTERNAL", $"{person.DisplayName} is an external person. Only Internal people can be on a matter team.");
         return person;
     }
 

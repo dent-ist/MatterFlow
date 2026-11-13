@@ -28,7 +28,7 @@ import { IntPipe } from '../../../shared/ui/number-format';
  *   Below: Details at the left, a side column of 340 px at the right (the Team panel first; the Vendors panel, #1379, goes under it).
  *   Details: ONE card (the shared `mf-details-card`, D-44f) that fits its content, sits at the top and scrolls inside itself when it is taller than the room; its Edit button is in the page header.
  *     The fields are grouped under quiet sub-headings (D-11a, `mfDetailsGroup`) in two columns of groups:
- *       Matter (CM Number, Client, Matter Number, Matter Name) and Classification (Matter Types as chips, Matter Category, Current State) at the left;
+ *       Matter (Client, CM Number, Matter Name) and Classification (Matter Types as chips, Matter Category, Current State) at the left;
  *       Management (Status, Sensitive only when sensitive, Primary PM, Secondary PM, AI Allowed) and Paths (DMS and DFS, each with Copy right beside the value) at the right;
  *     then the custom fields (no heading), and Created and Last Updated as one quiet muted line under the card's scrolling body (it never scrolls away).
  *   An unset Matter Category is muted "Not set" with the text button "Set Category" for a person who may edit the matter.
@@ -280,12 +280,6 @@ import { IntPipe } from '../../../shared/ui/number-format';
         <div class="ms__groups">
           <div class="ms__col">
             <section mfDetailsGroup heading="Matter">
-              <div mfDetailField label="CM Number">
-                <span class="ms__cm"><mf-matter-ref [value]="matter().matterRef" /></span>
-              </div>
-              <div mfDetailField label="Matter Number">
-                <span class="pg-mono">{{ matter().matterNumber }}</span>
-              </div>
               <div mfDetailField label="Client" wide>
                 <span data-client-value>
                   @if (canLinkClient()) {
@@ -300,6 +294,9 @@ import { IntPipe } from '../../../shared/ui/number-format';
                     >
                   }
                 </span>
+              </div>
+              <div mfDetailField label="CM Number">
+                <span class="ms__cm"><mf-matter-ref [value]="matter().matterRef" /></span>
               </div>
               <div mfDetailField label="Matter Name" wide>
                 <span class="ms__clip" data-matter-name [mfTip]="matter().name">{{

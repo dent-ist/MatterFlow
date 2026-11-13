@@ -53,6 +53,8 @@ const EMAIL_SHAPE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: var(--mf-s4);
+      /* A field fills its column, and Comments the whole width (a field is 480 px at most elsewhere). */
+      --mf-field-max: none;
     }
     .pd__wide {
       grid-column: 1 / -1;
@@ -106,6 +108,12 @@ const EMAIL_SHAPE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
           </p>
         }
         @if (plain()) {
+          <div class="mf-field pd__wide" data-plain-field="type">
+            <span class="mf-field__label">Internal or External</span>
+            <p class="pd__value">
+              <mf-person-type-badge [person]="{ personType: type(), isSystemUser: locked() }" />
+            </p>
+          </div>
           <div class="mf-field" data-plain-field="first">
             <span class="mf-field__label">First Name</span>
             <p class="pd__value">{{ first() }}</p>
@@ -114,12 +122,6 @@ const EMAIL_SHAPE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
             <span class="mf-field__label">Last Name</span>
             <p class="pd__value">{{ last() }}</p>
           </div>
-          <div class="mf-field" data-plain-field="type">
-            <span class="mf-field__label">Internal or External</span>
-            <p class="pd__value">
-              <mf-person-type-badge [person]="{ personType: type(), isSystemUser: locked() }" />
-            </p>
-          </div>
           @if (type() === 'EXTERNAL') {
             <div class="mf-field" data-plain-field="company">
               <span class="mf-field__label">Company</span>
@@ -127,23 +129,7 @@ const EMAIL_SHAPE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
             </div>
           }
         } @else {
-          <mf-text-field
-            inputId="person-first"
-            label="First Name"
-            [required]="true"
-            [maxLength]="100"
-            [error]="firstError()"
-            [(value)]="first"
-          />
-          <mf-text-field
-            inputId="person-last"
-            label="Last Name"
-            [required]="true"
-            [maxLength]="100"
-            [error]="lastError()"
-            [(value)]="last"
-          />
-          <div class="mf-field">
+          <div class="mf-field pd__wide">
             <span class="mf-field__label" id="person-type-label">Internal or External</span>
             <div
               mfSegmented
@@ -177,6 +163,22 @@ const EMAIL_SHAPE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
                 : 'Internal: works at the firm. A MatterFlow login is managed on the Users page.'
             }}</span>
           </div>
+          <mf-text-field
+            inputId="person-first"
+            label="First Name"
+            [required]="true"
+            [maxLength]="100"
+            [error]="firstError()"
+            [(value)]="first"
+          />
+          <mf-text-field
+            inputId="person-last"
+            label="Last Name"
+            [required]="true"
+            [maxLength]="100"
+            [error]="lastError()"
+            [(value)]="last"
+          />
           @if (type() === 'EXTERNAL') {
             <mf-text-field
               inputId="person-company"

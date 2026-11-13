@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   inject,
   input,
   output,
@@ -190,40 +191,44 @@ export function splitName(text: string): { first: string; last: string } {
           (blurred)="touch('last')"
           [(value)]="last"
         />
-        <div class="mf-field">
-          <span class="mf-field__label" [id]="prefix() + '-type-label'">Internal or External</span>
-          <div
-            mfSegmented
-            class="pn__seg"
-            role="group"
-            [attr.aria-labelledby]="prefix() + '-type-label'"
-            data-person-type
-          >
-            <button
-              type="button"
-              class="mf-btn"
-              data-type="INTERNAL"
-              [attr.aria-pressed]="type() === 'INTERNAL'"
-              (click)="setType('INTERNAL')"
+        @if (!fixedType()) {
+          <div class="mf-field">
+            <span class="mf-field__label" [id]="prefix() + '-type-label'"
+              >Internal or External</span
             >
-              Internal
-            </button>
-            <button
-              type="button"
-              class="mf-btn"
-              data-type="EXTERNAL"
-              [attr.aria-pressed]="type() === 'EXTERNAL'"
-              (click)="setType('EXTERNAL')"
+            <div
+              mfSegmented
+              class="pn__seg"
+              role="group"
+              [attr.aria-labelledby]="prefix() + '-type-label'"
+              data-person-type
             >
-              External
-            </button>
+              <button
+                type="button"
+                class="mf-btn"
+                data-type="INTERNAL"
+                [attr.aria-pressed]="type() === 'INTERNAL'"
+                (click)="setType('INTERNAL')"
+              >
+                Internal
+              </button>
+              <button
+                type="button"
+                class="mf-btn"
+                data-type="EXTERNAL"
+                [attr.aria-pressed]="type() === 'EXTERNAL'"
+                (click)="setType('EXTERNAL')"
+              >
+                External
+              </button>
+            </div>
+            <span class="mf-field__help" data-type-help>{{
+              type() === 'EXTERNAL'
+                ? 'External: works outside the firm. Add their company.'
+                : 'Internal: works at the firm.'
+            }}</span>
           </div>
-          <span class="mf-field__help" data-type-help>{{
-            type() === 'EXTERNAL'
-              ? 'External: works outside the firm. Add their company.'
-              : 'Internal: works at the firm.'
-          }}</span>
-        </div>
+        }
         @if (type() === 'EXTERNAL') {
           <mf-text-field
             [inputId]="prefix() + '-company'"
@@ -275,6 +280,8 @@ export class PersonNewForm {
   readonly text = input('');
   /** Prefix of every element id (two forms on one page stay apart). */
   readonly prefix = input('pn');
+  /** The person has this type and the Internal or External choice is not shown (a matter team takes Internal people only). */
+  readonly fixedType = input<'INTERNAL' | 'EXTERNAL' | null>(null);
   readonly created = output<PersonDto>();
   /** The person picked "Use This Person" from the near-duplicate hint. */
   readonly useExisting = output<PersonLookupItem>();
@@ -324,6 +331,14 @@ export class PersonNewForm {
       this.first.set(first);
       this.last.set(last);
       void this.check();
+    });
+    // A fixed type (a matter team takes Internal people only) replaces the choice.
+    effect(() => {
+      const fixed = this.fixedType();
+      if (fixed) {
+        this.type.set(fixed);
+        if (fixed === 'INTERNAL') this.company.set('');
+      }
     });
   }
 
