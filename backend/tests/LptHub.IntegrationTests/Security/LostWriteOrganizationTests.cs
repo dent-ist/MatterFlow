@@ -123,7 +123,7 @@ public sealed class LostWriteOrganizationTests(SqlServerFixture sql)
         var titles = await OkAsync(await admin.GetAsync("/api/v1/team-titles"));
         var attorney = titles.EnumerateArray().First(t => Str(t, "name") == "Attorney").GetProperty("id").GetInt32();
         var paralegal = titles.EnumerateArray().First(t => Str(t, "name") == "Paralegal").GetProperty("id").GetInt32();
-        var person = await OkAsync(await admin.PostAsJsonAsync("/api/v1/people", new { firstName = "Ann", lastName = "Lee", personType = "EXTERNAL", email = "ann.lee@firm.example" }), HttpStatusCode.Created);
+        var person = await OkAsync(await admin.PostAsJsonAsync("/api/v1/people", new { firstName = "Ann", lastName = "Lee", personType = "INTERNAL", email = "ann.lee@firm.example" }), HttpStatusCode.Created);
         foreach (var (persona, matterId) in new[] { (u.UnrelatedClient, u.N1), (u.PmPrimaryClient, u.S1) })
         {
             var url = $"/api/v1/matters/{matterId}/team";
