@@ -225,21 +225,15 @@ test.describe('Shared grid: Columns menu, reorder and row hover (MD-28, MD-29)',
 
     await page.reload();
     await expect(page.locator('mf-task-table tbody tr[data-task]').first()).toBeVisible();
-    expect(await heads()).toEqual(after);
+    await expect.poll(heads).toEqual(after);
 
     await page.locator('[data-grid-columns]').click();
     await page.locator('[data-grid-columns-reset]').click();
     await page.keyboard.press('Escape');
-    expect(await heads()).toEqual([
-      'Ref',
-      'Type',
-      'Title',
-      'Priority',
-      'Assignee',
-      'Due',
-      'Status',
-      'Actions',
-    ]);
+    // Reset redraws the grid on the next render: read the headings until they settle (run 67 read the order from before the Reset).
+    await expect
+      .poll(heads)
+      .toEqual(['Ref', 'Type', 'Title', 'Priority', 'Assignee', 'Due', 'Status', 'Actions']);
     await axeClean(page, 'tasks tab with the Columns menu');
   });
 

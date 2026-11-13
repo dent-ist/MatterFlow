@@ -539,11 +539,20 @@ test.describe('Users tab: workload', () => {
     expect(size.height).toBeGreaterThanOrEqual(24);
 
     const ref = (await rows.first().locator('.mf-ref').first().textContent())!.trim();
-    await drawer.getByRole('button', { name: `Reassign ${ref}` }).click();
     // The picker prints a person without the domain of the account (the content rules of #1347).
     const idleShown = shownName(person('idle').displayName);
-    await page.getByRole('textbox', { name: 'Search People' }).fill(idleShown);
-    await page.getByRole('menuitemradio', { name: idleShown }).click();
+    const search = page.getByRole('textbox', { name: 'Search People' });
+    const person_ = page.getByRole('menuitemradio', { name: idleShown });
+    // On a loaded machine the drawer redraws once more after the click and takes the open menu with it (run 67: "element was detached" until the
+    // timeout): open the menu again if it is gone, type, and wait for the person, as a person would.
+    await expect(async () => {
+      if (!(await search.isVisible())) {
+        await drawer.getByRole('button', { name: `Reassign ${ref}` }).click({ timeout: 3000 });
+      }
+      await search.fill(idleShown, { timeout: 3000 });
+      await expect(person_).toBeVisible({ timeout: 5000 });
+    }).toPass({ timeout: 45_000 });
+    await person_.click();
     // The announcement says the full account name.
     await expect(drawer.locator('[data-drawer-live]')).toContainText(
       `${ref} reassigned to ${person('idle').displayName}`,

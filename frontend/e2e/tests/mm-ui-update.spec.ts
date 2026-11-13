@@ -349,9 +349,17 @@ test.describe('My Matters: review round 3 (UI-21)', () => {
     await dialog.locator('#ev-client').click();
     await page.locator('[role=option]').filter({ hasText: 'Other' }).first().click();
     await expect(dialog.locator('#ev-matter')).toContainText('Choose a matter');
-    await dialog.locator('#ev-matter').click();
-    await page.getByRole('combobox', { name: 'Search matters', exact: true }).fill('Beta');
-    await page.locator('[role=option]').filter({ hasText: 'Beta' }).first().click();
+    // The matter list of the other client is read when the client changes; on a loaded machine the open list is redrawn (the search box was
+    // "detached" until the timeout in run 67): open it again if it is gone, type, and wait for the option.
+    const matterSearch = page.getByRole('combobox', { name: 'Search matters', exact: true });
+    const beta = page.locator('[role=option]').filter({ hasText: 'Beta' }).first();
+    await expect(async () => {
+      if (!(await matterSearch.isVisible()))
+        await dialog.locator('#ev-matter').click({ timeout: 3000 });
+      await matterSearch.fill('Beta', { timeout: 3000 });
+      await expect(beta).toBeVisible({ timeout: 5000 });
+    }).toPass({ timeout: 45_000 });
+    await beta.click();
     await expect(dialog.locator('#ev-client')).toContainText('Other');
     const tiles = dialog.locator('.tg input[type=radio]');
     await expect(tiles).toHaveCount(8);
