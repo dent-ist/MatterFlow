@@ -181,6 +181,9 @@ test.describe('Matter detail tabs: Summary, Projects, Assets, Productions, butto
     expect(production.font).toBe(project.font);
     expect(production.radius).toBe(project.radius);
     await page.goto(`/matters/${world.matter.matterId}?tab=productions`);
+    // The page has to be drawn before axe reads it (a slow load was read without its level-one heading, run 67 repeat).
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await expect(page.getByRole('button', { name: /New Production/ }).first()).toBeVisible();
     await shot(page, 'productions-1366x768');
     await axeClean(page, 'productions tab');
   });

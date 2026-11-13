@@ -547,12 +547,16 @@ test.describe('Users tab: workload', () => {
     // timeout): open the menu again if it is gone, type, and wait for the person, as a person would.
     await expect(async () => {
       if (!(await search.isVisible())) {
-        await drawer.getByRole('button', { name: `Reassign ${ref}` }).click({ timeout: 3000 });
+        // Centre the icon first: a menu that opens at the edge of the window is placed again after the list arrives, and a scroll anywhere
+        // closes it (the click on the person found it "outside of the viewport" and then "detached").
+        const reassign = drawer.getByRole('button', { name: `Reassign ${ref}` });
+        await reassign.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+        await reassign.click({ timeout: 3000 });
       }
       await search.fill(idleShown, { timeout: 3000 });
       await expect(person_).toBeVisible({ timeout: 5000 });
+      await person_.click({ timeout: 3000 });
     }).toPass({ timeout: 45_000 });
-    await person_.click();
     // The announcement says the full account name.
     await expect(drawer.locator('[data-drawer-live]')).toContainText(
       `${ref} reassigned to ${person('idle').displayName}`,
