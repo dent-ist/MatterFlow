@@ -53,6 +53,10 @@ public class VendorSchemaTests(SqlServerFixture sql)
         await ScalarAsync(cs, "INSERT dbo.Vendor (Name, CategoryCode) VALUES (N'Acme', 'PREFERRED')");
         (await FailureAsync(cs, "INSERT dbo.Vendor (Name, CategoryCode) VALUES (N'ACME', 'PREFERRED')")).ShouldContain("UQ_Vendor_Name");
         (await FailureAsync(cs, "INSERT dbo.Vendor (Name, CategoryCode) VALUES (N'Other', 'GOOD')")).ShouldContain("CK_Vendor_Category");
+        await ScalarAsync(cs, "INSERT dbo.Vendor (Name, CategoryCode) VALUES (N'Plain', 'NEUTRAL')"); // script 77
+        await ScalarAsync(cs, "INSERT dbo.Vendor (Name) VALUES (N'Unspecified')");
+        (await ScalarAsync(cs, "SELECT CategoryCode FROM dbo.Vendor WHERE Name = N'Unspecified'")).ShouldBe("NEUTRAL");
+        await ScalarAsync(cs, "DELETE dbo.Vendor WHERE Name IN (N'Plain', N'Unspecified')"); // the contact checks below read the one vendor 'Acme'
         (await FailureAsync(cs, "INSERT dbo.Vendor (Name, CategoryCode) VALUES (N' ', 'PREFERRED')")).ShouldContain("CK_Vendor_Name");
 
         await ScalarAsync(cs, "INSERT dbo.Person (FirstName, LastName, PersonType) VALUES (N'Pat', N'Lee', 'EXTERNAL')");
@@ -84,5 +88,20 @@ public class VendorSchemaTests(SqlServerFixture sql)
         await ScalarAsync(cs, "DELETE dbo.Vendor");
         (await ScalarAsync(cs, "SELECT (SELECT COUNT(*) FROM dbo.VendorContact) + (SELECT COUNT(*) FROM dbo.VendorTechAi) + (SELECT COUNT(*) FROM dbo.VendorServiceChoice)")).ShouldBe(0);
         (await ScalarAsync(cs, "SELECT COUNT(*) FROM dbo.Person")).ShouldBe(1); // the person stays
+    }
+
+    [Fact]
+    public async Task Script_77_allows_neutral_and_keeps_the_category_of_existing_vendors()
+    {
+        var own = await sql.CreateDatabaseAsync();
+        var all = new EmbeddedMigrationScriptSource().ReadAll();
+        await new SchemaMigrationRunner(own, new InMemoryMigrationScriptSource(all.Where(s => int.Parse(s.Name[..s.Name.IndexOf('-')], System.Globalization.CultureInfo.InvariantCulture) < 77)), new MigrationsOptions { LockTimeoutSeconds = 60 }, NullLogger<SchemaMigrationRunner>.Instance).RunAsync();
+        await ScalarAsync(own, "INSERT dbo.Vendor (Name, CategoryCode) VALUES (N'Kept Preferred', 'PREFERRED'), (N'Kept Blacklisted', 'BLACKLISTED')");
+        (await FailureAsync(own, "INSERT dbo.Vendor (Name, CategoryCode) VALUES (N'Early', 'NEUTRAL')")).ShouldContain("CK_Vendor_Category");
+
+        await new SchemaMigrationRunner(own, new EmbeddedMigrationScriptSource(), new MigrationsOptions { LockTimeoutSeconds = 60 }, NullLogger<SchemaMigrationRunner>.Instance).RunAsync();
+        (await ScalarAsync(own, "SELECT STRING_AGG(CategoryCode, ',') WITHIN GROUP (ORDER BY Name) FROM dbo.Vendor")).ShouldBe("BLACKLISTED,PREFERRED");
+        await ScalarAsync(own, "INSERT dbo.Vendor (Name, CategoryCode) VALUES (N'Now Neutral', 'NEUTRAL')");
+        (await FailureAsync(own, "INSERT dbo.Vendor (Name, CategoryCode) VALUES (N'Other', 'GOOD')")).ShouldContain("CK_Vendor_Category");
     }
 }

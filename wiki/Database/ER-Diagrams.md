@@ -687,7 +687,7 @@ erDiagram
   Vendor {
     int VendorId PK
     nvarchar_200 Name "unique"
-    varchar_12 CategoryCode "PREFERRED or BLACKLISTED"
+    varchar_12 CategoryCode "PREFERRED, NEUTRAL or BLACKLISTED"
   }
   VendorServiceOption {
     int VendorServiceOptionId PK

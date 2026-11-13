@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { Badge, BadgeTone } from '../../shared/ui/badge';
 
-/** What the API calls a vendor's category (`PREFERRED`, `BLACKLISTED`) in the words of the screens (D-12: the chip always has the icon and the word, never colour alone). */
+/** What the API calls a vendor's category (`PREFERRED`, `NEUTRAL`, `BLACKLISTED`) in the words of the screens (D-12: the chip always has the icon and the word, never colour alone). */
 export interface VendorCategoryView {
   label: string;
   tone: BadgeTone;
@@ -10,16 +10,23 @@ export interface VendorCategoryView {
 
 export const VENDOR_CATEGORIES: readonly { value: string; label: string }[] = [
   { value: 'PREFERRED', label: 'Preferred' },
+  { value: 'NEUTRAL', label: 'Neutral' },
   { value: 'BLACKLISTED', label: 'Blacklisted' },
 ];
 
 export function vendorCategory(code: string): VendorCategoryView {
-  return code === 'BLACKLISTED'
-    ? { label: 'Blacklisted', tone: 'danger', icon: 'pi-ban' }
-    : { label: 'Preferred', tone: 'success', icon: 'pi-verified' };
+  switch (code) {
+    case 'BLACKLISTED':
+      return { label: 'Blacklisted', tone: 'danger', icon: 'pi-ban' };
+    case 'PREFERRED':
+      return { label: 'Preferred', tone: 'success', icon: 'pi-verified' };
+    default:
+      // Neutral is a plain, unflagged category (issue #1385): the grey badge, no warning colour.
+      return { label: 'Neutral', tone: 'neutral', icon: 'pi-minus-circle' };
+  }
 }
 
-/** `<mf-vendor-category [category]="v.category" />`: Preferred (green, verified icon) or Blacklisted (red, ban icon), the one status chip (`mf-badge`). */
+/** `<mf-vendor-category [category]="v.category" />`: Preferred (green, verified icon), Neutral (grey, minus icon) or Blacklisted (red, ban icon), the one status chip (`mf-badge`). */
 @Component({
   selector: 'mf-vendor-category',
   imports: [Badge],

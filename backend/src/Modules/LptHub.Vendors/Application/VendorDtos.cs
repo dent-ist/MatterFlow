@@ -15,7 +15,7 @@ public sealed record VendorOptionRef(
 /// <param name="VendorId">Vendor id.</param>
 /// <param name="Name">Vendor name (unique, any case).</param>
 /// <param name="Website">Website address, or null.</param>
-/// <param name="Category"><c>PREFERRED</c> or <c>BLACKLISTED</c>.</param>
+/// <param name="Category"><c>PREFERRED</c>, <c>NEUTRAL</c> or <c>BLACKLISTED</c>.</param>
 /// <param name="Note">Free-text note, or null.</param>
 /// <param name="Services">Services chosen for the vendor, in list order.</param>
 /// <param name="Areas">Areas chosen for the vendor, in list order.</param>
@@ -44,7 +44,7 @@ public sealed record VendorResponse(
 /// <param name="VendorId">Vendor id.</param>
 /// <param name="Name">Vendor name.</param>
 /// <param name="Website">Website address, or null.</param>
-/// <param name="Category"><c>PREFERRED</c> or <c>BLACKLISTED</c>: a Blacklisted vendor is never hidden, the screen warns and asks for a confirming tick when it is linked.</param>
+/// <param name="Category"><c>PREFERRED</c>, <c>NEUTRAL</c> or <c>BLACKLISTED</c>: a Blacklisted vendor is never hidden, the screen warns and asks for a confirming tick when it is linked.</param>
 /// <param name="Services">Names of the vendor's services.</param>
 /// <param name="HasDoNotHireContact">True when a contact of the vendor is flagged Do Not Hire.</param>
 public sealed record VendorLookupItem(
@@ -66,9 +66,9 @@ public sealed class CreateVendorRequest
     [StringLength(300)]
     public string? Website { get; init; }
 
-    /// <summary><c>PREFERRED</c> or <c>BLACKLISTED</c>.</summary>
-    [Required, StringLength(12)]
-    public string Category { get; init; } = string.Empty;
+    /// <summary><c>PREFERRED</c>, <c>NEUTRAL</c> or <c>BLACKLISTED</c>; omit it for <c>NEUTRAL</c>, the default of a new vendor.</summary>
+    [StringLength(12)]
+    public string? Category { get; init; }
 
     /// <summary>Free-text note, at most 2000 characters.</summary>
     [StringLength(2000)]
@@ -95,7 +95,7 @@ public sealed class UpdateVendorRequest
     [StringLength(300)]
     public string? Website { get; init; }
 
-    /// <summary><c>PREFERRED</c> or <c>BLACKLISTED</c>.</summary>
+    /// <summary><c>PREFERRED</c>, <c>NEUTRAL</c> or <c>BLACKLISTED</c>.</summary>
     [Required, StringLength(12)]
     public string Category { get; init; } = string.Empty;
 
@@ -209,7 +209,7 @@ public sealed record VendorMatterResponse(
 /// <param name="VendorId">Vendor id.</param>
 /// <param name="Name">Vendor name.</param>
 /// <param name="Website">Website address, or null.</param>
-/// <param name="Category"><c>PREFERRED</c> or <c>BLACKLISTED</c>.</param>
+/// <param name="Category"><c>PREFERRED</c>, <c>NEUTRAL</c> or <c>BLACKLISTED</c>.</param>
 /// <param name="Services">Names of the vendor's services.</param>
 /// <param name="HasDoNotHireContact">True when a contact of the vendor is flagged Do Not Hire.</param>
 /// <param name="LinkedAt">When the vendor was linked (UTC).</param>

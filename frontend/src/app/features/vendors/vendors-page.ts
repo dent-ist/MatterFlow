@@ -66,7 +66,7 @@ const SORT_OPTIONS = [
 
 /**
  * Vendors (epic #1373, issue #1378; mockup `docs/design/mockups/vendor-management`, screen `vendors`): the firms the team hires for eDiscovery work. A grid of Vendor (the name button
- * that opens the pop-up), Category (Preferred or Blacklisted), Services, Areas, Contacts (with a flag icon when a contact is marked Do Not Hire), Matters and Updated (Website is an optional
+ * that opens the pop-up), Category (Preferred, Neutral or Blacklisted), Services, Areas, Contacts (with a flag icon when a contact is marked Do Not Hire), Matters and Updated (Website is an optional
  * column), with Search (name, website or service), the Category, Service and Area filters, sorting and paging on the server. `Vendor.View` reads (the pop-up is read only);
  * `Vendor.Manage` adds New Vendor and the row menu (Edit Vendor, Delete Vendor). State lives in the address (`q`, `category`, `serviceId`, `areaId`, `page`, `size`, `sort`).
  */

@@ -6,8 +6,8 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { aVendor } from '../../shared/testing/vendors-testing';
 
 describe('vendor drafts', () => {
-  it('starts empty as Preferred and reads a vendor back into a draft', () => {
-    expect(emptyDraft()).toMatchObject({ name: '', category: 'PREFERRED', serviceIds: [] });
+  it('starts empty as Neutral and reads a vendor back into a draft', () => {
+    expect(emptyDraft()).toMatchObject({ name: '', category: 'NEUTRAL', serviceIds: [] });
     expect(draftOf(aVendor())).toEqual({
       name: 'Northbridge eDiscovery',
       website: 'northbridge.example',
@@ -26,6 +26,7 @@ describe('vendor drafts', () => {
     expect(draftChanged(base, { ...base, serviceIds: [2, 1] })).toBe(false);
     expect(draftChanged(base, { ...base, name: 'Other' })).toBe(true);
     expect(draftChanged(base, { ...base, category: 'BLACKLISTED' })).toBe(true);
+    expect(draftChanged(base, { ...base, category: 'NEUTRAL' })).toBe(true);
     expect(draftChanged(base, { ...base, areaIds: [] })).toBe(true);
     expect(draftChanged(base, { ...base, techAi: [] })).toBe(true);
     expect(draftChanged(base, { ...base, note: 'x' })).toBe(true);
@@ -33,8 +34,9 @@ describe('vendor drafts', () => {
 });
 
 describe('vendor words', () => {
-  it('names the two categories with an icon and a word each', () => {
-    expect(VENDOR_CATEGORIES.map((c) => c.label)).toEqual(['Preferred', 'Blacklisted']);
+  it('names the three categories with an icon and a word each; Neutral is plain grey, no warning colour', () => {
+    expect(VENDOR_CATEGORIES.map((c) => c.label)).toEqual(['Preferred', 'Neutral', 'Blacklisted']);
+    expect(vendorCategory('NEUTRAL')).toMatchObject({ label: 'Neutral', tone: 'neutral' });
     expect(vendorCategory('PREFERRED')).toMatchObject({ label: 'Preferred', icon: 'pi-verified' });
     expect(vendorCategory('BLACKLISTED')).toMatchObject({ label: 'Blacklisted', icon: 'pi-ban' });
   });

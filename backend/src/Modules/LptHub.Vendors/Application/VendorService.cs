@@ -69,7 +69,7 @@ public sealed class VendorService(DbContext db, IAuditWriter audit, VendorAccess
     {
         var fields = new FieldErrors();
         var vendor = new Vendor();
-        ApplyFields(vendor, request.Name, request.Website, request.Category, request.Note, fields);
+        ApplyFields(vendor, request.Name, request.Website, string.IsNullOrWhiteSpace(request.Category) ? VendorCategories.Neutral : request.Category, request.Note, fields);
         var techAi = CleanTechAi(request.TechAi, fields);
         var services = await ChosenAsync<VendorServiceOption>(request.ServiceIds, "serviceIds", [], fields, ct);
         var areas = await ChosenAsync<VendorAreaOption>(request.AreaIds, "areaIds", [], fields, ct);
@@ -256,7 +256,7 @@ public sealed class VendorService(DbContext db, IAuditWriter audit, VendorAccess
             vendor.Website = cleanWebsite;
 
         if (!VendorCategories.IsValid(category))
-            fields.Add("category", "INVALID", "Category must be PREFERRED or BLACKLISTED.");
+            fields.Add("category", "INVALID", "Category must be PREFERRED, NEUTRAL or BLACKLISTED.");
         else
             vendor.CategoryCode = category!;
 

@@ -1027,7 +1027,7 @@ Junction: suggested tags of a note template.
 
 ### Vendor
 
-A vendor (epic #1373): name, website, category (`PREFERRED` or `BLACKLISTED`) and a note. Services, areas and the Tech AI list hang on it (`VendorServiceChoice`, `VendorAreaChoice`, `VendorTechAi`), its people are `VendorContact` rows, and `VendorMatter` links it to matters. A vendor linked to a matter cannot be deleted; an unlinked one can, and its contacts, choices and Tech AI rows go with it.
+A vendor (epic #1373): name, website, category (`PREFERRED`, `NEUTRAL` or `BLACKLISTED`; `NEUTRAL` is the default, script 77) and a note. Services, areas and the Tech AI list hang on it (`VendorServiceChoice`, `VendorAreaChoice`, `VendorTechAi`), its people are `VendorContact` rows, and `VendorMatter` links it to matters. A vendor linked to a matter cannot be deleted; an unlinked one can, and its contacts, choices and Tech AI rows go with it.
 
 - **Module:** Vendors. **Area:** Vendors.
 - **Scripts:** created by script 73.

@@ -30828,7 +30828,7 @@ export interface CreateVendorOptionRequest {
 export interface CreateVendorRequest {
     name: string;
     website?: string | undefined;
-    category: string;
+    category?: string | undefined;
     note?: string | undefined;
     serviceIds?: number[] | undefined;
     areaIds?: number[] | undefined;

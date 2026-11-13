@@ -128,6 +128,14 @@ describe('VendorDialog', () => {
       expect(q('[data-panel-title]')!.textContent).toContain('Blacklisted');
     });
 
+    it('a Neutral vendor shows a plain grey chip and no warning banner', async () => {
+      await start(aVendor({ category: 'NEUTRAL' }));
+      expect(q('[data-vendor-facts] [data-vendor-category]')!.textContent).toContain('Neutral');
+      expect(q('[data-vendor-facts] mf-badge .badge')!.getAttribute('data-tone')).toBe('neutral');
+      expect(q('[data-blacklisted-banner]')).toBeNull();
+      expect(q('[data-panel-title]')!.textContent).toContain('Neutral');
+    });
+
     it('the footer has Delete Vendor at the left, Close and Edit Vendor at the right', async () => {
       await start();
       expect(q('[data-panel-delete]')!.textContent).toContain('Delete Vendor');
@@ -264,7 +272,10 @@ describe('VendorDialog', () => {
       expect(all('[role="tab"]')).toHaveLength(0);
       expect(q('.mf-formdlg')!.classList).not.toContain('mf-formdlg--tabbed');
       expect(q('[data-panel-primary]')!.textContent).toContain('Create Vendor');
-      expect(q('[data-category="PREFERRED"]')!.getAttribute('aria-pressed')).toBe('true');
+      expect(q('[data-category="NEUTRAL"]')!.getAttribute('aria-pressed')).toBe('true');
+      expect(all('[data-vendor-category-switch] button').map((b) => b.textContent!.trim())).toEqual(
+        ['Preferred', 'Neutral', 'Blacklisted'],
+      );
     });
 
     it('creates through POST and closes', async () => {

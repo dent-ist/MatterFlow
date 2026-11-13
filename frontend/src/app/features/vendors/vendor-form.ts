@@ -24,7 +24,7 @@ export function emptyDraft(): VendorDraft {
   return {
     name: '',
     website: '',
-    category: 'PREFERRED',
+    category: 'NEUTRAL',
     serviceIds: [],
     areaIds: [],
     techAi: [],
@@ -60,7 +60,7 @@ export function draftChanged(a: VendorDraft, b: VendorDraft): boolean {
 }
 
 /**
- * The vendor fields (epic #1373, issue #1378; mockup `vendor-edit`): Name and Website side by side, Category (Preferred or Blacklisted, the segmented switch), Services and Areas (multi-select
+ * The vendor fields (epic #1373, issue #1378; mockup `vendor-edit`): Name and Website side by side, Category (Preferred, Neutral or Blacklisted, the segmented switch), Services and Areas (multi-select
  * dropdowns over the lists of Administration > Lists), Tech AI (a list of AI systems or services, one per line, added with the Add button) and Note. Used by New Vendor and by the Overview tab
  * of the vendor pop-up in edit mode. The page owns the draft and the save; this component only edits the draft (`draft`) and shows the errors it is given.
  */
@@ -152,6 +152,15 @@ export function draftChanged(a: VendorDraft, b: VendorDraft): boolean {
           <button
             type="button"
             class="mf-btn"
+            data-category="NEUTRAL"
+            [attr.aria-pressed]="draft().category === 'NEUTRAL'"
+            (click)="patch({ category: 'NEUTRAL' })"
+          >
+            <i class="pi pi-minus-circle" aria-hidden="true"></i> Neutral
+          </button>
+          <button
+            type="button"
+            class="mf-btn"
             data-category="BLACKLISTED"
             [attr.aria-pressed]="draft().category === 'BLACKLISTED'"
             (click)="patch({ category: 'BLACKLISTED' })"
@@ -159,11 +168,7 @@ export function draftChanged(a: VendorDraft, b: VendorDraft): boolean {
             <i class="pi pi-ban" aria-hidden="true"></i> Blacklisted
           </button>
         </div>
-        <span class="mf-field__help" data-category-help>{{
-          draft().category === 'BLACKLISTED'
-            ? 'Blacklisted vendors stay visible and show a warning whenever someone links them. Put the reason in Note.'
-            : 'Preferred is the default for a vendor the firm is happy to use.'
-        }}</span>
+        <span class="mf-field__help" data-category-help>{{ categoryHelp() }}</span>
         @if (errors()['category']; as e) {
           <p class="mf-field__error" role="alert">{{ e }}</p>
         }
@@ -263,6 +268,17 @@ export class VendorForm {
   readonly areas = input<readonly VendorOptionView[]>([]);
   /** Messages by field (`name`, `website`, `category`, `serviceIds`, `areaIds`, `techAi`, `note`): the page's own and the server's. */
   readonly errors = input<Readonly<Partial<Record<string, string>>>>({});
+
+  protected readonly categoryHelp = computed(() => {
+    switch (this.draft().category) {
+      case 'BLACKLISTED':
+        return 'Blacklisted vendors stay visible and show a warning whenever someone links them. Put the reason in Note.';
+      case 'PREFERRED':
+        return 'Preferred is for a vendor the firm is happy to use.';
+      default:
+        return 'Neutral is the default for a vendor with no rating either way.';
+    }
+  });
 
   protected readonly aiText = signal('');
   protected readonly aiError = signal('');

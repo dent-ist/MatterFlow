@@ -39,7 +39,7 @@ public class VendorsController(VendorService vendors, VendorContactService conta
 
     /// <summary>Lists and searches vendors, by name unless sorted otherwise.</summary>
     /// <param name="q">Search words, all of which must match the name, website or a service name (any case).</param>
-    /// <param name="category">Only <c>PREFERRED</c> or only <c>BLACKLISTED</c> vendors; omit for both.</param>
+    /// <param name="category">Only vendors of this category (<c>PREFERRED</c>, <c>NEUTRAL</c> or <c>BLACKLISTED</c>); omit for all.</param>
     /// <param name="serviceId">Only vendors that have this service.</param>
     /// <param name="areaId">Only vendors that have this area.</param>
     /// <param name="page">1-based page number.</param>
@@ -66,7 +66,7 @@ public class VendorsController(VendorService vendors, VendorContactService conta
             return this.Problem(Error.Validation("sort", "INVALID", $"sort must be one of: {VendorService.Sorts}."));
 
         if (category is not null && !VendorCategories.IsValid(category))
-            return this.Problem(Error.Validation("category", "INVALID", "category must be PREFERRED or BLACKLISTED."));
+            return this.Problem(Error.Validation("category", "INVALID", "category must be PREFERRED, NEUTRAL or BLACKLISTED."));
 
         return Ok(await vendors.ListAsync(q, category, serviceId, areaId, sort, new PageRequest(page, pageSize), cancellationToken));
     }

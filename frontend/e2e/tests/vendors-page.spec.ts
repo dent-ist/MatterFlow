@@ -79,6 +79,11 @@ test.describe('Vendors page (#1378)', () => {
     await expect(dialog(page)).toContainText('Enter the vendor name.');
     await dialog(page).locator('#vendor-name').fill(name);
     await dialog(page).locator('#vendor-website').fill(`vend${token}.example`);
+    // Neutral is the default category of a new vendor (issue #1385); this one is Preferred.
+    await expect(dialog(page).locator('[data-category="NEUTRAL"]')).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
     await dialog(page).locator('[data-category="PREFERRED"]').click();
     await dialog(page).locator('#vendor-services').click();
     await page.getByRole('option', { name: service }).click();
@@ -243,12 +248,14 @@ test.describe('Vendors page (#1378)', () => {
       areaIds: [are.id],
     });
     await admin.post('/api/v1/vendors', { name: `Beta${token}`, category: 'BLACKLISTED' });
+    await admin.post('/api/v1/vendors', { name: `Gamma${token}` }); // no category: Neutral
     for (const size of SIZES) {
       await page.setViewportSize(size);
       await page.goto(`/vendors?q=${token}`);
       await expect(page.locator('[data-vendor-name]')).toHaveText([
         `Alpha${token}`,
         `Beta${token}`,
+        `Gamma${token}`,
       ]);
       await axeClean(page, `Vendors page at ${size.width}`);
       await shot(page, 'list');
@@ -261,12 +268,16 @@ test.describe('Vendors page (#1378)', () => {
       await page.goto(`/vendors?q=${token}&category=BLACKLISTED`);
       await expect(page.locator('[data-vendor-name]')).toHaveText([`Beta${token}`]);
       await expect(page.locator('[data-vendor-category]')).toContainText('Blacklisted');
+      await page.goto(`/vendors?q=${token}&category=NEUTRAL`);
+      await expect(page.locator('[data-vendor-name]')).toHaveText([`Gamma${token}`]);
+      await expect(page.locator('[data-vendor-category]')).toContainText('Neutral');
       await page.goto(`/vendors?q=${token}&serviceId=${svc.id}`);
       await expect(page.locator('[data-vendor-name]')).toHaveText([`Alpha${token}`]);
       await page.goto(`/vendors?q=${token}&areaId=${are.id}&serviceId=${svc.id}`);
       await expect(page.locator('[data-vendor-name]')).toHaveText([`Alpha${token}`]);
       await page.goto(`/vendors?q=${token}&sort=-name`);
       await expect(page.locator('[data-vendor-name]')).toHaveText([
+        `Gamma${token}`,
         `Beta${token}`,
         `Alpha${token}`,
       ]);

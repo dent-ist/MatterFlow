@@ -8,11 +8,14 @@ public static class VendorCategories
 {
     public const string Preferred = "PREFERRED";
 
+    /// <summary>A plain, unflagged vendor; the default of a new vendor (issue #1385).</summary>
+    public const string Neutral = "NEUTRAL";
+
     public const string Blacklisted = "BLACKLISTED";
 
-    public static readonly string[] All = [Preferred, Blacklisted];
+    public static readonly string[] All = [Preferred, Neutral, Blacklisted];
 
-    public static bool IsValid(string? value) => value is Preferred or Blacklisted;
+    public static bool IsValid(string? value) => value is Preferred or Neutral or Blacklisted;
 }
 
 /// <summary>Stable codes of <see cref="VendorContact.FlagCode"/> (also the API values): the one current opinion about a person at a vendor.</summary>
@@ -31,7 +34,7 @@ public static class ContactFlags
 }
 
 /// <summary>
-/// A vendor (epic #1373): name, website, category (Preferred or Blacklisted), Tech AI list, services and areas (multi-select, admin lists) and a note.
+/// A vendor (epic #1373): name, website, category (Preferred, Neutral or Blacklisted), Tech AI list, services and areas (multi-select, admin lists) and a note.
 /// Field changes are audited by the generic interceptor (object type <c>Vendor</c>); changes to services, areas and Tech AI by explicit events.
 /// A vendor linked to a matter cannot be deleted.
 /// </summary>
@@ -43,7 +46,7 @@ public class Vendor : AuditedEntity<int>
     public string? Website { get; set; }
 
     /// <summary>See <see cref="VendorCategories"/>.</summary>
-    public string CategoryCode { get; set; } = VendorCategories.Preferred;
+    public string CategoryCode { get; set; } = VendorCategories.Neutral;
 
     public string? Note { get; set; }
 }

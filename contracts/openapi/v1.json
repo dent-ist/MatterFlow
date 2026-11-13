@@ -26466,8 +26466,7 @@
       },
       "CreateVendorRequest": {
         "required": [
-          "name",
-          "category"
+          "name"
         ],
         "type": "object",
         "properties": {
@@ -26487,7 +26486,10 @@
           "category": {
             "maxLength": 12,
             "minLength": 0,
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "note": {
             "maxLength": 2000,

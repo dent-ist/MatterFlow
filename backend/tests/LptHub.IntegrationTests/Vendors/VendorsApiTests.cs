@@ -188,6 +188,30 @@ public sealed class VendorsApiTests(SqlServerFixture sql) : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Neutral_is_a_plain_category_and_the_default_of_a_new_vendor()
+    {
+        var admin = As(Admin);
+        var omitted = await JsonAsync(await admin.PostAsJsonAsync("/api/v1/vendors", new { name = "No Category Given" }), HttpStatusCode.Created);
+        omitted.GetProperty("category").GetString().ShouldBe("NEUTRAL");
+        var blank = await JsonAsync(await admin.PostAsJsonAsync("/api/v1/vendors", new { name = "Blank Category", category = " " }), HttpStatusCode.Created);
+        blank.GetProperty("category").GetString().ShouldBe("NEUTRAL");
+        await CreateVendorAsync("Chosen Preferred");
+        await CreateVendorAsync("Chosen Blacklisted", "BLACKLISTED");
+
+        (await VendorNamesAsync("?category=NEUTRAL")).ShouldBe(["Blank Category", "No Category Given"]);
+        (await VendorNamesAsync("?category=PREFERRED")).ShouldBe(["Chosen Preferred"]);
+        (await VendorNamesAsync("?sort=category")).ShouldBe(["Chosen Blacklisted", "Blank Category", "No Category Given", "Chosen Preferred"]); // BLACKLISTED, NEUTRAL, PREFERRED
+
+        var id = omitted.GetProperty("vendorId").GetInt32();
+        var changed = await JsonAsync(await admin.PutAsJsonAsync($"/api/v1/vendors/{id}", new { name = "No Category Given", category = "PREFERRED", rowVersion = omitted.GetProperty("rowVersion").GetString() }));
+        var back = await JsonAsync(await admin.PutAsJsonAsync($"/api/v1/vendors/{id}", new { name = "No Category Given", category = "NEUTRAL", rowVersion = changed.GetProperty("rowVersion").GetString() }));
+        back.GetProperty("category").GetString().ShouldBe("NEUTRAL");
+        (await admin.PutAsJsonAsync($"/api/v1/vendors/{id}", new { name = "No Category Given", rowVersion = back.GetProperty("rowVersion").GetString() })).StatusCode.ShouldBe(HttpStatusCode.BadRequest); // an update still names the category
+        var bad = await ProblemAsync(await admin.PostAsJsonAsync("/api/v1/vendors", new { name = "Bad Category", category = "GOOD" }), HttpStatusCode.BadRequest, "VALIDATION_FAILED");
+        bad.GetProperty("errors").TryGetProperty("category", out _).ShouldBeTrue();
+    }
+
+    [Fact]
     public async Task Validation_duplicate_name_inactive_items_and_stale_row_version()
     {
         var admin = As(Admin);
