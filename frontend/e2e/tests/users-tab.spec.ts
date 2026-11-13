@@ -697,7 +697,18 @@ test.describe('Users tab: coverage', () => {
     await page.goto(scoped(extra));
     await expect(page.locator('[data-coverage-table]')).toBeVisible();
     const more = page.locator('[data-rows-more]');
-    for (let i = 0; i < 100 && (await more.count()) > 0; i++) await more.click();
+    // Each click draws 60 more rows on the next render, so the button is still there right after the click. Clicking again at once would wait for a
+    // button that is about to go (15 s timeout): after every click wait until the rows grew or the button is gone, and click with a short timeout.
+    const rows = page.locator('[data-coverage-table] tbody tr');
+    for (let i = 0; i < 200 && (await more.count()) > 0; i++) {
+      const drawn = await rows.count();
+      await more.click({ timeout: 5000 }).catch(() => undefined);
+      await expect
+        .poll(async () => (await more.count()) === 0 || (await rows.count()) > drawn, {
+          timeout: 30_000,
+        })
+        .toBe(true);
+    }
     await expect(more).toHaveCount(0);
   };
 
