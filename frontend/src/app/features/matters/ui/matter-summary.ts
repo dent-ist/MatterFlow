@@ -12,6 +12,7 @@ import { MatterRef } from '../../../shared/ui/matter-ref';
 import { TagChip } from '../../../shared/ui/tag-chip';
 import { Tip } from '../../../shared/ui/tip';
 import { MatterTeamPanel } from './matter-team-panel';
+import { MatterVendorsPanel } from './matter-vendors-panel';
 import { MatterPathValue } from './matter-path-value';
 import { numericInstant, readableInstant } from '../../../shared/ui/numeric-date';
 import { personInitials } from '../../../shared/ui/person-initials';
@@ -25,7 +26,7 @@ import { IntPipe } from '../../../shared/ui/number-format';
  * The page never scrolls on desktop:
  *
  *   Assets by type: equal tiles, one per type, that scroll sideways instead of wrapping; each opens the Assets tab for the type  [Asset.View]
- *   Below: Details at the left, a side column of 340 px at the right (the Team panel first; the Vendors panel, #1379, goes under it).
+ *   Below: Details at the left, a side column of 340 px at the right (the Team panel first, the Vendors panel, #1379, under it; Vendors needs `Vendor.View`).
  *   Details: ONE card (the shared `mf-details-card`, D-44f) that fits its content, sits at the top and scrolls inside itself when it is taller than the room; its Edit button is in the page header.
  *     The fields are grouped under quiet sub-headings (D-11a, `mfDetailsGroup`) in two columns of groups:
  *       Matter (Client, CM Number, Matter Name) and Classification (Matter Types as chips, Matter Category, Current State) at the left;
@@ -50,6 +51,7 @@ import { IntPipe } from '../../../shared/ui/number-format';
     DetailsCard,
     DetailsGroup,
     MatterTeamPanel,
+    MatterVendorsPanel,
     TagChip,
     MatterRef,
     MatterPathValue,
@@ -461,6 +463,14 @@ import { IntPipe } from '../../../shared/ui/number-format';
           [matterName]="matter().name"
           [canEdit]="canEdit()"
         />
+        @if (showVendors()) {
+          <mf-matter-vendors-panel
+            [matterId]="matter().matterId"
+            [matterRef]="matter().matterRef"
+            [matterName]="matter().name"
+            [canLink]="canLinkVendors()"
+          />
+        }
       </div>
     </div>
   `,
@@ -485,6 +495,9 @@ export class MatterSummary {
   private readonly clock = inject(Clock);
 
   protected readonly showAssets = computed(() => this.auth.has('Asset.View'));
+  /** The Vendors panel needs `Vendor.View` (without it the Team panel has the whole column); linking needs `Vendor.Link`. */
+  protected readonly showVendors = computed(() => this.auth.has('Vendor.View'));
+  protected readonly canLinkVendors = computed(() => this.auth.has('Vendor.Link'));
   protected readonly canCreateAsset = computed(
     () => this.auth.has('Asset.Create') && this.matter().isActive,
   );

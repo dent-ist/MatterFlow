@@ -1,5 +1,7 @@
 import {
+  MatterVendorResponse,
   VendorContactResponse,
+  VendorLookupItem,
   VendorMatterResponse,
   VendorOptionView,
   VendorResponse,
@@ -83,3 +85,31 @@ export const pageOfVendors = (...items: VendorResponse[]) => ({
   page: 1,
   pageSize: 50,
 });
+
+/** A vendor linked to a matter, as the Summary's Vendors panel lists it (a Preferred vendor with two services). */
+export function aMatterVendor(over: Partial<MatterVendorResponse> = {}): MatterVendorResponse {
+  return {
+    vendorId: 7,
+    name: 'Northbridge eDiscovery',
+    website: 'northbridge.example',
+    category: 'PREFERRED',
+    services: ['Hosting', 'Review'],
+    hasDoNotHireContact: false,
+    linkedAt: '2026-11-02T10:00:00Z',
+    linkedByName: 'Maria Alvarez',
+    ...over,
+  };
+}
+
+/** An option of the vendor combobox (`GET /vendors/lookup`). */
+export function aVendorLookup(over: Partial<VendorLookupItem> = {}): VendorLookupItem {
+  return {
+    vendorId: 7,
+    name: 'Northbridge eDiscovery',
+    website: 'northbridge.example',
+    category: 'PREFERRED',
+    services: ['Hosting', 'Review'],
+    hasDoNotHireContact: false,
+    ...over,
+  };
+}
