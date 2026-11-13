@@ -83,6 +83,13 @@ export const NAV_ITEMS: NavItem[] = [
     permissions: ['People.View'],
   },
   {
+    // Vendors (epic #1373, #1378): the firms the team hires, with their contacts and notes. Right after People; the vendor opens in a pop-up, there is no detail route.
+    label: 'Vendors',
+    icon: pageIcon('vendors'),
+    path: '/vendors',
+    permissions: ['Vendor.View'],
+  },
+  {
     label: 'Pod Work',
     icon: pageIcon('pod-work'),
     path: '/pods/work',
@@ -137,7 +144,7 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
     permissions: ['TaskType.Manage', 'Workflow.Manage'],
   },
   {
-    // Administration > Lists (epic #1314): the eight lists of choices (Matter Types, Current States, Team Titles, Priorities, Status Labels, On-Hold Reasons, Note Tags, Link Roles) in one
+    // Administration > Lists (epic #1314): the lists of choices (Matter Types, Matter Categories, Current States, Team Titles, Priorities, Status Labels, On-Hold Reasons, Note Tags, Link Roles, Vendor Services, Vendor Areas) in one
     // master-detail page. It replaces Labels and Matter Lists. Shown when the person manages any one of them (Note Tags use StatusLabel.Manage, Link Roles AssetType.Manage);
     // `/admin/lists` opens the first list they may manage. `admin-lists.spec.ts` keeps this list in step with the registry.
     label: 'Lists',
@@ -149,6 +156,8 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
       'OnHoldReason.Manage',
       'MatterList.Manage',
       'AssetType.Manage',
+      // Vendor Services and Vendor Areas (#1378).
+      'Vendor.Manage',
     ],
   },
   {

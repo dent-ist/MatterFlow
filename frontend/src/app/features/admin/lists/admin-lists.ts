@@ -1,7 +1,7 @@
 import { AdminTab } from '../admin-tabs';
 import { ADMIN_FIELD_LIMITS } from '../shared/field-limits';
 
-/** The nine lists of Administration > Lists (epic #1314), in catalogue order. The key is also the address segment: `/admin/lists/<key>`. */
+/** The eleven lists of Administration > Lists (epic #1314, Vendors #1378), in catalogue order. The key is also the address segment: `/admin/lists/<key>`. */
 export type AdminListKey =
   | 'matter-types'
   | 'matter-categories'
@@ -11,9 +11,11 @@ export type AdminListKey =
   | 'status-labels'
   | 'on-hold-reasons'
   | 'note-tags'
-  | 'link-roles';
+  | 'link-roles'
+  | 'vendor-services'
+  | 'vendor-areas';
 
-export type AdminListGroup = 'Matter' | 'Task' | 'Notes' | 'Assets';
+export type AdminListGroup = 'Matter' | 'Task' | 'Notes' | 'Assets' | 'Vendors';
 
 /** The four catalogue groups with the icon of each (the one icon registry, D-17: the icon of the concept the group holds). */
 export const ADMIN_LIST_GROUPS: readonly {
@@ -24,6 +26,8 @@ export const ADMIN_LIST_GROUPS: readonly {
   { name: 'Task', icon: 'pi-check-square' },
   { name: 'Notes', icon: 'pi-file-edit' },
   { name: 'Assets', icon: 'pi-database' },
+  // Vendors (epic #1373): the same icon as the Vendors page (`page-vendors`), the concept the group holds.
+  { name: 'Vendors', icon: 'pi-truck' },
 ];
 
 /** How a list differs from the others (UI spec 4.3, `backend-notes.md`): the shared editor frame and the specs read these, the bodies implement them. */
@@ -69,6 +73,8 @@ export interface AdminListDef extends AdminListTraits {
 }
 
 const MATTER_SHOWN_ON = 'Shown on: Matter form, Matters list (column and filter), Matter page.';
+const VENDOR_RULE =
+  'An item in use is deactivated, not deleted. Delete appears only for an item that no vendor uses.';
 const MATTER_RULE =
   'An item in use is deactivated, not deleted. Delete appears only for an item that nothing uses.';
 
@@ -248,6 +254,46 @@ export const ADMIN_LISTS: readonly AdminListDef[] = [
     idField: 'id',
     nameField: 'name',
     nameLimit: ADMIN_FIELD_LIMITS.linkRoleName,
+    hasActive: true,
+    colour: null,
+    reorder: true,
+    delete: true,
+    create: true,
+    defaultAction: false,
+  },
+  {
+    key: 'vendor-services',
+    group: 'Vendors',
+    label: 'Vendor Services',
+    permission: 'Vendor.Manage',
+    hint: 'What a vendor offers',
+    shownOn: 'Shown on: Vendors list (column and filter), Vendor pop-up.',
+    rule: VENDOR_RULE,
+    newLabel: 'New Service',
+    endpoint: '/api/v1/vendor-services',
+    idField: 'id',
+    nameField: 'name',
+    nameLimit: ADMIN_FIELD_LIMITS.vendorServiceName,
+    hasActive: true,
+    colour: null,
+    reorder: true,
+    delete: true,
+    create: true,
+    defaultAction: false,
+  },
+  {
+    key: 'vendor-areas',
+    group: 'Vendors',
+    label: 'Vendor Areas',
+    permission: 'Vendor.Manage',
+    hint: 'Where a vendor works',
+    shownOn: 'Shown on: Vendors list (column and filter), Vendor pop-up.',
+    rule: VENDOR_RULE,
+    newLabel: 'New Area',
+    endpoint: '/api/v1/vendor-areas',
+    idField: 'id',
+    nameField: 'name',
+    nameLimit: ADMIN_FIELD_LIMITS.vendorAreaName,
     hasActive: true,
     colour: null,
     reorder: true,

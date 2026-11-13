@@ -69,7 +69,7 @@ export const DIALOG_WIDTHS = {
   `,
   template: `
     <p-dialog
-      styleClass="mf-dlg mf-formdlg"
+      [styleClass]="tabbed() ? 'mf-dlg mf-formdlg mf-formdlg--tabbed' : 'mf-dlg mf-formdlg'"
       [appendTo]="appendTo()"
       [modal]="true"
       [closable]="false"
@@ -103,6 +103,7 @@ export const DIALOG_WIDTHS = {
         </button>
       </ng-template>
       @if (visible()) {
+        <ng-content select="[mfDialogTabs]" />
         <div class="fd__body mf-dlg__body" data-panel-body><ng-content /></div>
       }
       <ng-template #footer>
@@ -137,39 +138,46 @@ export const DIALOG_WIDTHS = {
                 </span>
               </div>
             }
-            <div
-              class="mf-dlg__buttons"
-              [class.mf-dlg__buttons--end]="!showPrimary() && !footerActions() && !deleteLabel()"
-            >
-              @if (deleteLabel()) {
-                <p-button
-                  [label]="deleteLabel()"
-                  severity="danger"
-                  [outlined]="true"
-                  data-panel-delete
-                  (onClick)="!busy() && deleted.emit()"
-                />
-              }
-              <span class="mf-dlg__buttons-end" [class.mf-dlg__buttons-end--split]="!deleteLabel()">
-                <p-button
-                  [label]="secondaryLabel()"
-                  severity="secondary"
-                  data-panel-cancel
-                  (onClick)="ownSecondary() ? secondaryClick.emit() : requestClose()"
-                />
-                @if (showPrimary()) {
+            @if (footerReplaced()) {
+              <ng-content select="[mfFooterReplace]" />
+            } @else {
+              <div
+                class="mf-dlg__buttons"
+                [class.mf-dlg__buttons--end]="!showPrimary() && !footerActions() && !deleteLabel()"
+              >
+                @if (deleteLabel()) {
                   <p-button
-                    [label]="busy() ? busyLabel() : primaryLabel()"
-                    [severity]="danger() ? 'danger' : null"
-                    [styleClass]="(danger() ? 'mf-btn--solid ' : '') + (busy() ? 'fd__busy' : '')"
-                    [attr.aria-disabled]="!canSubmit() || busy() ? 'true' : null"
-                    data-panel-primary
-                    (onClick)="canSubmit() && !busy() && submitted.emit()"
+                    [label]="deleteLabel()"
+                    severity="danger"
+                    [outlined]="true"
+                    data-panel-delete
+                    (onClick)="!busy() && deleted.emit()"
                   />
                 }
-                <ng-content select="[mfFooterActions]" />
-              </span>
-            </div>
+                <span
+                  class="mf-dlg__buttons-end"
+                  [class.mf-dlg__buttons-end--split]="!deleteLabel()"
+                >
+                  <p-button
+                    [label]="secondaryLabel()"
+                    severity="secondary"
+                    data-panel-cancel
+                    (onClick)="ownSecondary() ? secondaryClick.emit() : requestClose()"
+                  />
+                  @if (showPrimary()) {
+                    <p-button
+                      [label]="busy() ? busyLabel() : primaryLabel()"
+                      [severity]="danger() ? 'danger' : null"
+                      [styleClass]="(danger() ? 'mf-btn--solid ' : '') + (busy() ? 'fd__busy' : '')"
+                      [attr.aria-disabled]="!canSubmit() || busy() ? 'true' : null"
+                      data-panel-primary
+                      (onClick)="canSubmit() && !busy() && submitted.emit()"
+                    />
+                  }
+                  <ng-content select="[mfFooterActions]" />
+                </span>
+              </div>
+            }
           </div>
         }
       </ng-template>
@@ -219,6 +227,16 @@ export class FormDialog {
   readonly ownSecondary = input(false);
   /** The dialog opens on its primary button, not on the first field (the publish and retire questions). */
   readonly focusPrimary = input(false);
+  /**
+   * A tabbed view dialog (large, "tabbed view dialog" of the guidelines, #1378): a fixed height (640 px, at most 90% of the window) so a tab change does not make the dialog jump, and a
+   * tab strip projected under the header (`mf-tabs` in the `mfDialogTabs` slot), outside the scrolling body.
+   */
+  readonly tabbed = input(false);
+  /**
+   * The footer's buttons are replaced by the host's own content (`<div mfFooterReplace>`), for example the "Delete this vendor?" question of the tabbed view dialog. The error line
+   * and the discard question stay above it.
+   */
+  readonly footerReplaced = input(false);
   /** The id of the field that takes focus on opening, when it is not the first one (Edit Person: the title of a system user, not the locked name). */
   readonly focusId = input('');
 

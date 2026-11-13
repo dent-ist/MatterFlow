@@ -516,9 +516,9 @@ export function registerListsAuditMatrix(): void {
           if (seen.failed.length > 0) problems.push(`${url}: refused ${seen.failed.join(', ')}`);
           const tabLinks = await page.locator('#mf-main [role="tab"]').count();
           if (tabLinks !== 0) problems.push(`${url}: ${tabLinks} tab links on the Lists page`);
-          // The catalogue: Priorities (1) and Status Labels with Note Tags (2); all nine for the System Admin (Matter Categories joined the eight, #1369);
+          // The catalogue: Priorities (1) and Status Labels with Note Tags (2); all eleven for the System Admin (Matter Categories joined the eight, #1369; Vendor Services and Vendor Areas, #1378);
           // none for a single list.
-          const permitted = role.perms === null ? 9 : (canPr ? 1 : 0) + (canSl ? 2 : 0);
+          const permitted = role.perms === null ? 11 : (canPr ? 1 : 0) + (canSl ? 2 : 0);
           const options = await page.locator('#mf-main [role="option"]').count();
           if (options !== (permitted > 1 ? permitted : 0))
             problems.push(`${url}: ${options} catalogue options for ${permitted} permitted lists`);

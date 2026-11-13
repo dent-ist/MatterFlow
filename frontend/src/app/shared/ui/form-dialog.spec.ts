@@ -220,3 +220,62 @@ describe('one dialog (D-31, #1217)', () => {
     ]);
   });
 });
+
+@Component({
+  imports: [FormDialog],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `<mf-form-dialog
+    title="Acme Hosting"
+    size="large"
+    [tabbed]="true"
+    [footerReplaced]="replaced()"
+    deleteLabel="Delete Vendor"
+    secondaryLabel="Close"
+    primaryLabel="Edit Vendor"
+    [(visible)]="open"
+  >
+    <div mfDialogTabs id="tabs-slot">tabs</div>
+    <p id="body-slot">body</p>
+    @if (replaced()) {
+      <div mfFooterReplace id="foot-slot">Delete Acme Hosting?</div>
+    }
+  </mf-form-dialog>`,
+})
+class TabbedHost {
+  readonly open = signal(true);
+  readonly replaced = signal(false);
+}
+
+describe('FormDialog, tabbed view dialog (D-31a, #1378)', () => {
+  const q = (s: string) => document.body.querySelector<HTMLElement>(s);
+
+  it('is the large dialog with a fixed-height class and the tab strip outside the scrolling body', async () => {
+    const f = TestBed.createComponent(TabbedHost);
+    await f.whenStable();
+    f.detectChanges();
+    const dlg = q('.mf-formdlg')!;
+    expect(dlg.classList).toContain('mf-formdlg--tabbed');
+    expect(dlg.style.width).toBe('var(--mf-dialog-w-lg)');
+    expect(q('#tabs-slot')).not.toBeNull();
+    expect(q('[data-panel-body]')!.contains(q('#tabs-slot'))).toBe(false);
+    expect(q('[data-panel-body]')!.contains(q('#body-slot'))).toBe(true);
+  });
+
+  it('keeps Delete at the left and Close and the primary at the right until the footer is replaced', async () => {
+    const f = TestBed.createComponent(TabbedHost);
+    await f.whenStable();
+    f.detectChanges();
+    expect(
+      Array.from(document.body.querySelectorAll('[data-panel-footer] button')).map((b) =>
+        b.textContent?.trim(),
+      ),
+    ).toEqual(['Delete Vendor', 'Close', 'Edit Vendor']);
+    f.componentInstance.replaced.set(true);
+    f.detectChanges();
+    await f.whenStable();
+    f.detectChanges();
+    expect(q('#foot-slot')!.textContent).toContain('Delete Acme Hosting?');
+    expect(q('[data-panel-footer] [data-panel-delete]')).toBeNull();
+    expect(q('[data-panel-footer] [data-panel-primary]')).toBeNull();
+  });
+});

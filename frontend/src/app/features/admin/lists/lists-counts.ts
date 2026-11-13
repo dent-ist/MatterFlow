@@ -10,6 +10,8 @@ import {
   PrioritiesClient,
   StatusLabelsClient,
   TeamTitlesClient,
+  VendorAreasClient,
+  VendorServicesClient,
 } from '../../../api/generated/api-client';
 import { CountLoader } from '../admin-tabs';
 import { AdminListKey } from './admin-lists';
@@ -30,6 +32,8 @@ export function listCountLoaders(): Record<AdminListKey, CountLoader> {
   const reasons = inject(OnHoldReasonsClient);
   const tags = inject(NoteTagsClient);
   const roles = inject(AssetLinkRolesClient);
+  const services = inject(VendorServicesClient);
+  const areas = inject(VendorAreasClient);
   const active = (rows: readonly { isActive: boolean }[]): number =>
     rows.filter((r) => r.isActive).length;
   return {
@@ -42,5 +46,7 @@ export function listCountLoaders(): Record<AdminListKey, CountLoader> {
     'on-hold-reasons': () => firstValueFrom(reasons.listOnHoldReasons()).then(active),
     'note-tags': () => firstValueFrom(tags.listNoteTags(true)).then(active),
     'link-roles': () => firstValueFrom(roles.listAssetLinkRoles()).then(active),
+    'vendor-services': () => firstValueFrom(services.listVendorServices()).then(active),
+    'vendor-areas': () => firstValueFrom(areas.listVendorAreas()).then(active),
   };
 }

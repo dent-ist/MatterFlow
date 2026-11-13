@@ -21,6 +21,8 @@ import {
   MatterListItemView,
   MatterTypesClient,
   TeamTitlesClient,
+  VendorAreasClient,
+  VendorServicesClient,
 } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { ApiError } from '../../../core/http/api-error';
@@ -44,9 +46,21 @@ import { ADMIN_FIELD_LIMITS } from '../shared/field-limits';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
-/** The four lists this tab edits (the address segment of each on the Lists page). */
+/** The lists this tab edits (the address segment of each on the Lists page): four Matter lists and the two Vendor lists. */
 export type MatterListKind =
-  'matter-types' | 'matter-categories' | 'current-states' | 'team-titles';
+  | 'matter-types'
+  | 'matter-categories'
+  | 'current-states'
+  | 'team-titles'
+  | 'vendor-services'
+  | 'vendor-areas';
+
+/** The permission that maintains each list (`MatterList.Manage`, or `Vendor.Manage` for the Vendor lists). */
+export function managePermission(kind: MatterListKind): string {
+  return kind === 'vendor-services' || kind === 'vendor-areas'
+    ? 'Vendor.Manage'
+    : 'MatterList.Manage';
+}
 
 /** Everything that differs between the three lists: the words (UI spec 7.2 to 7.4 and the glossary) and the API calls. */
 export interface MatterListText {
@@ -67,8 +81,10 @@ export interface MatterListText {
   readonly inUseHeading: string;
   /** What carries the item: one and many ("matter", "team member"). */
   readonly holder: readonly [string, string];
-  /** The query parameter of the Matters list filter the count links to; none for team titles (plain number). */
+  /** The query parameter of the list filter the count links to; none for team titles (plain number). */
   readonly filterParam: string | null;
+  /** The list the count links to: the Matters list, or the Vendors list for the Vendor lists. */
+  readonly linkPath?: string;
   readonly limit: number;
 }
 
@@ -129,6 +145,36 @@ export const MATTER_LIST_TEXTS: Readonly<Record<MatterListKind, MatterListText>>
     filterParam: null,
     limit: ADMIN_FIELD_LIMITS.teamTitleName,
   },
+  'vendor-services': {
+    heading: 'Service',
+    newDialogTitle: 'New Service',
+    newButton: 'New Service',
+    addButton: 'Add Service',
+    toast: 'Vendor service',
+    dupNoun: 'vendor service',
+    plural: 'vendor services',
+    thing: 'service',
+    inUseHeading: 'Vendors',
+    holder: ['vendor', 'vendors'],
+    filterParam: 'serviceId',
+    linkPath: '/vendors',
+    limit: ADMIN_FIELD_LIMITS.vendorServiceName,
+  },
+  'vendor-areas': {
+    heading: 'Area',
+    newDialogTitle: 'New Area',
+    newButton: 'New Area',
+    addButton: 'Add Area',
+    toast: 'Vendor area',
+    dupNoun: 'vendor area',
+    plural: 'vendor areas',
+    thing: 'area',
+    inUseHeading: 'Vendors',
+    holder: ['vendor', 'vendors'],
+    filterParam: 'areaId',
+    linkPath: '/vendors',
+    limit: ADMIN_FIELD_LIMITS.vendorAreaName,
+  },
 };
 
 /** The body of the Deactivate confirm (UI spec 7.3). */
@@ -163,7 +209,7 @@ interface ListApi {
 /**
  * One of the four Matter lists of Administration > Lists (epic #1298, #1314): a reorder list built like On-Hold Reasons (the admin kit table: Order with the grip, Name, In Use, Status and
  * the row menu with Rename, Move Up, Move Down, Deactivate or Activate and Delete). An item that is in use is deactivated, never deleted: Delete is offered only when In Use is
- * 0 (the API checks again: 409 `IN_USE`). Needs `MatterList.Manage`; the editor header (`mf-list-editor`) owns the primary New button and opens the New dialog through `openNew()`.
+ * 0 (the API checks again: 409 `IN_USE`). Needs `MatterList.Manage` (`Vendor.Manage` for the two Vendor lists, #1378); the editor header (`mf-list-editor`) owns the primary New button and opens the New dialog through `openNew()`.
  */
 @Component({
   selector: 'mf-matter-list-tab',
@@ -197,6 +243,8 @@ export class MatterListTab {
   private readonly categoriesApi = inject(MatterCategoriesClient);
   private readonly statesApi = inject(CurrentStatesClient);
   private readonly titlesApi = inject(TeamTitlesClient);
+  private readonly servicesApi = inject(VendorServicesClient);
+  private readonly areasApi = inject(VendorAreasClient);
   private readonly notify = inject(NotificationService);
   private readonly auth = inject(AuthStore);
   private readonly injector = inject(Injector);
@@ -232,6 +280,22 @@ export class MatterListTab {
           remove: (id) => this.statesApi.deleteCurrentState(id),
           reorder: (b) => this.statesApi.reorderCurrentStates(b),
         };
+      case 'vendor-services':
+        return {
+          list: () => this.servicesApi.listVendorServices(),
+          create: (b) => this.servicesApi.createVendorService(b),
+          update: (id, b) => this.servicesApi.updateVendorService(id, b),
+          remove: (id) => this.servicesApi.deleteVendorService(id),
+          reorder: (b) => this.servicesApi.reorderVendorServices(b),
+        };
+      case 'vendor-areas':
+        return {
+          list: () => this.areasApi.listVendorAreas(),
+          create: (b) => this.areasApi.createVendorArea(b),
+          update: (id, b) => this.areasApi.updateVendorArea(id, b),
+          remove: (id) => this.areasApi.deleteVendorArea(id),
+          reorder: (b) => this.areasApi.reorderVendorAreas(b),
+        };
       default:
         return {
           list: () => this.titlesApi.listTeamTitles(),
@@ -243,7 +307,8 @@ export class MatterListTab {
     }
   });
 
-  protected readonly canManage = computed(() => this.auth.has('MatterList.Manage'));
+  protected readonly permission = computed(() => managePermission(this.kind()));
+  protected readonly canManage = computed(() => this.auth.has(this.permission()));
   protected readonly columnSpec = [
     { cls: 'mf-cell-order', bone: '2.5rem' },
     { cls: 'mf-cell-name', bone: '10rem' },
@@ -571,14 +636,14 @@ export class MatterListTab {
           id: 'rename',
           label: 'Rename',
           icon: 'pi-pencil',
-          permission: 'MatterList.Manage',
+          permission: this.permission(),
           run: () => this.openRename(r),
         },
         {
           id: 'up',
           label: 'Move Up',
           icon: 'pi-arrow-up',
-          permission: 'MatterList.Manage',
+          permission: this.permission(),
           reason: i === 0 ? 'Already first.' : undefined,
           run: () => void this.move(r, -1),
         },
@@ -586,7 +651,7 @@ export class MatterListTab {
           id: 'down',
           label: 'Move Down',
           icon: 'pi-arrow-down',
-          permission: 'MatterList.Manage',
+          permission: this.permission(),
           reason: i === list.length - 1 ? 'Already last.' : undefined,
           run: () => void this.move(r, 1),
         },
@@ -595,14 +660,14 @@ export class MatterListTab {
               id: 'deactivate',
               label: 'Deactivate',
               kind: 'state',
-              permission: 'MatterList.Manage',
+              permission: this.permission(),
               run: () => this.deactivating.set(r),
             }
           : {
               id: 'activate',
               label: 'Activate',
               kind: 'state',
-              permission: 'MatterList.Manage',
+              permission: this.permission(),
               run: () => void this.setActive(r, true),
             },
       ];
@@ -613,7 +678,7 @@ export class MatterListTab {
           label: 'Delete',
           icon: 'pi-trash',
           kind: 'danger',
-          permission: 'MatterList.Manage',
+          permission: this.permission(),
           run: () => this.deleting.set(r),
         });
       }
