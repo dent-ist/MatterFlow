@@ -91,7 +91,7 @@ async function collectApi(who: Api, fx: PmFixtures): Promise<Record<string, numb
 const PM_MENU = ['My Matters', 'My Work', 'Clients', 'Matters', 'Projects', 'Assets', 'Task Queue'];
 // The Project Manager role holds Report.Run (owner decision 8, #784), so its menu ends with Reports; the fixture people who are built from a list
 // of permissions without Report.Run (`pmNoAssign`, `pmNoTask`) keep PM_MENU.
-// It also holds People.View (#1375: Project Managers keep the People page as they work), so People follows Assets in the menu.
+// It also holds People.View (#1375: Project Managers keep the People page as they work), so People follows Assets in the menu, and Vendor.View (+ Vendor.Link, #1377), so Vendors follows People (#1378).
 const PM_ROLE_MENU = [
   'My Matters',
   'My Work',
@@ -100,6 +100,7 @@ const PM_ROLE_MENU = [
   'Projects',
   'Assets',
   'People',
+  'Vendors',
   'Task Queue',
   'Reports',
 ];

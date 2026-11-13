@@ -10,7 +10,7 @@ import {
 
 /** The registry is the one source of the catalogue, the routes, the redirects, the page title and the guard (UI spec 3.1 and 4.3). */
 describe('Administration > Lists registry (UI spec 3.1)', () => {
-  it('has the nine lists in catalogue order and four groups, with the permission of each', () => {
+  it('has the eleven lists in catalogue order and five groups, with the permission of each', () => {
     expect(ADMIN_LISTS.map((l) => [l.group, l.key, l.label, l.permission])).toEqual([
       ['Matter', 'matter-types', 'Matter Types', 'MatterList.Manage'],
       ['Matter', 'matter-categories', 'Matter Categories', 'MatterList.Manage'],
@@ -22,13 +22,22 @@ describe('Administration > Lists registry (UI spec 3.1)', () => {
       // Owner decision 4: Note Tags stay gated by StatusLabel.Manage.
       ['Notes', 'note-tags', 'Note Tags', 'StatusLabel.Manage'],
       ['Assets', 'link-roles', 'Link Roles', 'AssetType.Manage'],
+      ['Vendors', 'vendor-services', 'Vendor Services', 'Vendor.Manage'],
+      ['Vendors', 'vendor-areas', 'Vendor Areas', 'Vendor.Manage'],
     ]);
-    expect(ADMIN_LIST_GROUPS.map((g) => g.name)).toEqual(['Matter', 'Task', 'Notes', 'Assets']);
+    expect(ADMIN_LIST_GROUPS.map((g) => g.name)).toEqual([
+      'Matter',
+      'Task',
+      'Notes',
+      'Assets',
+      'Vendors',
+    ]);
     expect(ADMIN_LIST_GROUPS.map((g) => g.icon)).toEqual([
       'pi-briefcase',
       'pi-check-square',
       'pi-file-edit',
       'pi-database',
+      'pi-truck',
     ]);
   });
 
@@ -67,7 +76,7 @@ describe('Administration > Lists registry (UI spec 3.1)', () => {
       'colourKey',
       false,
     ]);
-    // Delete exists for six lists; On-Hold Reasons and Status Labels have none, and Status Labels cannot be created or deactivated.
+    // Delete exists for eight lists; On-Hold Reasons and Status Labels have none, and Status Labels cannot be created or deactivated.
     expect(ADMIN_LISTS.filter((l) => !l.delete).map((l) => l.key)).toEqual([
       'status-labels',
       'on-hold-reasons',
@@ -82,11 +91,11 @@ describe('Administration > Lists registry (UI spec 3.1)', () => {
     for (const l of ADMIN_LISTS) expect(l.newLabel !== null, l.key).toBe(l.create);
   });
 
-  it('feeds the navigation item: it shows for any of the five permissions', () => {
+  it('feeds the navigation item: it shows for any of the six permissions', () => {
     const item = ADMIN_NAV_ITEMS.find((i) => i.label === 'Lists')!;
     expect(item.path).toBe('/admin/lists');
     expect([...item.permissions!].sort()).toEqual([...ADMIN_LIST_PERMISSIONS].sort());
-    expect(ADMIN_LIST_PERMISSIONS).toHaveLength(5);
+    expect(ADMIN_LIST_PERMISSIONS).toHaveLength(6);
     expect(ADMIN_NAV_ITEMS.map((i) => i.label)).not.toContain('Labels');
     expect(ADMIN_NAV_ITEMS.map((i) => i.label)).not.toContain('Matter Lists');
   });

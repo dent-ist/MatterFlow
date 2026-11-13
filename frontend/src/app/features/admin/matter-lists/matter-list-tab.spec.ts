@@ -16,6 +16,7 @@ import {
   MatterListTab,
   deactivateBody,
   duplicateMessage,
+  managePermission,
 } from './matter-list-tab';
 import { ADMIN_LISTS } from '../lists/admin-lists';
 
@@ -80,6 +81,42 @@ describe('Matter Lists wording (UI spec 7.3)', () => {
     expect(MATTER_LIST_TEXTS['current-states'].newButton).toBe('New State');
     expect(MATTER_LIST_TEXTS['matter-categories'].newButton).toBe('New Matter Category');
     expect(titles.newButton).toBe('New Title');
+  });
+});
+
+describe('Vendor lists on the same body (#1378)', () => {
+  const services = MATTER_LIST_TEXTS['vendor-services'];
+  const areas = MATTER_LIST_TEXTS['vendor-areas'];
+
+  it('are maintained with Vendor.Manage, the Matter lists with MatterList.Manage', () => {
+    expect(managePermission('vendor-services')).toBe('Vendor.Manage');
+    expect(managePermission('vendor-areas')).toBe('Vendor.Manage');
+    expect(managePermission('team-titles')).toBe('MatterList.Manage');
+    const vendors = ADMIN_LISTS.filter((l) => l.group === 'Vendors');
+    expect(vendors.map((l) => l.key)).toEqual(['vendor-services', 'vendor-areas']);
+    for (const l of vendors) expect(l.permission).toBe('Vendor.Manage');
+  });
+
+  it('name their button like the registry and count vendors, linking to the Vendors list', () => {
+    expect(services.newButton).toBe('New Service');
+    expect(areas.newButton).toBe('New Area');
+    expect(ADMIN_LISTS.filter((l) => l.group === 'Vendors').map((l) => l.newLabel)).toEqual([
+      services.newButton,
+      areas.newButton,
+    ]);
+    expect(services.inUseHeading).toBe('Vendors');
+    expect([services.filterParam, services.linkPath]).toEqual(['serviceId', '/vendors']);
+    expect([areas.filterParam, areas.linkPath]).toEqual(['areaId', '/vendors']);
+  });
+
+  it('word the Deactivate confirm and the duplicate by vendors', () => {
+    expect(deactivateBody(services, 2)).toBe(
+      "2 vendors keep this service. It won't be offered for new or changed vendors. You can activate it again.",
+    );
+    expect(deactivateBody(areas, 1)).toContain('1 vendor keeps this area.');
+    expect(duplicateMessage(areas, 'Northeast', false)).toBe(
+      "A vendor area named 'Northeast' already exists.",
+    );
   });
 });
 

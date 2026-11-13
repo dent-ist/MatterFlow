@@ -28,6 +28,7 @@ test.describe('The short menu of the Project Manager', () => {
       'Matters',
       'Projects',
       'Assets',
+      'Vendors',
       'Task Queue',
       'Reports',
     ]);
