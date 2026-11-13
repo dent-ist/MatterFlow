@@ -191,10 +191,7 @@ describe('TaskTable resize handles (#204)', () => {
     );
     expect(table().style.getPropertyValue('--w-title')).toBe(`${180 / 14}rem`);
     expect(table().classList.contains('wt--title-fixed')).toBe(true);
-    expect(parseFloat(table().style.getPropertyValue('--wt-min'))).toBeCloseTo(
-      before + 60 / 14,
-      5,
-    );
+    expect(parseFloat(table().style.getPropertyValue('--wt-min'))).toBeCloseTo(before + 60 / 14, 5);
   });
 
   it('only the dragged column changes: the neighbours keep their widths (DB-10, #1073)', async () => {

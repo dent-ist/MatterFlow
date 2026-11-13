@@ -76,9 +76,7 @@ export async function axeViolations(
         !document.getAnimations().some((a) => {
           const timing = a.effect?.getComputedTiming();
           return (
-            (a.playState === 'running' || a.playState === 'pending') &&
-            !!timing &&
-            timing.iterations !== Infinity
+            (a.playState === 'running' || a.pending) && !!timing && timing.iterations !== Infinity
           );
         }),
       undefined,
