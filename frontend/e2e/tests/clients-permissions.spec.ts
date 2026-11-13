@@ -250,10 +250,17 @@ test.describe('#285: permission matrix, no dead links', () => {
           await expect(page.locator('#mf-main tr[data-task]').first()).toBeVisible();
           // Project is an optional column of the Tasks tab (the tab is inside one matter already): turn it on, where the person may have it.
           if (has(role, 'Project.View')) await showTaskTabColumns(page, 'project');
-          expect(
-            (await links(page, 'mf-project-cell a')) > 0,
-            'project links in the Tasks grid',
-          ).toBe(has(role, 'Project.View'));
+          // The cells are drawn after the rows and the column switch: look until the links are there (or, without Project.View, that none came).
+          if (has(role, 'Project.View')) {
+            await expect(
+              page.locator('#mf-main mf-project-cell a').first(),
+              'project links in the Tasks grid',
+            ).toBeVisible();
+          } else {
+            expect(await links(page, 'mf-project-cell a'), 'project links in the Tasks grid').toBe(
+              0,
+            );
+          }
         } else {
           await expect(page.locator('[data-no-access=tasks]')).toBeVisible();
         }

@@ -414,6 +414,8 @@ test.describe('Keyboard: Tab stops of the new areas (existing keys only)', () =>
     await expect(page.locator('[role=tab]').last()).toBeFocused();
     await page.keyboard.press('Home');
     await expect(page.locator('[role=tab]').first()).toBeFocused();
+    // The arrow keys move from the selected tab, and the selection follows the address: wait until Home has been taken over before the next key.
+    await expect(page.locator('[role=tab]').first()).toHaveAttribute('aria-selected', 'true');
     await page.keyboard.press('ArrowRight');
     await expect(page).toHaveURL(/tab=calendar/);
     await page.goBack();

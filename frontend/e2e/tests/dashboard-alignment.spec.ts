@@ -18,7 +18,13 @@ test('Users: the Workload | Coverage switch does not move between the views', as
     expect(Math.abs(coverage.y - workload.y)).toBeLessThanOrEqual(1);
     expect(Math.abs(coverage.x - workload.x)).toBeLessThanOrEqual(1);
     await views.getByRole('button', { name: /Workload/ }).click();
+    // The switch is drawn again with the Workload toolbar (the Coverage one is gone): measure the new one, not the instant between the two.
+    await expect(page.locator('mf-coverage-view')).toHaveCount(0);
+    await expect(page.locator('mf-users-toolbar')).toBeVisible();
+    await expect(views).toBeVisible();
+    await expect(page.locator('[data-users-loading]')).toHaveCount(0);
     const back = (await views.boundingBox())!;
     expect(Math.abs(back.y - workload.y)).toBeLessThanOrEqual(1);
+    expect(Math.abs(back.x - workload.x)).toBeLessThanOrEqual(1);
   }
 });
