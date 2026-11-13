@@ -421,11 +421,10 @@ describe('MatterDetailPage', () => {
     expect(panel.getAttribute('aria-labelledby')).toBe('matter-tab-summary');
     const summary = panel.querySelector('[data-details-tab]')!;
     const rows = Array.from(summary.querySelectorAll('dt')).map((t) => t.textContent!.trim());
-    // Four groups under quiet sub-headings (#1376); two short fields share a row (CM Number and Matter Number, Status and AI Allowed).
+    // Four groups under quiet sub-headings (#1376): Client first, then CM Number (no separate Matter Number, #1383); Status and AI Allowed share a row.
     expect(rows).toEqual([
-      'CM Number',
-      'Matter Number',
       'Client',
+      'CM Number',
       'Matter Name',
       'Matter Types',
       'Matter Category',
