@@ -20,6 +20,8 @@ export const ICONS: Readonly<Record<string, string>> = {
   'page-assets': 'pi-database',
   // People (epic #1373): the shared address book. The matter Summary's Team panel (#1376) shows the same people.
   'page-people': 'pi-address-book',
+  // Vendors (epic #1373): the firms the team hires for eDiscovery work.
+  'page-vendors': 'pi-truck',
   'page-pod-work': 'pi-users',
   'page-task-queue': 'pi-list-check',
   'page-users': 'pi-id-card',

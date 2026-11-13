@@ -389,6 +389,12 @@ describe('toastFor', () => {
     expect(toastFor(make(409, { code: 'IN_USE', detail: 'Tasks use this priority.' }))).toBeNull();
   });
 
+  it('suppresses the refusal of deleting a vendor that matters use: the vendor pop-up shows the count (#1378)', () => {
+    expect(
+      toastFor(make(409, { code: 'VENDOR_LINKED_TO_MATTERS', detail: 'Linked to 2 matters.' })),
+    ).toBeNull();
+  });
+
   it('suppresses the sensitive-matter confirmation request: the matter form asks in a dialog (epic #788)', () => {
     expect(
       toastFor(

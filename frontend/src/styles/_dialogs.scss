@@ -42,6 +42,11 @@
   border-top: 1px solid var(--mf-border-soft);
 }
 
+/* A tabbed view dialog (#1378): a fixed height, so switching tabs does not make it jump; the tab strip sits under the header, the body scrolls inside. */
+.mf-formdlg--tabbed.p-dialog {
+  height: min(640px, 90vh);
+}
+
 .mf-dlg__title {
   flex: 1 1 auto;
   min-width: 0;
