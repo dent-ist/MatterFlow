@@ -38,7 +38,7 @@
       >
         <p-button
           mfEmptyAction
-          *mfHasPermission="'MatterList.Manage'"
+          *mfHasPermission="permission()"
           [label]="text().newButton"
           icon="pi pi-plus"
           data-empty-new
@@ -76,7 +76,7 @@
               @if (r.inUseCount > 0 && text().filterParam; as param) {
                 <a
                   class="mf-link"
-                  [routerLink]="['/matters']"
+                  [routerLink]="[text().linkPath ?? '/matters']"
                   [queryParams]="inUseParams(param, r.id)"
                   [attr.aria-label]="r.inUseCount + ' ' + text().inUseHeading + ' with ' + r.name"
                   >{{ r.inUseCount | mfInt }}</a

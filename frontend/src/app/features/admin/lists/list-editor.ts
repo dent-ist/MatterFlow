@@ -20,12 +20,14 @@ import { StatusLabelsPage } from '../status-labels/status-labels-page';
 import { AdminListDef, AdminListKey } from './admin-lists';
 import { LIST_BODY } from './list-body';
 
-/** The four lists that share one body (`mf-matter-list-tab`). */
+/** The lists that share one body (`mf-matter-list-tab`): the four Matter lists and, with the same shape (name, order, active, in use), the two Vendor lists (#1378). */
 export const MATTER_LIST_KEYS: readonly AdminListKey[] = [
   'matter-types',
   'matter-categories',
   'current-states',
   'team-titles',
+  'vendor-services',
+  'vendor-areas',
 ];
 
 /**
