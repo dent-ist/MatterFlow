@@ -48,6 +48,9 @@ import { Tip } from '../../../shared/ui/tip';
       flex: 1 1 0;
       min-width: 0;
     }
+    .mpl__field .mf-field__input {
+      width: 100%;
+    }
     .mpl__foot {
       display: flex;
       flex-direction: column;
