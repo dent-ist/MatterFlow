@@ -132,13 +132,17 @@ test.describe('the person fields of the user record (#1394)', () => {
     await set(a.userId, `Zeta ${TAG}`, HEAD, 'Active');
     await set(b.userId, `Alpha ${TAG}`, REMOTE, 'Departed');
 
-    for (const size of SIZES) {
+    for (const [i, size] of SIZES.entries()) {
       await page.setViewportSize(size);
       await page.goto(`/admin/users?status=all&account=e2e-${TAG}col`);
-      await expect(page.getByRole('columnheader', { name: 'Employment Status' })).toHaveCount(0);
+      await expect(page.locator(`tr[data-record-id="${a.userId}"]`)).toBeVisible();
+      // The three columns are hidden by default. Only the first visit can say so: the choice is remembered in the browser under the person's key, and
+      // whether the grid has read that key yet on a later visit depends on timing, so a later visit must not assert the default.
+      if (i === 0)
+        await expect(page.getByRole('columnheader', { name: 'Employment Status' })).toHaveCount(0);
       await page.getByRole('button', { name: 'Columns', exact: true }).click();
       for (const label of ['Title', 'Office', 'Employment Status'])
-        await page.getByLabel(label, { exact: true }).check();
+        await page.getByLabel(label, { exact: true }).check(); // checking a ticked column changes nothing
       await page.getByRole('button', { name: 'Columns', exact: true }).click();
       await expect(page.getByRole('columnheader', { name: 'Employment Status' })).toBeVisible();
       await expect(page.locator('thead th').filter({ hasText: /^\s*Status\s*$/i })).toBeVisible();

@@ -217,7 +217,12 @@ test.describe('Task T5: the tab strip replaces the section nav (#308, #347)', ()
     // Roving tabindex: the other two tabs are not tab stops (they are not in the list of tab stops at all).
     expect(order.otherTabs).toBe(2);
 
-    await tab(page, 'Workflow').focus();
+    // The page finishes drawing after it opens (the strip can be redrawn and lose the focus): wait for the Workflow pane, then take the focus until it stays.
+    await expect(page.locator('[data-workflow-tab]')).toBeVisible();
+    await expect(async () => {
+      await tab(page, 'Workflow').focus();
+      await expect(tab(page, 'Workflow')).toBeFocused({ timeout: 1000 });
+    }).toPass({ timeout: 15_000 });
     await page.keyboard.press('ArrowRight');
     await expect(tab(page, 'Assets')).toBeFocused();
     await expect(tab(page, 'Assets')).toHaveAttribute('aria-selected', 'true');
