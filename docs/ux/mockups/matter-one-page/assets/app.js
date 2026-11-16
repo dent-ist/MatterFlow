@@ -1,10 +1,10 @@
 /* Matter one-page mockup: tiny renderer. No framework, no network, nothing saves. Used by index.html (the one page) and full-view.html (the existing tab page).
-   URL options: ?chrome=0 hides the mockup guide; ?load=normal|hold|fail; ?prod=empty|data; ?viewer=full|limited; ?rows=5|10|15; #tasks (or any section id) scrolls there. */
+   URL options: ?chrome=0 hides the mockup guide; ?guide=1 opens it; ?load=normal|hold|fail; ?prod=empty|data; ?viewer=full|limited; ?rows=5|10|15; #tasks (or any section id) scrolls there. */
 (function () {
   const D = window.D, M = D.matter;
   const Q = new URLSearchParams(location.search);
   const FULL = document.body.classList.contains('full');
-  const S = { load: Q.get('load') || 'normal', prod: Q.get('prod') || 'empty', viewer: Q.get('viewer') || 'full', rows: +(Q.get('rows') || 10), guide: false, coll: {} };
+  const S = { load: Q.get('load') || 'normal', prod: Q.get('prod') || 'empty', viewer: Q.get('viewer') || 'full', rows: +(Q.get('rows') || 10), guide: Q.get('guide') === '1', coll: {} };
   if (Q.get('chrome') === '0') document.body.classList.add('nochrome');
   const $root = document.getElementById('root');
   const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');

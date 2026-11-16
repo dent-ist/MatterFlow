@@ -341,3 +341,5 @@ body.full .main { overflow: auto; }
 .jump nav { overflow: hidden; }
 .jump .who .nm { display: none; }
 @media (min-width: 1700px) { .jump .who .nm { display: inline; } }
+
+.mk-badge { top: auto; bottom: 12px; left: calc(50% + 110px); }

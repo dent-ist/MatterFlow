@@ -40,7 +40,7 @@ window.D = (function () {
   for (let i = 0; i < 38; i++) {
     const t = tpl[i % tpl.length];
     const off = -4 + Math.floor(i * 0.85);
-    tasks.push({ ref: 'TSK-' + (4102 + i * 7), type: t[0], title: t[1] + (i >= tpl.length ? ' - Round 2' : ''), pri: t[2], who: who[(i * 5 + 1) % who.length], due: off, time: i % 3 ? '05:00 PM' : '12:00 PM', status: st[(i * 7) % st.length] });
+    tasks.push({ ref: 'TSK-' + (4102 + i * 7), type: t[0], title: t[1] + (i >= tpl.length ? ' - Round 2' : ''), pri: t[2], who: who[(i * 4 + (i % 3)) % who.length], due: off, time: i % 3 ? '05:00 PM' : '12:00 PM', status: st[(i * 7) % st.length] });
   }
   tasks.sort((a, b) => a.due - b.due);
 
