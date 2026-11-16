@@ -254,8 +254,10 @@ test.describe('Clients final verification (#287)', () => {
             for (const rowHeight of heights) expect(rowHeight, `${s.key}: row height`).toBe(44);
           }
         } else {
-          await expect(page.locator('[role=tablist]')).toBeVisible();
-          const tabsTop = await top(page, '[role=tablist]');
+          // The Matter's overview is the one page (#1396): its strip is the jump strip, a nav of links.
+          const strip = s.key === 'matter-overview' ? '[data-jump-strip]' : '[role=tablist]';
+          await expect(page.locator(strip)).toBeVisible();
+          const tabsTop = await top(page, strip);
           // A matter also carries the project manager line and the small health strip (epic #667): up to 50 px more on a desktop, 130 on a phone.
           const extra = s.key.startsWith('matter') ? (phone ? 130 : 50) : 0;
           if (w >= 1024) expect(tabsTop, `${s.key}: tabs y`).toBeLessThanOrEqual(200 + extra);
@@ -610,7 +612,7 @@ test.describe('Clients final verification (#287)', () => {
 
   // --- 3. states and keyboard -------------------------------------------------------------------------------------
 
-  test('reduced motion: lists and records render, the tab strip does not animate, axe 0', async ({
+  test('reduced motion: lists and records render, the strip does not animate, axe 0', async ({
     page,
   }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -619,7 +621,7 @@ test.describe('Clients final verification (#287)', () => {
     await expect(page.locator('main table tbody tr td a').first()).toBeVisible();
     await axeClean(page, 'clients list, reduced motion');
     await page.goto(`/matters/${data.matter.matterId}`);
-    await expect(page.locator('[role=tablist]')).toBeVisible();
+    await expect(page.locator('[data-jump-strip]')).toBeVisible();
     const animated = await page.evaluate(
       () =>
         document

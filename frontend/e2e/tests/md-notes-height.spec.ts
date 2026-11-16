@@ -166,10 +166,10 @@ test.describe('Notes height toggle (#1342)', () => {
     await expect(toggle(page)).toHaveAttribute('aria-pressed', 'true');
     await expect(crumb(page)).toHaveCount(0);
 
-    // Another tab shows the full header; coming back folds it again.
+    // Another tab (the Summary, which is the one page now) shows the full header; coming back to the Notes full view folds it again.
     await page.getByRole('tab', { name: /^Summary/ }).click();
     await expect(crumb(page)).toHaveCount(1);
-    await page.getByRole('tab', { name: /^Notes/ }).click();
+    await open(page, b.matter.matterId);
     await expect(crumb(page)).toHaveCount(0);
 
     // Anything but 1 is off.

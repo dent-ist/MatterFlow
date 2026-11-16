@@ -105,7 +105,12 @@ function watch(page: Page): { failed: string[] } {
 
 async function settle(page: Page): Promise<void> {
   await page.waitForLoadState('networkidle');
-  await expect(page.locator('[data-loading], [data-skeleton]')).toHaveCount(0);
+  // The placeholders of the Matter page's sections are not "still loading": a section loads when it is near the window (#1396).
+  await expect(
+    page.locator(
+      '[data-loading]:not([data-section] [data-loading]), [data-skeleton]:not([data-section] [data-skeleton])',
+    ),
+  ).toHaveCount(0);
 }
 
 /** The links of the page content (not the navigation rail or the header search). */
@@ -232,12 +237,13 @@ test.describe('#285: permission matrix, no dead links', () => {
           has(role, 'Client.View'),
         );
         expect(
-          (await page.getByRole('tab', { name: /^Projects/ }).count()) > 0,
-          'Projects tab',
+          (await page.locator('[data-jump="projects"]').count()) > 0,
+          'Projects section link',
         ).toBe(has(role, 'Project.View'));
-        expect((await page.getByRole('tab', { name: /^Assets/ }).count()) > 0, 'Assets tab').toBe(
-          has(role, 'Asset.View'),
-        );
+        expect(
+          (await page.locator('[data-jump="assets"]').count()) > 0,
+          'Assets section link',
+        ).toBe(has(role, 'Asset.View'));
         // The overflow holds the matter's quick actions (epic #758): everybody who may see tasks has at least Open the matter's tasks.
         expect((await page.locator('[data-overflow]').count()) > 0, 'overflow menu').toBe(
           role.perms === null || has(role, 'Task.View'),

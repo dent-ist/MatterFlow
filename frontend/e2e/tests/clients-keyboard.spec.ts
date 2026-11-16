@@ -582,7 +582,8 @@ test.describe('#284: tabs, menus, dialogs and drawers by keyboard', () => {
       page,
     }) => {
       await page.setViewportSize({ width: 1366, height: 768 });
-      await page.goto(r.url());
+      // The Matter's overview is one page without tabs (#1396); its tab strip is on the full views, so it starts on the Tasks full view.
+      await page.goto(r.kind === 'matter' ? `${r.url()}?tab=tasks` : r.url());
       const tabs = page.getByRole('tab');
       await expect(tabs.first()).toBeVisible();
       const count = await tabs.count();
@@ -592,6 +593,16 @@ test.describe('#284: tabs, menus, dialogs and drawers by keyboard', () => {
       await expect(tabs.nth(count - 1)).toBeFocused();
       await expect(tabs.nth(count - 1)).toHaveAttribute('aria-selected', 'true');
       await expect(page).toHaveURL(new RegExp(`tab=${r.tabs[count - 1]}`));
+      if (r.kind === 'matter') {
+        // Home selects Summary, which leads back to the one page (no `tab` in the address); the arrow keys do not wrap before that.
+        await page.keyboard.press('ArrowLeft');
+        await expect(tabs.nth(count - 2)).toBeFocused();
+        await expect(page.locator('[role=tab][tabindex="0"]')).toHaveCount(1);
+        await page.keyboard.press('Home');
+        await expect(page.locator('[data-matter-one-page]')).toBeVisible();
+        expect(page.url()).not.toContain('tab=');
+        return;
+      }
       await page.keyboard.press('Home');
       await expect(tabs.first()).toBeFocused();
       await expect(tabs.first()).toHaveAttribute('aria-selected', 'true');
@@ -611,7 +622,7 @@ test.describe('#284: tabs, menus, dialogs and drawers by keyboard', () => {
         await page.setViewportSize({ width: w, height: h });
         await page.goto(r.url());
         // The matter header also has the Create menu (it is a `data-overflow` too): this test is about More actions.
-        const trigger = page.locator('[data-overflow][aria-label^="More actions"]');
+        const trigger = page.locator('[data-overflow][aria-label="More actions"]');
         await expect(trigger).toBeVisible();
 
         // Esc closes the menu and focus is back on the button.

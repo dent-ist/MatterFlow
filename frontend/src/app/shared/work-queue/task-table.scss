@@ -332,3 +332,12 @@ th:not([aria-sort]) .wt-sort .pi {
 .wt-near > :first-child {
   margin: 0;
 }
+
+/* The polite "Loading tasks" text for assistive technology: out of the table's layout, so the skeleton is exactly its rows tall. */
+.wt .wt-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}

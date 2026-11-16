@@ -83,7 +83,7 @@ const ROWS = [0, 1, 2, 3, 4] as const;
   selector: 'mf-record-skeleton',
   imports: [RecordHeader, RouterLink, Tabs, DetailLayout, NgTemplateOutlet, StillLoading],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '[class.rk-task]': "kind() === 'task' || kind() === 'profile'" },
+  host: { '[class.rk-task]': "flow() || kind() === 'task' || kind() === 'profile'" },
   template: `
     <div class="rk" aria-busy="true" data-record-skeleton [attr.data-kind]="kind()">
       <span class="mf-sr-only" role="status" data-loading>Loading {{ noun() }}</span>
@@ -430,6 +430,8 @@ export class RecordSkeleton {
   readonly retry = output<void>();
   /** The tab that is open (the address's `tab`); the first tab when it is not one of the page's. */
   readonly activeTab = input('details');
+  /** The page that shows it scrolls as a whole (the one-page Matter, D-03a): the placeholder flows instead of filling a fixed page. */
+  readonly flow = input(false);
   /** Matter page: the Notes height choice is folded, so the header is not drawn (the page does not jump when the data arrives). */
   readonly foldHeader = input(false);
   /** Matter page, Summary tab: the person sees the asset strip above the Details card, so the skeleton keeps its room. */

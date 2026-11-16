@@ -211,7 +211,7 @@ test.describe('Matter paths: several DMS and DFS paths (#1391)', () => {
     expect((await admin.get(`/api/v1/matters/${matter.matterId}`)).dmsPaths).toEqual(ten);
   });
 
-  test('Summary at 1366x768: an ordinary matter (one path of each kind) keeps the two-column Details without an inner scroll; several paths still fit the page', async ({
+  test('Summary at 1366x768: an ordinary matter (one path of each kind) keeps the two-column Details; several paths make the card taller and it never scrolls inside itself (D-03a)', async ({
     page,
     seed,
     admin,
@@ -230,17 +230,16 @@ test.describe('Matter paths: several DMS and DFS paths (#1391)', () => {
     await page.goto(`/matters/${matter.matterId}`);
     const card = page.locator('[data-summary-details]');
     await expect(card).toBeVisible();
-    const scrolls = () =>
+    // The Matter page is one scrolling page: the Details card is as tall as its fields and is not a scroll box.
+    const scrollBox = () =>
       page.evaluate(() => {
         const body = document.querySelector(
           '[data-summary-details] .dc__body',
         ) as HTMLElement | null;
-        return body ? body.scrollHeight - body.clientHeight : 0;
+        return body ? getComputedStyle(body).overflowY : 'none';
       });
-    expect(await scrolls(), 'no inner scroll for an ordinary matter').toBeLessThanOrEqual(1);
-    const pageOverflow = () =>
-      page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight);
-    const ordinaryOverflow = await pageOverflow();
+    expect(await scrollBox(), 'no inner scroll for an ordinary matter').toBe('visible');
+    const ordinaryHeight = (await card.boundingBox())!.height;
     const groups = await page
       .locator('[data-details-group]')
       .evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().left)));
@@ -256,28 +255,14 @@ test.describe('Matter paths: several DMS and DFS paths (#1391)', () => {
     });
     await page.reload();
     await expect(page.locator('[data-dms-path] [data-path-row]')).toHaveCount(4);
-    // Several paths never make the page itself scroll more than the ordinary matter does (D-03); the Details card scrolls inside itself when the paths need more room.
-    const offenders = await page.evaluate(() => {
-      const clipped = (e: HTMLElement): boolean => {
-        for (let p = e.parentElement; p && p !== document.body; p = p.parentElement) {
-          const y = getComputedStyle(p).overflowY;
-          if (
-            (y === 'auto' || y === 'scroll' || y === 'hidden') &&
-            p.getBoundingClientRect().bottom <= window.innerHeight + 1
-          )
-            return true;
-        }
-        return false;
-      };
-      return Array.from(document.querySelectorAll<HTMLElement>('body *'))
-        .filter((e) => e.getBoundingClientRect().bottom > window.innerHeight + 1 && !clipped(e))
-        .slice(0, 12)
-        .map(
-          (e) =>
-            `${e.tagName.toLowerCase()}.${String(e.className).slice(0, 60)} bottom=${Math.round(e.getBoundingClientRect().bottom)}`,
-        );
-    });
-    expect(await pageOverflow(), offenders.join(' | ')).toBeLessThanOrEqual(ordinaryOverflow);
+    // Several paths make the card taller; it still does not scroll inside itself and the page does not scroll sideways.
+    expect((await card.boundingBox())!.height).toBeGreaterThan(ordinaryHeight);
+    expect(await scrollBox()).toBe('visible');
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      ),
+    ).toBeLessThanOrEqual(0);
     await shot(page, 'matter-paths-1391/summary-many-1366');
     await axeClean(page, 'Matter Summary with four paths of each kind');
   });

@@ -5,6 +5,7 @@ import {
   effect,
   inject,
   input,
+  output,
   signal,
   untracked,
 } from '@angular/core';
@@ -27,6 +28,7 @@ import { friendlyText } from '../../../shared/ui/audit-format';
 import { auditObjectLink, auditObjectText } from '../../admin/audit/audit-links';
 import { numericInstant, readableInstant } from '../../../shared/ui/numeric-date';
 import { IntPipe } from '../../../shared/ui/number-format';
+import { SECTION_ROWS, type SectionStats } from '../../../shared/ui/section-card';
 import { shortAccountName } from '../../../shared/ui/person-name';
 
 /**
@@ -94,21 +96,23 @@ const seenKey = (matterId: number) => `mf.matter-activity-seen.${matterId}`;
   `,
   template: `
     <!-- The tab's control row, like every Matter tab (LC-08, theme guide 11.2): the Kind dropdown, then Columns. -->
-    <h2 class="mf-sr-only">Activities</h2>
-    <mf-list-toolbar [filters]="filters">
-      <mf-dropdown
-        mfView
-        buttonId="ma-kind"
-        label="Kind"
-        prefix="Kind:"
-        [items]="kindItems"
-        [value]="kind()"
-        (valueChange)="setKind($event)"
-        neutralValue=""
-      />
-      <mf-record-columns mfColumns [grid]="grid" />
-    </mf-list-toolbar>
-    @if (newCount() > 0) {
+    @if (!compact()) {
+      <h2 class="mf-sr-only">Activities</h2>
+      <mf-list-toolbar [filters]="filters">
+        <mf-dropdown
+          mfView
+          buttonId="ma-kind"
+          label="Kind"
+          prefix="Kind:"
+          [items]="kindItems"
+          [value]="kind()"
+          (valueChange)="setKind($event)"
+          neutralValue=""
+        />
+        <mf-record-columns mfColumns [grid]="grid" />
+      </mf-list-toolbar>
+    }
+    @if (!compact() && newCount() > 0) {
       <p class="ma__banner" role="status" data-new-banner>
         {{ newCount() | mfInt }} new since your last visit
       </p>
@@ -119,6 +123,8 @@ const seenKey = (matterId: number) => `mf.matter-activity-seen.${matterId}`;
       noun="activities"
       emptyText="No activity yet."
       [grid]="grid"
+      [compact]="compact()"
+      [skeletonRows]="10"
       [rows]="items()"
       [rowKey]="eventKey"
       [loadState]="state()"
@@ -162,7 +168,7 @@ const seenKey = (matterId: number) => `mf.matter-activity-seen.${matterId}`;
         </td>
       </ng-template>
       <div mfGridFoot>
-        @if (nextCursor() !== null) {
+        @if (!compact() && nextCursor() !== null) {
           <button type="button" class="mf-btn" data-show-more (click)="fetch(false)">
             Show More
           </button>
@@ -178,6 +184,11 @@ export class MatterActivities {
   }
 
   readonly matterId = input.required<number>();
+  /** The compact section of the one-page Matter (#1396): no toolbar or banner, the latest 10 events, no "Show More"; the visit is not remembered (the full view does that). */
+  readonly compact = input(false);
+  /** True: nothing is asked yet (a section that is not near the window); turning it off loads. */
+  readonly hold = input(false);
+  readonly stats = output<SectionStats>();
 
   /** The tab has no search or column filters, so the toolbar only carries the Kind dropdown and Columns. */
   protected readonly filters = new ListFilters({
@@ -216,10 +227,19 @@ export class MatterActivities {
   constructor() {
     effect(() => {
       const id = this.matterId();
+      if (this.hold()) return;
       untracked(() => {
         this.seenBefore = this.readSeen(id);
-        void this.fetch(true).then(() => this.rememberVisit(id));
+        void this.fetch(true).then(() => {
+          if (!this.compact()) this.rememberVisit(id);
+        });
       });
+    });
+    effect(() => {
+      const state = this.state();
+      const shown = this.items().length;
+      const more = this.nextCursor() !== null;
+      untracked(() => this.stats.emit({ state, shown, total: null, more }));
     });
   }
 
@@ -290,7 +310,7 @@ export class MatterActivities {
           undefined,
           undefined,
           first ? undefined : (this.nextCursor() ?? undefined),
-          50,
+          this.compact() ? SECTION_ROWS : 50,
           this.matterId(),
         ),
       );

@@ -30,6 +30,7 @@ import { RowLink, registerTableSkip, restoreRowFocus } from '../../../shared/ui/
 import { SortedLine, sortLabelsOf } from '../../../shared/ui/sorted-line';
 import { TaskCount } from '../../../shared/ui/task-count';
 import { groupProjects } from './matter-project-groups';
+import { SECTION_ROWS } from '../../../shared/ui/section-card';
 
 const ARCHIVED: RecordGroup = { key: 'archived', label: 'Archived' };
 /** The Archived group starts closed while the matter has active projects; a stable array, so a typed search does not reset what the person toggled. */
@@ -84,36 +85,40 @@ function sortProjects(rows: readonly ProjectResponse[], sort: string): ProjectRe
   `,
   template: `
     <!-- A tab has no H1: its primary action ends the row above the grid (LC-07, #1045), as "New Task" does on the Tasks tab. The header's New menu keeps its Project entry. -->
-    <mf-list-toolbar [filters]="filters" searchLabel="Search projects">
-      <mf-record-columns mfColumns [grid]="grid" />
-      <mf-sorted-line
-        mfBarEnd
-        [sort]="sort()"
-        [defaultSort]="defaultSort"
-        [labels]="sortLabels"
-        (resetSort)="sort.set('')"
-      />
-      <p-button
-        mfPrimary
-        *mfHasPermission="'Project.Create'"
-        label="New Project"
-        icon="pi pi-plus"
-        data-new-project
-        (onClick)="newProject.emit()"
-      />
-    </mf-list-toolbar>
+    @if (!compact()) {
+      <mf-list-toolbar [filters]="filters" searchLabel="Search projects">
+        <mf-record-columns mfColumns [grid]="grid" />
+        <mf-sorted-line
+          mfBarEnd
+          [sort]="sort()"
+          [defaultSort]="defaultSort"
+          [labels]="sortLabels"
+          (resetSort)="sort.set('')"
+        />
+        <p-button
+          mfPrimary
+          *mfHasPermission="'Project.Create'"
+          label="New Project"
+          icon="pi pi-plus"
+          data-new-project
+          (onClick)="newProject.emit()"
+        />
+      </mf-list-toolbar>
+    }
     <mf-record-grid
       label="Projects list"
       [caption]="'Projects of ' + matterRef()"
       noun="projects"
       [grid]="grid"
-      [rows]="rows()"
+      [compact]="compact()"
+      [skeletonRows]="10"
+      [rows]="shownRows()"
       [rowKey]="projectKey"
       loadState="ready"
       [empty]="rows().length === 0"
       [filtered]="filters.activeCount() > 0"
       [filters]="filters"
-      [groupBy]="groupOf"
+      [groupBy]="compact() ? null : groupOf"
       [collapsedGroups]="closedGroups()"
       [actions]="hasActions()"
       [sort]="sort()"
@@ -178,7 +183,7 @@ function sortProjects(rows: readonly ProjectResponse[], sort: string): ProjectRe
         </td>
       </ng-template>
     </mf-record-grid>
-    @if (shown() < total()) {
+    @if (!compact() && shown() < total()) {
       <p class="pg-reason" data-projects-truncated>Showing the first {{ shown() }} projects.</p>
     }
   `,
@@ -190,6 +195,8 @@ export class MatterProjects {
   readonly projects = input.required<readonly ProjectResponse[]>();
   /** How many projects the matter has, so a list cut at the page maximum says so instead of looking complete. */
   readonly total = input(0);
+  /** The compact section of the one-page Matter (#1396): no toolbar, no Archived group (archived projects follow the active ones with their Status), the first 10 projects. */
+  readonly compact = input(false);
   /** The empty tab's New project button: the page opens the side panel. */
   readonly newProject = output<void>();
   /** A project row was chosen: the page opens the side panel with the project's linked tasks (a modified click still opens the project page). */
@@ -199,7 +206,7 @@ export class MatterProjects {
   private readonly router = inject(Router);
 
   constructor() {
-    registerTableSkip();
+    registerTableSkip({ when: () => !this.compact() });
     // The projects arrive with the matter, so the rows are there as soon as the tab is.
     // A project left from the collapsed Archived group: focus goes to the group's toggle (the group stays collapsed, as on every visit).
     restoreRowFocus(
@@ -285,6 +292,10 @@ export class MatterProjects {
   });
   /** Active projects first, then the archived ones (the grid draws the Archived group row before them). */
   protected readonly rows = computed(() => [...this.groups().active, ...this.groups().archived]);
+  /** The rows the grid draws: all of them, or the first 10 in a compact section. */
+  protected readonly shownRows = computed(() =>
+    this.compact() ? this.rows().slice(0, SECTION_ROWS) : this.rows(),
+  );
   /** Until the person chooses, the Archived group is open only when there is nothing else to show. */
   protected readonly closedGroups = computed(() =>
     this.projects().some((p) => p.isActive) ? START_CLOSED : START_OPEN,

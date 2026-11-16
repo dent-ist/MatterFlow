@@ -27,7 +27,6 @@ const TABS: TabCase[] = [
   { key: 'productions', search: 'Search productions', primary: 'New Production' },
   { key: 'notes', search: 'Search title and text', primary: 'New Note' },
   { key: 'activities', search: null, primary: null },
-  { key: 'summary', search: null, primary: null },
 ];
 
 async function shot(page: Page, name: string): Promise<void> {

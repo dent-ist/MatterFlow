@@ -30,24 +30,19 @@ test('Summary: asset strip, Details in groups beside the 340 px side column, no 
 
     const m = await page.evaluate(() => {
       const card = document.querySelector('[data-summary-details]') as HTMLElement;
-      const body = document.querySelector('[data-summary-details] [role=region]') as HTMLElement;
+      const body = document.querySelector('[data-summary-details] .dc__body') as HTMLElement;
       const side = document.querySelector('[data-summary-side]') as HTMLElement;
-      const main = document.querySelector('main') as HTMLElement;
       return {
-        cardBottom: card.getBoundingClientRect().bottom,
         cardRight: card.getBoundingClientRect().right,
         sideLeft: side.getBoundingClientRect().left,
         sideWidth: side.getBoundingClientRect().width,
-        mainBottom: main.getBoundingClientRect().bottom,
-        mainScroll: main.scrollHeight - main.clientHeight,
-        bodyScroll: body.scrollHeight - body.clientHeight,
+        bodyOverflow: getComputedStyle(body).overflowY,
       };
     });
     expect(Math.round(m.sideWidth), `side column at ${size.width}`).toBe(340);
     expect(m.sideLeft).toBeGreaterThanOrEqual(m.cardRight);
-    expect(m.mainScroll, `main scrolls at ${size.width}x${size.height}`).toBeLessThanOrEqual(1);
-    expect(m.cardBottom).toBeLessThanOrEqual(m.mainBottom + 1);
-    expect(m.bodyScroll, `Details scrolls inside itself at ${size.width}`).toBeLessThanOrEqual(1);
+    // The Matter page is one scrolling page (D-03a): the Details card is as tall as its fields and does not scroll inside itself.
+    expect(m.bodyOverflow, `Details scrolls inside itself at ${size.width}`).toBe('visible');
     if (dir) await page.screenshot({ path: `${dir}/summary-${size.width}x${size.height}.png` });
     if (axeAvailable()) expect(await axeViolations(page), `axe at ${size.width}`).toEqual([]);
   }

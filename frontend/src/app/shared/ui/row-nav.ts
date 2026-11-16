@@ -233,12 +233,12 @@ export function restoreTabFocus(ready: () => boolean, ownLists: readonly string[
  * component's own element holds the list).
  */
 export function registerTableSkip(
-  options: { copyButton?: boolean; rowLinks?: boolean } = {},
+  options: { copyButton?: boolean; rowLinks?: boolean; when?: () => boolean } = {},
 ): void {
   const host = inject<ElementRef<HTMLElement>>(ElementRef);
   const skip = inject(SkipTarget);
   const shortcuts = inject(ShortcutRegistry);
-  const off = [
+  const register = () => [
     skip.register({
       label: 'Skip to Table',
       element: host.nativeElement,
@@ -282,6 +282,17 @@ export function registerTableSkip(
         ]
       : []),
   ];
+  if (options.when) {
+    // A grid inside a page of several grids (the compact sections of the one-page Matter) offers no skip link of its own while `when` is false.
+    const when = options.when;
+    effect((onCleanup) => {
+      if (!when()) return;
+      const off = untracked(register);
+      onCleanup(() => off.forEach((fn) => fn()));
+    });
+    return;
+  }
+  const off = register();
   inject(DestroyRef).onDestroy(() => off.forEach((fn) => fn()));
 }
 

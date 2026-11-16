@@ -82,7 +82,7 @@ const NO_PROJECT = 'none';
  * (#1154). With the Title at its 200 px minimum they fill a 1366 px window (1098 px box) without Progress, which is off by default and one click away in the
  * Columns menu; a width the person changed wins.
  */
-const DEFAULT_WIDTHS_PX: Readonly<Record<string, number>> = {
+export const DEFAULT_WIDTHS_PX: Readonly<Record<string, number>> = {
   typeChip: 128,
   project: 140,
   priority: 112,

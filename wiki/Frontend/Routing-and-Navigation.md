@@ -9,7 +9,7 @@
 - `app.routes.ts` has two routes outside the shell (`/access-pending`, `/error`) and one shell route (`AppShell`) behind `accessGuard`. Every feature is lazy-loaded with `loadChildren`.
 - Guards use `canActivate`. `permissionGuard(...)` passes when the person holds **any** listed permission; `permissionAllGuard(...)` needs **all**. A refused person lands on `/403`. Forms use `canDeactivate: [unsavedChangesGuard]`.
 - Page titles come from the `title` of each route through `MfTitleStrategy` (`core/title/page-title.ts`); tab names are appended with `pageTab('Users', 'Roles')`.
-- Tabs of a page are usually a query parameter (`?tab=`); the address wins over remembered state.
+- Tabs of a page are usually a query parameter (`?tab=`); the address wins over remembered state. The Matter page is the exception that proves the rule: its tabs became sections of one scrolling page (jump strip, no address change), and `?tab=` now opens a section's full view.
 - A route can carry `data: { hidesGlobalCreateTask: true }` (`HIDES_GLOBAL_CREATE_TASK` in `shared/layout/app-shell.ts`): the shell then hides its own create-task button, because the page has its own "New Task" prefilled for the record. Set on My Work, Task Queue, Pod Work (#1167) and on the Matter and Project record routes.
 
 ## Top-level routes
@@ -33,7 +33,7 @@
 | `/matters` | `features/matters` | `MattersListPage` | `Matter.View` |
 | `/matters/new` | | `MatterFormPage` (full-page New Matter, epic #1368; optional `?clientId=`; Cancel goes back to where the person came from) | `Matter.Create` |
 | `/matters/:matterId/edit` | | `MatterFormPage` (full-page Edit Matter, same form; Cancel and Save return to where the person came from) | `Matter.Edit` or `Matter.EditNumber` |
-| `/matters/:matterId` | | `MatterDetailPage`; tabs `?tab=summary`, `tasks`, `projects`, `assets`, `productions`, `notes`, `activities` | `Matter.View`; each tab has its own permission (`Project.View`, `Asset.View`, `Production.View`, `MatterNote.View`, `Audit.View`) |
+| `/matters/:matterId` | | `MatterDetailPage`: ONE continuous page (Summary, then a compact card per section, a sticky jump strip; the page scrolls, D-03a). `/matters/:matterId` and `?tab=summary` show it; `?tab=tasks`, `projects`, `assets`, `productions`, `notes`, `activities` open that section's **full view** (the former tab page with its tab strip, Summary leading back to the one page; a fixed page). `?tab=details` means Summary and `?tab=activity` means Activities. `?tab=notes&note=<id>` opens a note, `?tab=notes&compose=1` a new note. The address never changes while the one page scrolls (no hash) | `Matter.View`; a section needs its own permission (`Task.View` for Tasks, `Project.View`, `Asset.View`, `Production.View`, `MatterNote.View`, `Audit.View`); a section without it has no card and no jump link, and its `?tab=` value shows the one page |
 | `/people` | `features/people` | `PeoplePage` (the shared People list, epic #1373; the person opens in a dialog, so there is no detail route) | `People.View` |
 | `/projects` | `features/projects` | `ProjectsListPage` | `Project.View` |
 | `/projects/new` | | `ProjectFormPage` | `Project.Create` |
@@ -101,4 +101,4 @@ Keyboard shortcuts are defined in `shared/layout/shortcut-registry.ts`; no new o
 - [Authentication and Authorization](../Architecture/Authentication-and-Authorization.md)
 - [Feature Map](../Features/Feature-Map.md)
 
-Last verified against commit a8f9659.
+Last verified against commit 70f744b6.

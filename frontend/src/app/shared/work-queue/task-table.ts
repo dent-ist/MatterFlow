@@ -202,13 +202,13 @@ const LONG_PRESS_MS = 500;
                   [attr.aria-sort]="ariaSort(col)"
                   [attr.data-col]="col.key"
                   [attr.data-no-reorder]="reorderable() && col.key !== 'ref' ? null : ''"
-                  [attr.tabindex]="!col.sortField && menuOn() ? 0 : null"
-                  [attr.data-col-focus]="!col.sortField && menuOn() ? '' : null"
+                  [attr.tabindex]="!(col.sortField && sortable()) && menuOn() ? 0 : null"
+                  [attr.data-col-focus]="!(col.sortField && sortable()) && menuOn() ? '' : null"
                   (keydown)="headerKey($event, col)"
                   (contextmenu)="headerContext($event, col)"
                   (pointerdown)="headerPress($event, col)"
                 >
-                  @if (col.sortField) {
+                  @if (col.sortField && sortable()) {
                     <button
                       type="button"
                       class="wt-sort"
@@ -271,7 +271,7 @@ const LONG_PRESS_MS = 500;
             (clear)="clearFilters.emit()"
           >
             @if (skeleton()) {
-              <tr>
+              <tr class="wt-live">
                 <td
                   class="mf-sr-only"
                   [attr.colspan]="columnCount()"
@@ -282,7 +282,7 @@ const LONG_PRESS_MS = 500;
                   Loading tasks
                 </td>
               </tr>
-              @for (n of skeletonRows; track n) {
+              @for (n of skeletonRows(); track n) {
                 <tr mfTaskSkeleton [columns]="skeletonKeys()"></tr>
               }
             }
@@ -894,6 +894,8 @@ export class TaskTable {
   }
 
   readonly sortChange = output<string>();
+  /** False leaves the headings plain text (a Matter section shows the first rows of the default order; sorting is in the full view). */
+  readonly sortable = input(true);
   /** A drag on a header edge ended with a new width (#204): the page stores it (`WorkWidths`). `defaultRem` is the default in force. */
   /** A header was dragged to a new place (the grid keeps the order, shared/ui/grid-prefs.ts). */
   readonly columnMoved = output<ColumnMove>();
@@ -1017,7 +1019,11 @@ export class TaskTable {
   protected readonly skeleton = computed(
     () => this.state() === 'loading' && this.rows().length === 0,
   );
-  protected readonly skeletonRows = [1, 2, 3, 4, 5, 6, 7, 8];
+  /** Skeleton rows while the first load runs (8; a Matter section shows 10, the rows it will have). */
+  readonly skeletonCount = input(8);
+  protected readonly skeletonRows = computed(() =>
+    Array.from({ length: this.skeletonCount() }, (_, i) => i + 1),
+  );
   protected readonly shownKeyList = computed(() => this.shownColumns().map((c) => c.key));
 
   /** The person dragged the Title: it keeps that width instead of springing (#1231). */
@@ -1298,7 +1304,7 @@ export class TaskTable {
   }
 
   protected ariaSort(col: ColumnDef): 'ascending' | 'descending' | 'none' | null {
-    if (!col.sortField) return null;
+    if (!col.sortField || !this.sortable()) return null;
     if (this.sort() !== col.sortField) return 'none';
     return this.effectiveDir(col.sortField) === 'desc' ? 'descending' : 'ascending';
   }

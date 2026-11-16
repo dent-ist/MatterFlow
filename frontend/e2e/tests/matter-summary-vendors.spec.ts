@@ -120,7 +120,7 @@ test.describe('Matter Summary: the Vendors panel (#1379)', () => {
     expect(saved.map((v) => v.vendorId)).toEqual([vendor.vendorId]);
   });
 
-  test('many vendors: the row cap, Show All, the Blacklisted chip when folded, and Team plus Vendors fit the side column without scrolling', async ({
+  test('many vendors: the row cap, Show All, the Blacklisted chip when folded, and Team plus Vendors fit the side column without scrolling inside it', async ({
     page,
     seed,
     admin,
@@ -145,16 +145,16 @@ test.describe('Matter Summary: the Vendors panel (#1379)', () => {
         'Blacklisted',
       );
       await expect(panel(page).locator('[data-blacklisted-chip]')).toContainText('1 Blacklisted');
-      // Both panels fit the side column: it does not scroll, the page does not scroll.
+      // Both panels fit the side column: it does not scroll (the Matter page itself scrolls as a whole, D-03a).
       const fit = await page.evaluate(() => {
         const side = document.querySelector('[data-summary-side]') as HTMLElement;
         return {
           side: side.scrollHeight - side.clientHeight,
-          page: document.documentElement.scrollHeight - document.documentElement.clientHeight,
+          overflow: getComputedStyle(side).overflowY,
         };
       });
       expect(fit.side, `the side column scrolls at ${size.width}`).toBeLessThanOrEqual(1);
-      expect(fit.page, `the page scrolls at ${size.width}`).toBeLessThanOrEqual(0);
+      expect(fit.overflow, `the side column is a scroll box at ${size.width}`).toBe('visible');
       await noSideScroll(page, `Summary at ${size.width}`);
       await axeClean(page, `Summary with vendors at ${size.width}`);
     }

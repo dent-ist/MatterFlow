@@ -1,7 +1,7 @@
 /**
- * The tab registry of the Matter page (MD-01, #1002; owner decision AQ.1): seven tabs in this order (the Team is a panel in the side column of the Summary, #1376, not a tab). The page builds its strip from this list,
- * filters it by the viewer's permission and reads `?tab=`. Other agents add a tab by giving its entry a component in the page's `@switch`
- * (Productions: MD-11; Notes: MD-13); until then the page shows a placeholder.
+ * The section registry of the Matter page (MD-01, #1002; owner decision AQ.1; one continuous page since #1396): seven sections in this order (the Team is a panel in the side column of the Summary, #1376, not a section).
+ * The one page (`/matters/:id`, `?tab=summary`) shows them one under the other with a sticky jump strip; every other `?tab=` value opens that section's FULL VIEW (the tab page as it was, with
+ * its tab strip, the Summary tab leading back to the one page). The page builds the strip and the sections from this list, filters it by the viewer's permission and reads `?tab=`.
  */
 export type MatterTabKey =
   'summary' | 'tasks' | 'projects' | 'assets' | 'productions' | 'notes' | 'activities';
@@ -61,4 +61,19 @@ export function matterTabFromParam(
   const key = param === 'activity' ? 'activities' : param === 'details' ? 'summary' : param;
   const found = MATTER_TABS.find((t) => t.key === key && available.includes(t.key));
   return found ? found.key : 'summary';
+}
+
+/** The words of a section card (D-03a): the one line after the heading, and the plural noun of the footer ("Showing 10 of 38 tasks"). */
+export const MATTER_SECTION_TEXT: Readonly<Record<string, { hint: string; noun: string }>> = {
+  tasks: { hint: 'Open tasks, most urgent first', noun: 'tasks' },
+  projects: { hint: 'Projects group the tasks of this matter', noun: 'projects' },
+  assets: { hint: 'Evidence and data sources', noun: 'assets' },
+  productions: { hint: 'What is sent to and received from other parties', noun: 'productions' },
+  notes: { hint: 'Most recently updated first', noun: 'notes' },
+  activities: { hint: 'Newest first', noun: 'activities' },
+};
+
+/** The full view of a section: today's tab page, `?tab=<key>` (the deep links of notifications, audit rows and the Summary tiles). */
+export function fullViewParams(key: MatterTabKey): { tab: string } {
+  return { tab: key };
 }

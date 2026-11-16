@@ -100,18 +100,16 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     await expect(button).toBeFocused();
   });
 
-  test('Old ?tab= links: activity opens the Activities tab, details shows the Summary tab', async ({
+  test('Old ?tab= links: activity opens the Activities full view, details shows the Summary (the one page)', async ({
     page,
     seed,
   }) => {
     const world = await seed.world();
     await page.goto(`/matters/${world.matter.matterId}?tab=details`);
-    await expect(page.getByRole('tab', { name: 'Summary' })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
-    await openMatterDetails(page); // the facts are behind the Details disclosure (PM v2, #882)
-    await expect(page.getByRole('tabpanel')).toContainText(world.client.name);
+    await expect(page.locator('[data-matter-one-page]')).toBeVisible();
+    await expect(page.locator('[data-jump="summary"]')).toHaveAttribute('aria-current', 'location');
+    await openMatterDetails(page); // the facts are on the Summary section (PM v2, #882)
+    await expect(page.locator('#section-summary')).toContainText(world.client.name);
     await expect(page.getByRole('dialog')).toHaveCount(0);
 
     await page.goto(`/matters/${world.matter.matterId}?tab=activity`);
@@ -122,7 +120,7 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     await expect(page.locator('[data-activities-tab]')).toBeVisible();
   });
 
-  test('Matter: seven tabs; Summary has the facts and Edit, More actions has Set inactive', async ({
+  test('Matter: one page with seven jump links; Summary has the facts and Edit, More actions has Set inactive; each full view has the seven tabs', async ({
     page,
     seed,
   }) => {
@@ -132,22 +130,33 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/matters/${world.matter.matterId}`);
 
-    await expect(page.getByRole('tab')).toHaveText(matterTabPatterns());
+    await expect(page.locator('[data-jump-strip] a')).toHaveText(matterTabPatterns());
+    await expect(page.getByRole('tab')).toHaveCount(0);
     await expect(panel(page)).toHaveCount(0);
     await openMatterDetails(page);
-    const details = page.getByRole('tabpanel');
+    const details = page.locator('#section-summary');
     await expect(details).toContainText('Sensitive');
     await expect(details).toContainText(world.client.name);
     await expect(page.locator('[data-edit-matter]')).toBeVisible();
     // One task is open, so deactivation is disabled in More actions and says why.
-    await page.locator('[data-overflow][aria-label^="More actions"]').click();
+    await page.locator('[data-overflow][aria-label="More actions"]').click();
     const toggle = page.getByRole('menuitem', { name: /Set Inactive/ });
     await expect(toggle).toHaveAttribute('aria-disabled', 'true');
     await expect(toggle).toContainText("aren't Completed or Cancelled");
     await page.keyboard.press('Escape');
 
-    await page.getByRole('tab', { name: /Tasks/ }).click();
+    // A jump link scrolls to the section and leaves the address alone; Open Full View opens the tab page.
+    await page.locator('[data-jump="tasks"]').click();
+    await expect(page).not.toHaveURL(/tab=/);
+    await expect(
+      page
+        .locator('#section-tasks')
+        .getByRole('link', { name: task.taskRef ?? task.title })
+        .first(),
+    ).toBeVisible();
+    await page.locator('#section-tasks').getByRole('link', { name: 'Open Full View' }).click();
     await expect(page).toHaveURL(/tab=tasks/);
+    await expect(page.getByRole('tab')).toHaveText(matterTabPatterns());
     await expect(
       page.getByRole('link', { name: task.taskRef ?? task.title }).first(),
     ).toBeVisible();
@@ -158,6 +167,7 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
 
     await page.getByRole('tab', { name: 'Summary' }).click();
     await expect(page).not.toHaveURL(/tab=/);
+    await expect(page.locator('[data-matter-one-page]')).toBeVisible();
   });
 
   test('Matter at 1366 px: the Tasks grid uses the whole page width (no Details panel beside it)', async ({

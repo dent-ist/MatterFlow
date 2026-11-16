@@ -13,6 +13,8 @@ Paths are under `frontend/src/app/`. Names and inputs below were read from the c
 | Page header of a list, workspace or admin page | `mf-page-header`, `mf-title-icon` | `shared/ui/page-header.ts` |
 | Record page header (title, tile, actions) | `mf-record-header`, `mf-record-title` | `shared/ui/record-header.ts` |
 | Tabs | `mf-tabs` with icons from `tab-icons.ts` | `shared/ui/tabs.ts` |
+| Sticky links to the sections of a long page (the Matter page) | `mf-jump-strip`: looks like `mf-tabs`, is a `nav` with `aria-current` (D-03b) | `shared/ui/jump-strip.ts` |
+| A section of a long page: header, compact grid (at most 10 rows), footer with Open Full View | `mf-section-card` with `mf-record-grid compact` or `mf-task-table density="compact"` (D-03c, D-03d) | `shared/ui/section-card.ts`, `record-grid.ts`, `work-queue/task-table.ts` |
 | Two-way switch inside a page | segmented control `[mfSegmented]` | `shared/ui/segmented.ts` |
 | Side drawer for reading detail | `mf-slide-panel` | `shared/ui/slide-panel.ts` |
 | App shell, menu, user menu, bell | `app-shell`, `NAV_ITEMS`, `user-menu`, `notification-bell`, `global-search` | `shared/layout/`, `shared/search/` |
@@ -121,4 +123,4 @@ The bar is 36 px high (taller only when the text must wrap), the icon is `--mf-i
 - [Grids and Column Preferences](Grids-and-Column-Preferences.md)
 - [How to Add a Page](How-to-Add-a-Page.md)
 
-Last verified against commit 78f445a.
+Last verified against commit 70f744b6.

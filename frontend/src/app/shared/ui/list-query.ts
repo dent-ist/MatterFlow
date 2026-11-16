@@ -44,6 +44,8 @@ export abstract class ListQueryPage {
   readonly page = input<string>();
   readonly size = input<string>();
   readonly sort = input<string>();
+  /** A fixed page size that replaces the person's 25 / 50 / 100: the compact section of a long page asks for its first 10 rows (#1396). */
+  readonly rowLimit = input<number | null>(null);
 
   protected readonly router = inject(Router);
 
@@ -52,7 +54,7 @@ export abstract class ListQueryPage {
 
   protected readonly statusFilter = computed<StatusFilter>(() => parseStatus(this.status()));
   protected readonly pageNumber = computed(() => parsePage(this.page()));
-  protected readonly pageSize = computed(() => parsePageSize(this.size()));
+  protected readonly pageSize = computed(() => this.rowLimit() ?? parsePageSize(this.size()));
   protected readonly pageSizes = PAGE_SIZES;
 
   /** Filters this list adds (a Matter or Client chip, a type); they count as "filtered" and Clear filters resets them. */
@@ -132,6 +134,8 @@ export abstract class ServerListPage<T> extends ListQueryPage {
   private readonly quietSideCounts = inject(QuietRequests);
   /** Records the default Status hides ("3 inactive hidden"); 0 when none, when the default is not applied or when the count failed. */
   protected readonly hiddenCount = signal(0);
+  /** True: the list does not ask for its rows yet (a section of a long page that is not near the window, #1396). Turning it off loads. */
+  readonly hold = input(false);
   /** The total without the "My matters" scope (the "212" of "14 of 212 matters"); null when the list is not scoped or the count failed. */
   protected readonly unscopedTotal = signal<number | null>(null);
 
@@ -187,6 +191,7 @@ export abstract class ServerListPage<T> extends ListQueryPage {
       this.pageSize();
       this.sort();
       this.watch();
+      if (this.hold()) return;
       untracked(() => void this.load());
     });
     // The empty state of a filtered list has its own Clear filters; the bar then shows none.

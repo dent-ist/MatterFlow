@@ -1,13 +1,17 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  Injector,
+  afterNextRender,
   computed,
   effect,
   inject,
   input,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { Button } from 'primeng/button';
@@ -36,7 +40,16 @@ import { FixedPage } from '../../../shared/ui/fixed-page';
 import { restoreTabFocus } from '../../../shared/ui/row-nav';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { MatterHeader } from '../ui/matter-header';
-import { MatterTabKey, matterTabFromParam, visibleMatterTabs } from '../ui/matter-tabs';
+import {
+  MATTER_SECTION_TEXT,
+  MatterTabKey,
+  matterTabFromParam,
+  visibleMatterTabs,
+} from '../ui/matter-tabs';
+import { JumpLink, JumpStrip } from '../../../shared/ui/jump-strip';
+import { SECTION_ROWS, SectionCard, SectionStats } from '../../../shared/ui/section-card';
+import { MatterTasksSection } from '../ui/matter-tasks-section';
+import { MatterNotesSection } from '../ui/matter-notes-section';
 import { ProjectPanel } from '../../projects/ui/project-panel';
 import { ProjectTasksPanel } from '../../projects/ui/project-tasks-panel';
 import { MatterActivities } from '../ui/matter-activities';
@@ -57,11 +70,12 @@ const PROJECTS_PAGE_MAX = 100;
 type Tab = MatterTabKey;
 
 /**
- * Matter detail (UX S06): reference with copy button, the inactive banners, activation with the open-task rule,
- * and Overview / Tasks / Projects / Assets tabs across the full page width (Overview first and the default, key `details`: the task summary
- * strip, whose items open the Tasks tab on the matching view, then Client, Status, Sensitive, dates and custom fields; Tasks is the shared
- * work-queue table filtered to the Matter). Activity opens in a right-side drawer. The tab is kept in `?tab=`
- * (absent for Details); `?tab=activity` opens the drawer.
+ * Matter detail (UX S06; ONE continuous page since #1396, epic #1389): reference with copy button, the inactive banners, activation with the open-task rule, then the Summary
+ * (the details and the Team and Vendors side column) and one compact card for each of Tasks, Projects, Assets, Productions, Notes and Activities, in that order (D-03a to D-03e).
+ * A sticky jump strip (`mf-jump-strip`, a nav of links) replaces the tab strip: it highlights the section in view, a click scrolls there smoothly and moves focus to the heading, the
+ * address does not change. A section the viewer may not see is not drawn and has no link. The sections load when they come within 300 px of the window; a jump loads only its target.
+ * Every section card ends with "Open Full View": `?tab=tasks|projects|assets|productions|notes|activities` opens that tab's page as it was (the full view, with its tab strip, the
+ * Summary tab leading back to the one page); `?tab=summary`, no `tab` and unknown values show the one page, `details` means Summary and `activity` Activities.
  */
 @Component({
   selector: 'mf-matter-detail-page',
@@ -89,6 +103,11 @@ type Tab = MatterTabKey;
     NotesTab,
     AddCommentDialog,
     MatterManagersDialog,
+    NgTemplateOutlet,
+    JumpStrip,
+    SectionCard,
+    MatterTasksSection,
+    MatterNotesSection,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
@@ -116,26 +135,56 @@ type Tab = MatterTabKey;
       max-width: 70ch;
       margin-bottom: var(--mf-s3);
     }
+    /* The one page (#1396, D-03a): the page scrolls; the sections are 12 px apart under the sticky jump strip. */
+    /* The page scrolls inside the shell's 24 px padding; the title sits where every record page puts it (12 px below the top bar). */
+    .mp {
+      margin-top: calc(-1 * (var(--mf-s5) - var(--mf-s3)));
+    }
+    .mp__sections {
+      display: flex;
+      flex-direction: column;
+      gap: var(--mf-s3);
+      padding-top: var(--mf-s3);
+    }
+    .mp__summary {
+      scroll-margin-top: calc(var(--mf-header-h, 53px) + var(--mf-tab-h) + var(--mf-s3));
+    }
     /* The Overview's sections use the width of the page (the column of 70 characters is for the details list and the custom fields). */
     .pg-details[data-matter-overview] {
       max-width: none;
     }
   `,
   template: `
-    <mf-fixed-page>
-      <span class="pg-sr" role="status" data-record-live>{{ flow.live() }}</span>
-      @switch (state()) {
-        @case ('loading') {
-          <mf-record-skeleton
-            kind="matter"
-            [activeTab]="current()"
-            [foldHeader]="headerFolded()"
-            [assetStrip]="canSeeAssets()"
-            (retry)="load()"
-          />
+    <span class="pg-sr" role="status" data-record-live>{{ flow.live() }}</span>
+    @switch (state()) {
+      @case ('loading') {
+        @if (onePage()) {
+          <!-- The one page scrolls (D-03a), so its placeholder is not a fixed page: the header and the strip stay where the loaded page puts them. -->
+          <div class="mp">
+            <mf-record-skeleton
+              kind="matter"
+              [flow]="true"
+              [activeTab]="current()"
+              [foldHeader]="false"
+              [assetStrip]="canSeeAssets()"
+              (retry)="load()"
+            />
+          </div>
+        } @else {
+          <mf-fixed-page>
+            <mf-record-skeleton
+              kind="matter"
+              [activeTab]="current()"
+              [foldHeader]="headerFolded()"
+              [assetStrip]="canSeeAssets()"
+              (retry)="load()"
+            />
+          </mf-fixed-page>
         }
-        @case ('ready') {
-          @if (matter(); as m) {
+      }
+      @case ('ready') {
+        @if (matter(); as m) {
+          <ng-template #head>
             <mf-matter-header
               [matter]="m"
               [newItems]="newItems()"
@@ -160,90 +209,9 @@ type Tab = MatterTabKey;
                 <span>The client {{ m.clientNumber | businessNumber }} is inactive.</span>
               </div>
             }
+          </ng-template>
 
-            <mf-tabs
-              label="Matter sections"
-              idPrefix="matter"
-              [tabs]="tabs()"
-              [selected]="current()"
-              (tabChange)="select($event)"
-            />
-            <div
-              class="mf-fill"
-              role="tabpanel"
-              id="matter-panel"
-              [attr.aria-labelledby]="'matter-tab-' + current()"
-            >
-              @switch (current()) {
-                @case ('summary') {
-                  <mf-matter-summary
-                    [matter]="m"
-                    [reload]="reloadTick()"
-                    [canAssign]="canAssign()"
-                    [canEdit]="canEdit()"
-                    [canLinkClient]="canLinkClient()"
-                    data-details-tab
-                    (changeManagers)="managersOpen.set(true)"
-                    (editMatter)="openEdit()"
-                    (newAsset)="go('/assets/new?matterId=' + m.matterId)"
-                  />
-                }
-                @case ('tasks') {
-                  <mf-scoped-tasks
-                    [matterId]="m.matterId"
-                    [canCreate]="m.isActive"
-                    [projectOptions]="projectOptions()"
-                    [projectCount]="m.projectCount"
-                    [startSelecting]="selectTick()"
-                  />
-                }
-                @case ('projects') {
-                  <mf-matter-projects
-                    [matterId]="m.matterId"
-                    [matterRef]="m.matterRef"
-                    [projects]="projects()"
-                    [total]="projectsTotal()"
-                    (newProject)="openProjectPanel()"
-                    (openProject)="openProjectTasks($event)"
-                  />
-                }
-                @case ('productions') {
-                  <mf-productions-tab [matterId]="m.matterId" (changed)="refreshTabCounts()" />
-                }
-                @case ('notes') {
-                  <mf-notes-tab
-                    [matterId]="m.matterId"
-                    [matterLabel]="m.matterRef + ' ' + m.name"
-                    [clientId]="m.clientId"
-                    [clientName]="m.clientName"
-                    [sensitive]="m.isSensitive"
-                    [aiAllowed]="m.aiAllowed"
-                    (changed)="refreshTabCounts()"
-                  />
-                }
-                @case ('activities') {
-                  <mf-matter-activities [matterId]="m.matterId" data-activities-tab />
-                }
-                @case ('assets') {
-                  @if (canSeeAssets()) {
-                    <mf-matter-assets
-                      [matterId]="m.matterId"
-                      [status]="status()"
-                      [page]="page()"
-                      [size]="size()"
-                      [sort]="sort()"
-                    />
-                  } @else {
-                    <div data-no-access="assets">
-                      <mf-state-block icon="pi-lock"
-                        >You don't have access to assets.</mf-state-block
-                      >
-                    </div>
-                  }
-                }
-              }
-            </div>
-
+          <ng-template #overlays>
             @if (commentUsed()) {
               <mf-add-comment-dialog
                 [matterId]="m.matterId"
@@ -325,9 +293,321 @@ type Tab = MatterTabKey;
                 (onClick)="go('/tasks?matterId=' + m.matterId)"
               />
             </mf-confirm-dialog>
+          </ng-template>
+
+          @if (onePage()) {
+            <!-- The one continuous Matter page (#1396, D-03b): the page scrolls, the jump strip sticks under the top bar, every section is a card. -->
+            <div class="mp" data-matter-one-page>
+              <ng-container [ngTemplateOutlet]="head" />
+              <mf-jump-strip
+                label="Matter sections"
+                [links]="jumpLinks()"
+                [current]="spyKey()"
+                [stuck]="stuck()"
+                [meta]="m.matterRef"
+                (jump)="jumpTo($event)"
+              />
+              <div class="mp__sections">
+                <section
+                  class="mp__summary"
+                  id="section-summary"
+                  data-section="summary"
+                  aria-labelledby="section-summary-h"
+                >
+                  <h2 class="mf-sr-only" tabindex="-1" id="section-summary-h" data-section-heading>
+                    Summary
+                  </h2>
+                  <mf-matter-summary
+                    [matter]="m"
+                    [flow]="true"
+                    [reload]="reloadTick()"
+                    [canAssign]="canAssign()"
+                    [canEdit]="canEdit()"
+                    [canLinkClient]="canLinkClient()"
+                    data-details-tab
+                    (changeManagers)="managersOpen.set(true)"
+                    (editMatter)="openEdit()"
+                    (newAsset)="go('/assets/new?matterId=' + m.matterId)"
+                  />
+                </section>
+
+                @if (sectionOn('tasks')) {
+                  <mf-section-card
+                    key="tasks"
+                    heading="Tasks"
+                    icon="pi-check-square"
+                    [count]="m.openTaskCount ?? 0"
+                    [hint]="text('tasks').hint"
+                    [noun]="text('tasks').noun"
+                    [shown]="shown('tasks')"
+                    [total]="totalOf('tasks')"
+                    [state]="cardState('tasks')"
+                    [fullView]="['/matters', m.matterId]"
+                    [fullViewParams]="{ tab: 'tasks' }"
+                  >
+                    @if (auth.has('Task.Create')) {
+                      <p-button
+                        scAction
+                        label="New Task"
+                        icon="pi pi-plus"
+                        severity="secondary"
+                        data-section-action="new-task"
+                        [disabled]="!m.isActive"
+                        (onClick)="go('/tasks/new?matterId=' + m.matterId)"
+                      />
+                    }
+                    <mf-matter-tasks-section
+                      [matterId]="m.matterId"
+                      [active]="isActive('tasks')"
+                      [reloadTick]="reloadTick()"
+                      (stats)="setStats('tasks', $event)"
+                    />
+                  </mf-section-card>
+                }
+
+                @if (sectionOn('projects')) {
+                  <mf-section-card
+                    key="projects"
+                    heading="Projects"
+                    icon="pi-folder"
+                    [count]="m.projectCount ?? 0"
+                    [hint]="text('projects').hint"
+                    [noun]="text('projects').noun"
+                    [shown]="shown('projects')"
+                    [total]="totalOf('projects')"
+                    state="ready"
+                    [fullView]="['/matters', m.matterId]"
+                    [fullViewParams]="{ tab: 'projects' }"
+                  >
+                    @if (auth.has('Project.Create') && !isEmpty('projects')) {
+                      <p-button
+                        scAction
+                        label="New Project"
+                        icon="pi pi-plus"
+                        severity="secondary"
+                        data-section-action="new-project"
+                        (onClick)="openProjectPanel()"
+                      />
+                    }
+                    <mf-matter-projects
+                      [compact]="true"
+                      [matterId]="m.matterId"
+                      [matterRef]="m.matterRef"
+                      [projects]="projects()"
+                      [total]="projectsTotal()"
+                      (newProject)="openProjectPanel()"
+                      (openProject)="openProjectTasks($event)"
+                    />
+                  </mf-section-card>
+                }
+
+                @if (sectionOn('assets')) {
+                  <mf-section-card
+                    key="assets"
+                    heading="Assets"
+                    icon="pi-database"
+                    [count]="assetCount()"
+                    [hint]="text('assets').hint"
+                    [noun]="text('assets').noun"
+                    [shown]="shown('assets')"
+                    [total]="totalOf('assets')"
+                    [state]="cardState('assets')"
+                    [fullView]="['/matters', m.matterId]"
+                    [fullViewParams]="{ tab: 'assets' }"
+                  >
+                    @if (auth.has('Asset.Create') && !isEmpty('assets')) {
+                      <p-button
+                        scAction
+                        label="New Asset"
+                        icon="pi pi-plus"
+                        severity="secondary"
+                        data-section-action="new-asset"
+                        (onClick)="go('/assets/new?matterId=' + m.matterId)"
+                      />
+                    }
+                    <mf-matter-assets
+                      [compact]="true"
+                      [hold]="!isActive('assets')"
+                      [rowLimit]="rowLimit"
+                      [matterId]="m.matterId"
+                      (stats)="setStats('assets', $event)"
+                    />
+                  </mf-section-card>
+                }
+
+                @if (sectionOn('productions')) {
+                  <mf-section-card
+                    key="productions"
+                    heading="Productions"
+                    icon="pi-send"
+                    [count]="productionCount()"
+                    [hint]="text('productions').hint"
+                    [noun]="text('productions').noun"
+                    [shown]="shown('productions')"
+                    [total]="totalOf('productions')"
+                    [state]="cardState('productions')"
+                    [fullView]="['/matters', m.matterId]"
+                    [fullViewParams]="{ tab: 'productions' }"
+                  >
+                    @if (auth.has('Production.Edit') && !isEmpty('productions')) {
+                      <p-button
+                        scAction
+                        label="New Production"
+                        icon="pi pi-plus"
+                        severity="secondary"
+                        data-section-action="new-production"
+                        (onClick)="productions()?.newProduction()"
+                      />
+                    }
+                    <mf-productions-tab
+                      [compact]="true"
+                      [hold]="!isActive('productions')"
+                      [matterId]="m.matterId"
+                      (changed)="refreshTabCounts()"
+                      (stats)="setStats('productions', $event)"
+                    />
+                  </mf-section-card>
+                }
+
+                @if (sectionOn('notes')) {
+                  <mf-section-card
+                    key="notes"
+                    heading="Notes"
+                    icon="pi-file-edit"
+                    [count]="noteCount()"
+                    [hint]="text('notes').hint"
+                    [noun]="text('notes').noun"
+                    [shown]="shown('notes')"
+                    [total]="totalOf('notes')"
+                    [state]="cardState('notes')"
+                    [fullView]="['/matters', m.matterId]"
+                    [fullViewParams]="{ tab: 'notes' }"
+                  >
+                    @if (auth.has('MatterNote.Edit')) {
+                      <p-button
+                        scAction
+                        label="Add Note"
+                        icon="pi pi-plus"
+                        severity="secondary"
+                        data-section-action="add-note"
+                        (onClick)="addNote()"
+                      />
+                    }
+                    <mf-matter-notes-section
+                      [matterId]="m.matterId"
+                      [active]="isActive('notes')"
+                      [reloadTick]="reloadTick()"
+                      (stats)="setStats('notes', $event)"
+                    />
+                  </mf-section-card>
+                }
+
+                @if (sectionOn('activities')) {
+                  <mf-section-card
+                    key="activities"
+                    heading="Activities"
+                    icon="pi-history"
+                    [hint]="text('activities').hint"
+                    [noun]="text('activities').noun"
+                    [shown]="shown('activities')"
+                    [total]="totalOf('activities')"
+                    [more]="moreOf('activities')"
+                    [state]="cardState('activities')"
+                    [fullView]="['/matters', m.matterId]"
+                    [fullViewParams]="{ tab: 'activities' }"
+                  >
+                    <mf-matter-activities
+                      [compact]="true"
+                      [hold]="!isActive('activities')"
+                      [matterId]="m.matterId"
+                      (stats)="setStats('activities', $event)"
+                    />
+                  </mf-section-card>
+                }
+              </div>
+              <ng-container [ngTemplateOutlet]="overlays" />
+            </div>
+          } @else {
+            <!-- A section's full view: today's tab page (?tab=tasks and the others), its tab strip with the Summary leading back to the one page. -->
+            <mf-fixed-page>
+              <ng-container [ngTemplateOutlet]="head" />
+
+              <mf-tabs
+                label="Matter sections"
+                idPrefix="matter"
+                [tabs]="tabs()"
+                [selected]="current()"
+                (tabChange)="select($event)"
+              />
+              <div
+                class="mf-fill"
+                role="tabpanel"
+                id="matter-panel"
+                [attr.aria-labelledby]="'matter-tab-' + current()"
+              >
+                @switch (current()) {
+                  @case ('tasks') {
+                    <mf-scoped-tasks
+                      [matterId]="m.matterId"
+                      [canCreate]="m.isActive"
+                      [projectOptions]="projectOptions()"
+                      [projectCount]="m.projectCount"
+                      [startSelecting]="selectTick()"
+                    />
+                  }
+                  @case ('projects') {
+                    <mf-matter-projects
+                      [matterId]="m.matterId"
+                      [matterRef]="m.matterRef"
+                      [projects]="projects()"
+                      [total]="projectsTotal()"
+                      (newProject)="openProjectPanel()"
+                      (openProject)="openProjectTasks($event)"
+                    />
+                  }
+                  @case ('productions') {
+                    <mf-productions-tab [matterId]="m.matterId" (changed)="refreshTabCounts()" />
+                  }
+                  @case ('notes') {
+                    <mf-notes-tab
+                      [matterId]="m.matterId"
+                      [matterLabel]="m.matterRef + ' ' + m.name"
+                      [clientId]="m.clientId"
+                      [clientName]="m.clientName"
+                      [sensitive]="m.isSensitive"
+                      [aiAllowed]="m.aiAllowed"
+                      (changed)="refreshTabCounts()"
+                    />
+                  }
+                  @case ('activities') {
+                    <mf-matter-activities [matterId]="m.matterId" data-activities-tab />
+                  }
+                  @case ('assets') {
+                    @if (canSeeAssets()) {
+                      <mf-matter-assets
+                        [matterId]="m.matterId"
+                        [status]="status()"
+                        [page]="page()"
+                        [size]="size()"
+                        [sort]="sort()"
+                      />
+                    } @else {
+                      <div data-no-access="assets">
+                        <mf-state-block icon="pi-lock"
+                          >You don't have access to assets.</mf-state-block
+                        >
+                      </div>
+                    }
+                  }
+                }
+              </div>
+              <ng-container [ngTemplateOutlet]="overlays" />
+            </mf-fixed-page>
           }
         }
-        @default {
+      }
+      @default {
+        <mf-fixed-page>
           <mf-record-state
             kind="matter"
             [recordId]="matterId()"
@@ -335,16 +615,16 @@ type Tab = MatterTabKey;
             [busy]="flow.retrying()"
             (retried)="load()"
           />
-        }
+        </mf-fixed-page>
       }
-    </mf-fixed-page>
+    }
   `,
 })
 export class MatterDetailPage {
   readonly matterId = input.required<string>();
-  /** `?tab=`: `details` (default, also when absent), `tasks`, `projects`, `assets`; `activity` opens the drawer and shows Details. */
+  /** `?tab=`: absent, `summary`, `details` and an unknown or forbidden value show the one page; `tasks`, `projects`, `assets`, `productions`, `notes`, `activities` (and the old `activity`) open that section's full view. */
   readonly tab = input<string>();
-  /** The Assets tab's list state (its filters `name`, `typeId`, `extref` are read from the address by the tab itself). */
+  /** The Assets full view's list state (its filters `name`, `typeId`, `extref` are read from the address by the tab itself). */
   readonly status = input<string>();
   readonly page = input<string>();
   readonly size = input<string>();
@@ -357,7 +637,8 @@ export class MatterDetailPage {
   private readonly projectsApi = inject(ProjectsClient);
   private readonly router = inject(Router);
   private readonly notify = inject(NotificationService);
-  private readonly auth = inject(AuthStore);
+  protected readonly auth = inject(AuthStore);
+  private readonly injector = inject(Injector);
 
   protected readonly flow = new RecordLoadFlow('matter');
   protected readonly state = this.flow.state;
@@ -394,25 +675,72 @@ export class MatterDetailPage {
   /** The Productions and Notes tab numbers (their own summary endpoints); null until known or when the viewer may not see them. */
   protected readonly productionCount = signal<number | null>(null);
   protected readonly noteCount = signal<number | null>(null);
-  /**
-   * The tab strip. Projects and Assets are offered only with their View permission (a person who may not see them has no tab to open),
-   * and a count is shown only when the viewer may see what it counts (no fake zero without Task.View).
-   */
-  protected readonly tabs = computed<MfTab[]>(() => {
+  /** The numbers beside the tabs and the jump links; a count is shown only when the viewer may see what it counts (no fake zero without Task.View). */
+  private readonly tabCounts = computed<Partial<Record<string, number | string | null>>>(() => {
     const m = this.matter();
-    const counts: Partial<Record<string, number | string | null>> = {
+    return {
       tasks: this.auth.has('Task.View') ? (m?.openTaskCount ?? 0) : null,
       projects: m?.projectCount ?? 0,
       assets: this.assetCount(),
       productions: this.productionCount(),
       notes: this.noteCount(),
     };
+  });
+  /**
+   * The tab strip of a section's full view. Projects and Assets are offered only with their View permission (a person who may not see them has no tab to open),
+   * and a count is shown only when the viewer may see what it counts.
+   */
+  protected readonly tabs = computed<MfTab[]>(() => {
+    const counts = this.tabCounts();
     return visibleMatterTabs((code) => this.auth.has(code)).map((t) => {
       const tab: MfTab = { key: t.key, label: t.label, icon: t.icon };
       if (t.counted) tab.count = counts[t.key];
       return tab;
     });
   });
+  /** The Matter page is one continuous page (#1396): `/matters/:id` and `?tab=summary`; every other `?tab=` value is that section's full view. */
+  protected readonly onePage = computed(() => this.current() === 'summary');
+  /** The sections of the one page this viewer may see, in tab order (Summary first). A section without its permission is not drawn and has no jump link; Tasks needs Task.View. */
+  private readonly pageSections = computed(() =>
+    visibleMatterTabs((code) => this.auth.has(code)).filter(
+      (t) => t.key !== 'tasks' || this.auth.has('Task.View'),
+    ),
+  );
+  protected readonly jumpLinks = computed<JumpLink[]>(() => {
+    const counts = this.tabCounts();
+    return this.pageSections().map((t) => ({
+      key: t.key,
+      label: t.label,
+      icon: t.icon,
+      ...(t.counted ? { count: counts[t.key] } : {}),
+    }));
+  });
+  protected sectionOn(key: string): boolean {
+    return this.pageSections().some((t) => t.key === key);
+  }
+  protected text(key: string): { hint: string; noun: string } {
+    return MATTER_SECTION_TEXT[key];
+  }
+  protected readonly rowLimit = SECTION_ROWS;
+  /** The Productions section (its New Production button opens the tab's own dialog). */
+  protected readonly productions = viewChild(ProductionsTab);
+  /** The sections that have been asked to load: one is added when it is about 300 px from the window or when its jump link is chosen. */
+  protected readonly activated = signal<ReadonlySet<string>>(new Set());
+  private readonly sectionStats = signal<Readonly<Record<string, SectionStats>>>({});
+  /** The section in view (the highlighted jump link) and whether the strip is stuck under the top bar. */
+  protected readonly spyKey = signal('summary');
+  protected readonly stuck = signal(false);
+  private io: IntersectionObserver | null = null;
+  /** True while a jump scrolls: the sections it passes are not loaded. */
+  private jumping = false;
+  private frame = 0;
+  private readonly onScroll = (): void => {
+    if (this.frame) return;
+    this.frame = requestAnimationFrame(() => {
+      this.frame = 0;
+      this.updateSpy();
+    });
+  };
   private readonly heightPref = inject(NotesHeightPref);
   /** The Notes tab is showing and the person folded the header (#1342); any other tab shows it in full. */
   protected readonly headerFolded = computed(
@@ -557,6 +885,22 @@ export class MatterDetailPage {
       this.matterId();
       untracked(() => void this.load());
     });
+    // The one page watches its sections (lazy loading, the highlighted jump link) while it is on screen.
+    const watched = computed(() =>
+      this.onePage() && this.state() === 'ready' ? (this.matter()?.matterId ?? null) : null,
+    );
+    effect((onCleanup) => {
+      if (watched() === null) return;
+      this.pageSections();
+      untracked(() => {
+        const ref = afterNextRender(() => this.startWatching(), { injector: this.injector });
+        onCleanup(() => {
+          ref.destroy();
+          this.stopWatching();
+        });
+      });
+    });
+    inject(DestroyRef).onDestroy(() => this.stopWatching());
     effect(() => {
       void this.matter()?.matterId;
       untracked(() => this.refreshTabCounts());
@@ -579,6 +923,201 @@ export class MatterDetailPage {
     openTaskCount: number | undefined,
   ): void {
     if (updated) this.matter.set({ ...updated, openTaskCount });
+  }
+
+  protected isActive(key: string): boolean {
+    return this.activated().has(key);
+  }
+
+  protected setStats(key: string, stats: SectionStats): void {
+    this.sectionStats.update((all) => ({ ...all, [key]: stats }));
+  }
+
+  protected shown(key: string): number {
+    return key === 'projects'
+      ? Math.min(this.projects().length, SECTION_ROWS)
+      : (this.sectionStats()[key]?.shown ?? 0);
+  }
+
+  protected totalOf(key: string): number | null {
+    if (key === 'projects') return this.projectsTotal();
+    const stats = this.sectionStats()[key];
+    return stats ? stats.total : 0;
+  }
+
+  protected moreOf(key: string): boolean {
+    return this.sectionStats()[key]?.more ?? false;
+  }
+
+  /** The section has loaded and has no rows: its empty state offers the section's action, so the header does not repeat it. */
+  protected isEmpty(key: string): boolean {
+    return this.cardState(key) === 'ready' && this.totalOf(key) === 0;
+  }
+
+  /** What a section card shows in its footer: not asked yet (idle), loading, ready or failed. Projects arrive with the matter. */
+  protected cardState(key: string): 'idle' | 'loading' | 'ready' | 'error' {
+    if (key === 'projects') return 'ready';
+    if (!this.isActive(key)) return 'idle';
+    return this.sectionStats()[key]?.state ?? 'loading';
+  }
+
+  private activate(key: string): void {
+    if (!this.activated().has(key)) this.activated.update((all) => new Set(all).add(key));
+  }
+
+  /** The sections that load their rows when they come near the window (Projects arrive with the matter). */
+  private lazyKeys(): string[] {
+    return ['tasks', 'assets', 'productions', 'notes', 'activities'].filter((k) =>
+      this.sectionOn(k),
+    );
+  }
+
+  private startWatching(): void {
+    this.stopWatching();
+    this.activated.set(new Set());
+    this.sectionStats.set({});
+    this.spyKey.set('summary');
+    window.addEventListener('scroll', this.onScroll, { passive: true });
+    window.addEventListener('resize', this.onScroll);
+    this.observe();
+    if (typeof ResizeObserver !== 'undefined') {
+      this.heights.clear();
+      this.sizeWatch = new ResizeObserver(this.resized);
+      document
+        .querySelectorAll('[data-matter-one-page] [data-section]')
+        .forEach((el) => this.sizeWatch?.observe(el));
+    }
+    this.updateSpy();
+  }
+
+  private stopWatching(): void {
+    this.sizeWatch?.disconnect();
+    this.sizeWatch = null;
+    window.removeEventListener('scroll', this.onScroll);
+    window.removeEventListener('resize', this.onScroll);
+    this.io?.disconnect();
+    this.io = null;
+    if (this.frame) cancelAnimationFrame(this.frame);
+    this.frame = 0;
+    this.jumping = false;
+  }
+
+  /** A section loads when it is within about 300 px below the window (the rows it will have are already drawn as a placeholder, so nothing moves when they arrive). */
+  private observe(): void {
+    this.io?.disconnect();
+    this.io = null;
+    const pending = this.lazyKeys().filter((k) => !this.isActive(k));
+    if (pending.length === 0 || typeof IntersectionObserver === 'undefined') {
+      pending.forEach((k) => this.activate(k));
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (this.jumping) return;
+        for (const e of entries) {
+          if (!e.isIntersecting) continue;
+          const key = (e.target as HTMLElement).getAttribute('data-section');
+          if (key) this.activate(key);
+          io.unobserve(e.target);
+        }
+      },
+      // The window starts under the top bar and the sticky strip (what hides behind them is not in view) and reaches 300 px below the bottom edge.
+      { rootMargin: `-${this.coveredTop()}px 0px 300px 0px` },
+    );
+    this.io = io;
+    for (const key of pending) {
+      const el = document.querySelector(`[data-section="${key}"]`);
+      if (el) io.observe(el);
+    }
+  }
+
+  /** The height the top bar and the jump strip cover at the top of the window. */
+  private coveredTop(): number {
+    const strip = document.querySelector<HTMLElement>('[data-jump-strip]');
+    if (!strip) return 0;
+    return Math.round((parseFloat(getComputedStyle(strip).top) || 0) + strip.offsetHeight + 2);
+  }
+
+  /**
+   * A section above the one in view changed height (its rows arrived, or it turned out empty): the page moves by the same amount, so what the person looks at stays
+   * where it is and a jump target does not drift. Sections below the one in view need nothing.
+   */
+  private readonly resized = (entries: ResizeObserverEntry[]): void => {
+    for (const entry of entries) {
+      const height = entry.contentRect.height;
+      const before = this.heights.get(entry.target);
+      this.heights.set(entry.target, height);
+      if (before === undefined || before === height || this.jumping) continue;
+      const key = (entry.target as HTMLElement).getAttribute('data-section');
+      const keys: string[] = this.pageSections().map((t) => t.key);
+      if (key && keys.indexOf(key) < keys.indexOf(this.spyKey())) {
+        window.scrollBy(0, height - before);
+      }
+    }
+  };
+  private readonly heights = new Map<Element, number>();
+  private sizeWatch: ResizeObserver | null = null;
+
+  /** Which section is in view, and whether the strip sticks. The last section is current at the bottom of the page. */
+  private updateSpy(): void {
+    const strip = document.querySelector<HTMLElement>('[data-jump-strip]');
+    if (!strip) return;
+    const box = strip.getBoundingClientRect();
+    const top = parseFloat(getComputedStyle(strip).top) || 0;
+    this.stuck.set(window.scrollY > 0 && box.top <= top + 1);
+    if (this.jumping) return;
+    const keys = this.pageSections().map((t) => t.key);
+    let current = keys[0] ?? 'summary';
+    // At the very top the first section is the one in view, whatever the sections below measure.
+    for (const key of window.scrollY > 0 ? keys : []) {
+      const el = document.getElementById('section-' + key);
+      if (el && el.getBoundingClientRect().top <= box.bottom + 24) current = key;
+    }
+    if (
+      window.scrollY > 0 &&
+      window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2
+    ) {
+      current = keys[keys.length - 1] ?? current;
+    }
+    this.spyKey.set(current);
+  }
+
+  /**
+   * A jump link was chosen: scroll to the section (smooth, instant with reduced motion), load ONLY that section (the ones the scroll passes are not loaded; the ones that are
+   * near the window when it stops load as usual), then focus the section heading. The address does not change.
+   */
+  protected jumpTo(key: string): void {
+    const el = document.getElementById('section-' + key);
+    if (!el) return;
+    this.jumping = true;
+    this.spyKey.set(key);
+    if (key !== 'summary') this.activate(key);
+    const reduced =
+      typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    el.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
+    let last = -1;
+    let still = 0;
+    const started = performance.now();
+    const tick = (): void => {
+      still = Math.abs(window.scrollY - last) < 1 ? still + 1 : 0;
+      last = window.scrollY;
+      if (still < 6 && performance.now() - started < 2500) {
+        requestAnimationFrame(tick);
+        return;
+      }
+      this.jumping = false;
+      document.getElementById(`section-${key}-h`)?.focus({ preventScroll: true });
+      this.updateSpy();
+      this.observe();
+    };
+    requestAnimationFrame(tick);
+  }
+
+  /** "Add Note" of the Notes section: the Notes full view with a new note ready. */
+  protected addNote(): void {
+    void this.router.navigate(['/matters', this.matterId()], {
+      queryParams: { tab: 'notes', compose: 1 },
+    });
   }
 
   protected select(key: string): void {

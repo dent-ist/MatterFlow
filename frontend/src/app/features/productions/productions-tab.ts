@@ -56,6 +56,7 @@ import {
 } from './production-ui';
 import { NumericDatePipe } from '../../shared/ui/numeric-date';
 import { IntPipe } from '../../shared/ui/number-format';
+import { SECTION_ROWS, type SectionStats } from '../../shared/ui/section-card';
 
 type View = 'productions' | 'specs';
 type Panel = 'none' | 'production' | 'production-form' | 'spec' | 'spec-form';
@@ -158,7 +159,7 @@ const emptySpec = (): SpecDraft => ({
     TextField,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'mf-fill' },
+  host: { class: 'mf-fill', '[class.pt--compact]': 'compact()' },
   styleUrl: '../../shared/ui/page.scss',
   styles: `
     .pt {
@@ -201,6 +202,11 @@ const emptySpec = (): SpecDraft => ({
       color: var(--mf-text-muted);
       font-size: var(--mf-fs-sm);
       line-height: 1.2;
+    }
+    /* In the compact section a row is one 36 px line: the volume and the party follow the name and the direction on the same line. */
+    :host(.pt--compact) .pt__sub {
+      display: inline;
+      margin-inline-start: var(--mf-s2);
     }
     .pt__muted {
       color: var(--mf-text-muted);
@@ -283,73 +289,75 @@ const emptySpec = (): SpecDraft => ({
   `,
   template: `
     <section class="pt" aria-label="Productions" data-productions-tab>
-      <div class="pt__bar">
-        <mf-search-box
-          inputId="pt-search"
-          [label]="view() === 'productions' ? 'Search productions' : 'Search specs'"
-          [hideLabel]="true"
-          [leadingIcon]="true"
-          [compact]="true"
-          class="pt__search"
-          [placeholder]="view() === 'productions' ? 'Search productions' : 'Search specs'"
-          [value]="query()"
-          (searchChange)="onSearch($event)"
-        />
-        <div mfSegmented role="group" aria-label="Productions view">
-          <button
-            type="button"
-            class="mf-btn"
-            data-view="productions"
-            [attr.aria-pressed]="view() === 'productions'"
-            (click)="setView('productions')"
-          >
-            Productions <span class="pt__count">{{ productionTotal() | mfInt }}</span>
-          </button>
-          @if (canViewSpecs()) {
+      @if (!compact()) {
+        <div class="pt__bar">
+          <mf-search-box
+            inputId="pt-search"
+            [label]="view() === 'productions' ? 'Search productions' : 'Search specs'"
+            [hideLabel]="true"
+            [leadingIcon]="true"
+            [compact]="true"
+            class="pt__search"
+            [placeholder]="view() === 'productions' ? 'Search productions' : 'Search specs'"
+            [value]="query()"
+            (searchChange)="onSearch($event)"
+          />
+          <div mfSegmented role="group" aria-label="Productions view">
             <button
               type="button"
               class="mf-btn"
-              data-view="specs"
-              [attr.aria-pressed]="view() === 'specs'"
-              (click)="setView('specs')"
+              data-view="productions"
+              [attr.aria-pressed]="view() === 'productions'"
+              (click)="setView('productions')"
             >
-              Specs <span class="pt__count">{{ specTotal() | mfInt }}</span>
+              Productions <span class="pt__count">{{ productionTotal() | mfInt }}</span>
             </button>
+            @if (canViewSpecs()) {
+              <button
+                type="button"
+                class="mf-btn"
+                data-view="specs"
+                [attr.aria-pressed]="view() === 'specs'"
+                (click)="setView('specs')"
+              >
+                Specs <span class="pt__count">{{ specTotal() | mfInt }}</span>
+              </button>
+            }
+          </div>
+          @if (view() === 'productions') {
+            <mf-dropdown
+              buttonId="pt-direction"
+              label="Direction"
+              prefix="Direction: "
+              [items]="directionItems"
+              [value]="direction()"
+              (valueChange)="onDirection($event)"
+            />
+          } @else {
+            <mf-dropdown
+              buttonId="pt-status"
+              label="Status"
+              prefix="Status: "
+              [items]="statusItems"
+              [value]="specStatus()"
+              (valueChange)="onSpecStatus($event)"
+            />
+          }
+          <span class="pt__spacer"></span>
+          <mf-record-columns [grid]="view() === 'productions' ? grid : specGrid" />
+          @if (view() === 'productions' && canEdit()) {
+            <p-button
+              label="New Production"
+              icon="pi pi-plus"
+              data-new-production
+              (onClick)="newProduction()"
+            />
+          }
+          @if (view() === 'specs' && canEditSpecs()) {
+            <p-button label="New Spec" icon="pi pi-plus" data-new-spec (onClick)="newSpec()" />
           }
         </div>
-        @if (view() === 'productions') {
-          <mf-dropdown
-            buttonId="pt-direction"
-            label="Direction"
-            prefix="Direction: "
-            [items]="directionItems"
-            [value]="direction()"
-            (valueChange)="onDirection($event)"
-          />
-        } @else {
-          <mf-dropdown
-            buttonId="pt-status"
-            label="Status"
-            prefix="Status: "
-            [items]="statusItems"
-            [value]="specStatus()"
-            (valueChange)="onSpecStatus($event)"
-          />
-        }
-        <span class="pt__spacer"></span>
-        <mf-record-columns [grid]="view() === 'productions' ? grid : specGrid" />
-        @if (view() === 'productions' && canEdit()) {
-          <p-button
-            label="New Production"
-            icon="pi pi-plus"
-            data-new-production
-            (onClick)="newProduction()"
-          />
-        }
-        @if (view() === 'specs' && canEditSpecs()) {
-          <p-button label="New Spec" icon="pi pi-plus" data-new-spec (onClick)="newSpec()" />
-        }
-      </div>
+      }
 
       @if (view() === 'productions') {
         <mf-record-grid
@@ -357,6 +365,8 @@ const emptySpec = (): SpecDraft => ({
           caption="Productions of this matter"
           noun="productions"
           [grid]="grid"
+          [compact]="compact()"
+          [skeletonRows]="10"
           [rows]="productions()"
           [rowKey]="productionKey"
           [loadState]="listState()"
@@ -444,7 +454,7 @@ const emptySpec = (): SpecDraft => ({
             </td>
           </ng-template>
           <div mfGridFoot>
-            @if (productionCount() > 0) {
+            @if (!compact() && productionCount() > 0) {
               <mf-pager
                 [page]="page()"
                 [pageSize]="pageSize"
@@ -1091,6 +1101,12 @@ export class ProductionsTab {
 
   /** The matter whose productions are shown. */
   readonly matterId = input.required<number>();
+  /** The compact section of the one-page Matter (#1396): no toolbar, the first 10 productions, no pager; New Production is the section's header button (`newProduction()`). */
+  readonly compact = input(false);
+  /** True: nothing is asked yet (a section that is not near the window); turning it off loads. */
+  readonly hold = input(false);
+  /** What the compact section reports: its load state, the rows it shows and the productions there are. */
+  readonly stats = output<SectionStats>();
   /** A production was created or deleted: the page refreshes the tab number. */
   readonly changed = output<void>();
 
@@ -1239,11 +1255,25 @@ export class ProductionsTab {
       this.specStatus();
       this.query();
       this.page();
+      if (this.hold()) return;
       untracked(() => void this.load());
     });
     effect(() => {
       const id = this.matterId();
+      if (this.hold()) return;
       untracked(() => void this.loadTotals(id));
+    });
+    effect(() => {
+      const state = this.listState();
+      const shown = this.productions().length;
+      const total = this.productionCount();
+      untracked(() =>
+        this.stats.emit({
+          state: state === 'error' ? 'error' : state === 'ready' ? 'ready' : 'loading',
+          shown,
+          total,
+        }),
+      );
     });
   }
 
@@ -1368,7 +1398,7 @@ export class ProductionsTab {
             undefined,
             q,
             this.page(),
-            PAGE_SIZE,
+            this.compact() ? SECTION_ROWS : PAGE_SIZE,
           ),
         );
         this.productions.set(result.items);
@@ -1435,7 +1465,7 @@ export class ProductionsTab {
     this.editingComment.set(null);
   }
 
-  protected async newProduction(): Promise<void> {
+  async newProduction(): Promise<void> {
     this.draftId.set(null);
     this.draftRowVersion.set('');
     this.setDraftP(emptyProduction());

@@ -407,13 +407,10 @@ test.describe('WP10 matter tabs', () => {
       await expect(page.locator('[data-count]')).toHaveCount(0);
       expect(await projectNames(page)).toHaveLength(33);
       await shot(page, 'matter-projects-no-task-view');
-      // A bookmark to the Assets tab lands on the Overview.
+      // A bookmark to the Assets tab lands on the one page (Summary).
       await page.goto(assetsUrl(w.assets));
       await ready(page);
-      await expect(page.getByRole('tab', { name: /^Summary/ })).toHaveAttribute(
-        'aria-selected',
-        'true',
-      );
+      await expect(page.locator('[data-matter-one-page]')).toBeVisible();
       expect(failed, 'failed requests').toEqual([]);
     });
 
@@ -436,10 +433,7 @@ test.describe('WP10 matter tabs', () => {
       await expect(page.getByRole('button', { name: 'New asset' })).toHaveCount(0);
       await page.goto(projectsUrl(w.big));
       await ready(page);
-      await expect(page.getByRole('tab', { name: /^Summary/ })).toHaveAttribute(
-        'aria-selected',
-        'true',
-      );
+      await expect(page.locator('[data-matter-one-page]')).toBeVisible();
       expect(failed, 'failed requests').toEqual([]);
     });
 
