@@ -166,7 +166,12 @@ test.describe('Task tabs: keyboard only', () => {
     await detail.open(task.taskId);
     await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
 
-    await tabOf(page, 'Workflow').focus();
+    // The page finishes drawing after it opens (the strip can be redrawn and lose the focus): wait for the Workflow pane, then take the focus until it stays.
+    await expect(page.locator('[data-workflow-tab]')).toBeVisible();
+    await expect(async () => {
+      await tabOf(page, 'Workflow').focus();
+      await expect(tabOf(page, 'Workflow')).toBeFocused({ timeout: 1000 });
+    }).toPass({ timeout: 15_000 });
     await page.keyboard.press('ArrowRight');
     await expect(tabOf(page, 'Assets')).toBeFocused();
     await expect(selected(page)).toHaveText(/^\s*Assets/);
