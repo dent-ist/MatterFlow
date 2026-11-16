@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { ClientsClient } from '../../../api/generated/api-client';
+import { ClientsClient, MatterLookupClient } from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { Permission } from '../../../core/auth/permissions';
 import {
@@ -23,10 +23,16 @@ describe('ClientFormPage', () => {
     changeClientNumber: ReturnType<typeof vi.fn>;
   };
   let navigate: ReturnType<typeof vi.fn>;
+  let lookupApi: Record<string, ReturnType<typeof vi.fn>>;
+  let lookupState = 'NOT_SET_UP';
   let fixture: ComponentFixture<ClientFormPage>;
   const el = (): HTMLElement => fixture.nativeElement;
 
   async function create(clientId: string | undefined, permissions: Permission[]) {
+    lookupApi = {
+      getMatterLookupStatus: vi.fn().mockImplementation(() => ok({ state: lookupState })),
+      searchMatterLookup: vi.fn(),
+    };
     api = {
       getClient: vi.fn().mockReturnValue(ok(aClient())),
       createClient: vi.fn().mockReturnValue(ok(aClient({ clientId: 9, clientNumber: '00343' }))),
@@ -38,6 +44,7 @@ describe('ClientFormPage', () => {
         provideRouter([]),
         provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
         { provide: ClientsClient, useValue: api },
+        { provide: MatterLookupClient, useValue: lookupApi },
       ],
     });
     navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true) as never;
@@ -213,6 +220,99 @@ describe('ClientFormPage', () => {
       expect(document.body.querySelector('#new-client-number-error')?.textContent).toContain(
         'Client 00500 already exists.',
       );
+    });
+  });
+
+  describe('the Lookup button (#1395)', () => {
+    const lookupButton = () => el().querySelector<HTMLButtonElement>('[data-lookup]')!;
+    const note = () =>
+      el().querySelector('[data-lookup-note]')!.textContent!.replace(/\s+/g, ' ').trim();
+
+    afterEach(() => {
+      lookupState = 'NOT_SET_UP';
+    });
+
+    it('is not there when editing a client', async () => {
+      await create('5', ['Client.View', 'Client.Edit']);
+
+      expect(el().querySelector('[data-lookup]')).toBeNull();
+    });
+
+    it('Not set up: the button is off, the sentence is under the number and typing by hand still saves', async () => {
+      await create(undefined, ['Client.View', 'Client.Create']);
+
+      expect(lookupButton().getAttribute('aria-disabled')).toBe('true');
+      expect(note()).toContain("Lookup isn't available yet. Enter the details yourself.");
+      expect(el().querySelector('[data-open-integrations]')).toBeNull();
+      type('#client-number', '343');
+      type('#client-name', 'Acme Corp');
+      await submit();
+      expect(api.createClient).toHaveBeenCalledWith(
+        expect.objectContaining({ clientNumber: '343', name: 'Acme Corp' }),
+      );
+    });
+
+    it('an administrator also sees Open Integrations', async () => {
+      await create(undefined, ['Client.View', 'Client.Create', 'Integrations.Manage']);
+
+      expect(el().querySelector('[data-open-integrations]')!.textContent!.trim()).toBe(
+        'Open Integrations',
+      );
+    });
+
+    it('Ready: needs a number first, then fills the client name from the answer', async () => {
+      lookupState = 'READY';
+      await create(undefined, ['Client.View', 'Client.Create']);
+      expect(lookupButton().getAttribute('aria-disabled')).toBe('true'); // no number yet
+      type('#client-number', '343');
+      await settle(fixture);
+      expect(lookupButton().getAttribute('aria-disabled')).toBeNull();
+
+      lookupApi['searchMatterLookup'].mockReturnValue(
+        ok({ outcome: 'FOUND', clientNumber: '00343', clientName: 'Acme Corp' }),
+      );
+      lookupButton().click();
+      await settle(fixture);
+
+      expect(lookupApi['searchMatterLookup']).toHaveBeenCalledWith({
+        clientNumber: '00343',
+        matterNumber: undefined,
+      });
+      expect(el().querySelector<HTMLInputElement>('#client-name')!.value).toBe('Acme Corp');
+      expect(note()).toContain(
+        'Client Name filled in from Matter Lookup. Check it before you save.',
+      );
+      expect(api.createClient).not.toHaveBeenCalled(); // the person still checks and saves
+    });
+
+    it('Nothing found: says so and leaves the name alone', async () => {
+      lookupState = 'READY';
+      await create(undefined, ['Client.View', 'Client.Create']);
+      type('#client-number', '99999');
+      type('#client-name', 'Typed by hand');
+      await settle(fixture);
+      lookupApi['searchMatterLookup'].mockReturnValue(ok({ outcome: 'NOT_FOUND' }));
+      lookupButton().click();
+      await settle(fixture);
+
+      expect(note()).toContain('Nothing found for 99999. Enter the client name yourself.');
+      expect(el().querySelector<HTMLInputElement>('#client-name')!.value).toBe('Typed by hand');
+    });
+
+    it('Fails when used: a plain message with Retry, and nothing typed is lost', async () => {
+      lookupState = 'READY';
+      await create(undefined, ['Client.View', 'Client.Create']);
+      type('#client-number', '343');
+      type('#client-name', 'Typed by hand');
+      await settle(fixture);
+      lookupApi['searchMatterLookup'].mockReturnValue(ok({ outcome: 'FAILED' }));
+      lookupButton().click();
+      await settle(fixture);
+
+      expect(note()).toContain("Lookup didn't work. What you entered is kept.");
+      expect(el().querySelector('[data-lookup-retry]')).not.toBeNull();
+      expect(el().querySelector<HTMLInputElement>('#client-name')!.value).toBe('Typed by hand');
+      expect(el().querySelector<HTMLInputElement>('#client-number')!.value).toBe('343');
     });
   });
 });

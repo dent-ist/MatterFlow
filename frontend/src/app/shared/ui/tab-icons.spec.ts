@@ -102,7 +102,7 @@ describe('tab icons (LC-10, theme guide 11.3)', () => {
     const strips = {
       dashboard: ['dashboard-summary', 'breakdowns', 'trends', 'swimlane', 'users', 'calendar'],
       taskTypes: ['task-types', 'workflows', 'steps'],
-      settings: ['branding', 'dashboard', 'holidays'],
+      settings: ['branding', 'dashboard', 'holidays', 'integrations'],
     };
     for (const [page, keys] of Object.entries(strips)) {
       const icons = keys.map((k) => tabIcon(k));

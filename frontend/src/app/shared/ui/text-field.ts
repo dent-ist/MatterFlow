@@ -36,7 +36,7 @@ import { CharCounter } from './char-counter';
         <input
           class="mf-field__input"
           [attr.type]="type()"
-          autocomplete="off"
+          [attr.autocomplete]="type() === 'password' ? 'new-password' : 'off'"
           [id]="inputId()"
           [name]="inputId()"
           [attr.maxlength]="maxLength()"
@@ -73,8 +73,11 @@ export class TextField {
   readonly counter = input(false);
   /** Error message to show (the parent decides when: on submit or from the server). */
   readonly error = input<string | null>(null);
-  /** The input type: `email` for an address (no browser validation bubble: the forms are `novalidate` and say their own messages). */
-  readonly type = input<'text' | 'email'>('text');
+  /**
+   * The input type: `email` for an address (no browser validation bubble: the forms are `novalidate` and say their own messages); `password` masks a write-only secret
+   * (the client secret of Integrations: the browser is told not to remember it).
+   */
+  readonly type = input<'text' | 'email' | 'password'>('text');
 
   readonly value = model('');
   /** The person left the field (a form that checks "when leaving the field" validates here). */

@@ -50,6 +50,8 @@ import {
   splitFormErrors,
 } from '../../../shared/ui/custom-fields';
 import { EntityPicker, PickerOption } from '../../../shared/ui/entity-picker';
+import { LookupButton, LookupMessage, LookupNote } from '../../../shared/lookup/lookup-button';
+import { MatterLookup } from '../../../shared/lookup/matter-lookup';
 import { NumberInput, numberProblem } from '../../../shared/ui/number-input';
 import { TagChips } from '../../../shared/ui/tag-chips';
 import { TextField } from '../../../shared/ui/text-field';
@@ -164,6 +166,8 @@ export function pickListItemsMulti(
     ConfirmDialog,
     EntityPicker,
     NumberInput,
+    LookupButton,
+    LookupNote,
     TextField,
     TagChips,
     MatterPathList,
@@ -258,7 +262,19 @@ export function pickListItemsMulti(
           [showErrors]="submitted()"
           [serverError]="fieldError('matterNumber')"
           [(value)]="number"
-        />
+        >
+          @if (!isEdit()) {
+            <mf-lookup-button
+              mfFieldAction
+              [busy]="lookupBusy()"
+              [needs]="lookupNeeds()"
+              (lookup)="runLookup()"
+            />
+          }
+        </mf-number-input>
+        @if (!isEdit()) {
+          <mf-lookup-note [message]="lookupMessage()" (retry)="runLookup()" />
+        }
         @if (isEdit() && canChangeNumber()) {
           <p class="mfd__lock" data-number-lock>
             @if (numberLocked()) {
@@ -490,6 +506,7 @@ export class MatterForm {
   private readonly categoriesApi = inject(MatterCategoriesClient);
   private readonly statesApi = inject(CurrentStatesClient);
   private readonly quiet = inject(QuietRequests);
+  private readonly lookup = inject(MatterLookup);
 
   protected readonly aiItems: DropdownItem[] = AI_OPTIONS.map((o) => ({
     value: o.value,
@@ -581,6 +598,41 @@ export class MatterForm {
     return clientNo && matterNo ? `${clientNo}-${matterNo}` : '';
   });
   protected readonly newCm = this.cm;
+
+  // The Lookup button next to the Matter Number (New Matter only, #1395): asks the Matter Lookup integration for the matter name of this client and number.
+  protected readonly lookupBusy = signal(false);
+  protected readonly lookupMessage = signal<LookupMessage | null>(null);
+  protected readonly lookupNeeds = computed(() => {
+    if (!this.client()) return 'Choose a client first.';
+    return numberProblem(this.number(), 'matter number') ? 'Enter a matter number first.' : '';
+  });
+
+  protected async runLookup(): Promise<void> {
+    const clientNumber = this.client()?.label.split(' ')[0];
+    const matterNumber = normalizeNumber(this.number());
+    if (!clientNumber || !matterNumber || this.lookupBusy()) return;
+    this.lookupBusy.set(true);
+    this.lookupMessage.set(null);
+    const answer = await this.lookup.search(clientNumber, matterNumber);
+    this.lookupBusy.set(false);
+    if (answer.kind === 'found' && answer.matterName) {
+      this.name.set(answer.matterName);
+      this.lookupMessage.set({
+        kind: 'ok',
+        text: 'Matter Name filled in from Matter Lookup. Check it before you save.',
+      });
+    } else if (answer.kind === 'failed') {
+      this.lookupMessage.set({
+        kind: 'error',
+        text: "Lookup didn't work. What you entered is kept. Try again, or enter the details yourself.",
+      });
+    } else {
+      this.lookupMessage.set({
+        kind: 'info',
+        text: `Nothing found for ${clientNumber}-${matterNumber}. Enter the matter name yourself.`,
+      });
+    }
+  }
   protected readonly numberChanged = computed(() => {
     const m = this.matter();
     const n = normalizeNumber(this.number());
@@ -665,7 +717,9 @@ export class MatterForm {
         this.numberLocked.set(true);
         this.askUnlock.set(false);
         this.askNumberChange.set(false);
+        this.lookupMessage.set(null);
         if (!m) {
+          void this.lookup.refresh();
           void this.loadCustomForm();
           if (preselect) void this.preselectClient(preselect);
         }

@@ -44,3 +44,10 @@ textarea.mf-field__input {
 .mf-field__error {
   @include forms.mf-field-error;
 }
+
+/* The input and a control that belongs to it (the Lookup button, #1395) on one line: the control keeps its own 36 px height, the input its own width. */
+.mf-field__row {
+  display: flex;
+  align-items: center;
+  gap: var(--mf-s2);
+}

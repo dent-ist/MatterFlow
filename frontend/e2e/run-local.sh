@@ -117,6 +117,9 @@ reports_conn="Server=127.0.0.1,$sql_port;Database=LptHub;User Id=lpt_reports;Pas
   # Reports allow 30 runs and previews per person and hour (Reports:RunsPerUserPerHour). The Reports specs and the suite's setup calls all run as
   # one System Admin, so a full run used the budget up (429 REPORT_RATE_LIMITED on a preview). Raised for this throwaway stack only.
   export Reports__RunsPerUserPerHour=1000000
+  # Administration > Settings > Integrations (#1395): the built-in stand-in for Microsoft Entra ID and the integration APIs (Development and Test only), so the
+  # specs run without a network. See docs/qa/e2e.md.
+  export Integrations__Simulator__Enabled=true
   exec ./LptHub.Api
 ) >"$root/artifacts/e2e-api.log" 2>&1 &
 api_pid=$!

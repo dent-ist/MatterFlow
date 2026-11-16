@@ -1,6 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { ClientsClient, FormsClient, MattersClient } from '../../../api/generated/api-client';
+import {
+  ClientsClient,
+  FormsClient,
+  MatterLookupClient,
+  MattersClient,
+} from '../../../api/generated/api-client';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { DOCUMENT_FIELDS, aFormVersion } from '../../../shared/testing/asset-testing';
 import {
@@ -36,6 +41,13 @@ describe('New and Edit Matter: custom fields', () => {
           new FakeMeApi(withPermissions('Matter.View', 'Matter.Create', 'Matter.Edit')),
         ),
         { provide: MattersClient, useValue: matters },
+        {
+          provide: MatterLookupClient,
+          useValue: {
+            getMatterLookupStatus: () => ok({ state: 'NOT_SET_UP' }),
+            searchMatterLookup: vi.fn(),
+          },
+        },
         { provide: ClientsClient, useValue: { getClient: vi.fn().mockReturnValue(ok(aClient())) } },
         { provide: FormsClient, useValue: forms },
       ],

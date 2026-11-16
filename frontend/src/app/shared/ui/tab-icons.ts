@@ -119,6 +119,8 @@ export const ICONS: Readonly<Record<string, string>> = {
   dashboard: 'pi-gauge',
   // Settings > Holidays (epic #1074): the flag of the holiday chips.
   holidays: 'pi-flag',
+  // Settings > Integrations (epic #1389, #1395): the connection to Microsoft Entra ID and the APIs that use it.
+  integrations: 'pi-server',
 };
 
 /** The icon of a tab concept (its key or label); an unlisted concept gets a generic bookmark, and the guard spec lists none in use. */

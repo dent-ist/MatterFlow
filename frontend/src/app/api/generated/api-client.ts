@@ -11742,6 +11742,791 @@ export class IntakeClient implements IIntakeClient {
     }
 }
 
+export interface IEntraConnectionClient {
+    /**
+     * @return OK
+     */
+    getEntraConnection(): Observable<EntraConnectionResponse>;
+    /**
+     * @return OK
+     */
+    updateEntraConnection(body: UpdateEntraConnectionRequest): Observable<EntraConnectionResponse>;
+    /**
+     * @return OK
+     */
+    setEntraClientSecret(body: SetClientSecretRequest): Observable<EntraConnectionResponse>;
+    /**
+     * @return OK
+     */
+    testEntraConnection(): Observable<TestResultResponse>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class EntraConnectionClient implements IEntraConnectionClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @return OK
+     */
+    getEntraConnection(): Observable<EntraConnectionResponse> {
+        let url_ = this.baseUrl + "/api/v1/admin/entra-connection";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetEntraConnection(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetEntraConnection(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<EntraConnectionResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<EntraConnectionResponse>;
+        }));
+    }
+
+    protected processGetEntraConnection(response: HttpResponseBase): Observable<EntraConnectionResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as EntraConnectionResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    updateEntraConnection(body: UpdateEntraConnectionRequest): Observable<EntraConnectionResponse> {
+        let url_ = this.baseUrl + "/api/v1/admin/entra-connection";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpdateEntraConnection(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpdateEntraConnection(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<EntraConnectionResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<EntraConnectionResponse>;
+        }));
+    }
+
+    protected processUpdateEntraConnection(response: HttpResponseBase): Observable<EntraConnectionResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as EntraConnectionResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    setEntraClientSecret(body: SetClientSecretRequest): Observable<EntraConnectionResponse> {
+        let url_ = this.baseUrl + "/api/v1/admin/entra-connection/secret";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processSetEntraClientSecret(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processSetEntraClientSecret(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<EntraConnectionResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<EntraConnectionResponse>;
+        }));
+    }
+
+    protected processSetEntraClientSecret(response: HttpResponseBase): Observable<EntraConnectionResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as EntraConnectionResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    testEntraConnection(): Observable<TestResultResponse> {
+        let url_ = this.baseUrl + "/api/v1/admin/entra-connection/test";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processTestEntraConnection(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processTestEntraConnection(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<TestResultResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<TestResultResponse>;
+        }));
+    }
+
+    protected processTestEntraConnection(response: HttpResponseBase): Observable<TestResultResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TestResultResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
+export interface IIntegrationsClient {
+    /**
+     * @return OK
+     */
+    listIntegrations(): Observable<IntegrationResponse[]>;
+    /**
+     * @return Created
+     */
+    createIntegration(body: CreateIntegrationRequest): Observable<IntegrationResponse>;
+    /**
+     * @return OK
+     */
+    updateIntegration(integrationId: number, body: UpdateIntegrationRequest): Observable<IntegrationResponse>;
+    /**
+     * @return No Content
+     */
+    deleteIntegration(integrationId: number): Observable<void>;
+    /**
+     * @return OK
+     */
+    enableIntegration(integrationId: number): Observable<IntegrationResponse>;
+    /**
+     * @return OK
+     */
+    disableIntegration(integrationId: number): Observable<IntegrationResponse>;
+    /**
+     * @return OK
+     */
+    testIntegration(integrationId: number): Observable<TestResultResponse>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class IntegrationsClient implements IIntegrationsClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @return OK
+     */
+    listIntegrations(): Observable<IntegrationResponse[]> {
+        let url_ = this.baseUrl + "/api/v1/admin/integrations";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListIntegrations(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListIntegrations(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<IntegrationResponse[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<IntegrationResponse[]>;
+        }));
+    }
+
+    protected processListIntegrations(response: HttpResponseBase): Observable<IntegrationResponse[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as IntegrationResponse[];
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return Created
+     */
+    createIntegration(body: CreateIntegrationRequest): Observable<IntegrationResponse> {
+        let url_ = this.baseUrl + "/api/v1/admin/integrations";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCreateIntegration(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCreateIntegration(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<IntegrationResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<IntegrationResponse>;
+        }));
+    }
+
+    protected processCreateIntegration(response: HttpResponseBase): Observable<IntegrationResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as IntegrationResponse;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    updateIntegration(integrationId: number, body: UpdateIntegrationRequest): Observable<IntegrationResponse> {
+        let url_ = this.baseUrl + "/api/v1/admin/integrations/{integrationId}";
+        if (integrationId === undefined || integrationId === null)
+            throw new globalThis.Error("The parameter 'integrationId' must be defined.");
+        url_ = url_.replace("{integrationId}", encodeURIComponent("" + integrationId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUpdateIntegration(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUpdateIntegration(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<IntegrationResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<IntegrationResponse>;
+        }));
+    }
+
+    protected processUpdateIntegration(response: HttpResponseBase): Observable<IntegrationResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as IntegrationResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return No Content
+     */
+    deleteIntegration(integrationId: number): Observable<void> {
+        let url_ = this.baseUrl + "/api/v1/admin/integrations/{integrationId}";
+        if (integrationId === undefined || integrationId === null)
+            throw new globalThis.Error("The parameter 'integrationId' must be defined.");
+        url_ = url_.replace("{integrationId}", encodeURIComponent("" + integrationId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processDeleteIntegration(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processDeleteIntegration(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processDeleteIntegration(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    enableIntegration(integrationId: number): Observable<IntegrationResponse> {
+        let url_ = this.baseUrl + "/api/v1/admin/integrations/{integrationId}/enable";
+        if (integrationId === undefined || integrationId === null)
+            throw new globalThis.Error("The parameter 'integrationId' must be defined.");
+        url_ = url_.replace("{integrationId}", encodeURIComponent("" + integrationId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processEnableIntegration(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processEnableIntegration(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<IntegrationResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<IntegrationResponse>;
+        }));
+    }
+
+    protected processEnableIntegration(response: HttpResponseBase): Observable<IntegrationResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as IntegrationResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    disableIntegration(integrationId: number): Observable<IntegrationResponse> {
+        let url_ = this.baseUrl + "/api/v1/admin/integrations/{integrationId}/disable";
+        if (integrationId === undefined || integrationId === null)
+            throw new globalThis.Error("The parameter 'integrationId' must be defined.");
+        url_ = url_.replace("{integrationId}", encodeURIComponent("" + integrationId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processDisableIntegration(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processDisableIntegration(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<IntegrationResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<IntegrationResponse>;
+        }));
+    }
+
+    protected processDisableIntegration(response: HttpResponseBase): Observable<IntegrationResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as IntegrationResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    testIntegration(integrationId: number): Observable<TestResultResponse> {
+        let url_ = this.baseUrl + "/api/v1/admin/integrations/{integrationId}/test";
+        if (integrationId === undefined || integrationId === null)
+            throw new globalThis.Error("The parameter 'integrationId' must be defined.");
+        url_ = url_.replace("{integrationId}", encodeURIComponent("" + integrationId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processTestIntegration(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processTestIntegration(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<TestResultResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<TestResultResponse>;
+        }));
+    }
+
+    protected processTestIntegration(response: HttpResponseBase): Observable<TestResultResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TestResultResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
+export interface IMatterLookupClient {
+    /**
+     * @return OK
+     */
+    getMatterLookupStatus(): Observable<MatterLookupStatusResponse>;
+    /**
+     * @return OK
+     */
+    searchMatterLookup(body: MatterLookupRequest): Observable<MatterLookupResponse>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class MatterLookupClient implements IMatterLookupClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @return OK
+     */
+    getMatterLookupStatus(): Observable<MatterLookupStatusResponse> {
+        let url_ = this.baseUrl + "/api/v1/matter-lookup/status";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetMatterLookupStatus(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetMatterLookupStatus(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<MatterLookupStatusResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<MatterLookupStatusResponse>;
+        }));
+    }
+
+    protected processGetMatterLookupStatus(response: HttpResponseBase): Observable<MatterLookupStatusResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MatterLookupStatusResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    searchMatterLookup(body: MatterLookupRequest): Observable<MatterLookupResponse> {
+        let url_ = this.baseUrl + "/api/v1/matter-lookup/search";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processSearchMatterLookup(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processSearchMatterLookup(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<MatterLookupResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<MatterLookupResponse>;
+        }));
+    }
+
+    protected processSearchMatterLookup(response: HttpResponseBase): Observable<MatterLookupResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as MatterLookupResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
 export interface INotesClient {
     /**
      * @param matterId (optional) 
@@ -31282,6 +32067,16 @@ export interface CreateHolidayRequest {
     [key: string]: any;
 }
 
+export interface CreateIntegrationRequest {
+    name: string;
+    typeCode: string;
+    baseUrl?: string | undefined;
+    scope?: string | undefined;
+    isEnabled?: boolean;
+
+    [key: string]: any;
+}
+
 export interface CreateMatterListItemRequest {
     name: string;
     isActive?: boolean;
@@ -31879,6 +32674,21 @@ export interface EnsureFormDefinitionRequest {
     [key: string]: any;
 }
 
+export interface EntraConnectionResponse {
+    tenantId: string | undefined;
+    clientId: string | undefined;
+    secretIsSet: boolean;
+    secretExpiresOn: string | undefined;
+    secretUpdatedAt: string | undefined;
+    secretUpdatedBy: string | undefined;
+    lastTest: TestResultResponse | undefined;
+    updatedAt: string | undefined;
+    updatedBy: string | undefined;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
 export interface ExportLogRequest {
     surface: string;
     format: string | undefined;
@@ -32084,6 +32894,20 @@ export interface HolidaySettingsDto {
     [key: string]: any;
 }
 
+export interface IntegrationResponse {
+    integrationId: number;
+    name: string;
+    typeCode: string;
+    baseUrl: string | undefined;
+    scope: string | undefined;
+    isEnabled: boolean;
+    status: string;
+    lastTest: TestResultResponse | undefined;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
 export interface JsonElement {
 
     [key: string]: any;
@@ -32211,6 +33035,29 @@ export interface MatterListRef {
     id: number;
     name: string;
     isActive: boolean;
+
+    [key: string]: any;
+}
+
+export interface MatterLookupRequest {
+    clientNumber: string;
+    matterNumber?: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface MatterLookupResponse {
+    outcome: string;
+    clientNumber: string | undefined;
+    clientName: string | undefined;
+    matterNumber: string | undefined;
+    matterName: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface MatterLookupStatusResponse {
+    state: string;
 
     [key: string]: any;
 }
@@ -34437,6 +35284,13 @@ export interface SetCalendarSettingsRequest {
     [key: string]: any;
 }
 
+export interface SetClientSecretRequest {
+    secret: string;
+    expiresOn: string | undefined;
+
+    [key: string]: any;
+}
+
 export interface SetDashboardCapacityRequest {
     countOffHours: boolean;
     rowVersion: string;
@@ -35268,6 +36122,24 @@ export interface TaskWorkflowResponse {
     [key: string]: any;
 }
 
+export interface TestResultResponse {
+    outcome: string;
+    steps: TestStep[];
+    tokenSeconds: number | undefined;
+    testedAt: string;
+    testedBy: string | undefined;
+    rowVersion?: string | undefined;
+
+    [key: string]: any;
+}
+
+export interface TestStep {
+    key: string;
+    state: string;
+
+    [key: string]: any;
+}
+
 export interface TopMatterResponse {
     matterId: number;
     reference: string;
@@ -35346,6 +36218,14 @@ export interface UpdateClientRequest {
     [key: string]: any;
 }
 
+export interface UpdateEntraConnectionRequest {
+    tenantId?: string | undefined;
+    clientId?: string | undefined;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
 export interface UpdateHolidayCalendarRequest {
     name: string;
     colourKey: string | undefined;
@@ -35373,6 +36253,17 @@ export interface UpdateHolidayRequest {
     yearly: boolean;
     weekendRule: string;
     regionNote: string | undefined;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface UpdateIntegrationRequest {
+    name: string;
+    typeCode: string;
+    baseUrl?: string | undefined;
+    scope?: string | undefined;
+    isEnabled?: boolean;
     rowVersion: string;
 
     [key: string]: any;
@@ -36347,6 +37238,10 @@ export enum ApiProblemDetailsCode {
     BRANDING_ICON_TOO_SMALL = "BRANDING_ICON_TOO_SMALL",
     BRANDING_ICON_UNSAFE = "BRANDING_ICON_UNSAFE",
     BRANDING_ICON_CORRUPT = "BRANDING_ICON_CORRUPT",
+    INTEGRATION_TYPE_EXISTS = "INTEGRATION_TYPE_EXISTS",
+    INTEGRATION_NOT_AVAILABLE = "INTEGRATION_NOT_AVAILABLE",
+    INTEGRATION_TOKEN_FAILED = "INTEGRATION_TOKEN_FAILED",
+    SECRET_STORE_UNAVAILABLE = "SECRET_STORE_UNAVAILABLE",
 }
 
 export interface FileParameter {
