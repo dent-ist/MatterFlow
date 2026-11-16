@@ -299,7 +299,8 @@ test.describe('One-page Matter (#1396)', () => {
     await link(page, 'productions').click();
     const prod = card(page, 'productions');
     await expect(prod.getByText('No productions yet.')).toBeVisible();
-    await expect(prod.getByRole('button', { name: 'New Production' })).toHaveCount(2); // header action and empty state
+    // The empty state offers the action; the header does not repeat it.
+    await expect(prod.getByRole('button', { name: 'New Production' })).toHaveCount(1);
     await expect(prod.locator('[data-section-note]')).toHaveText('0 productions');
     await shot(page, 'empty-section');
 
@@ -388,7 +389,10 @@ test.describe('One-page Matter (#1396)', () => {
           /load when you scroll|Loading/,
         );
       }
+      // Let the last smooth scroll end, then go to the top and wait until the window is there (a scroll that is still moving would hide the header).
+      await page.waitForTimeout(1000);
       await page.evaluate(() => window.scrollTo(0, 0));
+      await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
       expect(await axeViolations(page), 'one page').toEqual([]);
       await shot(page, 'loaded');
       await page.goto(`/matters/${w.full.matterId}?tab=tasks`);

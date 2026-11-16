@@ -26,7 +26,7 @@ import { RecordCell, RecordGrid, RecordGridColumn, RecordGridState } from './rec
 })
 class Host {
   protected readonly defs = signal<readonly RecordGridColumn[]>([
-    { key: 'name', label: 'Name', locked: true, width: '100%' },
+    { key: 'name', label: 'Name', locked: true, width: '100%', sort: 'name' },
   ]);
   readonly grid = new RecordGridState('compact-spec-grid', this.defs);
   readonly compact = signal(true);
@@ -55,10 +55,22 @@ describe('record grid, compact (D-03c, #1396)', () => {
     expect(el.querySelector('thead th')!.textContent).toContain('Name');
   });
 
-  it('keeps the ordinary frame and 5 skeleton rows when it is not compact', () => {
+  it('has headings that do not sort, move or resize (those belong to the full view)', () => {
+    const { fixture, el } = mount();
+    const th = el.querySelector('thead th[data-col="name"]')!;
+    expect(th.querySelector('button')).toBeNull();
+    expect(th.hasAttribute('data-no-resize')).toBe(true);
+    expect(th.hasAttribute('data-no-reorder')).toBe(true);
+    fixture.componentInstance.compact.set(false);
+    fixture.detectChanges();
+    expect(el.querySelector('thead th[data-col="name"] button')).not.toBeNull();
+  });
+
+  it('keeps the ordinary frame when it is not compact', () => {
     const { fixture, el } = mount();
     fixture.componentInstance.compact.set(false);
     fixture.detectChanges();
     expect(el.querySelector('mf-grid-frame')!.classList).not.toContain('gf--inline');
+    expect(el.querySelectorAll('tr[data-skeleton]').length).toBe(10);
   });
 });

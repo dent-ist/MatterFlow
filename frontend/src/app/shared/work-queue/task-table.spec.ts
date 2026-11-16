@@ -576,6 +576,19 @@ describe('TaskTable', () => {
     expect(el().querySelector('table')!.getAttribute('aria-busy')).toBe('true');
   });
 
+  it('shows as many skeleton rows as asked for (a Matter section keeps its height: 10, #1396)', async () => {
+    await create([], ['ref', 'title', 'status'], { state: 'loading', skeletonCount: 10 });
+    expect(el().querySelectorAll('tbody tr[data-skeleton]').length).toBe(10);
+    // The polite loading text is out of the layout, so the placeholder is exactly its rows tall.
+    expect(el().querySelector('tbody tr.wt-live [data-loading]')).not.toBeNull();
+  });
+
+  it('leaves the headings plain text when sorting is off (a Matter section, #1396)', async () => {
+    await create([aRow()], ['ref', 'title', 'status'], { sortable: false });
+    expect(el().querySelector('thead .wt-sort')).toBeNull();
+    expect(el().querySelector('thead th[aria-sort]')).toBeNull();
+  });
+
   it('puts the whole title in the tooltip in both densities (#196)', async () => {
     await create([aRow()], ['ref', 'title']);
     const link = () => cell('title').querySelector<HTMLAnchorElement>('a.wt-title')!;

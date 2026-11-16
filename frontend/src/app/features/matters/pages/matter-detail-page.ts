@@ -159,6 +159,7 @@ type Tab = MatterTabKey;
           <div class="mp">
             <mf-record-skeleton
               kind="matter"
+              [flow]="true"
               [activeTab]="current()"
               [foldHeader]="false"
               [assetStrip]="canSeeAssets()"
@@ -374,7 +375,7 @@ type Tab = MatterTabKey;
                     [fullView]="['/matters', m.matterId]"
                     [fullViewParams]="{ tab: 'projects' }"
                   >
-                    @if (auth.has('Project.Create')) {
+                    @if (auth.has('Project.Create') && !isEmpty('projects')) {
                       <p-button
                         scAction
                         label="New Project"
@@ -410,7 +411,7 @@ type Tab = MatterTabKey;
                     [fullView]="['/matters', m.matterId]"
                     [fullViewParams]="{ tab: 'assets' }"
                   >
-                    @if (auth.has('Asset.Create')) {
+                    @if (auth.has('Asset.Create') && !isEmpty('assets')) {
                       <p-button
                         scAction
                         label="New Asset"
@@ -444,7 +445,7 @@ type Tab = MatterTabKey;
                     [fullView]="['/matters', m.matterId]"
                     [fullViewParams]="{ tab: 'productions' }"
                   >
-                    @if (auth.has('Production.Edit')) {
+                    @if (auth.has('Production.Edit') && !isEmpty('productions')) {
                       <p-button
                         scAction
                         label="New Production"
@@ -617,9 +618,9 @@ type Tab = MatterTabKey;
 })
 export class MatterDetailPage {
   readonly matterId = input.required<string>();
-  /** `?tab=`: `details` (default, also when absent), `tasks`, `projects`, `assets`; `activity` opens the drawer and shows Details. */
+  /** `?tab=`: absent, `summary`, `details` and an unknown or forbidden value show the one page; `tasks`, `projects`, `assets`, `productions`, `notes`, `activities` (and the old `activity`) open that section's full view. */
   readonly tab = input<string>();
-  /** The Assets tab's list state (its filters `name`, `typeId`, `extref` are read from the address by the tab itself). */
+  /** The Assets full view's list state (its filters `name`, `typeId`, `extref` are read from the address by the tab itself). */
   readonly status = input<string>();
   readonly page = input<string>();
   readonly size = input<string>();
@@ -942,6 +943,11 @@ export class MatterDetailPage {
 
   protected moreOf(key: string): boolean {
     return this.sectionStats()[key]?.more ?? false;
+  }
+
+  /** The section has loaded and has no rows: its empty state offers the section's action, so the header does not repeat it. */
+  protected isEmpty(key: string): boolean {
+    return this.cardState(key) === 'ready' && this.totalOf(key) === 0;
   }
 
   /** What a section card shows in its footer: not asked yet (idle), loading, ready or failed. Projects arrive with the matter. */

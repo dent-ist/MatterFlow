@@ -329,7 +329,7 @@ export class RecordCell {
                 </th>
               }
               @for (d of drawn(); track d.key) {
-                @if (d.sort) {
+                @if (d.sort && !compact()) {
                   <th
                     [attr.data-col]="d.key"
                     [class.pg-num]="d.num"
@@ -349,8 +349,8 @@ export class RecordCell {
                     scope="col"
                     [attr.data-col]="d.key"
                     [attr.data-col-head]="d.extra ? d.key : null"
-                    [attr.data-no-resize]="d.iconOnly ? '' : null"
-                    [attr.data-no-reorder]="d.iconOnly ? '' : null"
+                    [attr.data-no-resize]="d.iconOnly || compact() ? '' : null"
+                    [attr.data-no-reorder]="d.iconOnly || compact() ? '' : null"
                     [class.pg-num]="d.num"
                     [style.width]="d.width ?? null"
                     [attr.data-rg-width]="d.width ?? null"
@@ -462,7 +462,7 @@ export class RecordGrid<T = any> {
   readonly tableId = input<string | null>(null);
   /** Plural, lowercase: "clients" (the empty, error and loading sentences). */
   readonly noun = input.required<string>();
-  /** Compact: the grid sits inside a card of its own (a Matter section, D-03a): no frame, 36 px rows, as tall as its rows. */
+  /** Compact: the grid sits inside a card of its own (a Matter section, D-03c): no frame, 36 px rows, as tall as its rows, headings that do not sort, move or resize (that is the full view's). */
   readonly compact = input(false);
   /** Skeleton rows while loading (5; a Matter section shows 10). */
   readonly skeletonRows = input(5);
