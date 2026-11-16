@@ -73,7 +73,10 @@ test.describe('the person fields of the user record (#1394)', () => {
           .fill('Prefers morning calls.\nLeads the Alpha team.');
         await shot(page, `users-person-fields-dialog`);
         expect(await axeClean(page)).toEqual([]);
+        const saved = page.waitForResponse((r) => r.url().includes('/person-details'));
         await page.getByRole('button', { name: 'Save Changes' }).click();
+        const response = await saved;
+        expect(response.status(), await response.text()).toBe(200);
         await expect(page.locator('[data-panel-primary]')).toHaveAttribute('aria-disabled', 'true');
       } else {
         // The saved values are there again in a fresh dialog.
