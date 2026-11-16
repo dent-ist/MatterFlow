@@ -608,12 +608,12 @@ export class MatterForm {
   });
 
   protected async runLookup(): Promise<void> {
-    const clientNumber = this.client()?.label.split(' ')[0];
-    const matterNumber = normalizeNumber(this.number());
-    if (!clientNumber || !matterNumber || this.lookupBusy()) return;
+    const clientNo = this.client()?.label.split(' ')[0];
+    const matterNo = normalizeNumber(this.number());
+    if (!clientNo || !matterNo || this.lookupBusy()) return;
     this.lookupBusy.set(true);
     this.lookupMessage.set(null);
-    const answer = await this.lookup.search(clientNumber, matterNumber);
+    const answer = await this.lookup.search(clientNo, matterNo);
     this.lookupBusy.set(false);
     if (answer.kind === 'found' && answer.matterName) {
       this.name.set(answer.matterName);
@@ -629,7 +629,7 @@ export class MatterForm {
     } else {
       this.lookupMessage.set({
         kind: 'info',
-        text: `Nothing found for ${clientNumber}-${matterNumber}. Enter the matter name yourself.`,
+        text: `Nothing found for ${clientNo}-${matterNo}. Enter the matter name yourself.`,
       });
     }
   }

@@ -87,6 +87,7 @@ const OBJECT_TYPES = 'Integration,EntraConnection';
     Tip,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[style.--mf-frame-min]': 'frameMin()' },
   styleUrl: '../../../../shared/ui/page.scss',
   styles: `
     :host {
@@ -94,7 +95,6 @@ const OBJECT_TYPES = 'Integration,EntraConnection';
       gap: var(--mf-s4);
       min-width: 0;
       /* The integrations grid is a short list on a scrolling page: it takes the height of its rows, not the 412 px floor of a full-height grid. */
-      --mf-frame-min: 0px;
     }
     .ig__head {
       display: flex;
@@ -216,7 +216,7 @@ const OBJECT_TYPES = 'Integration,EntraConnection';
       font-weight: var(--mf-fw-bold);
     }
     .ig__result-when {
-      font-weight: var(--mf-fw-normal);
+      font-weight: 400;
     }
     .ig__result p {
       margin: var(--mf-s1) 0 0;
@@ -390,7 +390,7 @@ const OBJECT_TYPES = 'Integration,EntraConnection';
                       />
                       @if (c.secretIsSet) {
                         <span
-                          [mfTip]="'Expires ' + (c.secretExpiresOn | mfDateLong)"
+                          [attr.title]="'Expires ' + (c.secretExpiresOn | mfDateLong)"
                           data-secret-expiry
                         >
                           Expires On {{ c.secretExpiresOn | mfNum }}
@@ -786,6 +786,10 @@ export class IntegrationsTab implements OnInit {
     status: '5rem',
     tested: '5rem',
   };
+  /** The grid is a short list on a scrolling page: the frame takes the height of its header (40 px), its rows (44 px, three to eight, more scroll inside) and the 2 px of border, not the 412 px floor of a full-height grid. */
+  protected readonly frameMin = computed(
+    () => `${40 + Math.min(Math.max(this.rows().length, 3), 8) * 44 + 2}px`,
+  );
   protected readonly rowKey = (i: IntegrationResponse): number => i.integrationId;
   protected readonly typeLabel = (code: string): string => TYPE_LABELS[code] ?? code;
   protected readonly stepLabel = (key: string): string => STEP_LABELS[key] ?? key;
