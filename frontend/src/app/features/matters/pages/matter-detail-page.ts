@@ -154,15 +154,28 @@ type Tab = MatterTabKey;
     <span class="pg-sr" role="status" data-record-live>{{ flow.live() }}</span>
     @switch (state()) {
       @case ('loading') {
-        <mf-fixed-page>
-          <mf-record-skeleton
-            kind="matter"
-            [activeTab]="current()"
-            [foldHeader]="headerFolded()"
-            [assetStrip]="canSeeAssets()"
-            (retry)="load()"
-          />
-        </mf-fixed-page>
+        @if (onePage()) {
+          <!-- The one page scrolls (D-03a), so its placeholder is not a fixed page: the header and the strip stay where the loaded page puts them. -->
+          <div class="mp">
+            <mf-record-skeleton
+              kind="matter"
+              [activeTab]="current()"
+              [foldHeader]="false"
+              [assetStrip]="canSeeAssets()"
+              (retry)="load()"
+            />
+          </div>
+        } @else {
+          <mf-fixed-page>
+            <mf-record-skeleton
+              kind="matter"
+              [activeTab]="current()"
+              [foldHeader]="headerFolded()"
+              [assetStrip]="canSeeAssets()"
+              (retry)="load()"
+            />
+          </mf-fixed-page>
+        }
       }
       @case ('ready') {
         @if (matter(); as m) {

@@ -54,7 +54,8 @@ export interface JumpLink {
     :host {
       position: sticky;
       top: var(--mf-header-h, 53px);
-      z-index: 10;
+      /* Under the record header (8), so its menus open over the strip, over the cards (their sticky headings are 4 at most). */
+      z-index: 7;
       display: block;
       /* Full width of the main area (its 24 px gutter included), so the rows that scroll under it never show beside it. */
       margin-inline: calc(-1 * var(--mf-s5));

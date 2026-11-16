@@ -206,7 +206,7 @@ export class MatterProjects {
   private readonly router = inject(Router);
 
   constructor() {
-    registerTableSkip();
+    registerTableSkip({ when: () => !this.compact() });
     // The projects arrive with the matter, so the rows are there as soon as the tab is.
     // A project left from the collapsed Archived group: focus goes to the group's toggle (the group stays collapsed, as on every visit).
     restoreRowFocus(

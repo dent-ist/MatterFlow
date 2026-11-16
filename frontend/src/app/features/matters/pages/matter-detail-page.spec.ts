@@ -476,6 +476,7 @@ describe('MatterDetailPage', () => {
     const scroll = vi.fn();
     (el().querySelector('#section-projects') as HTMLElement).scrollIntoView = scroll;
     el().querySelector<HTMLAnchorElement>('[data-jump=projects]')!.click();
+    await settle(fixture);
     expect(scroll).toHaveBeenCalledWith({
       behavior: expect.stringMatching(/smooth|auto/),
       block: 'start',

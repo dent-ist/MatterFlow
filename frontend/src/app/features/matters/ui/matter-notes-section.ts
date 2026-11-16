@@ -1,7 +1,6 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  computed,
   effect,
   inject,
   input,
@@ -120,7 +119,6 @@ export class MatterNotesSection {
   protected readonly state = signal<LoadState>('loading');
   protected readonly rows = signal<NoteListItem[]>([]);
   private readonly total = signal(0);
-  private readonly status = computed(() => this.state());
   private requestId = 0;
 
   constructor() {
@@ -131,7 +129,7 @@ export class MatterNotesSection {
       untracked(() => void this.load());
     });
     effect(() => {
-      const state = this.status();
+      const state = this.state();
       const shown = this.rows().length;
       const total = this.total();
       untracked(() =>

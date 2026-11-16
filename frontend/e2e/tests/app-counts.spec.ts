@@ -10,12 +10,19 @@ import {
  * tab or a column was added or removed): change the constant in support/app-counts.ts and nothing else.
  */
 test.describe('Counts shared by the specs', () => {
-  test('the Matter page shows the tabs of the registry, in order, for the System Admin', async ({
+  test('the Matter page shows the sections of the registry as jump links, and its full views the same tabs, in order, for the System Admin', async ({
     page,
     seed,
   }) => {
     const world = await seed.world();
     await page.goto(`/matters/${world.matter.matterId}`);
+    const links = page.locator('[data-jump-strip] a');
+    await expect(links.first()).toBeVisible();
+    await expect(links).toHaveCount(MATTER_TAB_COUNT);
+    const linkNames = (await links.allTextContents()).map((t) => t.trim());
+    MATTER_TAB_LABELS.forEach((label, i) => expect(linkNames[i]).toContain(label));
+
+    await page.goto(`/matters/${world.matter.matterId}?tab=tasks`);
     const tabs = page.getByRole('tab');
     await expect(tabs.first()).toBeVisible();
     await expect(tabs).toHaveCount(MATTER_TAB_COUNT);

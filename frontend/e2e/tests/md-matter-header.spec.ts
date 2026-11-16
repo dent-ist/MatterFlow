@@ -136,14 +136,15 @@ test.describe('Matter header (MD-01)', () => {
     await expect(page.locator('[data-summary-details]')).toContainText('Inactive');
   });
 
-  test('seven tabs in order; a view-only user gets no New menu and no empty menus', async ({
+  test('seven jump links in order; a view-only user gets no New menu and no empty menus', async ({
     page,
     seed,
     asUser,
   }) => {
     const world = await seed.world();
     await page.goto(`/matters/${world.matter.matterId}`);
-    await expect(page.getByRole('tab')).toHaveText(matterTabPatterns());
+    // The one page (#1396): the seven tabs are the seven jump links.
+    await expect(page.locator('[data-jump-strip] a')).toHaveText(matterTabPatterns());
     const reader = await seed.role(['Matter.View', 'Client.View'], 'E2E header reader');
     const viewer = await seed.user([reader.name], 'header-reader');
     const page2 = await asUser(viewer.username);
@@ -172,7 +173,7 @@ test.describe('Matter header (MD-01)', () => {
     release();
     await expect(page.locator('[data-matter-header] h1')).toBeVisible();
     const loaded = (await page.locator('[data-matter-header]').boundingBox())!;
-    const tabsLoaded = (await page.locator('[role=tablist]').first().boundingBox())!;
+    const tabsLoaded = (await page.locator('[data-jump-strip]').first().boundingBox())!;
     expect(Math.abs(skeleton.height - loaded.height)).toBeLessThanOrEqual(8);
     expect(Math.abs(tabsSkeleton.y - tabsLoaded.y)).toBeLessThanOrEqual(8);
   });

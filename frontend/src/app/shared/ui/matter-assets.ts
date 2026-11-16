@@ -466,7 +466,7 @@ export class MatterAssets extends ServerListPage<AssetListItem> {
 
   constructor() {
     super();
-    registerTableSkip();
+    registerTableSkip({ when: () => !this.compact() });
     restoreRowFocus('matter-assets', () => this.state() === 'ready');
     void this.loadTypes();
     effect(() => {

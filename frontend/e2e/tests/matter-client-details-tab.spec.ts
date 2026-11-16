@@ -31,7 +31,7 @@ const noAside = (page: Page) =>
   expect(page.locator('aside, [data-detail-panel]'), 'no right-hand Details panel').toHaveCount(0);
 
 test.describe('Matter and Client detail pages: Details is the first tab', () => {
-  test('Matter: Summary is first and selected by default, shows the facts, and there is no side panel', async ({
+  test('Matter: the one page opens on Summary, its jump strip lists the sections, it shows the facts, and there is no side panel', async ({
     page,
     seed,
   }) => {
@@ -41,7 +41,7 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/matters/${world.matter.matterId}`);
 
-    await expect(page.getByRole('tab')).toHaveText(
+    await expect(page.locator('[data-jump-strip] a')).toHaveText(
       matterTabPatterns({
         summary: /^\s*Summary\s*$/,
         tasks: /^\s*Tasks/,
@@ -52,16 +52,13 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
         activities: /^\s*Activities\s*$/,
       }),
     );
-    await expect(tab(page, 'Summary')).toHaveAttribute('aria-selected', 'true');
-    await expect(tab(page, 'Summary')).toHaveAttribute('tabindex', '0');
-    await expect(tab(page, /^Tasks/)).toHaveAttribute('tabindex', '-1');
+    await expect(page.getByRole('tab')).toHaveCount(0);
+    await expect(page.locator('[data-jump="summary"]')).toHaveAttribute('aria-current', 'location');
     await expect(page).not.toHaveURL(/tab=/);
     await noAside(page);
 
-    const panel = page.getByRole('tabpanel');
-    await expect(panel).toHaveAttribute('id', 'matter-panel');
-    await expect(panel).toHaveAttribute('aria-labelledby', 'matter-tab-summary');
-    // The facts are behind the Details disclosure (PM v2, #882).
+    const panel = page.locator('#section-summary');
+    await expect(panel).toHaveAttribute('aria-labelledby', 'section-summary-h');
     await openMatterDetails(page);
     // The reference, the number and the name are in the header, not rows again (WP7).
     await expect(panel.getByText('Matter reference')).toHaveCount(0);
@@ -74,15 +71,20 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
     );
     // The actions are in the header (WP3): Edit, and Set inactive in the overflow, disabled with its reason.
     await expect(page.locator('[data-edit-matter]')).toBeVisible();
-    await page.locator('[data-overflow][aria-label^="More actions"]').click();
+    await page.locator('[data-overflow][aria-label="More actions"]').click();
     const blocked = page.getByRole('menuitem', { name: /Set Inactive/ });
     await expect(blocked).toHaveAttribute('aria-disabled', 'true');
     await expect(blocked).toContainText("aren't Completed or Cancelled");
     await page.keyboard.press('Escape');
-    // The details are groups of fields in their own scrolling box, left aligned (round 3).
+    // The details are groups of fields, left aligned, and the one page does not scroll inside the Details card (D-03a).
     const list = (await panel.locator('[data-summary-details] .dg__fields').first().boundingBox())!;
-    const area = (await page.getByRole('region', { name: 'Matter details' }).boundingBox())!;
+    const area = (await page.locator('[data-summary-details]').boundingBox())!;
     expect(list.x - area.x).toBeLessThan(40);
+    expect(
+      await page
+        .locator('[data-summary-details] .dc__body')
+        .evaluate((el) => getComputedStyle(el).overflowY),
+    ).toBe('visible');
     await noHorizontalScroll(page);
   });
 
@@ -115,39 +117,40 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
       asset.displayName,
     );
 
-    await page.goto(base);
+    await page.goto(`${base}?tab=tasks`);
     await tab(page, /^Projects/).click();
     await expect(page).toHaveURL(/tab=projects/);
     await tab(page, 'Summary').click();
     await expect(page).not.toHaveURL(/tab=/);
-    await expect(tab(page, 'Summary')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('[data-matter-one-page]')).toBeVisible();
     await page.goBack();
     await expect(tab(page, /^Projects/)).toHaveAttribute('aria-selected', 'true');
   });
 
-  test('Matter: arrow keys, Home and End move between the tabs (roving tabindex)', async ({
+  test('Matter: arrow keys, Home and End move between the tabs of a full view (roving tabindex); Summary leads back to the one page', async ({
     page,
     seed,
   }) => {
     const world = await seed.world();
-    await page.goto(`/matters/${world.matter.matterId}`);
-    await tab(page, 'Summary').focus();
-    await page.keyboard.press('ArrowRight');
-    await expect(tab(page, /^Tasks/)).toBeFocused();
-    await expect(tab(page, /^Tasks/)).toHaveAttribute('aria-selected', 'true');
-    await expect(page).toHaveURL(/tab=tasks/);
+    await page.goto(`/matters/${world.matter.matterId}?tab=tasks`);
+    await tab(page, /^Tasks/).focus();
+    await expect(tab(page, /^Tasks/)).toHaveAttribute('tabindex', '0');
+    await expect(tab(page, /^Projects/)).toHaveAttribute('tabindex', '-1');
     await page.keyboard.press('ArrowRight');
     await expect(tab(page, /^Projects/)).toBeFocused();
+    await expect(tab(page, /^Projects/)).toHaveAttribute('aria-selected', 'true');
+    await expect(page).toHaveURL(/tab=projects/);
+    await page.keyboard.press('ArrowRight');
+    await expect(tab(page, 'Assets')).toBeFocused();
     await page.keyboard.press('End');
     await expect(tab(page, 'Activities')).toBeFocused();
-    await page.keyboard.press('ArrowRight'); // wraps round to the first tab
-    await expect(tab(page, 'Summary')).toBeFocused();
-    await expect(tab(page, 'Summary')).toHaveAttribute('aria-selected', 'true');
+    await page.keyboard.press('ArrowRight'); // wraps round to the first tab, Summary: the one page
+    await expect(page.locator('[data-matter-one-page]')).toBeVisible();
     await expect(page).not.toHaveURL(/tab=/);
-    await page.keyboard.press('ArrowLeft');
-    await expect(tab(page, 'Activities')).toBeFocused();
+    await page.goto(`/matters/${world.matter.matterId}?tab=notes`);
+    await tab(page, /^Notes/).focus();
     await page.keyboard.press('Home');
-    await expect(tab(page, 'Summary')).toBeFocused();
+    await expect(page.locator('[data-matter-one-page]')).toBeVisible();
   });
 
   test('Client: Overview is first and selected by default, shows the strip and the dates, and there is no side panel', async ({
@@ -229,8 +232,8 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
     const page = await asUser(viewer.username);
 
     await page.goto(`/matters/${world.matter.matterId}`);
-    const panel = page.getByRole('tabpanel');
-    await expect(tab(page, 'Summary')).toHaveAttribute('aria-selected', 'true');
+    const panel = page.locator('#section-summary');
+    await expect(page.locator('[data-jump="summary"]')).toHaveAttribute('aria-current', 'location');
     await expect(panel.getByRole('link', { name: new RegExp(world.client.name) })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Edit' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: /^Set (in)?active$/ })).toHaveCount(0);
@@ -246,7 +249,7 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
     const other = await seed.user([noClient.name], 'matter-only');
     const page2 = await asUser(other.username);
     await page2.goto(`/matters/${world.matter.matterId}`);
-    await expect(page2.getByRole('tabpanel')).toContainText(world.client.name);
+    await expect(page2.locator('#section-summary')).toContainText(world.client.name);
     await expect(page2.locator('[data-client-value] a')).toHaveCount(0);
   });
 
@@ -294,8 +297,12 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
         `/clients/${world.client.clientId}?tab=matters`,
       ]) {
         await page.goto(url);
-        await expect(page.getByRole('tabpanel')).toBeVisible();
-        await expect(page.getByRole('tabpanel')).not.toContainText('Loading');
+        // The Matter's one page has no tab panel (#1396): its Summary section is the content.
+        const content = url.endsWith(`/matters/${world.matter.matterId}`)
+          ? page.locator('#section-summary')
+          : page.getByRole('tabpanel');
+        await expect(content).toBeVisible();
+        await expect(content).not.toContainText('Loading');
         await noHorizontalScroll(page);
         expect(await axeViolations(page), `${url} at ${size.width}`).toEqual([]);
       }
@@ -322,7 +329,9 @@ test.describe('org details tab screenshots', () => {
         ['client-matters', `/clients/${world.client.clientId}?tab=matters`],
       ] as const) {
         await page.goto(url);
-        await expect(page.getByRole('tabpanel')).toBeVisible();
+        await expect(
+          name === 'matter-details' ? page.locator('#section-summary') : page.getByRole('tabpanel'),
+        ).toBeVisible();
         await page.waitForLoadState('networkidle');
         await page.waitForTimeout(300);
         await page.screenshot({

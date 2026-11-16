@@ -52,7 +52,8 @@ test.describe('Tab strip scroll cue (#279)', () => {
       [1920, 1080],
     ] as const) {
       await page.setViewportSize({ width: w, height: h });
-      await page.goto(`/matters/${matterId}`);
+      // The tab strip of a Matter is on its full views (the one page has the jump strip, #1396).
+      await page.goto(`/matters/${matterId}?tab=tasks`);
       await expect(page.getByRole('tab', { name: /^Tasks/ })).toBeVisible();
       // The Matter page has 8 tabs (the System Admin's strip): at both desktop sizes they all fit, so there is no scroll cue (#1367).
       const overflows = await page
@@ -61,6 +62,15 @@ test.describe('Tab strip scroll cue (#279)', () => {
       expect(overflows, `the 8 tabs fit at ${w}`).toBe(false);
       await expect(page.locator('mf-tabs [data-tab-cue]')).toHaveCount(0);
       await shot(page, `matter-tabs-no-cue-${w}x${h}`);
+      // The jump strip of the one page fits too.
+      await page.goto(`/matters/${matterId}`);
+      await expect(page.locator('[data-jump-strip] a').first()).toBeVisible();
+      expect(
+        await page
+          .locator('[data-jump-strip] ul')
+          .evaluate((el) => el.scrollWidth > el.clientWidth + 1),
+        `the jump links fit at ${w}`,
+      ).toBe(false);
     }
   });
 
@@ -68,10 +78,13 @@ test.describe('Tab strip scroll cue (#279)', () => {
     test.skip(!axeAvailable(), 'axe-core not available');
     for (const [w, h] of SIZES) {
       await page.setViewportSize({ width: w, height: h });
-      await page.goto(`/matters/${matterId}`);
+      await page.goto(`/matters/${matterId}?tab=tasks`);
       await expect(page.getByRole('tab').first()).toBeVisible();
       expect(await axeViolations(page), `matter at ${w}`).toEqual([]);
       expect(await noPageScroll(page)).toBe(true);
+      await page.goto(`/matters/${matterId}`);
+      await expect(page.locator('[data-jump-strip] a').first()).toBeVisible();
+      expect(await axeViolations(page), `matter one page at ${w}`).toEqual([]);
     }
   });
 });

@@ -133,12 +133,8 @@ test.describe('Matter Summary: Details groups and the Team panel (#1376)', () =>
       await expect(page.locator('[data-team-edit]')).toBeVisible();
       await noSideScroll(page, `Summary at ${size.width}`);
       await axeClean(page, `Summary at ${size.width}`);
-      // The page never scrolls; the Details card may scroll inside itself, the footer line stays in view.
-      const page_scroll = await page.evaluate(
-        () => document.documentElement.scrollHeight - document.documentElement.clientHeight,
-      );
-      expect(page_scroll, 'the page itself never scrolls').toBeLessThanOrEqual(0);
-      await expect(page.locator('[data-record-line]')).toBeInViewport();
+      // The Matter page is one scrolling page (D-03a): the Details card is as tall as its fields and its footer line is part of it.
+      await expect(page.locator('[data-record-line]')).toBeVisible();
     }
   });
 
@@ -150,10 +146,8 @@ test.describe('Matter Summary: Details groups and the Team panel (#1376)', () =>
     const w = await world(seed, admin, 5);
     await page.setViewportSize(S1366);
     await page.goto(`/matters/${w.matter.matterId}?tab=team`);
-    await expect(page.getByRole('tab', { name: /^Summary/ })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
+    await expect(page.locator('[data-matter-one-page]')).toBeVisible();
+    await expect(page.getByRole('tab')).toHaveCount(0);
     const toggle = panel(page).locator('[data-panel-toggle]');
     await expect(toggle).toHaveAttribute('aria-expanded', 'true');
     await expect(toggle).toHaveAccessibleName('Collapse Team');

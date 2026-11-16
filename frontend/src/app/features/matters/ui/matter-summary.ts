@@ -210,6 +210,7 @@ import { IntPipe } from '../../../shared/ui/number-format';
     }
     /* Matter Type and Current State: plain text on one line with an ellipsis; the full name (and "(inactive)") is the tooltip (D-45). */
     .ms__clip {
+      display: block;
       min-width: 0;
       max-width: 100%;
       overflow: hidden;
