@@ -34,6 +34,8 @@ const KEYS = [
   'link-roles',
   'vendor-services',
   'vendor-areas',
+  'offices',
+  'employment-statuses',
 ];
 
 for (const size of SIZES) {
@@ -42,7 +44,7 @@ for (const size of SIZES) {
       await page.setViewportSize(size);
     });
 
-    test('catalogue, search, no-match and the eleven lists', async ({ page }) => {
+    test('catalogue, search, no-match and the thirteen lists', async ({ page }) => {
       for (const key of KEYS) {
         await page.goto(`/admin/lists/${key}`);
         await expect(page.locator('[data-list-body] tbody tr').first()).toBeVisible();

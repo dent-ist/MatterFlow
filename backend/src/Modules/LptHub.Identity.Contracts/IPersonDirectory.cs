@@ -4,7 +4,7 @@ namespace LptHub.Identity.Contracts;
 /// <param name="PersonId">Person id.</param>
 /// <param name="DisplayName">First and last name together.</param>
 /// <param name="PersonType"><c>INTERNAL</c> or <c>EXTERNAL</c>.</param>
-/// <param name="Title">Title or role, if known.</param>
+/// <param name="Title">Title, if known.</param>
 /// <param name="Email">E-mail address, if known.</param>
 /// <param name="CompanyName">Company of an external person, if known.</param>
 /// <param name="UserId">The linked user of a system-user person, otherwise null.</param>

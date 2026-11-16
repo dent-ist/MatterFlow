@@ -17,9 +17,11 @@ import { Button } from 'primeng/button';
 import { Observable, firstValueFrom } from 'rxjs';
 import {
   CurrentStatesClient,
+  EmploymentStatusesClient,
   MatterCategoriesClient,
   MatterListItemView,
   MatterTypesClient,
+  OfficesClient,
   TeamTitlesClient,
   VendorAreasClient,
   VendorServicesClient,
@@ -53,13 +55,15 @@ export type MatterListKind =
   | 'current-states'
   | 'team-titles'
   | 'vendor-services'
-  | 'vendor-areas';
+  | 'vendor-areas'
+  | 'offices'
+  | 'employment-statuses';
 
-/** The permission that maintains each list (`MatterList.Manage`, or `Vendor.Manage` for the Vendor lists). */
+/** The permission that maintains each list (`MatterList.Manage`, `Vendor.Manage` for the Vendor lists, `User.Manage` for the People lists, #1394). */
 export function managePermission(kind: MatterListKind): string {
-  return kind === 'vendor-services' || kind === 'vendor-areas'
-    ? 'Vendor.Manage'
-    : 'MatterList.Manage';
+  if (kind === 'vendor-services' || kind === 'vendor-areas') return 'Vendor.Manage';
+  if (kind === 'offices' || kind === 'employment-statuses') return 'User.Manage';
+  return 'MatterList.Manage';
 }
 
 /** Everything that differs between the three lists: the words (UI spec 7.2 to 7.4 and the glossary) and the API calls. */
@@ -175,6 +179,36 @@ export const MATTER_LIST_TEXTS: Readonly<Record<MatterListKind, MatterListText>>
     linkPath: '/vendors',
     limit: ADMIN_FIELD_LIMITS.vendorAreaName,
   },
+  offices: {
+    heading: 'Office',
+    newDialogTitle: 'New Office',
+    newButton: 'New Office',
+    addButton: 'Add Office',
+    toast: 'Office',
+    dupNoun: 'office',
+    plural: 'offices',
+    thing: 'office',
+    inUseHeading: 'People',
+    holder: ['person', 'people'],
+    filterParam: 'officeId',
+    linkPath: '/admin/users',
+    limit: ADMIN_FIELD_LIMITS.officeName,
+  },
+  'employment-statuses': {
+    heading: 'Employment Status',
+    newDialogTitle: 'New Employment Status',
+    newButton: 'New Employment Status',
+    addButton: 'Add Employment Status',
+    toast: 'Employment status',
+    dupNoun: 'employment status',
+    plural: 'employment statuses',
+    thing: 'status',
+    inUseHeading: 'People',
+    holder: ['person', 'people'],
+    filterParam: 'employmentStatusId',
+    linkPath: '/admin/users',
+    limit: ADMIN_FIELD_LIMITS.employmentStatusName,
+  },
 };
 
 /** The body of the Deactivate confirm (UI spec 7.3). */
@@ -245,6 +279,8 @@ export class MatterListTab {
   private readonly titlesApi = inject(TeamTitlesClient);
   private readonly servicesApi = inject(VendorServicesClient);
   private readonly areasApi = inject(VendorAreasClient);
+  private readonly officesApi = inject(OfficesClient);
+  private readonly statusesApi = inject(EmploymentStatusesClient);
   private readonly notify = inject(NotificationService);
   private readonly auth = inject(AuthStore);
   private readonly injector = inject(Injector);
@@ -295,6 +331,22 @@ export class MatterListTab {
           update: (id, b) => this.areasApi.updateVendorArea(id, b),
           remove: (id) => this.areasApi.deleteVendorArea(id),
           reorder: (b) => this.areasApi.reorderVendorAreas(b),
+        };
+      case 'offices':
+        return {
+          list: () => this.officesApi.listOffices(),
+          create: (b) => this.officesApi.createOffice(b),
+          update: (id, b) => this.officesApi.updateOffice(id, b),
+          remove: (id) => this.officesApi.deleteOffice(id),
+          reorder: (b) => this.officesApi.reorderOffices(b),
+        };
+      case 'employment-statuses':
+        return {
+          list: () => this.statusesApi.listEmploymentStatuses(),
+          create: (b) => this.statusesApi.createEmploymentStatus(b),
+          update: (id, b) => this.statusesApi.updateEmploymentStatus(id, b),
+          remove: (id) => this.statusesApi.deleteEmploymentStatus(id),
+          reorder: (b) => this.statusesApi.reorderEmploymentStatuses(b),
         };
       default:
         return {

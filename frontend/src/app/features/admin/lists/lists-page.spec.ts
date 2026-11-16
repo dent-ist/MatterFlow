@@ -5,9 +5,11 @@ import { of, throwError } from 'rxjs';
 import {
   AssetLinkRolesClient,
   CurrentStatesClient,
+  EmploymentStatusesClient,
   MatterCategoriesClient,
   MatterTypesClient,
   NoteTagsClient,
+  OfficesClient,
   OnHoldReasonsClient,
   PrioritiesClient,
   StatusLabelsClient,
@@ -92,6 +94,13 @@ describe('Administration > Lists page', () => {
         listVendorServices: listing('vendor-services', [matterItem(1, 'Hosting')]),
       },
       areas: { listVendorAreas: listing('vendor-areas', [matterItem(1, 'Northeast')]) },
+      offices: { listOffices: listing('offices', [matterItem(1, 'Head Office')]) },
+      employmentStatuses: {
+        listEmploymentStatuses: listing('employment-statuses', [
+          matterItem(1, 'Active'),
+          matterItem(2, 'Departed', false),
+        ]),
+      },
       reasons: {
         listOnHoldReasons: listing('on-hold-reasons', [
           { id: 1, name: 'Waiting for client', sortOrder: 1, isActive: true, rowVersion: 'a' },
@@ -144,6 +153,8 @@ describe('Administration > Lists page', () => {
         { provide: TeamTitlesClient, useValue: api['titles'] },
         { provide: VendorServicesClient, useValue: api['services'] },
         { provide: VendorAreasClient, useValue: api['areas'] },
+        { provide: OfficesClient, useValue: api['offices'] },
+        { provide: EmploymentStatusesClient, useValue: api['employmentStatuses'] },
         { provide: OnHoldReasonsClient, useValue: api['reasons'] },
         { provide: NoteTagsClient, useValue: api['tags'] },
       ],
@@ -175,12 +186,13 @@ describe('Administration > Lists page', () => {
     'OnHoldReason.Manage',
     'AssetType.Manage',
     'Vendor.Manage',
+    'User.Manage',
     'CustomField.Manage',
   ];
 
   describe('the page', () => {
     it(
-      'has the header, the catalogue with search, five groups and the editor of the open list',
+      'has the header, the catalogue with search, six groups and the editor of the open list',
       async () => {
         const router = await open('/admin/lists/priorities', ALL);
         expect(router.url).toBe('/admin/lists/priorities');
@@ -198,7 +210,7 @@ describe('Administration > Lists page', () => {
           Array.from(el().querySelectorAll('[role="group"]')).map((g) =>
             g.firstElementChild!.textContent!.trim(),
           ),
-        ).toEqual(['Matter', 'Task', 'Notes', 'Assets', 'Vendors']);
+        ).toEqual(['Matter', 'Task', 'Notes', 'Assets', 'Vendors', 'People']);
         expect(options().map((o) => o.getAttribute('data-list'))).toEqual(
           ADMIN_LISTS.map((l) => l.key),
         );

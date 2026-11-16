@@ -18,6 +18,8 @@ import {
   PodChoice,
   SetUserPodsRequest,
   UserPodDto,
+  PersonListItemView,
+  UpdateUserPersonDetailsRequest,
 } from './identity-admin-api';
 
 interface MemRole {
@@ -46,7 +48,25 @@ interface MemUser {
   availability?: { state: string; outUntil: string | undefined; note: string | undefined };
   /** Set by tests: the open tasks assigned to the person; unset = the API returns no number (the caller may not see tasks). */
   openTaskCount?: number;
+  /** The person record's own fields (epic #1389, issue #1394). */
+  title?: string;
+  notes?: string;
+  officeId?: number;
+  employmentStatusId?: number;
+  industryJoinMonth?: string;
+  personVersion?: number;
 }
+
+const listItem = (id: number, name: string): PersonListItemView => ({
+  id,
+  name,
+  sortOrder: id,
+  isActive: true,
+  rowVersion: '1',
+  inUseCount: 0,
+});
+const OFFICES = [listItem(1, 'Head Office'), listItem(2, 'Branch Office'), listItem(3, 'Remote')];
+const STATUSES = [listItem(1, 'Active'), listItem(2, 'On Leave'), listItem(3, 'Departed')];
 
 const fail = (status: number, code: string, message: string): Observable<never> =>
   throwError(
@@ -177,6 +197,9 @@ export class InMemoryIdentityAdminApi extends IdentityAdminApi {
           has(u.displayName, q.name) &&
           has(nameParts(u.displayName).first, q.firstName) &&
           has(nameParts(u.displayName).last, q.lastName) &&
+          has(u.title, q.title) &&
+          (q.officeId === undefined || u.officeId === q.officeId) &&
+          (q.employmentStatusId === undefined || u.employmentStatusId === q.employmentStatusId) &&
           has(u.windowsAccount, q.account) &&
           has(u.email, q.email) &&
           (!q.availability || this.summary(u).availability?.state === q.availability) &&
@@ -213,6 +236,18 @@ export class InMemoryIdentityAdminApi extends IdentityAdminApi {
           sign * nameParts(a.displayName).last.localeCompare(nameParts(b.displayName).last) ||
           a.userId - b.userId
         );
+      case 'title':
+        return sign * (a.title ?? '').localeCompare(b.title ?? '') || a.userId - b.userId;
+      case 'office':
+        return (
+          sign * (this.officeName(a) ?? '').localeCompare(this.officeName(b) ?? '') ||
+          a.userId - b.userId
+        );
+      case 'employmentStatus':
+        return (
+          sign * (this.statusName(a) ?? '').localeCompare(this.statusName(b) ?? '') ||
+          a.userId - b.userId
+        );
       case 'firstSeen':
         return sign * a.registeredAtUtc.localeCompare(b.registeredAtUtc) || a.userId - b.userId;
       case 'lastSeen': {
@@ -228,6 +263,14 @@ export class InMemoryIdentityAdminApi extends IdentityAdminApi {
           a.displayName.localeCompare(b.displayName)
         );
     }
+  }
+
+  private officeName(u: MemUser): string | undefined {
+    return OFFICES.find((o) => o.id === u.officeId)?.name;
+  }
+
+  private statusName(u: MemUser): string | undefined {
+    return STATUSES.find((o) => o.id === u.employmentStatusId)?.name;
   }
 
   userCounts(): Observable<UserCountsDto> {
@@ -423,6 +466,9 @@ export class InMemoryIdentityAdminApi extends IdentityAdminApi {
       displayName: u.displayName,
       firstName: nameParts(u.displayName).first,
       lastName: nameParts(u.displayName).last,
+      title: u.title,
+      officeName: OFFICES.find((o) => o.id === u.officeId)?.name,
+      employmentStatusName: STATUSES.find((o) => o.id === u.employmentStatusId)?.name,
       email: u.email,
       windowsAccount: u.windowsAccount,
       isActive: u.isActive,
@@ -457,7 +503,36 @@ export class InMemoryIdentityAdminApi extends IdentityAdminApi {
       roleIds: [...u.roleIds],
       effectivePermissions: this.effective(u),
       rowVersion: String(u.version),
+      notes: u.notes,
+      officeId: u.officeId,
+      employmentStatusId: u.employmentStatusId,
+      industryJoinMonth: u.industryJoinMonth,
+      personRowVersion: String(u.personVersion ?? 1),
     };
+  }
+
+  updateUserPersonDetails(
+    userId: number,
+    request: UpdateUserPersonDetailsRequest,
+  ): Observable<UserDetailDto> {
+    const u = this.find(userId);
+    if (!u) return noUser();
+    if (request.rowVersion !== String(u.personVersion ?? 1)) return conflict();
+    u.title = request.title?.trim() || undefined;
+    u.notes = request.notes?.trim() || undefined;
+    u.officeId = request.officeId;
+    u.employmentStatusId = request.employmentStatusId;
+    u.industryJoinMonth = request.industryJoinMonth || undefined;
+    u.personVersion = (u.personVersion ?? 1) + 1;
+    return of(this.detail(u));
+  }
+
+  listOffices(): Observable<PersonListItemView[]> {
+    return of(OFFICES.map((o) => ({ ...o })));
+  }
+
+  listEmploymentStatuses(): Observable<PersonListItemView[]> {
+    return of(STATUSES.map((o) => ({ ...o })));
   }
 
   private roleDetail(r: MemRole): RoleDetailDto {

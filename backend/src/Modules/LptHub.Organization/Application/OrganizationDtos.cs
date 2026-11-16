@@ -162,7 +162,7 @@ public sealed record MatterListRef(
 /// <param name="Name">The person's name (first and last name together).</param>
 /// <param name="PersonType"><c>INTERNAL</c> or <c>EXTERNAL</c>.</param>
 /// <param name="IsSystemUser">True when the person belongs to a user (name and e-mail follow the user).</param>
-/// <param name="PersonTitle">The person's own title or role from People ("Partner"), if known; not the title on this matter.</param>
+/// <param name="PersonTitle">The person's own title from People ("Partner"), if known; not the title on this matter.</param>
 /// <param name="Email">E-mail address, if known.</param>
 /// <param name="CompanyName">Company of an external person, if known.</param>
 /// <param name="Title">The Team Title on this matter (admin list).</param>

@@ -79,6 +79,9 @@ describe('audit formatting', () => {
     expect(eventTypeLabel('MATTER_TYPE_CHANGED')).toBe('Matter Types changed');
     expect(eventTypeLabel('MATTER_PATHS_CHANGED')).toBe('Matter Paths changed');
     expect(eventTypeLabel('MATTER_CATEGORY_CHANGED')).toBe('Matter Category changed');
+    expect(eventTypeLabel('PERSON_OFFICE_CHANGED')).toBe('Office changed');
+    expect(eventTypeLabel('PERSON_EMPLOYMENT_STATUS_CHANGED')).toBe('Employment Status changed');
+    expect(eventTypeLabel('PERSON_INDUSTRY_JOIN_CHANGED')).toBe('Industry Join Date changed');
     expect(eventTypeLabel('ASSET_NEXT_NUMBER_SET')).toBe('Asset next number set');
     expect(eventTypeLabel('ASSET_NUMBER_ASSIGNED')).toBe('Asset number assigned');
     expect(eventTypeLabel('FIELD_CHANGED')).toBe('Field changed');

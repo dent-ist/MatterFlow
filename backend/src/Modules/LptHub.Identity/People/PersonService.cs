@@ -51,7 +51,7 @@ public sealed partial class PersonService(DbContext db)
         var rows = await ordered.ThenBy(p => p.Id)
             .Skip(page.Skip)
             .Take(page.PageSize)
-            .Select(p => new PersonRow(p, p.User == null ? null : p.User.IsActive))
+            .Select(p => new PersonRow(p, p.User == null ? null : p.User.IsActive, db.Set<Office>().Where(o => o.Id == p.OfficeId).Select(o => o.Name).FirstOrDefault(), db.Set<EmploymentStatus>().Where(e => e.Id == p.EmploymentStatusId).Select(e => e.Name).FirstOrDefault()))
             .ToListAsync(ct);
         return new PagedResult<PersonDto>(rows.Select(ToDto).ToList(), total, page.Page, page.PageSize);
     }
@@ -221,7 +221,7 @@ public sealed partial class PersonService(DbContext db)
     private async Task<PersonRow?> ReadAsync(int personId, CancellationToken ct) =>
         await db.Set<Person>().AsNoTracking()
             .Where(p => p.Id == personId)
-            .Select(p => new PersonRow(p, p.User == null ? null : p.User.IsActive))
+            .Select(p => new PersonRow(p, p.User == null ? null : p.User.IsActive, db.Set<Office>().Where(o => o.Id == p.OfficeId).Select(o => o.Name).FirstOrDefault(), db.Set<EmploymentStatus>().Where(e => e.Id == p.EmploymentStatusId).Select(e => e.Name).FirstOrDefault()))
             .SingleOrDefaultAsync(ct);
 
     private static PersonDto ToDto(PersonRow row)
@@ -229,7 +229,8 @@ public sealed partial class PersonService(DbContext db)
         var p = row.Person;
         return new PersonDto(
             p.Id, p.FirstName, p.LastName, DisplayName(p), p.PersonType, p.Title, p.Email, p.Comments, p.CompanyName,
-            p.UserId, p.UserId is not null, row.UserIsActive, p.IsActive, Convert.ToBase64String(p.RowVersion));
+            p.UserId, p.UserId is not null, row.UserIsActive, p.IsActive, Convert.ToBase64String(p.RowVersion),
+            p.OfficeId, row.OfficeName, p.EmploymentStatusId, row.EmploymentStatusName, p.IndustryJoinDate?.ToString("yyyy-MM", System.Globalization.CultureInfo.InvariantCulture));
     }
 
     private static PersonLookupItem ToLookup(Person p) =>
@@ -259,7 +260,7 @@ public sealed partial class PersonService(DbContext db)
     [GeneratedRegex(@"^[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*@([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,63}$", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 200)]
     private static partial Regex EmailPattern();
 
-    private sealed record PersonRow(Person Person, bool? UserIsActive);
+    private sealed record PersonRow(Person Person, bool? UserIsActive, string? OfficeName, string? EmploymentStatusName);
 
     private sealed class Fields
     {

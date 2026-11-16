@@ -21,6 +21,9 @@ export const ADMIN_FIELD_LIMITS = {
   /** `VendorServiceOption.Name` and `VendorAreaOption.Name` (epic #1373, #1378). */
   vendorServiceName: 100,
   vendorAreaName: 100,
+  /** `Office.Name` and `EmploymentStatus.Name` (epic #1389, issue #1394). */
+  officeName: 100,
+  employmentStatusName: 100,
   /** `Priority.Label`. */
   priorityLabel: 50,
   /** `StatusLabel.DisplayLabel` (the code is not editable). */

@@ -1,7 +1,7 @@
 import { AdminTab } from '../admin-tabs';
 import { ADMIN_FIELD_LIMITS } from '../shared/field-limits';
 
-/** The eleven lists of Administration > Lists (epic #1314, Vendors #1378), in catalogue order. The key is also the address segment: `/admin/lists/<key>`. */
+/** The thirteen lists of Administration > Lists (epic #1314, Vendors #1378, People #1394), in catalogue order. The key is also the address segment: `/admin/lists/<key>`. */
 export type AdminListKey =
   | 'matter-types'
   | 'matter-categories'
@@ -13,9 +13,11 @@ export type AdminListKey =
   | 'note-tags'
   | 'link-roles'
   | 'vendor-services'
-  | 'vendor-areas';
+  | 'vendor-areas'
+  | 'offices'
+  | 'employment-statuses';
 
-export type AdminListGroup = 'Matter' | 'Task' | 'Notes' | 'Assets' | 'Vendors';
+export type AdminListGroup = 'Matter' | 'Task' | 'Notes' | 'Assets' | 'Vendors' | 'People';
 
 /** The four catalogue groups with the icon of each (the one icon registry, D-17: the icon of the concept the group holds). */
 export const ADMIN_LIST_GROUPS: readonly {
@@ -28,6 +30,8 @@ export const ADMIN_LIST_GROUPS: readonly {
   { name: 'Assets', icon: 'pi-database' },
   // Vendors (epic #1373): the same icon as the Vendors page (`page-vendors`), the concept the group holds.
   { name: 'Vendors', icon: 'pi-truck' },
+  // People (epic #1389, issue #1394): the lists of the person record, the icon of the People page (`page-people`).
+  { name: 'People', icon: 'pi-address-book' },
 ];
 
 /** How a list differs from the others (UI spec 4.3, `backend-notes.md`): the shared editor frame and the specs read these, the bodies implement them. */
@@ -75,6 +79,8 @@ export interface AdminListDef extends AdminListTraits {
 const MATTER_SHOWN_ON = 'Shown on: Matter form, Matters list (column and filter), Matter page.';
 const VENDOR_RULE =
   'An item in use is deactivated, not deleted. Delete appears only for an item that no vendor uses.';
+const PEOPLE_RULE =
+  'An item in use is deactivated, not deleted. Delete appears only for an item that no person uses.';
 const MATTER_RULE =
   'An item in use is deactivated, not deleted. Delete appears only for an item that nothing uses.';
 
@@ -294,6 +300,46 @@ export const ADMIN_LISTS: readonly AdminListDef[] = [
     idField: 'id',
     nameField: 'name',
     nameLimit: ADMIN_FIELD_LIMITS.vendorAreaName,
+    hasActive: true,
+    colour: null,
+    reorder: true,
+    delete: true,
+    create: true,
+    defaultAction: false,
+  },
+  {
+    key: 'offices',
+    group: 'People',
+    label: 'Offices',
+    permission: 'User.Manage',
+    hint: 'Branch office of a person',
+    shownOn: 'Shown on: user record (Administration > Users), Users list (column and filter).',
+    rule: PEOPLE_RULE,
+    newLabel: 'New Office',
+    endpoint: '/api/v1/offices',
+    idField: 'id',
+    nameField: 'name',
+    nameLimit: ADMIN_FIELD_LIMITS.officeName,
+    hasActive: true,
+    colour: null,
+    reorder: true,
+    delete: true,
+    create: true,
+    defaultAction: false,
+  },
+  {
+    key: 'employment-statuses',
+    group: 'People',
+    label: 'Employment Statuses',
+    permission: 'User.Manage',
+    hint: 'Whether a person works here now',
+    shownOn: 'Shown on: user record (Administration > Users), Users list (column and filter).',
+    rule: 'Not the same as the account being active or deactivated. A used status is deactivated, not deleted.',
+    newLabel: 'New Employment Status',
+    endpoint: '/api/v1/employment-statuses',
+    idField: 'id',
+    nameField: 'name',
+    nameLimit: ADMIN_FIELD_LIMITS.employmentStatusName,
     hasActive: true,
     colour: null,
     reorder: true,

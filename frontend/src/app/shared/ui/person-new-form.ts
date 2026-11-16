@@ -42,7 +42,7 @@ export function splitName(text: string): { first: string; last: string } {
 
 /**
  * The inline "New Person" form of the person picker (`mf-person-picker`; epic #1373, issue #1375): first and last name, Internal or External, email, company (External only)
- * and title or role. It saves through `POST /api/v1/people` (needs `People.Manage`; the picker only offers it then) and emits the created person. While the name or email is typed it
+ * and title. It saves through `POST /api/v1/people` (needs `People.Manage`; the picker only offers it then) and emits the created person. While the name or email is typed it
  * asks `GET /api/v1/people/similar` and shows "Did you mean this person?" so the same person is not typed twice; "Use This Person" emits the existing one instead.
  * It is a form inside the dialog that holds the picker, never a second dialog (D-31). Two columns from 640 px of width (a large dialog), else one (D-35).
  */
@@ -240,7 +240,7 @@ export function splitName(text: string): { first: string; last: string } {
         }
         <mf-text-field
           [inputId]="prefix() + '-title-role'"
-          label="Title or Role"
+          label="Title"
           [maxLength]="200"
           [error]="serverFields()['title'] || null"
           [(value)]="title"
