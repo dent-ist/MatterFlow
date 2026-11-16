@@ -52,6 +52,7 @@ test.describe('Matter form (MD-43)', () => {
     const dialog = page.locator('[data-matter-form]');
     await expect(page.getByRole('heading', { level: 1, name: 'Edit Matter' })).toBeVisible();
     await expect(page).toHaveURL(new RegExp(`/matters/${matter.matterId}/edit$`));
+    await expect(dialog.locator('#matter-number')).toBeVisible(); // the fields arrive after the heading
     expect(await fieldLabels(page, '[data-matter-form]')).toEqual(created);
     // Client and Matter number are in the same places, locked; the CM Number shows the current one.
     await expect(dialog.locator('#matter-number')).toBeDisabled();
