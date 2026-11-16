@@ -77,7 +77,7 @@ public class PermissionCatalogTests
         codes.ShouldContain("Matter.SetActive");
         codes.ShouldContain("User.Manage");
         codes.ShouldContain("Role.Manage");
-        codes.Count.ShouldBe(76); // MatterList.Manage (epic #1298); People.View and People.Manage, Vendor.View, Vendor.Manage and Vendor.Link (epic #1373)
+        codes.Count.ShouldBe(77); // MatterList.Manage (epic #1298); People.View and People.Manage, Vendor.View, Vendor.Manage and Vendor.Link (epic #1373)
     }
 
     [Fact]

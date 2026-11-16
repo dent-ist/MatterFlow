@@ -115,11 +115,31 @@ const OBJECT_TYPES = 'Integration,EntraConnection';
       margin-top: var(--mf-s3);
     }
     .ig__secret {
+      margin-top: var(--mf-s3);
+    }
+    .ig__secret-field {
+      display: grid;
+      gap: var(--mf-s1);
+    }
+    .ig__secret-line {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       gap: var(--mf-s3);
-      margin-top: var(--mf-s3);
+    }
+    /* The read-only look of the secret: a field-sized box that says only "Secret set" or "Not set" (never a value). */
+    .ig__box {
+      box-sizing: border-box;
+      display: inline-flex;
+      align-items: center;
+      gap: var(--mf-s2);
+      min-width: 16rem;
+      height: var(--mf-ctl-h);
+      padding: 0 var(--mf-s3);
+      border: 1px solid var(--mf-border-strong);
+      border-radius: var(--mf-radius);
+      background: var(--mf-surface-alt);
+      font-weight: var(--mf-fw-semibold);
     }
     .ig__label {
       font-weight: var(--mf-fw-semibold);
@@ -282,13 +302,18 @@ const OBJECT_TYPES = 'Integration,EntraConnection';
           }
 
           <section class="mf-card" aria-labelledby="ig-entra-h" data-entra-card>
-            <h2 class="mf-card__title ig__card-title" id="ig-entra-h">
-              Microsoft Entra ID Connection
-            </h2>
-            <p class="ig__sub">
-              One app registration for all of LPT Hub. Each integration below asks Entra ID for its
-              own scope with it.
-            </p>
+            <div class="ig__head">
+              <div>
+                <h2 class="mf-card__title ig__card-title" id="ig-entra-h">
+                  Microsoft Entra ID Connection
+                </h2>
+                <p class="ig__sub">
+                  One app registration for every integration. Each integration asks Entra ID for its
+                  own scope.
+                </p>
+              </div>
+              <mf-status-chip kind="integration" [code]="connectionStatus()" data-entra-status />
+            </div>
             <form
               novalidate
               (submit)="$event.preventDefault(); saveIds()"
@@ -316,57 +341,69 @@ const OBJECT_TYPES = 'Integration,EntraConnection';
                 <mf-text-field
                   inputId="ig-tenant"
                   label="Tenant ID"
+                  [required]="true"
                   [maxLength]="100"
-                  help="The Directory (tenant) ID of the app registration."
+                  help="The Directory (tenant) ID on the Overview page of the app registration."
                   [error]="idError('tenantId')"
                   [(value)]="tenant"
                 />
                 <mf-text-field
                   inputId="ig-client"
                   label="Client ID"
+                  [required]="true"
                   [maxLength]="100"
-                  help="The Application (client) ID of the app registration."
+                  help="The Application (client) ID on the same page. LPT Hub signs in as this app."
                   [error]="idError('clientId')"
                   [(value)]="clientId"
                 />
               </div>
 
               <div class="ig__secret" data-secret-row>
-                <span class="ig__label" id="ig-secret-l">Client Secret</span>
-                @if (c.secretIsSet) {
-                  <span data-secret-state>Secret set</span>
-                } @else {
-                  <span data-secret-state>Not set</span>
-                }
-                @if (expiry(); as e) {
-                  @if (c.secretIsSet) {
-                    <span
-                      [mfTip]="'Expires ' + (c.secretExpiresOn | mfDateLong)"
-                      data-secret-expiry
-                    >
-                      Expires On {{ c.secretExpiresOn | mfNum }}
+                <div class="ig__secret-field">
+                  <span class="ig__label" id="ig-secret-l">
+                    Client Secret <span class="mf-field__req">(required)</span>
+                  </span>
+                  <div class="ig__secret-line">
+                    <span class="ig__box">
+                      <i class="pi pi-lock" aria-hidden="true"></i>
+                      <span data-secret-state>{{ c.secretIsSet ? 'Secret set' : 'Not set' }}</span>
                     </span>
-                  }
-                  <mf-status-chip
-                    kind="integration"
-                    [code]="e.chip"
-                    [label]="e.label"
-                    data-secret-chip
-                  />
-                }
-                <button
-                  type="button"
-                  class="mf-btn"
-                  data-secret-open
-                  aria-describedby="ig-secret-l"
-                  (click)="openSecret()"
-                >
-                  {{ c.secretIsSet ? 'Replace Secret' : 'Set Secret' }}
-                </button>
+                    <button
+                      type="button"
+                      class="mf-btn"
+                      [class.mf-btn--primary]="!c.secretIsSet"
+                      data-secret-open
+                      aria-describedby="ig-secret-l"
+                      (click)="openSecret()"
+                    >
+                      <i class="pi pi-key" aria-hidden="true"></i>
+                      {{ c.secretIsSet ? 'Replace Secret' : 'Set Secret' }}
+                    </button>
+                    @if (expiry(); as e) {
+                      <mf-status-chip
+                        kind="integration"
+                        [code]="e.chip"
+                        [label]="e.label"
+                        data-secret-chip
+                      />
+                      @if (c.secretIsSet) {
+                        <span
+                          [mfTip]="'Expires ' + (c.secretExpiresOn | mfDateLong)"
+                          data-secret-expiry
+                        >
+                          Expires On {{ c.secretExpiresOn | mfNum }}
+                        </span>
+                      } @else {
+                        <span class="ig__none">No secret yet, so nothing can sign in.</span>
+                      }
+                    }
+                  </div>
+                </div>
               </div>
               <p class="mf-field__help" data-secret-help>
-                The secret is stored encrypted and is never shown again. Replacing it saves at once
-                and is not part of Save Changes.
+                Stored encrypted. It can't be shown again, not even to administrators. LPT Hub warns
+                30 days before it expires. Replacing it saves at once and is not part of Save
+                Changes.
               </p>
 
               <div class="ig__test" data-entra-test>
@@ -681,6 +718,13 @@ export class IntegrationsTab implements OnInit {
     );
   });
   protected readonly entraTesting = signal(false);
+  /** The chip at the top of the connection card: Not Set Up until the two IDs and a secret exist, then the last test (Not Tested before the first). */
+  protected readonly connectionStatus = computed(() => {
+    const c = this.conn();
+    if (!c || !c.tenantId || !c.clientId || !c.secretIsSet) return 'NOT_SET_UP';
+    if (!c.lastTest) return 'NOT_TESTED';
+    return c.lastTest.outcome === 'OK' ? 'CONNECTED' : 'FAILED';
+  });
 
   // The secret dialog.
   protected readonly secretOpen = signal(false);

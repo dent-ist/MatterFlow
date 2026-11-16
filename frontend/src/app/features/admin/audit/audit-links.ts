@@ -99,6 +99,9 @@ export const CONFIGURATION_OBJECT_TYPES: readonly string[] = [
   'StepDefinition',
   'FormDefinition',
   'FormVersion',
+  // Administration > Settings > Integrations (#1395): the Entra ID connection and the integrations.
+  'Integration',
+  'EntraConnection',
 ];
 
 /** The object types of users, roles and pods: the "Access changes" quick view (#654). */
