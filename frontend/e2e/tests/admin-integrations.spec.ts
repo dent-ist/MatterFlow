@@ -135,21 +135,25 @@ test('Tenant ID and Client ID save on their own; the secret has its own masked d
   await page.getByRole('button', { name: 'Save Changes' }).click();
   await expect(page.locator('[data-summary]')).toContainText('Application (client) ID');
 
-  await saveIds(page, TENANT, CLIENT);
+  await saveIds(
+    page,
+    `33333333-3333-3333-3333-${String(Date.now()).slice(-12).padStart(12, '0')}`,
+    CLIENT,
+  );
   await expect(page.locator('[data-last-updated]')).toContainText('Last Updated');
 
   await page.locator('[data-secret-open]').click();
   const dlg = dialog(page, 'Set Client Secret');
-  await expect(dlg.getByLabel('Client Secret')).toHaveAttribute('type', 'password');
+  await expect(dlg.locator('#sd-secret')).toHaveAttribute('type', 'password');
   await expect(dlg).toContainText('never shows it again');
   await atEverySize(page, 'integrations-secret-dialog');
 
-  await dlg.getByLabel('Client Secret').fill(SECRET_ID);
+  await dlg.locator('#sd-secret').fill(SECRET_ID);
   await dlg.locator('#sd-expires').fill(isoDate(122));
-  await dlg.getByRole('button', { name: 'Set Secret' }).click();
+  await dlg.getByRole('button', { name: 'Set Secret', exact: true }).click();
   await expect(dlg).toContainText('That looks like the Secret ID');
-  await dlg.getByLabel('Client Secret').fill(SECRET);
-  await dlg.getByRole('button', { name: 'Set Secret' }).click();
+  await dlg.locator('#sd-secret').fill(SECRET);
+  await dlg.getByRole('button', { name: 'Set Secret', exact: true }).click();
   await expect(dlg).toBeHidden();
 
   await expect(toasts(page).filter({ hasText: 'Client secret set' })).toBeVisible();
@@ -245,9 +249,9 @@ test('the expiry banner: amber at 21 days, red once expired, with Replace Secret
 
   await banner.getByRole('button', { name: 'Replace Secret' }).click();
   const dlg = dialog(page, 'Replace Client Secret');
-  await dlg.getByLabel('Client Secret').fill(SECRET);
+  await dlg.locator('#sd-secret').fill(SECRET);
   await dlg.locator('#sd-expires').fill(isoDate(200));
-  await dlg.getByRole('button', { name: 'Replace Secret' }).click();
+  await dlg.getByRole('button', { name: 'Replace Secret', exact: true }).click();
   await expect(banner).toBeHidden();
 });
 
@@ -261,13 +265,13 @@ test('add, edit, turn off and on, and delete an integration; a second Matter Loo
   await expect(add.locator('#ig-scope-help')).toContainText('api://<app-id>/.default');
   await add.getByLabel('Name').fill('Billing Export');
   await add.locator('#ig-base').fill('http://billing.example-firm.test/export');
-  await add.getByRole('button', { name: 'Add Integration' }).click();
+  await add.getByRole('button', { name: 'Add Integration', exact: true }).click();
   await expect(add.locator('#ig-base-error')).toContainText('starts with https://');
   await atEverySize(page, 'integrations-add-dialog');
 
   await add.locator('#ig-base').fill('https://billing.example-firm.test/export');
   await add.locator('#ig-scope').fill('api://ffffffff-0000-4000-8000-000000000006/.default');
-  await add.getByRole('button', { name: 'Add Integration' }).click();
+  await add.getByRole('button', { name: 'Add Integration', exact: true }).click();
   await expect(add).toBeHidden();
   await expect(row(page, 'Billing Export')).toContainText('Other');
   await expect(row(page, 'Billing Export').locator('[data-integration-status]')).toHaveText(
@@ -280,7 +284,7 @@ test('add, edit, turn off and on, and delete an integration; a second Matter Loo
   await second.getByLabel('Name').fill('Another Lookup');
   await second.locator('[data-integration-type]').click();
   await page.getByRole('option', { name: 'Matter Lookup' }).click();
-  await second.getByRole('button', { name: 'Add Integration' }).click();
+  await second.getByRole('button', { name: 'Add Integration', exact: true }).click();
   await expect(second.locator('[data-type-error]')).toContainText(
     'There is already a Matter Lookup integration',
   );
@@ -292,7 +296,7 @@ test('add, edit, turn off and on, and delete an integration; a second Matter Loo
   await row(page, 'Billing Export').locator('[data-integration-name]').click();
   const edit = dialog(page, 'Edit Integration');
   await edit.getByLabel('Name').fill('Billing Export v2');
-  await edit.getByRole('button', { name: 'Save Changes' }).click();
+  await edit.getByRole('button', { name: 'Save Changes', exact: true }).click();
   await expect(edit).toBeHidden();
   await expect(row(page, 'Billing Export v2')).toBeVisible();
 
@@ -315,7 +319,7 @@ test('add, edit, turn off and on, and delete an integration; a second Matter Loo
   const confirm = page.getByRole('dialog', { name: 'Delete Integration' });
   await expect(confirm).toContainText('Billing Export v2');
   await atEverySize(page, 'integrations-delete-confirm');
-  await confirm.getByRole('button', { name: 'Delete Integration' }).click();
+  await confirm.getByRole('button', { name: 'Delete Integration', exact: true }).click();
   await expect(row(page, 'Billing Export v2')).toHaveCount(0);
 
   // The audit lines of this page.
@@ -405,8 +409,7 @@ test('the Lookup button on New Client: Not set up, Ready, Nothing found, Fails w
   // Ready.
   await configureLookup(admin);
   await page.goto('/clients/new');
-  await expect(lookup).not.toHaveAttribute('aria-disabled', 'true');
-  await expect(lookup).toHaveAttribute('aria-disabled', 'true'); // no number yet
+  await expect(lookup).toHaveAttribute('aria-disabled', 'true'); // Ready, but no number yet
   await page.locator('#client-number').fill('343');
   await expect(lookup).not.toHaveAttribute('aria-disabled', 'true');
   await lookup.click();

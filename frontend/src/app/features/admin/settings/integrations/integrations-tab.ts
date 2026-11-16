@@ -93,6 +93,8 @@ const OBJECT_TYPES = 'Integration,EntraConnection';
       display: grid;
       gap: var(--mf-s4);
       min-width: 0;
+      /* The integrations grid is a short list on a scrolling page: it takes the height of its rows, not the 412 px floor of a full-height grid. */
+      --mf-frame-min: 0px;
     }
     .ig__head {
       display: flex;
