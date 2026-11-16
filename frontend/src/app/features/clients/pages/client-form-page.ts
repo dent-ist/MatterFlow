@@ -25,11 +25,17 @@ import {
 } from '../../../shared/ui/custom-fields';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
+import { LookupButton, LookupMessage, LookupNote } from '../../../shared/lookup/lookup-button';
+import { MatterLookup } from '../../../shared/lookup/matter-lookup';
 import { NumberInput, numberProblem } from '../../../shared/ui/number-input';
 import { TextField } from '../../../shared/ui/text-field';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { PageHeader } from '../../../shared/ui/page-header';
-import { BusinessNumberPipe, formatBusinessNumber } from '../../../shared/pipes/matter-ref.pipe';
+import {
+  BusinessNumberPipe,
+  formatBusinessNumber,
+  normalizeNumber,
+} from '../../../shared/pipes/matter-ref.pipe';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -44,6 +50,8 @@ type LoadState = 'loading' | 'ready' | 'error';
     CustomFieldsEditor,
     Button,
     NumberInput,
+    LookupButton,
+    LookupNote,
     TextField,
     ConfirmDialog,
     HasPermissionDirective,
@@ -113,7 +121,15 @@ type LoadState = 'loading' | 'ready' | 'error';
             [showErrors]="submitted()"
             [serverError]="fieldError('clientNumber')"
             [(value)]="number"
-          />
+          >
+            <mf-lookup-button
+              mfFieldAction
+              [busy]="lookupBusy()"
+              [needs]="lookupNeeds()"
+              (lookup)="runLookup()"
+            />
+          </mf-number-input>
+          <mf-lookup-note [message]="lookupMessage()" (retry)="runLookup()" />
         }
 
         <mf-text-field
@@ -203,6 +219,7 @@ export class ClientFormPage implements HasUnsavedChanges {
   private readonly api = inject(ClientsClient);
   private readonly router = inject(Router);
   private readonly notify = inject(NotificationService);
+  private readonly lookup = inject(MatterLookup);
 
   protected readonly isEdit = computed(() => this.clientId() !== undefined);
   protected readonly state = signal<LoadState>('ready');
@@ -226,6 +243,39 @@ export class ClientFormPage implements HasUnsavedChanges {
   protected readonly numberSubmitted = signal(false);
   private saved = false;
 
+  // The Lookup button next to the Client Number (New Client only, #1395): asks the Matter Lookup integration for the client name of this number.
+  protected readonly lookupBusy = signal(false);
+  protected readonly lookupMessage = signal<LookupMessage | null>(null);
+  protected readonly lookupNeeds = computed(() =>
+    numberProblem(this.number(), 'client number') ? 'Enter a client number first.' : '',
+  );
+
+  protected async runLookup(): Promise<void> {
+    const normalized = normalizeNumber(this.number());
+    if (!normalized || this.lookupBusy()) return;
+    this.lookupBusy.set(true);
+    this.lookupMessage.set(null);
+    const answer = await this.lookup.search(normalized);
+    this.lookupBusy.set(false);
+    if (answer.kind === 'found' && answer.clientName) {
+      this.name.set(answer.clientName);
+      this.lookupMessage.set({
+        kind: 'ok',
+        text: 'Client Name filled in from Matter Lookup. Check it before you save.',
+      });
+    } else if (answer.kind === 'failed') {
+      this.lookupMessage.set({
+        kind: 'error',
+        text: "Lookup didn't work. What you entered is kept. Try again, or enter the details yourself.",
+      });
+    } else {
+      this.lookupMessage.set({
+        kind: 'info',
+        text: `Nothing found for ${normalized}. Enter the client name yourself.`,
+      });
+    }
+  }
+
   protected readonly nameError = computed(() => {
     if (this.submitted() && this.name().trim() === '') return 'Enter a client name.';
     return this.fieldError('name');
@@ -236,7 +286,10 @@ export class ClientFormPage implements HasUnsavedChanges {
       const id = this.clientId();
       untracked(() => {
         if (id !== undefined) void this.load();
-        else void this.loadCustomForm();
+        else {
+          void this.lookup.refresh();
+          void this.loadCustomForm();
+        }
       });
     });
   }

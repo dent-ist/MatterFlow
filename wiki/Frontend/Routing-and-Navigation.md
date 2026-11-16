@@ -70,7 +70,7 @@ The `/admin` route is open to anyone who may open any admin menu item (`ADMIN_NA
 | Old list addresses `/admin/priorities`, `/status-labels`, `/on-hold-reasons`, `/note-tags`, `/matter-types`, `/current-states`, `/team-titles`, `/asset-link-roles`, `/admin/asset-types?tab=link-roles` | redirects (`lists/lists-routing.ts`) | none | They go to `/admin/lists/<key>`, keep `?edit=` and add a one-time `?moved=<key>` that the page reads (a blue "has moved here" notice with Dismiss) and removes from the address |
 | `/admin/reports` (`?tab=` is `categories`, `runs`, `assignments` or `health`; the page and menu item are called Report Setup) | `reports` | `ReportsAdminPage` | `Report.Manage` |
 | `/admin/reports/new`, `/admin/reports/:id` | `reports` | `ReportEditorPage` | `Report.Manage` |
-| `/admin/settings` (tabs Branding, Dashboard, Holidays) | `settings`, `holidays` | `SettingsPage` | `Settings.Manage` |
+| `/admin/settings` (tabs Branding, Dashboard, Holidays, Integrations; `?tab=integrations` opens the last, which needs `Integrations.Manage`) | `settings`, `holidays` | `SettingsPage` | `Settings.Manage` |
 | `/admin/audit` | `audit` | `AuditPage` | `Audit.View` |
 
 ## Navigation menus (`shared/layout/nav-items.ts`)

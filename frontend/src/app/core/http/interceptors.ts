@@ -179,6 +179,7 @@ export function toastFor(err: ApiError): { summary: string; detail?: string } | 
   if (err.code === 'LAST_ADMIN') return null; // the user drawer says it inline (#441, #444): one message, not two
   if (err.code === 'IN_USE') return null; // Priorities and Link roles name the row inline (#537)
   if (err.code === 'VENDOR_LINKED_TO_MATTERS') return null; // the vendor pop-up and the Vendors list show the linked-matters block with the count (#1378)
+  if (err.code === 'SECRET_STORE_UNAVAILABLE') return null; // the Set Secret dialog says it in its footer (#1395)
   if (err.code === 'SENSITIVE_CONFIRMATION_REQUIRED') return null; // the matter form asks "You will no longer see this matter" in a dialog (epic #788)
   const reference = err.traceId ? `Reference: ${err.traceId}` : undefined;
   if (err.isNetworkError || err.status >= 500) {

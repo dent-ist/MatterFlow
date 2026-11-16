@@ -84,6 +84,12 @@ describe('audit formatting', () => {
     expect(eventTypeLabel('PERSON_INDUSTRY_JOIN_CHANGED')).toBe('Industry Join Date changed');
     expect(eventTypeLabel('ASSET_NEXT_NUMBER_SET')).toBe('Asset next number set');
     expect(eventTypeLabel('ASSET_NUMBER_ASSIGNED')).toBe('Asset number assigned');
+    expect(eventTypeLabel('INTEGRATION_CREATED')).toBe('Integration added');
+    expect(eventTypeLabel('INTEGRATION_UPDATED')).toBe('Integration updated');
+    expect(eventTypeLabel('ENTRA_CONNECTION_CHANGED')).toBe('Entra ID connection changed');
+    expect(eventTypeLabel('ENTRA_SECRET_REPLACED')).toBe('Client secret replaced');
+    expect(objectTypeLabel('EntraConnection')).toBe('Entra ID connection');
+    expect(objectTypeLabel('Integration')).toBe('Integration');
     expect(eventTypeLabel('FIELD_CHANGED')).toBe('Field changed');
     expect(eventTypeLabel('SOMETHING_NEW_HAPPENED')).toBe('Something new happened');
     expect(objectTypeLabel('AssetLinkRole')).toBe('Asset link role');

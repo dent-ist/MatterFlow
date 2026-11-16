@@ -25,7 +25,7 @@ export function numberProblem(raw: string | null | undefined, noun: string): str
 
 /**
  * Number input (UX `mf-number-input`, section 5.8): accepts 1 to 5 digits, previews the zero-padded value live
- * ("Will be saved as 00343.") and replaces the text with the normalized value on blur.
+ * ("Will be saved as 00343.") and replaces the text with the normalized value on blur. A control with `mfFieldAction` sits right after the input (the Lookup button).
  */
 @Component({
   selector: 'mf-number-input',
@@ -38,20 +38,24 @@ export function numberProblem(raw: string | null | undefined, noun: string): str
           <span class="mf-field__req">(required)</span>
         }
       </label>
-      <input
-        class="mf-field__input mf-field__input--mono"
-        type="text"
-        inputmode="numeric"
-        autocomplete="off"
-        [id]="inputId()"
-        [name]="inputId()"
-        [disabled]="disabled()"
-        [value]="value()"
-        [attr.aria-invalid]="error() ? 'true' : null"
-        [attr.aria-describedby]="describedBy()"
-        (input)="onInput($event)"
-        (blur)="onBlur()"
-      />
+      <div class="mf-field__row">
+        <input
+          class="mf-field__input mf-field__input--mono"
+          type="text"
+          inputmode="numeric"
+          autocomplete="off"
+          [id]="inputId()"
+          [name]="inputId()"
+          [disabled]="disabled()"
+          [value]="value()"
+          [attr.aria-invalid]="error() ? 'true' : null"
+          [attr.aria-describedby]="describedBy()"
+          (input)="onInput($event)"
+          (blur)="onBlur()"
+        />
+        <!-- A control that belongs to the field and sits after it (the Lookup button, #1395). -->
+        <ng-content select="[mfFieldAction]" />
+      </div>
       @if (!error() && normalized(); as n) {
         <p class="mf-field__preview" data-preview [id]="inputId() + '-preview'">
           Will be saved as {{ n }}.

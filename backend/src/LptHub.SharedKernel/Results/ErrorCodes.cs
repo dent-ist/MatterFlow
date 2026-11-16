@@ -145,6 +145,18 @@ public static class ErrorCodes
     /// <summary>The icon file is truncated or inconsistent.</summary>
     public const string BrandingIconCorrupt = "BRANDING_ICON_CORRUPT";
 
+    /// <summary>An integration of this type exists already: at most one Matter Lookup and one Ethical Wall (Integrations, #1395).</summary>
+    public const string IntegrationTypeExists = "INTEGRATION_TYPE_EXISTS";
+
+    /// <summary>The integration is not set up or is disabled, so no token can be issued for it.</summary>
+    public const string IntegrationNotAvailable = "INTEGRATION_NOT_AVAILABLE";
+
+    /// <summary>A token for the integration could not be issued (Entra ID not reachable, credentials or scope refused, secret expired); <c>meta.outcome</c> names which.</summary>
+    public const string IntegrationTokenFailed = "INTEGRATION_TOKEN_FAILED";
+
+    /// <summary>The client secret cannot be stored or read: the Data Protection key store is not configured or the stored secret cannot be decrypted with the keys at hand.</summary>
+    public const string SecretStoreUnavailable = "SECRET_STORE_UNAVAILABLE";
+
     /// <summary>Every code, in declaration order. Used to emit the OpenAPI enum.</summary>
     public static IReadOnlyList<string> All { get; } =
         typeof(ErrorCodes)

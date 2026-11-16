@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { Tip } from './tip';
 
-export type StatusChipKind = 'task' | 'disposition';
+export type StatusChipKind = 'task' | 'disposition' | 'integration';
 
 interface ChipStyle {
   tone:
@@ -13,7 +13,8 @@ interface ChipStyle {
     | 'disp-active'
     | 'disp-inactive'
     | 'disp-pending'
-    | 'disp-disposed';
+    | 'disp-disposed'
+    | 'info';
   icon: string;
   label: string;
 }
@@ -41,9 +42,26 @@ export const DISPOSITION_CHIPS: Readonly<Record<string, ChipStyle>> = {
 };
 
 /**
+ * The statuses of an integration (kind `integration`, #1395) and of the client secret's expiry on Administration > Settings > Integrations: healthy teal (Connected, a secret with time left),
+ * information blue (Not Set Up), neutral (Not Tested, Disabled), amber (a secret that expires within 30 days) and red (Failed, an expired secret). Icon and word always; the secret chips pass
+ * their own `label` ("Expires in 21 days").
+ */
+export const INTEGRATION_CHIPS: Readonly<Record<string, ChipStyle>> = {
+  CONNECTED: { tone: 'disp-active', icon: 'pi-check-circle', label: 'Connected' },
+  NOT_SET_UP: { tone: 'info', icon: 'pi-info-circle', label: 'Not Set Up' },
+  NOT_TESTED: { tone: 'disp-inactive', icon: 'pi-question-circle', label: 'Not Tested' },
+  FAILED: { tone: 'disp-disposed', icon: 'pi-times-circle', label: 'Failed' },
+  DISABLED: { tone: 'disp-inactive', icon: 'pi-ban', label: 'Disabled' },
+  SECRET_OK: { tone: 'disp-active', icon: 'pi-check-circle', label: 'Secret set' },
+  SECRET_SOON: { tone: 'disp-pending', icon: 'pi-exclamation-triangle', label: 'Expires soon' },
+  SECRET_EXPIRED: { tone: 'disp-disposed', icon: 'pi-times-circle', label: 'Expired' },
+  SECRET_NOT_SET: { tone: 'info', icon: 'pi-info-circle', label: 'Not Set' },
+};
+
+/**
  * Task status chip (`mf-status-chip`, epic #953 UI-10): the status word with its icon, and for an In Progress task the workflow step ("step 3 of 5" as text, plus a segmented bar
  * where `showBar` is on). `detail` is the hover and focus text ("On hold for 6 days because Waiting for client data"); a chip with a detail is a tab stop so the keyboard reaches it.
- * `kind="disposition"` draws an asset disposition (or a record's Active / Inactive) in the same pill. It reads only the `--mf-status-*` and `--mf-sem-*` tokens.
+ * `kind="disposition"` draws an asset disposition (or a record's Active / Inactive) in the same pill; `kind="integration"` draws an integration status or the expiry of the client secret. It reads only the `--mf-status-*` and `--mf-sem-*` tokens.
  */
 @Component({
   selector: 'mf-status-chip',
@@ -168,6 +186,11 @@ export const DISPOSITION_CHIPS: Readonly<Record<string, ChipStyle>> = {
       --st-fg: var(--mf-sem-overdue-fg);
       --st-line: var(--mf-sem-overdue-line);
     }
+    .chip[data-tone='info'] {
+      --st-bg: var(--mf-sem-info-bg);
+      --st-fg: var(--mf-sem-info-fg);
+      --st-line: var(--mf-sem-info-line);
+    }
     .bar {
       display: inline-flex;
       gap: 2px;
@@ -201,8 +224,15 @@ export class StatusChip {
   readonly detail = input<string | null | undefined>(null);
 
   protected readonly style = computed<ChipStyle>(() => {
-    const table = this.kind() === 'disposition' ? DISPOSITION_CHIPS : STATUS_CHIPS;
-    const fallback = this.kind() === 'disposition' ? 'INACTIVE' : 'CANCELLED';
+    const kind = this.kind();
+    const table =
+      kind === 'integration'
+        ? INTEGRATION_CHIPS
+        : kind === 'disposition'
+          ? DISPOSITION_CHIPS
+          : STATUS_CHIPS;
+    const fallback =
+      kind === 'integration' ? 'NOT_TESTED' : kind === 'disposition' ? 'INACTIVE' : 'CANCELLED';
     return table[this.code()] ?? { ...table[fallback], label: this.code() };
   });
   /** The words on the chip: the page's own label, else the status word. */

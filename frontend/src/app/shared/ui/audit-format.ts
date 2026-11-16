@@ -54,6 +54,8 @@ const OBJECT_TYPES: Readonly<Record<string, string>> = {
   StatusLabel: 'Status label',
   AppUser: 'User',
   CustomField: 'Custom field',
+  Integration: 'Integration',
+  EntraConnection: 'Entra ID connection',
 };
 
 /** Event codes whose plain sentence case reads wrong. */
@@ -75,6 +77,9 @@ const EVENT_TYPES: Readonly<Record<string, string>> = {
   MATTER_TEAM_MEMBER_REMOVED: 'Team member removed',
   ASSET_NEXT_NUMBER_SET: 'Asset next number set',
   ASSET_NUMBER_ASSIGNED: 'Asset number assigned',
+  INTEGRATION_CREATED: 'Integration added',
+  ENTRA_CONNECTION_CHANGED: 'Entra ID connection changed',
+  ENTRA_SECRET_REPLACED: 'Client secret replaced',
 };
 
 /** `COMMENT_ADDED` -> `Comment added`, `TASK_STATUS_CHANGED` -> `Task status changed` (the code stays the option's value, #650). */

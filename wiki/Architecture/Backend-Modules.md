@@ -10,7 +10,7 @@ A module (`LPT Hub.<Module>`) may reference only `LptHub.SharedKernel` and the *
 
 ## Modules
 
-14 module projects and 11 Contracts projects live in `backend/src/Modules/`. Each module is organised as `Domain/`, `Application/`, `Infrastructure/`, `Api/` (Identity adds feature folders such as `Access`, `Authentication`, `Holidays`, `Pods`, `Views`).
+15 module projects and 12 Contracts projects live in `backend/src/Modules/`. Each module is organised as `Domain/`, `Application/`, `Infrastructure/`, `Api/` (Identity adds feature folders such as `Access`, `Authentication`, `Holidays`, `Pods`, `Views`).
 
 | Module | Owns (summary) | Contracts project |
 |---|---|---|
@@ -28,6 +28,7 @@ A module (`LPT Hub.<Module>`) may reference only `LptHub.SharedKernel` and the *
 | Reports | Report definitions, versions, runs, assignment, read-only report login | yes |
 | Productions | Production specs, productions, production comments | yes (marker and label interface) |
 | Notes | Matter notes, tags, templates | yes (marker and label interface) |
+| Integrations | The one Microsoft Entra ID connection and the integrations that use it (Matter Lookup, Ethical Wall, Other), their access tokens, Test Connection, the Matter Lookup call | yes (`IIntegrationTokenProvider`, `IIntegrationRegistry`) |
 
 Per-module detail: [Module Guide](../Backend/Module-Guide.md).
 

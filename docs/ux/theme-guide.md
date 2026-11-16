@@ -727,3 +727,12 @@ Loading shows a skeleton of the grid; an error shows `mf-dash-state` with Retry;
 - **API.** Search `GET /api/v1/people/lookup?q=` (open to `People.View`, `People.Manage` and `Matter.Edit`), debounced 250 ms; `GET /api/v1/people/similar` only with `People.Manage` and a typed name of three letters or more with no exact match; create `POST /api/v1/people` from `mf-person-new-form`. The failure of the hint is silent (it is help); the failure of the search shows the note.
 - **People page.** `features/people/people-page.ts` (route `/people`, `People.View`, nav item after Assets, icon `pi-address-book` = `page-people` in the registry and the matter Team tab's icon: the same people), `person-dialog.ts` (large 768 px two-column `mf-form-dialog`). Grid id `people`; default columns Name 200+, Email `--mf-col-email-w` 320, Type `--mf-col-status-w` 140, Title `--mf-col-title-w` 176, Company `--mf-col-client-w` 140, actions 48 = 1024 of the 1098 px at 1366 (Status is optional). One row icon button (Deactivate or Reactivate), no "..." menu: one action is its own icon button (D-36, D-44).
 
+## 14. Integrations tab (epic #1389, issue #1395; D-44z)
+
+No new token and no private style. The tab is built from `.mf-card`, `.pg-banner` (amber and `--danger`), `mf-text-field`, `mf-record-grid`, `mf-action-menu`, `mf-form-dialog`, `mf-confirm-dialog`, `mf-state-block` and the toast host.
+
+- **Status chip kind `integration`** (`INTEGRATION_CHIPS` in `shared/ui/status-chip.ts`): tones reuse `--mf-sem-healthy-*` (Connected, a secret with time left), `--mf-sem-info-*` (Not Set Up, Not Set; the new `info` tone of the chip), `--mf-sem-neutral-*` (Not Tested, Disabled), `--mf-sem-risk-*` (a secret that expires within 30 days) and `--mf-sem-overdue-*` (Failed, expired). Icon 16 and the word, always.
+- **Tab icon:** `integrations: 'pi-server'` in `shared/ui/tab-icons.ts` (distinct from Branding `pi-palette`, Dashboard `pi-gauge` and Holidays `pi-flag`; the guard spec checks the Settings strip).
+- **Write-only secret field:** `mf-text-field type="password"`; the value is never put in an attribute, storage or a log.
+- **Test result panel:** a tinted block in the semantic tone (`--mf-sem-healthy-*`, `--mf-sem-info-*`, `--mf-sem-overdue-*` for background, line and text), title 14/700, steps with 16 px icons.
+- **Field action:** `.mf-field__row` in `shared/ui/form-field.scss` puts an input and a control that belongs to it (the Lookup button, 36 px) on one line, 8 px apart.

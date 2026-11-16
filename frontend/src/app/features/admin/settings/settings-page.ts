@@ -5,11 +5,15 @@ import {
   ElementRef,
   OnInit,
   computed,
+  effect,
   inject,
+  input,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { Button } from 'primeng/button';
+import { AuthStore } from '../../../core/auth/auth.store';
 import { firstValueFrom } from 'rxjs';
 import { BrandingAdminView, SettingsBrandingClient } from '../../../api/generated/api-client';
 import { BrandingService } from '../../../core/branding/branding.service';
@@ -18,12 +22,14 @@ import { ApiError } from '../../../core/http/api-error';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { HasUnsavedChanges } from '../../../shared/guards/unsaved-changes.guard';
 import { ErrorReference } from '../../../shared/ui/error-reference';
+import { StateBlock } from '../../../shared/ui/state-block';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { Tabs, MfTab } from '../../../shared/ui/tabs';
 import { tabIcon } from '../../../shared/ui/tab-icons';
 import { TextField } from '../../../shared/ui/text-field';
 import { DashboardCapacitySettings } from './dashboard-capacity-settings';
 import { DashboardSettings } from './dashboard-settings';
+import { IntegrationsTab } from './integrations/integrations-tab';
 import { CalendarThresholdsForm } from '../holidays/thresholds-form';
 import { HolidaysAdmin } from '../holidays/holidays-admin';
 import { NumericDatePipe } from '../../../shared/ui/numeric-date';
@@ -36,12 +42,16 @@ export const BRANDING_SAVED_TITLE = 'Branding saved';
 export const BRANDING_SAVED_DETAIL = 'Other users see it the next time they load the page.';
 export const BRANDING_SAVED_TEXT = `${BRANDING_SAVED_TITLE}. ${BRANDING_SAVED_DETAIL}`;
 
-/** The one tab today; the strip is there so later settings sections slot in. */
+type SettingsTab = 'branding' | 'dashboard' | 'holidays' | 'integrations';
+
+/** The settings sections. Integrations (epic #1389, #1395) needs its own permission, `Integrations.Manage`: without it the tab is not drawn. */
 const TABS: readonly MfTab[] = [
   { key: 'branding', label: 'Branding', icon: tabIcon('branding') },
   { key: 'dashboard', label: 'Dashboard', icon: tabIcon('dashboard') },
   // Holiday calendars by Category (epic #1074, CAL-06).
   { key: 'holidays', label: 'Holidays', icon: tabIcon('holidays') },
+  // Microsoft Entra ID connection and the integrations that use it (epic #1389, #1395).
+  { key: 'integrations', label: 'Integrations', icon: tabIcon('integrations') },
 ];
 
 /** The built-in header mark, shown for "reset" and while no custom icon exists. */
@@ -80,7 +90,9 @@ export function brandingOf(view: BrandingAdminView): Branding {
     DashboardCapacitySettings,
     ErrorReference,
     HolidaysAdmin,
+    IntegrationsTab,
     PageHeader,
+    StateBlock,
     Tabs,
     TextField,
   ],
@@ -93,27 +105,33 @@ export function brandingOf(view: BrandingAdminView): Branding {
       description="Application settings for everyone who uses this system."
     >
       <mf-tabs
-        [tabs]="tabs"
-        [selected]="tab()"
+        [tabs]="visibleTabs()"
+        [selected]="activeTab()"
         label="Settings sections"
         idPrefix="settings"
         data-settings-tabs
-        (tabChange)="
-          tab.set(
-            $event === 'dashboard' ? 'dashboard' : $event === 'holidays' ? 'holidays' : 'branding'
-          )
-        "
+        (tabChange)="selectTab($event)"
       />
     </mf-page-header>
 
-    <div id="settings-panel" role="tabpanel" [attr.aria-labelledby]="'settings-tab-' + tab()">
-      @if (tab() === 'dashboard') {
+    <div id="settings-panel" role="tabpanel" [attr.aria-labelledby]="'settings-tab-' + activeTab()">
+      @if (activeTab() === 'dashboard') {
         <!-- Dashboard v4 (epic #1063, DB-06): the working hours and levels of the unassigned gauge. -->
         <mf-dashboard-settings />
         <mf-dashboard-capacity-settings />
         <mf-calendar-thresholds />
-      } @else if (tab() === 'holidays') {
+      } @else if (activeTab() === 'holidays') {
         <mf-holidays-admin />
+      } @else if (activeTab() === 'integrations') {
+        @if (canIntegrations()) {
+          <mf-integrations-tab />
+        } @else {
+          <div data-integrations-forbidden>
+            <mf-state-block [announce]="true" icon="pi-lock"
+              >You don't have access to Integrations.</mf-state-block
+            >
+          </div>
+        }
       } @else if (state() === 'loading') {
         <div class="pg-state" role="status" aria-busy="true">Loading settings</div>
       } @else if (state() === 'error') {
@@ -460,8 +478,21 @@ export class SettingsPage implements OnInit, HasUnsavedChanges {
   private readonly summaryBox = viewChild<ElementRef<HTMLElement>>('summaryBox');
 
   protected readonly crumbs = [{ label: 'Administration' }, { label: 'Settings' }];
-  protected readonly tabs = TABS;
-  protected readonly tab = signal<'branding' | 'dashboard' | 'holidays'>('branding');
+  private readonly auth = inject(AuthStore);
+  protected readonly canIntegrations = computed(() => this.auth.has('Integrations.Manage'));
+  /** The tabs the person may open: Integrations only with `Integrations.Manage`. */
+  protected readonly visibleTabs = computed(() =>
+    TABS.filter((t) => t.key !== 'integrations' || this.canIntegrations()),
+  );
+  protected readonly activeTab = signal<SettingsTab>('branding');
+  /** The address can open a tab: `/admin/settings?tab=integrations`. Someone without the permission sees "You don't have access to Integrations." instead of the tab. */
+  readonly tab = input<string | undefined>(undefined);
+
+  protected selectTab(key: string): void {
+    this.activeTab.set(
+      key === 'dashboard' || key === 'holidays' || key === 'integrations' ? key : 'branding',
+    );
+  }
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly view = signal<BrandingAdminView | null>(null);
@@ -525,6 +556,11 @@ export class SettingsPage implements OnInit, HasUnsavedChanges {
 
   constructor() {
     this.destroyRef.onDestroy(() => this.revoke());
+    // The address names a tab (`?tab=integrations`); an unknown name keeps the Branding tab.
+    effect(() => {
+      const wanted = this.tab();
+      if (wanted) untracked(() => this.selectTab(wanted));
+    });
   }
 
   ngOnInit(): void {

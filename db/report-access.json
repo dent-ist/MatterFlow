@@ -70,6 +70,11 @@
       "reason": "Business data that reports may read."
     },
     {
+      "name": "EntraConnection",
+      "access": "deny",
+      "reason": "Holds the encrypted client secret of the Microsoft Entra ID connection (Integrations, #1395); never report data."
+    },
+    {
       "name": "FormDefinition",
       "access": "allow",
       "reason": "Business data that reports may read."
@@ -103,6 +108,11 @@
       "name": "HolidayCalendar",
       "access": "allow",
       "reason": "Holiday calendars (names, colours, regions); not personal data."
+    },
+    {
+      "name": "Integration",
+      "access": "deny",
+      "reason": "Integration endpoints and scopes (Integrations, #1395); configuration of external connections, not report data."
     },
     {
       "name": "Matter",

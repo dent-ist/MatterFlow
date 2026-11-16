@@ -3,6 +3,7 @@ import { Router, provideRouter } from '@angular/router';
 import {
   ClientsClient,
   MatterCategoriesClient,
+  MatterLookupClient,
   MatterTypesClient,
   MattersClient,
 } from '../../../api/generated/api-client';
@@ -31,6 +32,8 @@ describe('MatterFormPage: New and Edit Matter as full pages (epic #1368, #1371, 
     ReturnType<typeof vi.fn>
   >;
   let clients: Record<'listClients' | 'getClient', ReturnType<typeof vi.fn>>;
+  let lookupApi: Record<string, ReturnType<typeof vi.fn>>;
+  let lookupState = 'NOT_SET_UP';
   let navigate: ReturnType<typeof vi.fn>;
   let navigateByUrl: ReturnType<typeof vi.fn>;
   let fixture: ComponentFixture<MatterFormPage>;
@@ -60,6 +63,10 @@ describe('MatterFormPage: New and Edit Matter as full pages (epic #1368, #1371, 
       getMatter: vi.fn().mockReturnValue(ok(editing)),
       getMatterCustomFieldForm: vi.fn().mockReturnValue(ok({})),
     };
+    lookupApi = {
+      getMatterLookupStatus: vi.fn().mockImplementation(() => ok({ state: lookupState })),
+      searchMatterLookup: vi.fn(),
+    };
     clients = {
       listClients: vi
         .fn()
@@ -82,6 +89,7 @@ describe('MatterFormPage: New and Edit Matter as full pages (epic #1368, #1371, 
           ),
         ),
         { provide: MattersClient, useValue: matters },
+        { provide: MatterLookupClient, useValue: lookupApi },
         { provide: ClientsClient, useValue: clients },
         {
           provide: MatterTypesClient,
@@ -279,6 +287,84 @@ describe('MatterFormPage: New and Edit Matter as full pages (epic #1368, #1371, 
     await open({ clientId: '1' });
     expect(clients.getClient).toHaveBeenCalledWith(1);
     expect(el().querySelector('[data-chosen]')?.textContent).toContain('00343 Acme Corp');
+  });
+
+  describe('the Lookup button next to the Matter Number (#1395)', () => {
+    const lookupButton = () => el().querySelector<HTMLButtonElement>('[data-lookup]')!;
+    const note = () =>
+      el().querySelector('[data-lookup-note]')!.textContent!.replace(/\s+/g, ' ').trim();
+
+    afterEach(() => {
+      lookupState = 'NOT_SET_UP';
+    });
+
+    it('is not on Edit Matter', async () => {
+      await open({ matterId: '5' });
+
+      expect(el().querySelector('[data-lookup]')).toBeNull();
+    });
+
+    it('Disabled: the button is off with the sentence under the number; typing the name by hand still works', async () => {
+      lookupState = 'DISABLED';
+      await open();
+
+      expect(lookupButton().getAttribute('aria-disabled')).toBe('true');
+      expect(note()).toContain('Lookup is turned off. Enter the details yourself.');
+      await pickClient();
+      type('#matter-number', '12');
+      type('#matter-name', 'Merger Review');
+      await submit();
+      expect(matters.createMatter).toHaveBeenCalledWith(
+        expect.objectContaining({ matterNumber: '12', name: 'Merger Review' }),
+      );
+    });
+
+    it('Ready: asks for a client and a number first, then fills the Matter Name', async () => {
+      lookupState = 'READY';
+      await open();
+      expect(lookupButton().getAttribute('aria-disabled')).toBe('true');
+      await pickClient();
+      expect(lookupButton().getAttribute('aria-disabled')).toBe('true'); // still no number
+      type('#matter-number', '12');
+      await settle(fixture);
+      expect(lookupButton().getAttribute('aria-disabled')).toBeNull();
+
+      lookupApi['searchMatterLookup'].mockReturnValue(
+        ok({ outcome: 'FOUND', matterName: 'Merger Review', matterNumber: '00012' }),
+      );
+      lookupButton().click();
+      await settle(fixture);
+
+      expect(lookupApi['searchMatterLookup']).toHaveBeenCalledWith({
+        clientNumber: '00343',
+        matterNumber: '00012',
+      });
+      expect(el().querySelector<HTMLInputElement>('#matter-name')!.value).toBe('Merger Review');
+      expect(note()).toContain(
+        'Matter Name filled in from Matter Lookup. Check it before you save.',
+      );
+      expect(matters.createMatter).not.toHaveBeenCalled();
+    });
+
+    it('Nothing found and Fails when used: plain messages, the typed name is kept', async () => {
+      lookupState = 'READY';
+      await open();
+      await pickClient();
+      type('#matter-number', '12');
+      type('#matter-name', 'Typed by hand');
+      await settle(fixture);
+
+      lookupApi['searchMatterLookup'].mockReturnValue(ok({ outcome: 'NOT_FOUND' }));
+      lookupButton().click();
+      await settle(fixture);
+      expect(note()).toContain('Nothing found for 00343-00012. Enter the matter name yourself.');
+
+      lookupApi['searchMatterLookup'].mockReturnValue(ok({ outcome: 'FAILED' }));
+      lookupButton().click();
+      await settle(fixture);
+      expect(note()).toContain("Lookup didn't work. What you entered is kept.");
+      expect(el().querySelector<HTMLInputElement>('#matter-name')!.value).toBe('Typed by hand');
+    });
   });
 
   it('Cancel goes to the Matters list when the page was opened directly', async () => {

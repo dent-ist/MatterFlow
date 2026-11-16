@@ -11,6 +11,7 @@
 | [Find Things](How-To/Find-Things.md) | Search recipes and naming conventions |
 | [Add a Report](How-To/Add-a-Report.md) | Publish an administrator report |
 | [Add a Task Type or Workflow](How-To/Add-a-Task-Type-or-Workflow.md) | Configure task types, workflows, steps and forms |
+| [Set up an Entra ID Integration](How-To/Set-up-an-Entra-ID-Integration.md) | Connect Matter Lookup, Ethical Wall or another API through Entra ID |
 | [Release Checklist](How-To/Release-Checklist.md) | Prepare and ship a release |
 
 ## Related pages

@@ -377,6 +377,11 @@
       "description": "Change application settings (name and icon, holiday calendars, calendar coverage thresholds)"
     },
     {
+      "code": "Integrations.Manage",
+      "group": "Administration",
+      "description": "See and change the Microsoft Entra ID connection and the integrations (Administration > Settings > Integrations), including the write-only client secret"
+    },
+    {
       "code": "Audit.View",
       "group": "Oversight",
       "description": "Browse the audit log"

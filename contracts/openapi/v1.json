@@ -7414,6 +7414,411 @@
         }
       }
     },
+    "/api/v1/admin/entra-connection": {
+      "get": {
+        "tags": [
+          "EntraConnection"
+        ],
+        "operationId": "GetEntraConnection",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntraConnectionResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "EntraConnection"
+        ],
+        "operationId": "UpdateEntraConnection",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEntraConnectionRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEntraConnectionRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEntraConnectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntraConnectionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/entra-connection/secret": {
+      "put": {
+        "tags": [
+          "EntraConnection"
+        ],
+        "operationId": "SetEntraClientSecret",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetClientSecretRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetClientSecretRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetClientSecretRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntraConnectionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/entra-connection/test": {
+      "post": {
+        "tags": [
+          "EntraConnection"
+        ],
+        "operationId": "TestEntraConnection",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestResultResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/integrations": {
+      "get": {
+        "tags": [
+          "Integrations"
+        ],
+        "operationId": "ListIntegrations",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/IntegrationResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Integrations"
+        ],
+        "operationId": "CreateIntegration",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateIntegrationRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateIntegrationRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateIntegrationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/integrations/{integrationId}": {
+      "put": {
+        "tags": [
+          "Integrations"
+        ],
+        "operationId": "UpdateIntegration",
+        "parameters": [
+          {
+            "name": "integrationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateIntegrationRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateIntegrationRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateIntegrationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Integrations"
+        ],
+        "operationId": "DeleteIntegration",
+        "parameters": [
+          {
+            "name": "integrationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/integrations/{integrationId}/enable": {
+      "post": {
+        "tags": [
+          "Integrations"
+        ],
+        "operationId": "EnableIntegration",
+        "parameters": [
+          {
+            "name": "integrationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/integrations/{integrationId}/disable": {
+      "post": {
+        "tags": [
+          "Integrations"
+        ],
+        "operationId": "DisableIntegration",
+        "parameters": [
+          {
+            "name": "integrationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/integrations/{integrationId}/test": {
+      "post": {
+        "tags": [
+          "Integrations"
+        ],
+        "operationId": "TestIntegration",
+        "parameters": [
+          {
+            "name": "integrationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestResultResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/matter-lookup/status": {
+      "get": {
+        "tags": [
+          "MatterLookup"
+        ],
+        "operationId": "GetMatterLookupStatus",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatterLookupStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/matter-lookup/search": {
+      "post": {
+        "tags": [
+          "MatterLookup"
+        ],
+        "operationId": "SearchMatterLookup",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MatterLookupRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MatterLookupRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/MatterLookupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatterLookupResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/notes": {
       "get": {
         "tags": [
@@ -21388,7 +21793,11 @@
               "BRANDING_ICON_NOT_SQUARE",
               "BRANDING_ICON_TOO_SMALL",
               "BRANDING_ICON_UNSAFE",
-              "BRANDING_ICON_CORRUPT"
+              "BRANDING_ICON_CORRUPT",
+              "INTEGRATION_TYPE_EXISTS",
+              "INTEGRATION_NOT_AVAILABLE",
+              "INTEGRATION_TOKEN_FAILED",
+              "SECRET_STORE_UNAVAILABLE"
             ],
             "type": "string",
             "description": "Stable machine-readable error code."
@@ -25871,6 +26280,42 @@
           }
         }
       },
+      "CreateIntegrationRequest": {
+        "required": [
+          "name",
+          "typeCode"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "typeCode": {
+            "type": "string"
+          },
+          "baseUrl": {
+            "maxLength": 500,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "scope": {
+            "maxLength": 300,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isEnabled": {
+            "type": "boolean"
+          }
+        }
+      },
       "CreateMatterListItemRequest": {
         "required": [
           "name"
@@ -28172,6 +28617,84 @@
           }
         }
       },
+      "EntraConnectionResponse": {
+        "required": [
+          "tenantId",
+          "clientId",
+          "secretIsSet",
+          "secretExpiresOn",
+          "secretUpdatedAt",
+          "secretUpdatedBy",
+          "lastTest",
+          "updatedAt",
+          "updatedBy",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "clientId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "secretIsSet": {
+            "type": "boolean"
+          },
+          "secretExpiresOn": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "secretUpdatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "secretUpdatedBy": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "lastTest": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TestResultResponse"
+              }
+            ]
+          },
+          "updatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "updatedBy": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
       "ExportLogRequest": {
         "required": [
           "surface",
@@ -28897,6 +29420,63 @@
           }
         }
       },
+      "IntegrationResponse": {
+        "required": [
+          "integrationId",
+          "name",
+          "typeCode",
+          "baseUrl",
+          "scope",
+          "isEnabled",
+          "status",
+          "lastTest",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "integrationId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "typeCode": {
+            "type": "string"
+          },
+          "baseUrl": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "scope": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isEnabled": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          },
+          "lastTest": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TestResultResponse"
+              }
+            ]
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
       "JsonElement": { },
       "LandingPageDto": {
         "required": [
@@ -29274,6 +29854,77 @@
           },
           "isActive": {
             "type": "boolean"
+          }
+        }
+      },
+      "MatterLookupRequest": {
+        "required": [
+          "clientNumber"
+        ],
+        "type": "object",
+        "properties": {
+          "clientNumber": {
+            "maxLength": 10,
+            "minLength": 1,
+            "type": "string"
+          },
+          "matterNumber": {
+            "maxLength": 10,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "MatterLookupResponse": {
+        "required": [
+          "outcome",
+          "clientNumber",
+          "clientName",
+          "matterNumber",
+          "matterName"
+        ],
+        "type": "object",
+        "properties": {
+          "outcome": {
+            "type": "string"
+          },
+          "clientNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "clientName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "matterNumber": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "matterName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "MatterLookupStatusResponse": {
+        "required": [
+          "state"
+        ],
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string"
           }
         }
       },
@@ -37570,6 +38221,27 @@
           }
         }
       },
+      "SetClientSecretRequest": {
+        "required": [
+          "secret",
+          "expiresOn"
+        ],
+        "type": "object",
+        "properties": {
+          "secret": {
+            "maxLength": 512,
+            "minLength": 1,
+            "type": "string"
+          },
+          "expiresOn": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        }
+      },
       "SetDashboardCapacityRequest": {
         "required": [
           "countOffHours",
@@ -40692,6 +41364,65 @@
           }
         }
       },
+      "TestResultResponse": {
+        "required": [
+          "outcome",
+          "steps",
+          "tokenSeconds",
+          "testedAt",
+          "testedBy"
+        ],
+        "type": "object",
+        "properties": {
+          "outcome": {
+            "type": "string"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TestStep"
+            }
+          },
+          "tokenSeconds": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "testedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "testedBy": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rowVersion": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "TestStep": {
+        "required": [
+          "key",
+          "state"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          }
+        }
+      },
       "TopMatterResponse": {
         "required": [
           "matterId",
@@ -40957,6 +41688,33 @@
           }
         }
       },
+      "UpdateEntraConnectionRequest": {
+        "required": [
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "clientId": {
+            "maxLength": 100,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
       "UpdateHolidayCalendarRequest": {
         "required": [
           "name",
@@ -41099,6 +41857,46 @@
               "null",
               "string"
             ]
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateIntegrationRequest": {
+        "required": [
+          "name",
+          "typeCode",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "typeCode": {
+            "type": "string"
+          },
+          "baseUrl": {
+            "maxLength": 500,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "scope": {
+            "maxLength": 300,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isEnabled": {
+            "type": "boolean"
           },
           "rowVersion": {
             "type": "string"
@@ -44682,6 +45480,15 @@
     },
     {
       "name": "Intake"
+    },
+    {
+      "name": "EntraConnection"
+    },
+    {
+      "name": "Integrations"
+    },
+    {
+      "name": "MatterLookup"
     },
     {
       "name": "Notes"

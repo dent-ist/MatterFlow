@@ -572,3 +572,31 @@ The product was renamed from MatterFlow to LPT Hub (epic #1345). Nothing was eve
 5. `npm start`, and from a second terminal `npm run seed:demo`.
 
 Also changed for anyone who set them by hand: `ConnectionStrings__MatterFlow` is now `ConnectionStrings__LptHub`, `MATTERFLOW_MIGRATE_ONLY` is now `LPTHUB_MIGRATE_ONLY`, the header `X-MatterFlow-Client` is `X-LptHub-Client`, the roles `mf_app`, `mf_migrator`, `mf_report_reader` and the login `mf_reports` are `lpt_app`, `lpt_migrator`, `lpt_report_reader` and `lpt_reports`, and the dev passwords are `LptHub_Dev1!`, `LptHub_Reports1!` and `LptHub_Perf1!`. <!-- rename-allow: list of old names -->
+
+## 20. Integrations: the Microsoft Entra ID connection, its secret and the key folder (epic #1389, issue #1395)
+
+LPT Hub has ONE Microsoft Entra ID app registration (one Tenant ID, one Client ID, one client secret) and asks Entra ID for a different scope per external API (Matter Lookup, Ethical Wall, later others) with the OAuth2 client-credentials flow (`POST https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token`). An administrator sets it up under Administration > Settings > Integrations (permission `Integrations.Manage`, System Admin by default). The wiki page "Set up an Entra ID integration" lists what IT must provide.
+
+**The client secret is stored encrypted and is write-only.** It is encrypted with ASP.NET Core Data Protection before it reaches `dbo.EntraConnection` (column `ClientSecretProtected`); no API returns it, no log line or audit row contains it, and the report login cannot read the table. A token is held in memory only and refreshed shortly before it expires.
+
+**The key folder (a required step on the server).** Data Protection needs a durable key ring, and it must NOT live only in the database (a copy of the database alone must not be enough to read the secret).
+
+1. Create a folder outside the site folder, for example `C:\ProgramData\LptHub\keys`.
+2. Give the application pool identity Modify on it (`icacls "C:\ProgramData\LptHub\keys" /grant "IIS APPPOOL\LptHub:(OI)(CI)M"`, or the gMSA the pool runs as). Nobody else needs access.
+3. In `appsettings.Production.json` set `DataProtection:KeysPath` to the folder. On Windows the key files are also encrypted with the machine's DPAPI (`DataProtection:ProtectWithDpapi`, default true), so a copy of the folder does not work on another machine.
+4. Recycle the app pool. The first time a secret is saved the folder gets its key file.
+5. **Back the folder up with the server** (the same image or file backup as `appsettings.Production.json`, section 2). Keep it out of the database backup on purpose.
+
+Without `DataProtection:KeysPath`, Production cannot store a secret: Set Secret answers "The key store for the client secret is not configured on this server" and nothing is saved. Development and Test use the framework default so a developer needs no setup.
+
+**Restoring or moving the server.** Restore the key folder together with the site. If the keys are lost or the machine changed (with DPAPI the keys are tied to the machine), the stored secret cannot be decrypted: Test Connection says "Entra ID refused the credentials" and the Set Secret dialog has to be used again (a new secret value and expiry date). Nothing else is lost.
+
+**Secret expiry.** The page warns amber from 30 days before the expiry date entered with the secret, and red once it has passed. Create the new secret in the app registration first, then use Replace Secret (it takes effect at once and clears every last test result; test again afterwards).
+
+**Network.** The server must reach `login.microsoftonline.com` (HTTPS 443) and each integration's Base URL. A proxy is the server's own setting; a timeout (`Integrations:TokenTimeoutSeconds` 15, `Integrations:ApiTimeoutSeconds` 10) reads as "not reachable".
+
+**Matter Lookup.** The real API contract is not known yet. LPT Hub works from a documented provisional mapping (`Integrations:MatterLookup:*`: the two paths and the four field names; see the wiki Configuration Reference). When IT sets the API up, change those keys (or the one adapter class `ProvisionalMatterLookupClient`); nothing else changes. Until Matter Lookup shows Connected the Lookup button on New Client and New Matter is off and says so.
+
+**Simulator (Development and Test only).** `Integrations:Simulator:Enabled=true` answers Entra ID and the APIs from a built-in stand-in so screens and Playwright specs run without a network. It is ignored in every other environment.
+
+Audit: `INTEGRATION_CREATED`, `INTEGRATION_UPDATED`, `INTEGRATION_DELETED`, `INTEGRATION_ENABLED`, `INTEGRATION_DISABLED`, `ENTRA_CONNECTION_CHANGED`, `ENTRA_SECRET_REPLACED` (names and expiry date, never the secret). A Test Connection changes no setting and is not audited.

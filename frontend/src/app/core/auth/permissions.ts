@@ -78,6 +78,7 @@ export const PERMISSIONS = [
   'Report.Assign',
   'Report.Run',
   'Settings.Manage',
+  'Integrations.Manage',
   'Audit.View',
 ] as const;
 
