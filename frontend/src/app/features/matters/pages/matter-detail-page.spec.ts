@@ -410,6 +410,21 @@ describe('MatterDetailPage', () => {
     expect(lastTab()).toBe('tasks');
   });
 
+  it('shows the client number with 5 digits even when it arrives without the zeros (#1392)', async () => {
+    await create(
+      ['Matter.View', 'Audit.View', 'Client.View', 'Task.View'],
+      aMatter({ clientNumber: '343', clientIsActive: false }),
+    );
+    expect(el().querySelector('[data-client-inactive-banner]')?.textContent).toContain(
+      'The client 00343 is inactive.',
+    );
+    const clientRow = Array.from(el().querySelectorAll('[data-details-tab] .pg-mono')).map((e) =>
+      e.textContent!.trim(),
+    );
+    expect(clientRow).toContain('00343');
+    expect(clientRow).not.toContain('343');
+  });
+
   it('shows every DMS and DFS path on its own line with its own Copy button, and Not set when there is none (#1391)', async () => {
     await create(
       ['Matter.View', 'Audit.View', 'Client.View', 'Task.View'],

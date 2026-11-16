@@ -1,7 +1,32 @@
 import { TestBed } from '@angular/core/testing';
 import { Clock, USER_TIME_ZONE } from '../../core/time/clock';
 import { MfDateLongPipe } from './mf-date-long.pipe';
-import { MatterRefPipe, normalizeNumber } from './matter-ref.pipe';
+import {
+  BusinessNumberPipe,
+  MatterRefPipe,
+  formatBusinessNumber,
+  normalizeNumber,
+} from './matter-ref.pipe';
+
+describe('formatBusinessNumber / businessNumber (#1392)', () => {
+  it('shows every client number, matter number and CM Number with 5 digits per part', () => {
+    expect(formatBusinessNumber('343')).toBe('00343');
+    expect(formatBusinessNumber(7)).toBe('00007');
+    expect(formatBusinessNumber(' 12 ')).toBe('00012');
+    expect(formatBusinessNumber('00343')).toBe('00343');
+    expect(formatBusinessNumber('343-12')).toBe('00343-00012');
+    expect(formatBusinessNumber('00343-00012')).toBe('00343-00012');
+    expect(new BusinessNumberPipe().transform('5')).toBe('00005');
+  });
+
+  it('leaves what is not a number as it is and shows nothing for nothing', () => {
+    expect(formatBusinessNumber(null)).toBe('');
+    expect(formatBusinessNumber(undefined)).toBe('');
+    expect(formatBusinessNumber('')).toBe('');
+    expect(formatBusinessNumber('Acme')).toBe('Acme');
+    expect(formatBusinessNumber('123456')).toBe('123456');
+  });
+});
 
 describe('normalizeNumber / matterRef', () => {
   const pipe = new MatterRefPipe();

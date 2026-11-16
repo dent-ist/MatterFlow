@@ -35,6 +35,7 @@ import {
   withoutFilter,
 } from './search-filter-defs';
 import { DEFAULT_STATUS_LABELS } from '../../core/lookups/lookup-store';
+import { formatBusinessNumber } from '../../shared/pipes/matter-ref.pipe';
 
 /**
  * The Filters panel of a type tab on the results page (Search review S6; #474 to #476): the controls of the type from `TYPE_FILTERS`, the chips of
@@ -331,7 +332,7 @@ export class SearchFilters {
     );
     return page.items.map((c) => ({
       id: c.clientId,
-      label: `${c.clientNumber} ${c.name}`,
+      label: `${formatBusinessNumber(c.clientNumber)} ${c.name}`,
       inactive: !c.isActive,
     }));
   };
@@ -432,7 +433,10 @@ export class SearchFilters {
   private async nameClient(id: number): Promise<void> {
     try {
       const c = await firstValueFrom(this.clients.getClient(id));
-      this.clientNames.update((n) => ({ ...n, [id]: `${c.clientNumber} ${c.name}` }));
+      this.clientNames.update((n) => ({
+        ...n,
+        [id]: `${formatBusinessNumber(c.clientNumber)} ${c.name}`,
+      }));
     } catch {
       this.clientNames.update((n) => ({ ...n, [id]: `Client ${id}` }));
     }

@@ -98,7 +98,7 @@ function matterOption(m: MatterResponse): PickerOption {
         <mf-entity-picker
           inputId="project-matter"
           label="Matter"
-          placeholder="343-12 or matter name"
+          placeholder="00343-00012 or matter name"
           [required]="true"
           [locked]="matterLocked()"
           [search]="searchMatters"

@@ -49,6 +49,7 @@ import { ProductionsTab } from '../../productions/productions-tab';
 import { NotesTab } from '../../notes/notes-tab';
 import { NotesHeightPref } from '../../notes/notes-height-pref';
 import { IntPipe } from '../../../shared/ui/number-format';
+import { BusinessNumberPipe } from '../../../shared/pipes/matter-ref.pipe';
 
 /** The API's largest page (`PageRequest.MaxPageSize`). */
 const PROJECTS_PAGE_MAX = 100;
@@ -65,6 +66,7 @@ type Tab = MatterTabKey;
 @Component({
   selector: 'mf-matter-detail-page',
   imports: [
+    BusinessNumberPipe,
     StateBlock,
     IntPipe,
     FixedPage,
@@ -155,7 +157,7 @@ type Tab = MatterTabKey;
             @if (!m.clientIsActive) {
               <div class="pg-banner" role="note" data-client-inactive-banner>
                 <i class="pi pi-info-circle" aria-hidden="true"></i>
-                <span>The client {{ m.clientNumber }} is inactive.</span>
+                <span>The client {{ m.clientNumber | businessNumber }} is inactive.</span>
               </div>
             }
 

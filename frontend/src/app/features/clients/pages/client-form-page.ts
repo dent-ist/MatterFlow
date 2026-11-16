@@ -29,6 +29,7 @@ import { NumberInput, numberProblem } from '../../../shared/ui/number-input';
 import { TextField } from '../../../shared/ui/text-field';
 import { ErrorReference } from '../../../shared/ui/error-reference';
 import { PageHeader } from '../../../shared/ui/page-header';
+import { BusinessNumberPipe, formatBusinessNumber } from '../../../shared/pipes/matter-ref.pipe';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -36,6 +37,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 @Component({
   selector: 'mf-client-form-page',
   imports: [
+    BusinessNumberPipe,
     PageHeader,
     ErrorReference,
     RouterLink,
@@ -90,7 +92,9 @@ type LoadState = 'loading' | 'ready' | 'error';
         @if (isEdit()) {
           <div class="pg-filter">
             <span class="pg-label"><strong>Client number</strong></span>
-            <span class="pg-mono" data-locked-number>{{ original()?.clientNumber }}</span>
+            <span class="pg-mono" data-locked-number>{{
+              original()?.clientNumber | businessNumber
+            }}</span>
             <span class="pg-reason">Locked after creation.</span>
             <p-button
               *mfHasPermission="'Client.EditNumber'"
@@ -329,7 +333,7 @@ export class ClientFormPage implements HasUnsavedChanges {
       if (saved.droppedFields.length > 0) {
         this.notify.info('Hidden values not saved', `${saved.droppedFields.join(', ')}.`);
       }
-      this.notify.success(`Client ${saved.clientNumber} saved`);
+      this.notify.success(`Client ${formatBusinessNumber(saved.clientNumber)} saved`);
       await this.router.navigate(['/clients', saved.clientId]);
     } catch (err) {
       this.showServerError(err);
@@ -375,7 +379,7 @@ export class ClientFormPage implements HasUnsavedChanges {
         isActive: this.original()!.isActive,
       });
       this.changeNumberOpen.set(false);
-      this.notify.success('Client number changed', updated.clientNumber);
+      this.notify.success('Client number changed', formatBusinessNumber(updated.clientNumber));
     } catch (err) {
       const errors = serverFormErrors(err);
       this.serverErrors.set(errors.fields);

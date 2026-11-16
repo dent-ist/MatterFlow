@@ -41,7 +41,7 @@ import {
   serverPathMessages,
   typedPaths,
 } from '../../../shared/forms/matter-paths';
-import { normalizeNumber } from '../../../shared/pipes/matter-ref.pipe';
+import { formatBusinessNumber, normalizeNumber } from '../../../shared/pipes/matter-ref.pipe';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import {
@@ -57,7 +57,11 @@ import { AI_OPTIONS } from './matter-ai';
 import { MatterPathList } from './matter-path-list';
 
 function clientOption(c: ClientResponse): PickerOption {
-  return { id: c.clientId, label: `${c.clientNumber} ${c.name}`, inactive: !c.isActive };
+  return {
+    id: c.clientId,
+    label: `${formatBusinessNumber(c.clientNumber)} ${c.name}`,
+    inactive: !c.isActive,
+  };
 }
 
 function idText(ref: MatterListRef | undefined): string {
@@ -230,7 +234,7 @@ export function pickListItemsMulti(
         <mf-entity-picker
           inputId="matter-client"
           label="Client"
-          placeholder="343 or Acme"
+          placeholder="00343 or Acme"
           [required]="true"
           [locked]="isEdit()"
           [search]="searchClients"
@@ -631,7 +635,7 @@ export class MatterForm {
           m
             ? {
                 id: m.clientId,
-                label: `${m.clientNumber} ${m.clientName}`,
+                label: `${formatBusinessNumber(m.clientNumber)} ${m.clientName}`,
                 inactive: !m.clientIsActive,
               }
             : null,

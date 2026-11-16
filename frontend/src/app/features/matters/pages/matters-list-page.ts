@@ -77,6 +77,7 @@ interface MatterExtraColumnChoice {
 const EXTRA_KEYS: readonly string[] = ['onHold', 'atRisk', 'dataSize', 'pending'];
 import { assetsParams, sizeText } from '../../my-matters/data-model';
 import { IntPipe } from '../../../shared/ui/number-format';
+import { BusinessNumberPipe, formatBusinessNumber } from '../../../shared/pipes/matter-ref.pipe';
 
 /** The "Not Set" choice of the Matter Type and Current State filters: a flag option that travels as its own boolean parameter (`matterTypeNone`, `currentStateNone`), never mixed with ids. */
 const NOT_SET = 'none';
@@ -126,6 +127,7 @@ const BONES: Record<string, string> = {
 @Component({
   selector: 'mf-matters-list-page',
   imports: [
+    BusinessNumberPipe,
     IntPipe,
     ZeroDash,
     FixedPage,
@@ -374,7 +376,7 @@ const BONES: Record<string, string> = {
                       class="rc-text"
                       data-card-client
                       [routerLink]="['/clients', m.clientId]"
-                      [title]="m.clientNumber + ' ' + m.clientName"
+                      [title]="(m.clientNumber | businessNumber) + ' ' + m.clientName"
                       >{{ m.clientName }}</a
                     >
                   } @else {
@@ -505,12 +507,16 @@ const BONES: Record<string, string> = {
                   <a
                     class="mf-link pg-clip"
                     [routerLink]="['/clients', m.clientId]"
-                    [title]="m.clientNumber + ' ' + m.clientName"
-                    ><span class="pg-mono">{{ m.clientNumber }}</span> {{ m.clientName }}</a
+                    [title]="(m.clientNumber | businessNumber) + ' ' + m.clientName"
+                    ><span class="pg-mono">{{ m.clientNumber | businessNumber }}</span>
+                    {{ m.clientName }}</a
                   >
                 } @else {
-                  <span class="pg-clip" [title]="m.clientNumber + ' ' + m.clientName"
-                    ><span class="pg-mono">{{ m.clientNumber }}</span> {{ m.clientName }}</span
+                  <span
+                    class="pg-clip"
+                    [title]="(m.clientNumber | businessNumber) + ' ' + m.clientName"
+                    ><span class="pg-mono">{{ m.clientNumber | businessNumber }}</span>
+                    {{ m.clientName }}</span
                   >
                 }
               </td>
@@ -953,7 +959,7 @@ export class MattersListPage extends ServerListPage<MatterResponse> {
     const first = this.rows()[0];
     const id = this.filters.text('clientId');
     return first && String(first.clientId) === id
-      ? `${first.clientNumber} ${first.clientName}`
+      ? `${formatBusinessNumber(first.clientNumber)} ${first.clientName}`
       : `Client ${id}`;
   });
 

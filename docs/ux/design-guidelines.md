@@ -265,6 +265,7 @@ Frontend root `frontend/src/app/`. Tokens: `docs/ux/tokens.css`. Global styles: 
 | Due cell | `describeDueCell`, `mf-due-suffix-cell` | `shared/work-queue/due-cell.ts`, `due-suffix.ts`, `core/time/time.ts` | MM/DD + words / suffix |
 | Numbers | `formatInt/Percent/Duration/Bytes/Range/Ago`, `mfInt` | `shared/ui/number-format.ts` | D-61 |
 | Person names | `shortAccountName` | `shared/ui/person-name.ts` | D-62 |
+| Client and matter numbers | `businessNumber` pipe, `formatBusinessNumber`, `mf-matter-ref` / `matterRef` pipe | `shared/pipes/matter-ref.pipe.ts` | always 5 digits: `00343`, `00343-00012` (#1392) |
 | Icons | PrimeIcons by registry; task type icons; person-state icons | `shared/ui/tab-icons.ts`, `shared/layout/nav-items.ts`, `section-icons.ts`, `shared/icons/` | scale 12/16/18/20 (+24 state blocks) |
 | Navigation, shell | `app-shell`, `NAV_ITEMS`, `user-menu`, `notification-bell`, `global-search` | `shared/layout/`, `shared/search/` | D-80 |
 | Colors, radii, sizes | CSS variables | `docs/ux/tokens.css`, `docs/ux/theme-guide.md` | no literals |
@@ -366,6 +367,7 @@ Run all: `cd frontend && npm run lint` (eslint + the three scripts) and `npm tes
 | Dialog and drawer | `shared/ui/form-dialog.spec.ts`, `slide-panel.spec.ts`, `lookup-dialog.spec.ts` | widths, footer order, focus |
 | Icon xl | `shared/ui/icon-xl-use.spec.ts` | the 24 px icon outside state blocks |
 | Long date | `shared/pipes/mf-date-long-use.spec.ts` | the long date form printed in a cell or field |
+| Client and matter numbers | `shared/pipes/business-number-guard.spec.ts`, API scan `BusinessNumberResponsesTests` | a client or matter number printed without `businessNumber` / `formatBusinessNumber`, a number conversion, an example such as "343-12", an API field that is not 5 digits (#1392) |
 | Bundle | `shared/layout/initial-bundle.spec.ts` | initial bundle over 700 kB |
 | Accessibility | `frontend/e2e/support/axe.ts` (e2e), `docs/ux/ui-update/crawl/axe.js` (page sweep) | axe violations |
 | Visual and text probes | `docs/ux/ui-update/crawl/` (`crawl*.js`, `scan.js`, `caps.js`, `probe-dates.js`); stack: `docs/ux/ui-update/stack-howto.md` | measured heights, month-name dates, raw accounts, lowercase labels |

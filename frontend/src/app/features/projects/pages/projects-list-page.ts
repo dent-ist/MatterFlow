@@ -51,6 +51,7 @@ import { Pager } from '../../../shared/ui/pager';
 import { TaskCount } from '../../../shared/ui/task-count';
 import { RowLink, registerTableSkip, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { MatterCell } from '../../../shared/work-queue/matter-cell';
+import { BusinessNumberPipe } from '../../../shared/pipes/matter-ref.pipe';
 
 /** Bone widths of a skeleton row, per column key. */
 const BONES: Record<string, string> = {
@@ -70,6 +71,7 @@ const BONES: Record<string, string> = {
 @Component({
   selector: 'mf-projects-list-page',
   imports: [
+    BusinessNumberPipe,
     FixedPage,
     NgTemplateOutlet,
     PageHeader,
@@ -295,9 +297,11 @@ const BONES: Record<string, string> = {
             </ng-template>
             <ng-template mfCell="client" let-p>
               <td class="pg-fix pg-fix--client">
-                <span class="pg-clip" [title]="p.clientNumber + ' ' + p.clientName">{{
-                  p.clientName
-                }}</span>
+                <span
+                  class="pg-clip"
+                  [title]="(p.clientNumber | businessNumber) + ' ' + p.clientName"
+                  >{{ p.clientName }}</span
+                >
               </td>
             </ng-template>
             <ng-template mfCell="openTasks" let-p>

@@ -42,6 +42,27 @@ export function formatMatterRef(
 }
 
 /**
+ * A client number, a matter number or a CM Number as every screen shows it (#1392): each number has exactly 5 digits, so `343` is `00343` and `343-12` is `00343-00012`.
+ * Text that is not a number (a name, an empty value) is returned as it is. This is the one function for a bare number; a matter with both parts goes through `formatMatterRef`.
+ * The guard spec `business-number-guard.spec.ts` fails on a template or a text built from `clientNumber` or `matterNumber` that does not use it.
+ */
+export function formatBusinessNumber(value: string | number | null | undefined): string {
+  if (value === null || value === undefined) return '';
+  const text = String(value).trim();
+  if (text === '') return '';
+  if (text.includes('-')) return formatMatterRef(text);
+  return normalizeNumber(text) ?? text;
+}
+
+/** `{{ client.clientNumber | businessNumber }}` renders `00343`; see `formatBusinessNumber`. */
+@Pipe({ name: 'businessNumber' })
+export class BusinessNumberPipe implements PipeTransform {
+  transform(value: string | number | null | undefined): string {
+    return formatBusinessNumber(value);
+  }
+}
+
+/**
  * `{{ matter | matterRef }}`, `{{ '343-12' | matterRef }}` or `{{ 343 | matterRef: 12 }}`
  * all render `00343-00012`. Unparseable input is echoed back unchanged (never throws).
  */

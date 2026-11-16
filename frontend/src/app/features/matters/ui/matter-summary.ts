@@ -13,6 +13,7 @@ import { TagChip } from '../../../shared/ui/tag-chip';
 import { Tip } from '../../../shared/ui/tip';
 import { MatterTeamPanel } from './matter-team-panel';
 import { MatterVendorsPanel } from './matter-vendors-panel';
+import { BusinessNumberPipe } from '../../../shared/pipes/matter-ref.pipe';
 import { MatterPathValue } from './matter-path-value';
 import { numericInstant, readableInstant } from '../../../shared/ui/numeric-date';
 import { personInitials } from '../../../shared/ui/person-initials';
@@ -55,6 +56,7 @@ import { IntPipe } from '../../../shared/ui/number-format';
     TagChip,
     MatterRef,
     MatterPathValue,
+    BusinessNumberPipe,
     Tip,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -286,12 +288,12 @@ import { IntPipe } from '../../../shared/ui/number-format';
                 <span data-client-value>
                   @if (canLinkClient()) {
                     <a class="mf-link" [routerLink]="['/clients', matter().clientId]"
-                      ><span class="pg-mono">{{ matter().clientNumber }}</span>
+                      ><span class="pg-mono">{{ matter().clientNumber | businessNumber }}</span>
                       {{ matter().clientName }}</a
                     >
                   } @else {
                     <span
-                      ><span class="pg-mono">{{ matter().clientNumber }}</span>
+                      ><span class="pg-mono">{{ matter().clientNumber | businessNumber }}</span>
                       {{ matter().clientName }}</span
                     >
                   }
