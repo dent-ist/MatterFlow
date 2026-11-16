@@ -257,7 +257,7 @@ test.describe('Role Setup: Landing Page (#1333)', () => {
 
   test('the Users dialog says which role decides the landing page', async ({ personas, page }) => {
     const p = await personas.create({ ...PERSONAS.director, label: 'lpdrawer' });
-    await page.goto('/admin/users?status=all');
+    await page.goto(`/admin/users?status=all&account=${encodeURIComponent(p.username)}`);
     await userName(userRow(page, p.userId, p.username)).click();
     await expect(page.locator('[data-landing-source]')).toHaveText(
       'Landing page comes from Director.',

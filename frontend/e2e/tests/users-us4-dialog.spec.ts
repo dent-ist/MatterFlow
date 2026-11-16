@@ -566,9 +566,12 @@ test.describe('axe and layout at both desktop sizes with the dialog open', () =>
       await page.keyboard.press('Escape');
       await expect(ask).toBeHidden();
       await page.locator('[data-edit-availability]').click();
-      await expect(page.getByRole('dialog').last()).toBeVisible();
-      // axe reads the colours of the finished dialog, not of its fade-in.
-      await expect(page.getByRole('dialog').last()).toHaveCSS('opacity', '1');
+      // The user dialog steps aside and the availability dialog opens in its place; axe reads the finished dialog, not its fade-in or its loading line.
+      const availability = page.getByRole('dialog', { name: /^Availability of / });
+      await expect(availability).toBeVisible();
+      await expect(availability.locator('[data-day-toggles]')).toBeVisible();
+      await expect(availability).toHaveCSS('opacity', '1');
+      await expect(page.getByRole('dialog')).toHaveCount(1);
       expect(await axeClean(page)).toEqual([]);
       expect(await noSideScroll(page)).toBe(true);
     });
