@@ -23,7 +23,7 @@ import type { ListFilters } from '../filters/list-filters';
 /** Bone widths of a skeleton row when the page gives none; they repeat across the columns. */
 const DEFAULT_BONES = ['7rem', '14rem', '5rem', '6rem'] as const;
 /** Skeleton rows shown while a list loads (spec 5.2). */
-const SKELETON_ROWS = [0, 1, 2, 3, 4] as const;
+const SKELETON_ROWS = 5;
 
 /**
  * The body of a filtered grid: the rows (projected) while the list is ready, and a full-width row for error, forbidden and empty, so
@@ -48,7 +48,7 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4] as const;
   template: `
     @switch (state()) {
       @case ('loading') {
-        <tr>
+        <tr class="gb-live">
           <td
             class="mf-sr-only"
             [attr.colspan]="colCount()"
@@ -59,7 +59,7 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4] as const;
             Loading {{ noun() }}
           </td>
         </tr>
-        @for (n of skeletonRows; track n) {
+        @for (n of skeletonRows(); track n) {
           <tr class="gb-sk" aria-hidden="true" data-skeleton>
             @for (w of bones(); track $index) {
               <td [class]="cellClasses()[$index]" [attr.data-drop]="drops()[$index]">
@@ -147,6 +147,14 @@ const SKELETON_ROWS = [0, 1, 2, 3, 4] as const;
     }
   `,
   styles: `
+    /* The polite "Loading ..." text for assistive technology: out of the table's layout, so the skeleton is exactly its rows tall (a Matter section keeps its height when the rows arrive). */
+    .gb-live {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
     .gb-state td {
       height: auto;
       padding: var(--mf-s5);
@@ -230,6 +238,8 @@ export class GridBody {
   readonly skeletonCells = input<readonly string[]>([]);
   /** True when the grid's columns have fixed widths (the record grid, D-44h): the skeleton bones only fill their cell and never size a column, so the headings keep their widths while loading. */
   readonly fixed = input(false);
+  /** How many skeleton rows a loading list shows (5; a Matter section shows 10, the rows it will have, so the page does not move when they arrive). */
+  readonly skeletonCount = input(SKELETON_ROWS);
 
   /** The text of the list's Search box while it is the only filter on: the empty list then reads `No results for "text".` (D-51). */
   protected readonly searched = computed(() => {
@@ -239,7 +249,9 @@ export class GridBody {
     const value = def ? f.values()[def.key] : undefined;
     return typeof value === 'string' ? value.trim() : '';
   });
-  protected readonly skeletonRows = SKELETON_ROWS;
+  protected readonly skeletonRows = computed(() =>
+    Array.from({ length: this.skeletonCount() }, (_, i) => i),
+  );
   protected readonly colCount = computed(() => this.columnSpec()?.length ?? this.columns());
   protected readonly cellClasses = computed(() => {
     const spec = this.columnSpec();

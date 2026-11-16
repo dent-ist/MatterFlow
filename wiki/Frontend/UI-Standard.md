@@ -33,7 +33,7 @@ The owner's rule (`CLAUDE.md`): the app must look and read the same everywhere. 
 11. Every list uses the grid anatomy (rows 44, 36 compact; header 40; pager 25/50/100; identifier first, row action last; no column dropped at a narrow window).
 12. Empty, error, loading and missing record use the shared state components and the fixed sentences.
 13. A toast names the thing: "Role saved", "Priority added" with a detail line; no toast for what the user can see change.
-14. Tabs: `mf-tabs`, 40 px, an icon on every tab.
+14. Tabs: `mf-tabs`, 40 px, an icon on every tab. A long page of sections (the Matter page) has the jump strip `mf-jump-strip`, same look, and its sections are `mf-section-card` (D-03a to D-03e).
 15. Screenshots at 1366x768 and 1920x1080 for every changed screen, axe 0, guard specs green, the guidelines file updated (its checklist is section 5).
 
 (Section 1 of the guidelines is the authority; this list may lag.)
@@ -68,4 +68,4 @@ First line `<ID> <short what changed>`, a blank line, one bullet per main naviga
 - [Testing the Frontend](Testing-the-Frontend.md)
 - [How to Add a Page](How-to-Add-a-Page.md)
 
-Last verified against commit 78f445a.
+Last verified against commit 70f744b6.

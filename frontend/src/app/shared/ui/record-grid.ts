@@ -299,7 +299,7 @@ export class RecordCell {
     }
   `,
   template: `
-    <mf-grid-frame [scrollLabel]="label()">
+    <mf-grid-frame [scrollLabel]="label()" [inline]="compact()">
       <div class="mf-scroll">
         <table
           class="pg-table tt"
@@ -381,6 +381,7 @@ export class RecordCell {
             [columns]="columnKeys().length"
             [skeleton]="skeleton()"
             [fixed]="true"
+            [skeletonCount]="skeletonRows()"
             [emptyText]="emptyText()"
             [emptyParts]="emptyParts()"
             [filters]="filters()"
@@ -461,6 +462,10 @@ export class RecordGrid<T = any> {
   readonly tableId = input<string | null>(null);
   /** Plural, lowercase: "clients" (the empty, error and loading sentences). */
   readonly noun = input.required<string>();
+  /** Compact: the grid sits inside a card of its own (a Matter section, D-03a): no frame, 36 px rows, as tall as its rows. */
+  readonly compact = input(false);
+  /** Skeleton rows while loading (5; a Matter section shows 10). */
+  readonly skeletonRows = input(5);
   readonly rows = input.required<readonly T[]>();
   /** The identity of a row for the `@for` track. */
   readonly rowKey = input<(row: T, index: number) => unknown>((_row, index) => index);

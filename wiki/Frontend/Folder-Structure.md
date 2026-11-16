@@ -47,7 +47,7 @@
 | `assets` | Assets list, record page, form, reports, disposition | 14 |
 | `clients` | Clients list, detail, form | 7 |
 | `dashboard` | Dashboard page and tabs (`summary`, `swimlane`, `users`, `calendar`, `ui` for breakdowns and trends) | 99 |
-| `matters` | Matters list, form, detail page with tabs, header, managers dialog, events panel | 14 |
+| `matters` | Matters list, form, the one-page detail (Summary and section cards, jump strip, full views by `?tab=`), header, managers dialog, events panel | 14 |
 | `my-matters` | The Project Manager's page (`ui`, `tabs`, `panels`, `data`) | 37 |
 | `my-work` | My Work page | 2 |
 | `notes` | Notes tab, note editor (Tiptap) and tag chip | 4 |
@@ -75,4 +75,4 @@
 - [Shared Components Catalogue](Shared-Components-Catalogue.md)
 - [How to Add a Page](How-to-Add-a-Page.md)
 
-Last verified against commit a8142a1.
+Last verified against commit 70f744b6.

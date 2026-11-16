@@ -60,13 +60,26 @@ import { IntPipe } from '../../../shared/ui/number-format';
     Tip,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'mf-fill' },
+  host: { class: 'mf-fill', '[class.ms--flow]': 'flow()' },
   styles: `
     :host {
       display: flex;
       flex-direction: column;
       gap: var(--mf-s3);
       min-height: 0;
+    }
+    /* Flow: the Summary section of the one-page Matter (#1396) is as tall as its content (the page scrolls, D-03b): nothing fills or scrolls inside it. */
+    :host(.ms--flow) {
+      flex: none;
+    }
+    :host(.ms--flow) .ms__body {
+      flex: none;
+      grid-template-rows: auto;
+    }
+    :host(.ms--flow) .ms__details,
+    :host(.ms--flow) .ms__side {
+      max-height: none;
+      overflow: visible;
     }
     /* The strip's room is kept while it loads (one 52 px row, as the "No assets yet." card), so the Details card does not jump when the tiles arrive (layout shift). */
     [data-summary-assets] {
@@ -279,7 +292,7 @@ import { IntPipe } from '../../../shared/ui/number-format';
         title="Details"
         class="ms__details"
         data-summary-details
-        scrollLabel="Matter details, scrollable"
+        [scrollLabel]="flow() ? null : 'Matter details, scrollable'"
       >
         <div class="ms__groups">
           <div class="ms__col">
@@ -493,6 +506,8 @@ import { IntPipe } from '../../../shared/ui/number-format';
 })
 export class MatterSummary {
   readonly matter = input.required<MatterResponse>();
+  /** The Summary section of the one-page Matter (#1396): as tall as its content, nothing scrolls inside it. */
+  readonly flow = input(false);
   /** Counts the changes that make the asset tiles load again (a save, a new project). */
   readonly reload = input(0);
   readonly canAssign = input(false);

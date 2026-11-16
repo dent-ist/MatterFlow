@@ -8,6 +8,7 @@ import {
   effect,
   inject,
   input,
+  output,
   signal,
   untracked,
   viewChild,
@@ -56,6 +57,7 @@ import { ASSET_NUMBER_COLUMN_WIDTH, AssetNumberCell, hasNumberedType } from './a
 import { CopyButton } from './copy-button';
 import { ServerListPage } from './list-query';
 import { Pager } from './pager';
+import type { SectionStats } from './section-card';
 
 /** Bone widths of a skeleton row, per column key. */
 const BONES: Record<string, string> = {
@@ -122,28 +124,30 @@ const BONES: Record<string, string> = {
     }
   `,
   template: `
-    <mf-list-toolbar
-      [filters]="filters"
-      controls="matter-asset-filter-row"
-      searchLabel="Search assets"
-    >
-      <mf-record-columns mfColumns [grid]="grid" />
-      <p-button
-        mfPrimary
-        *mfHasPermission="'Asset.Create'"
-        label="New Asset"
-        icon="pi pi-plus"
-        data-new-asset
-        (onClick)="newAsset()"
-      />
-      <mf-sorted-line
-        mfBarEnd
-        [sort]="sort()"
-        [defaultSort]="defaultSort"
-        [labels]="sortLabels"
-        (resetSort)="pickSort(null)"
-      />
-    </mf-list-toolbar>
+    @if (!compact()) {
+      <mf-list-toolbar
+        [filters]="filters"
+        controls="matter-asset-filter-row"
+        searchLabel="Search assets"
+      >
+        <mf-record-columns mfColumns [grid]="grid" />
+        <p-button
+          mfPrimary
+          *mfHasPermission="'Asset.Create'"
+          label="New Asset"
+          icon="pi pi-plus"
+          data-new-asset
+          (onClick)="newAsset()"
+        />
+        <mf-sorted-line
+          mfBarEnd
+          [sort]="sort()"
+          [defaultSort]="defaultSort"
+          [labels]="sortLabels"
+          (resetSort)="pickSort(null)"
+        />
+      </mf-list-toolbar>
+    }
 
     <mf-asset-disposition-dialog
       [targets]="targets()"
@@ -160,6 +164,8 @@ const BONES: Record<string, string> = {
       noun="assets"
       emptyText="No assets in this matter yet."
       [grid]="grid"
+      [compact]="compact()"
+      [skeletonRows]="10"
       [rows]="rows()"
       [rowKey]="assetKey"
       [loadState]="state()"
@@ -177,7 +183,7 @@ const BONES: Record<string, string> = {
       (clear)="clear()"
       (showAll)="showAll()"
     >
-      @if (filters.rowVisible()) {
+      @if (!compact() && filters.rowVisible()) {
         <tr
           mfGridFilterRow
           mfColumnFilterRow
@@ -266,7 +272,7 @@ const BONES: Record<string, string> = {
         </td>
       </ng-template>
       <div mfGridFoot>
-        @if (state() === 'ready' && total() > 0) {
+        @if (!compact() && state() === 'ready' && total() > 0) {
           <mf-pager
             [page]="pageNumber()"
             [pageSize]="pageSize()"
@@ -284,6 +290,10 @@ const BONES: Record<string, string> = {
 })
 export class MatterAssets extends ServerListPage<AssetListItem> {
   readonly matterId = input.required<number>();
+  /** The compact section of the one-page Matter (#1396): no toolbar, filter row or pager, the first rows only (`rowLimit`), nothing asked before `hold` is false. */
+  readonly compact = input(false);
+  /** What the compact section reports: its load state, the rows it shows and the assets the list has. */
+  readonly stats = output<SectionStats>();
 
   private readonly api = inject(AssetsClient);
   private readonly typesApi = inject(AssetTypesClient);
@@ -461,7 +471,20 @@ export class MatterAssets extends ServerListPage<AssetListItem> {
     void this.loadTypes();
     effect(() => {
       const id = this.matterId();
+      if (this.compact()) return;
       untracked(() => void this.loadCounts(id));
+    });
+    effect(() => {
+      const state = this.state();
+      const shown = this.rows().length;
+      const total = this.total();
+      untracked(() =>
+        this.stats.emit({
+          state: state === 'ready' ? 'ready' : state === 'loading' ? 'loading' : 'error',
+          shown,
+          total,
+        }),
+      );
     });
     // The controls move into the sheet while the grid scrolls sideways.
     afterNextRender(
@@ -517,6 +540,7 @@ export class MatterAssets extends ServerListPage<AssetListItem> {
 
   /** The inactive assets the default Active hides, under the same other filters (so "Assets (6)" and 5 rows tell why). */
   protected override fetchHidden() {
+    if (this.compact()) return null;
     return parseAssetStatusKey(this.filters.text('status')) === 'active'
       ? this.list('notactive', 1, 1)
       : null;

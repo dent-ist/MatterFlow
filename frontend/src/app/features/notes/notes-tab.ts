@@ -2286,6 +2286,7 @@ export class NotesTab {
   }
 
   private paneObserver: ResizeObserver | null = null;
+  private composeHandled = false;
   private deepLinked = false;
 
   protected tagKey(): string {
@@ -2553,6 +2554,16 @@ export class NotesTab {
       if (wanted > 0 && !this.deepLinked) {
         this.deepLinked = true;
         void this.openNow(wanted, true);
+      }
+      // "Add Note" of the one-page Matter (#1396) arrives as `?tab=notes&compose=1`: a new note is ready, and the address goes back to `?tab=notes`.
+      if (!this.composeHandled && this.route.snapshot.queryParamMap.get('compose') === '1') {
+        this.composeHandled = true;
+        if (this.canEdit()) this.newNote();
+        void this.router.navigate([], {
+          queryParams: { compose: null },
+          queryParamsHandling: 'merge',
+          replaceUrl: true,
+        });
       }
     } catch {
       this.listError.set("Couldn't load the notes.");

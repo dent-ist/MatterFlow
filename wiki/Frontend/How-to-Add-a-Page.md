@@ -10,7 +10,7 @@
 2. **Backend first, if needed.** Add the endpoint and regenerate the client ([How to Add an Endpoint](../Backend/How-to-Add-an-Endpoint.md), [API Client and Generated Code](API-Client-and-Generated-Code.md)).
 3. **Create the page component** (standalone, `ChangeDetectionStrategy.OnPush`, signals). Start from a similar page:
    - A list: `features/clients/pages/clients-list-page.ts` (toolbar, filters, grid, pager).
-   - A record page: `features/clients/pages/client-detail-page.ts` or `features/matters/pages/matter-detail-page.ts` (header, tabs).
+   - A record page: `features/clients/pages/client-detail-page.ts` or `features/matters/pages/matter-detail-page.ts` (header, tabs; the Matter page is one scrolling page with a jump strip and section cards, D-03a to D-03e).
    - A form: `features/clients/pages/client-form-page.ts`.
    - An admin page: `features/admin/priorities` or `status-labels` (lookup list pattern).
 4. **Use the shared building blocks** (no private chips, buttons, dialogs): `mf-page-header` (or `mf-record-header` for a record), `mf-tabs`, `mf-grid-frame`, `mf-form-dialog`, state components for empty, loading, error and missing record. See [Shared Components Catalogue](Shared-Components-Catalogue.md). Set the page title with `PageTitle` or the route `title`.

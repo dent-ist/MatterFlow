@@ -403,6 +403,19 @@ The seven tabs of a Matter (Summary, Tasks, Projects, Assets, Productions, Notes
 
 A new Matter tab uses `mf-list-toolbar` (record or work list) or the row above with the same order; it does not invent a header of its own.
 
+### 11.2a The one-page Matter (epic #1389, #1396; rules D-03a to D-03e in `design-guidelines.md`)
+
+`/matters/:id` is ONE continuous page: Summary (as it was, Details with the Team and Vendors side column, but as tall as its content), then a card each for Tasks, Projects, Assets, Productions, Notes and Activities, in the order of the old tabs. The old tabs are now the **jump strip** (`mf-jump-strip`): the same 40 px look as 11.3, but a `nav` of links that scroll to the section; a section the viewer may not see (Asset, Production, Note, Project or Audit rights, Task.View for Tasks) has no card and no link. The page scrolls (D-03a); the strip sticks under the top bar.
+
+| Part | Rule |
+| --- | --- |
+| Card | `mf-section-card`: header 56 px (icon 20, heading 16/600, `mf-count-chip`, muted one-liner, the section's primary action as a secondary `p-button` at the right), body, footer 40 px ("Showing 10 of 38 tasks" and the text button "Open Full View"). Tokens only: `.mf-card`, `--mf-border`, `--mf-text-muted`. |
+| Body | The tab's own grid in compact form: `mf-record-grid compact` or `mf-task-table density="compact"`; real columns, 36 px rows, 40 px heading, at most 10 rows, no toolbar or pager. Notes is a compact list of the recent notes (Title, Tags, Author, Last Updated); the editor stays in the Notes full view. |
+| Loading | Placeholder with the real headings and 10 skeleton rows (36 px) until the section is within 300 px of the window; "Open Full View" is already there. |
+| Empty / error | The shared state block ("No productions yet." with New Production, "Couldn't load notes." with Retry), inside the card; the other sections are not affected. |
+| Full view | `?tab=<section>`: today's tab page with its `mf-tabs` strip; the Summary tab leads back to the one page. |
+| Words | Footer sentences are sentence case; buttons and links Title Case ("Open Full View", "New Task", "Add Note"). |
+
 ### 11.3 Tab strips: one component, an icon on every tab (epic #1037, LC-10 #1058)
 
 Every tab strip in the app is the shared `mf-tabs` (`shared/ui/tabs.ts`): one height, spacing, selected style (2 px primary underline), hover and focus style, count in brackets, small number badge, and the same overflow behaviour (the strip scrolls sideways with an edge fade and chevron on a narrow screen, the selected tab is brought into view). `mf-work-tabs` (My Work, Pod Work), the Dashboard strip (`mf-dash-tabs`) and the Swimlane lane switcher are thin wrappers around it; none draws its own `role="tab"`.

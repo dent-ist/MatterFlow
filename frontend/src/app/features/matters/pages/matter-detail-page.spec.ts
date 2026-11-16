@@ -304,7 +304,7 @@ describe('MatterDetailPage', () => {
     expect(navigateByUrl).not.toHaveBeenCalled();
   });
 
-  it('has eight tabs in order when everything is permitted, Summary first; the Calendar tab is gone', async () => {
+  it('is one page with a jump strip of seven links in the tab order, Summary first; a section is a labelled region; the full views keep the tab strip (#1396)', async () => {
     await create([
       'Matter.View',
       'Task.View',
@@ -314,32 +314,91 @@ describe('MatterDetailPage', () => {
       'MatterNote.View' as Permission,
       'Audit.View',
     ]);
+    expect(el().querySelector('[data-matter-one-page]')).not.toBeNull();
+    expect(el().querySelector('[role=tab]')).toBeNull();
+    expect(el().querySelector('[data-jump-strip] nav')!.getAttribute('aria-label')).toBe(
+      'Matter sections',
+    );
     expect(
-      Array.from(el().querySelectorAll('[role=tab]')).map((t) =>
+      Array.from(el().querySelectorAll('[data-jump-strip] a')).map((t) =>
         t.textContent!.trim().replace(/\s*\(.*\)$/, ''),
       ),
     ).toEqual(['Summary', 'Tasks', 'Projects', 'Assets', 'Productions', 'Notes', 'Activities']);
-    expect(el().querySelectorAll('[role=tab] .pi').length).toBe(7);
-    // Productions and Notes open their own tabs (MD-11, MD-13).
+    expect(el().querySelectorAll('[data-jump-strip] a .pi').length).toBe(7);
+    for (const key of [
+      'summary',
+      'tasks',
+      'projects',
+      'assets',
+      'productions',
+      'notes',
+      'activities',
+    ]) {
+      const region = el().querySelector(`#section-${key}`)!;
+      expect(region.getAttribute('aria-labelledby')).toBe(`section-${key}-h`);
+      expect(el().querySelector(`#section-${key}-h`)!.tagName).toBe('H2');
+    }
+    // Every other ?tab= value opens that section's full view with the tab strip (MD-11, MD-13).
     await openTab('productions');
+    expect(el().querySelector('[data-matter-one-page]')).toBeNull();
+    expect(el().querySelectorAll('[role=tab]').length).toBe(7);
     expect(el().querySelector('[data-productions-tab]')).not.toBeNull();
     await openTab('notes');
     expect(el().querySelector('[data-notes-tab]')).not.toBeNull();
+    await openTab('summary');
+    expect(el().querySelector('[data-matter-one-page]')).not.toBeNull();
   });
 
-  it('has Summary, Tasks, Projects and Assets tabs, Summary first and the default; Tasks needs Task.View, Projects lists the matter projects', async () => {
+  it('hides a section and its jump link when the viewer lacks its permission (no placeholder text)', async () => {
+    await create(['Matter.View', 'Task.View']);
+    expect(
+      Array.from(el().querySelectorAll('[data-jump-strip] a')).map((t) =>
+        t.textContent!.trim().replace(/\s*\(.*\)$/, ''),
+      ),
+    ).toEqual(['Summary', 'Tasks']);
+    for (const key of ['projects', 'assets', 'productions', 'notes', 'activities']) {
+      expect(el().querySelector(`#section-${key}`)).toBeNull();
+    }
+    expect(el().querySelector('[data-no-access]')).toBeNull();
+    expect(assets.listAssets).not.toHaveBeenCalled();
+  });
+
+  it('has no Tasks section without Task.View (nothing is asked for it)', async () => {
+    await create(['Matter.View', 'Project.View']);
+    expect(el().querySelector('#section-tasks')).toBeNull();
+    expect(el().querySelector('[data-jump="tasks"]')).toBeNull();
+    expect(queue.getTaskQueue).not.toHaveBeenCalled();
+  });
+
+  it('asks for one page of 10 open tasks and links to the full view of the section', async () => {
+    await create(['Matter.View', 'Task.View']);
+    const call = queue.getTaskQueue.mock.calls.at(-1)!;
+    // The page size is 10, never the whole list; the open statuses are asked for.
+    expect(call).toContain(10);
+    expect(call.some((a: unknown) => Array.isArray(a) && a.includes('IN_PROGRESS'))).toBe(true);
+    const card = el().querySelector('[data-section=tasks]')!;
+    expect(card.querySelector('[data-full-view]')!.getAttribute('href')).toBe(
+      '/matters/7?tab=tasks',
+    );
+    expect(card.querySelector('mf-list-toolbar, mf-pager')).toBeNull();
+  });
+
+  it('has Summary and Projects sections without Task.View and Asset.View, Summary first; the full views keep Tasks needing Task.View; Projects lists the matter projects', async () => {
     await create(['Matter.View', 'Project.View']);
 
     expect(
-      Array.from(el().querySelectorAll('[role=tab]')).map((t) => t.textContent!.trim()),
-    ).toEqual(['Summary', 'Tasks', 'Projects (1)']); // Assets needs Asset.View; the Team is a panel of the Summary, not a tab (#1376)
-    // The first tab (Overview) is selected on open and loads no task list.
-    expect(tab('Summary').getAttribute('aria-selected')).toBe('true');
-    // Without Task.View and Asset.View the Overview has no sections, so the details are open at once.
+      Array.from(el().querySelectorAll('[data-jump-strip] a')).map((t) =>
+        t.textContent!.trim().replace(/\s+/g, ' '),
+      ),
+    ).toEqual(['Summary', 'Projects (1)']); // Assets needs Asset.View; the Team is a panel of the Summary, not a section (#1376)
+    expect(el().querySelector('[data-jump="summary"]')!.getAttribute('aria-current')).toBe(
+      'location',
+    );
+    // Without Task.View and Asset.View the page has no task or asset sections, so nothing is asked for.
     await openDetails();
     expect(el().querySelector('[data-summary-details]')?.textContent).toContain('Acme Corp');
     expect(queue.getTaskQueue).not.toHaveBeenCalled();
-    // Without Task.View the Tasks tab says so and loads nothing.
+    // Without Task.View the Tasks full view says so and loads nothing.
     await openTab('tasks');
     expect(el().querySelector('[data-no-access=tasks]')).not.toBeNull();
     expect(queue.getTaskQueue).not.toHaveBeenCalled();
@@ -358,21 +417,22 @@ describe('MatterDetailPage', () => {
     await openTab('projects');
     expect(el().querySelector('tbody a')?.getAttribute('href')).toBe('/projects/3');
 
-    // A link to the Assets tab without Asset.View shows the Overview and asks for no assets.
+    // A link to the Assets full view without Asset.View shows the one page and asks for no assets.
     await openTab('assets');
-    expect(tab('Summary').getAttribute('aria-selected')).toBe('true');
+    expect(el().querySelector('[data-matter-one-page]')).not.toBeNull();
     expect(assets.listAssets).not.toHaveBeenCalled();
     expect(matters.getMatterSummary).toHaveBeenCalledTimes(1);
-    // No parameter, ?tab=details and an unknown value all show the Overview.
+    // No parameter, ?tab=details, ?tab=summary and an unknown value all show the one page.
     for (const key of [undefined, 'details', 'summary', 'nonsense']) {
       await openTab(key);
-      expect(tab('Summary').getAttribute('aria-selected')).toBe('true');
+      expect(el().querySelector('[data-matter-one-page]')).not.toBeNull();
     }
     expect(el().querySelector('aside')).toBeNull();
   });
 
-  it('keeps the tab in the address', async () => {
+  it('keeps the tab in the address of a full view; Summary leads back to the one page and leaves no tab', async () => {
     await create(['Matter.View', 'Project.View']);
+    await openTab('tasks');
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
 
     tab('Projects').click();
@@ -398,9 +458,9 @@ describe('MatterDetailPage', () => {
       },
       queryParamsHandling: 'merge',
     });
-    expect(tab('Summary').getAttribute('aria-selected')).toBe('true'); // the page input follows the address
+    expect(tab('Tasks').getAttribute('aria-selected')).toBe('true'); // the page input follows the address
 
-    // Overview is the default tab, so it leaves no `tab` in the address; Tasks does.
+    // The one page is the default, so Summary leaves no `tab` in the address; Tasks does.
     const lastTab = (): unknown =>
       (navigate.mock.lastCall![1] as { queryParams: { tab: unknown } }).queryParams.tab;
     await openTab('projects');
@@ -408,6 +468,22 @@ describe('MatterDetailPage', () => {
     expect(lastTab()).toBeNull();
     tab('Tasks').click();
     expect(lastTab()).toBe('tasks');
+  });
+
+  it('a jump link moves focus to the section heading and does not change the address', async () => {
+    await create(['Matter.View', 'Task.View', 'Project.View']);
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    const scroll = vi.fn();
+    (el().querySelector('#section-projects') as HTMLElement).scrollIntoView = scroll;
+    el().querySelector<HTMLAnchorElement>('[data-jump=projects]')!.click();
+    expect(scroll).toHaveBeenCalledWith({
+      behavior: expect.stringMatching(/smooth|auto/),
+      block: 'start',
+    });
+    expect(navigate).not.toHaveBeenCalled();
+    expect(
+      el().querySelector<HTMLAnchorElement>('[data-jump=projects]')!.getAttribute('aria-current'),
+    ).toBe('location');
   });
 
   it('shows the client number with 5 digits even when it arrives without the zeros (#1392)', async () => {
@@ -444,15 +520,15 @@ describe('MatterDetailPage', () => {
     expect(dfs.querySelector('[data-path-none]')?.textContent).toBe('Not set');
   });
 
-  it('shows the Summary as the first tab with the matter details as a plain list: CM number first, only existing fields, custom fields as rows, AI allowed', async () => {
+  it('shows the Summary as the first section with the matter details as a plain list: CM number first, only existing fields, custom fields as rows, AI allowed', async () => {
     await create(
       ['Matter.View', 'Audit.View', 'Client.View', 'Task.View'],
       aMatter({ isSensitive: true, modifiedAtUtc: '2026-10-05T12:00:00Z' }),
     );
 
     expect(el().querySelector('aside')).toBeNull();
-    const panel = el().querySelector('[role=tabpanel]')!;
-    expect(panel.getAttribute('aria-labelledby')).toBe('matter-tab-summary');
+    const panel = el().querySelector('#section-summary')!;
+    expect(panel.getAttribute('aria-labelledby')).toBe('section-summary-h');
     const summary = panel.querySelector('[data-details-tab]')!;
     const rows = Array.from(summary.querySelectorAll('dt')).map((t) => t.textContent!.trim());
     // Four groups under quiet sub-headings (#1376): Client first, then CM Number (no separate Matter Number, #1383); Status and AI Allowed share a row.
@@ -490,8 +566,8 @@ describe('MatterDetailPage', () => {
     );
     expect(summary.querySelector('[data-client-value] a')?.getAttribute('href')).toBe('/clients/1');
     expect(summary.textContent).not.toMatch(/Custom fields/i);
-    // Activities is a tab now, no longer a drawer button.
-    expect(el().querySelector('mf-tabs')!.textContent).toMatch(/Activities/);
+    // Activities is a section now, no longer a drawer button.
+    expect(el().querySelector('[data-jump-strip]')!.textContent).toMatch(/Activities/);
     expect(el().querySelector('[data-page-actions]')!.textContent).not.toContain('Activity');
   });
 
@@ -649,19 +725,21 @@ describe('MatterDetailPage', () => {
     expect(el().querySelector('[data-client-value]')!.textContent).toContain('Acme Corp');
   });
 
-  it('shows Activities as a tab for Audit.View and maps the old ?tab=activity link to it', async () => {
+  it('shows Activities as a section for Audit.View and maps the old ?tab=activity link to its full view', async () => {
     await create(['Matter.View', 'Audit.View']);
     expect(document.body.querySelector('.mf-drawer')).toBeNull();
-    expect(tab('Activities')).toBeDefined();
+    expect(el().querySelector('[data-jump=activities]')).not.toBeNull();
+    expect(el().querySelector('#section-activities')).not.toBeNull();
     await openTab('activity');
     expect(tab('Activities').getAttribute('aria-selected')).toBe('true');
     expect(el().querySelector('mf-matter-activities')).not.toBeNull();
 
     TestBed.resetTestingModule();
     await create(['Matter.View']);
-    expect(el().querySelector('[data-tab=activities]')).toBeNull();
+    expect(el().querySelector('[data-jump=activities]')).toBeNull();
+    expect(el().querySelector('#section-activities')).toBeNull();
     await openTab('activities');
-    expect(tab('Summary').getAttribute('aria-selected')).toBe('true');
+    expect(el().querySelector('[data-matter-one-page]')).not.toBeNull();
   });
 
   it('lists the matter tasks in the Tasks tab (open by default, All on request); Create task is in the header and "New Task" in the tab toolbar (LC-02)', async () => {
@@ -1171,12 +1249,15 @@ describe('MatterDetailPage', () => {
 
     it('shows Assets (n) from the summary and hides the tab and the request without Asset.View', async () => {
       await create(['Matter.View', 'Asset.View']);
-      expect(tab('Assets').textContent!.replace(/\s+/g, ' ').trim()).toBe('Assets (0)');
+      expect(
+        el().querySelector('[data-jump=assets]')!.textContent!.replace(/\s+/g, ' ').trim(),
+      ).toBe('Assets (0)');
     });
 
-    it('has no Assets tab without Asset.View', async () => {
+    it('has no Assets section and no jump link without Asset.View', async () => {
       await create(['Matter.View']);
-      expect(tab('Assets')).toBeUndefined();
+      expect(el().querySelector('[data-jump=assets]')).toBeNull();
+      expect(el().querySelector('#section-assets')).toBeNull();
     });
   });
   describe('project managers and the health strip (epic #667)', () => {

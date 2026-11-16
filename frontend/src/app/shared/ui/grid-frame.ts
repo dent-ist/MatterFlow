@@ -20,7 +20,7 @@ import { ScrollArea } from './fixed-page';
   selector: 'mf-grid-frame',
   imports: [ScrollArea],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '[attr.data-grid-frame]': '""' },
+  host: { '[attr.data-grid-frame]': '""', '[class.gf--inline]': 'inline()' },
   template: `
     <div class="head"><ng-content select="[frameHead]" /></div>
     <div class="status"><ng-content select="[frameStatus]" /></div>
@@ -135,9 +135,28 @@ import { ScrollArea } from './fixed-page';
         overscroll-behavior: contain;
       }
     }
+    :host(.gf--inline) {
+      flex: none;
+      min-height: 0;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+      overflow: visible;
+      --mf-grid-row-h: var(--mf-grid-row-h-compact);
+    }
+    :host(.gf--inline) .scroll {
+      flex: none;
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
   `,
 })
 export class GridFrame {
+  /**
+   * Inline: the frame is part of a card that has its own border (a Matter section, D-03a): no border, shadow or radius of its own, as tall as its rows
+   * (never filling the window), 36 px rows (`--mf-grid-row-h-compact`).
+   */
+  readonly inline = input(false);
   /** What the grid is ("Task list"): the scrolling region is named "<label>, scrollable". */
   readonly scrollLabel = input('List');
   /** Anything that changes the rows without an address change; the frame scrolls back to the top. */
