@@ -40,17 +40,17 @@ test.describe('Matter fields: dialog, list and Matter Lists (#1301)', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Edit Matter' })).toBeVisible();
     await expect(dialog.locator('#matter-type')).toContainText('Not Set');
 
-    await dialog.locator('#matter-dms-path').fill('C:\\Matters\\1234');
-    await dialog.locator('#matter-dms-path').blur();
+    await dialog.locator('#matter-dms-path-0').fill('C:\\Matters\\1234');
+    await dialog.locator('#matter-dms-path-0').blur();
     await expect(dialog).toContainText('Drive-letter paths such as C:\\ are not accepted.');
-    await dialog.locator('#matter-dfs-path').fill('https://user:pw@host/x');
-    await dialog.locator('#matter-dfs-path').blur();
+    await dialog.locator('#matter-dfs-path-0').fill('https://user:pw@host/x');
+    await dialog.locator('#matter-dfs-path-0').blur();
     await expect(dialog).toContainText('Remove the user name and password from the web address.');
     await dialog.getByRole('button', { name: 'Save Changes' }).click();
     await expect(dialog.locator('[data-summary]')).toContainText('Fix the following to save:');
 
-    await dialog.locator('#matter-dms-path').fill('\\\\fs01\\dms\\Matters\\1234');
-    await dialog.locator('#matter-dfs-path').fill('https://dfs.example.com/m/1234');
+    await dialog.locator('#matter-dms-path-0').fill('\\\\fs01\\dms\\Matters\\1234');
+    await dialog.locator('#matter-dfs-path-0').fill('https://dfs.example.com/m/1234');
     await toggleDropdownOptions(dialog, 'matter-type', `Type ${token}`, `Second ${token}`);
     await expect(dialog.locator('#matter-type')).toContainText(`Type ${token} +1`);
     await dropdownById(dialog, 'matter-category').selectOption({ label: `Category ${token}` });
@@ -74,7 +74,7 @@ test.describe('Matter fields: dialog, list and Matter Lists (#1301)', () => {
     expect(saved.matterTypes.map((t: { id: number }) => t.id)).toEqual([type.id, second.id]);
     expect(saved.matterCategory.id).toBe(category.id);
     expect(saved.currentState.id).toBe(state.id);
-    expect(saved.dmsPath).toBe('\\\\fs01\\dms\\Matters\\1234');
+    expect(saved.dmsPaths).toEqual(['\\\\fs01\\dms\\Matters\\1234']);
     // Both changes are in the audit log with the names (epic #1368, #1372).
     const events = await admin.get(
       `/api/v1/audit/events?objectType=Matter&objectId=${matter.matterId}&pageSize=100`,
@@ -82,7 +82,7 @@ test.describe('Matter fields: dialog, list and Matter Lists (#1301)', () => {
     const summaries = events.items.map((e: { summary: string }) => e.summary);
     expect(summaries).toContain(`Matter Types set to Type ${token}, Second ${token}.`);
     expect(summaries).toContain(`Matter Category set to Category ${token}.`);
-    expect(saved.dfsPath).toBe('https://dfs.example.com/m/1234');
+    expect(saved.dfsPaths).toEqual(['https://dfs.example.com/m/1234']);
   });
 
   test('Matters list: the two columns are on by default (Primary PM, Open Tasks, Overdue off), and Not Set filters', async ({

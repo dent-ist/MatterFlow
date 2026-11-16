@@ -30603,8 +30603,8 @@ export interface CreateMatterRequest {
     matterTypeIds?: number[] | undefined;
     matterCategoryId?: number | undefined;
     currentStateId?: number | undefined;
-    dmsPath?: string | undefined;
-    dfsPath?: string | undefined;
+    dmsPaths?: string[] | undefined;
+    dfsPaths?: string[] | undefined;
     formValues?: any | undefined;
 
     [key: string]: any;
@@ -31701,12 +31701,12 @@ export interface MatterResponse {
     createdAtUtc: string;
     modifiedAtUtc: string | undefined;
     matterTypes: MatterListRef[];
+    dmsPaths: string[];
+    dfsPaths: string[];
     onHoldTaskCount?: number | undefined;
     atRiskTaskCount?: number | undefined;
     aiAllowed: MatterAiAllowed;
     currentState?: MatterListRef | undefined;
-    dmsPath?: string | undefined;
-    dfsPath?: string | undefined;
     matterCategory?: MatterListRef | undefined;
 
     [key: string]: any;
@@ -34680,8 +34680,8 @@ export interface UpdateMatterRequest {
     matterTypeIds?: number[] | undefined;
     matterCategoryId?: number | undefined;
     currentStateId?: number | undefined;
-    dmsPath?: string | undefined;
-    dfsPath?: string | undefined;
+    dmsPaths?: string[] | undefined;
+    dfsPaths?: string[] | undefined;
     formValues?: any | undefined;
     primaryManagerId?: number | undefined;
     secondaryManagerId?: number | undefined;

@@ -25508,21 +25508,25 @@
             ],
             "format": "int32"
           },
-          "dmsPath": {
-            "maxLength": 1000,
-            "minLength": 0,
+          "dmsPaths": {
+            "maxItems": 100,
             "type": [
               "null",
-              "string"
-            ]
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
           },
-          "dfsPath": {
-            "maxLength": 1000,
-            "minLength": 0,
+          "dfsPaths": {
+            "maxItems": 100,
             "type": [
               "null",
-              "string"
-            ]
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
           },
           "formValues": {
             "type": [
@@ -29424,6 +29428,8 @@
           "createdAtUtc",
           "modifiedAtUtc",
           "matterTypes",
+          "dmsPaths",
+          "dfsPaths",
           "aiAllowed"
         ],
         "type": "object",
@@ -29544,6 +29550,18 @@
               "$ref": "#/components/schemas/MatterListRef"
             }
           },
+          "dmsPaths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "dfsPaths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "onHoldTaskCount": {
             "type": [
               "null",
@@ -29569,18 +29587,6 @@
               {
                 "$ref": "#/components/schemas/MatterListRef"
               }
-            ]
-          },
-          "dmsPath": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "dfsPath": {
-            "type": [
-              "null",
-              "string"
             ]
           },
           "matterCategory": {
@@ -40675,21 +40681,25 @@
             ],
             "format": "int32"
           },
-          "dmsPath": {
-            "maxLength": 1000,
-            "minLength": 0,
+          "dmsPaths": {
+            "maxItems": 100,
             "type": [
               "null",
-              "string"
-            ]
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
           },
-          "dfsPath": {
-            "maxLength": 1000,
-            "minLength": 0,
+          "dfsPaths": {
+            "maxItems": 100,
             "type": [
               "null",
-              "string"
-            ]
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            }
           },
           "formValues": {
             "type": [

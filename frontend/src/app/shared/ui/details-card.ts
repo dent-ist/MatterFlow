@@ -49,7 +49,9 @@ let nextId = 0;
     .dc__body {
       min-height: 0;
     }
+    /* Positioned, so the visually hidden texts inside (position: absolute, e.g. the "(opens in a new tab)" and Copy names) are clipped with the scrolled rows instead of making the page itself scroll (#1391). */
     :host(.dc--scroll) .dc__body {
+      position: relative;
       overflow-y: auto;
     }
     @media (max-width: 767.98px), (max-height: 560.98px) {

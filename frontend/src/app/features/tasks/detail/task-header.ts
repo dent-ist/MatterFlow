@@ -21,6 +21,7 @@ import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
 import { Crumb, TitleIcon } from '../../../shared/ui/page-header';
 import { TaskDetailStore } from './task-detail.store';
 import { TaskFacts } from './task-facts';
+import { BusinessNumberPipe, formatBusinessNumber } from '../../../shared/pipes/matter-ref.pipe';
 
 /** Why a status action is shown but cannot be used (the server's `blockedReason`). */
 function blockedText(action: string, reason: string | undefined): string {
@@ -43,7 +44,15 @@ function blockedText(action: string, reason: string | undefined): string {
  */
 @Component({
   selector: 'mf-task-header',
-  imports: [RecordHeader, RouterLink, MatterRef, TaskTypeIcon, TaskFacts, TitleIcon],
+  imports: [
+    BusinessNumberPipe,
+    RecordHeader,
+    RouterLink,
+    MatterRef,
+    TaskTypeIcon,
+    TaskFacts,
+    TitleIcon,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrl: '../../../shared/ui/page.scss',
   template: `
@@ -84,10 +93,10 @@ function blockedText(action: string, reason: string | undefined): string {
               >Client
               @if (auth.canLink('client')) {
                 <a class="mf-link pg-mono" [routerLink]="['/clients', t.matter.clientId]">{{
-                  t.matter.clientNumber
+                  t.matter.clientNumber | businessNumber
                 }}</a>
               } @else {
-                <span class="pg-mono">{{ t.matter.clientNumber }}</span>
+                <span class="pg-mono">{{ t.matter.clientNumber | businessNumber }}</span>
               }
             </span>
             <span class="th__sep" aria-hidden="true">&middot;</span>
@@ -244,7 +253,7 @@ export class TaskHeader {
     const w = t.workflow;
     return [
       `Matter ${t.matter.matterRef} ${t.matter.name}`,
-      `Client ${t.matter.clientNumber}`,
+      `Client ${formatBusinessNumber(t.matter.clientNumber)}`,
       t.taskType.name,
       `${w.workflowName} v${w.versionNo} (${w.isOrdered ? 'ordered' : 'unordered'})`,
     ].join(' \u00b7 ');

@@ -177,6 +177,9 @@ public static class OrganizationAuditEvents
     /// <summary>A matter's Matter Types were set, changed or cleared (field key <c>MatterType</c>; old and new value are the type names in list order, joined with ", ").</summary>
     public const string MatterTypeChanged = "MATTER_TYPE_CHANGED";
 
+    /// <summary>A matter's DMS or DFS paths were set, changed or cleared (field key <c>DmsPaths</c> or <c>DfsPaths</c>; old and new value are the whole list, the paths joined with "; "). One event per kind and save.</summary>
+    public const string MatterPathsChanged = "MATTER_PATHS_CHANGED";
+
     /// <summary>A matter's Matter Category was set, changed or cleared (field key <c>MatterCategory</c>; old and new value are the category names).</summary>
     public const string MatterCategoryChanged = "MATTER_CATEGORY_CHANGED";
 

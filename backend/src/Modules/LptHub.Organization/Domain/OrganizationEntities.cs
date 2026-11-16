@@ -80,11 +80,7 @@ public class Matter : AuditedEntity<int>, IAuditScoped
     [AuditExplicit]
     public int? CurrentStateId { get; set; }
 
-    /// <summary>Optional DMS location: a UNC path (<c>\\server\share\...</c>) or an http/https address; trimmed, at most 1000 characters. Changes are audited as a field change.</summary>
-    public string? DmsPath { get; set; }
-
-    /// <summary>Optional DFS location, same rules as <see cref="DmsPath"/>.</summary>
-    public string? DfsPath { get; set; }
+    // The DMS and DFS paths of a matter (epic #1389, issue #1391: up to 10 of each kind) are the rows of MatterPath, not columns of this entity.
 
     [AuditJsonFields("custom")]
     public string? CustomFieldsJson { get; set; }
@@ -104,6 +100,35 @@ public class MatterMatterType
 
     /// <summary>The Matter Type (admin list in the Configuration module); a type that is later deactivated stays on the matters that use it.</summary>
     public int MatterTypeId { get; set; }
+}
+
+/// <summary>The two kinds of matter path (the values of the Kind column of MatterPath).</summary>
+public static class MatterPathKinds
+{
+    public const string Dms = "DMS";
+    public const string Dfs = "DFS";
+
+    /// <summary>The most paths one matter may carry of one kind.</summary>
+    public const int MaxPerKind = 10;
+}
+
+/// <summary>
+/// One DMS or DFS path of a matter (epic #1389, issue #1391): a UNC path or an http/https address, trimmed, at most 1000 characters. The matter, the kind and the
+/// position (1 to 10) are the key; the position keeps the order the person gave. Changes are audited by <c>MATTER_PATHS_CHANGED</c> events (one per kind and save), so the row itself is not field-audited.
+/// </summary>
+public class MatterPath
+{
+    public int Id { get; set; }
+
+    public int MatterId { get; set; }
+
+    /// <summary>Either <see cref="MatterPathKinds.Dms"/> or <see cref="MatterPathKinds.Dfs"/>.</summary>
+    public string Kind { get; set; } = MatterPathKinds.Dms;
+
+    /// <summary>1-based place in the list of its kind.</summary>
+    public int Position { get; set; }
+
+    public string Path { get; set; } = string.Empty;
 }
 
 /// <summary>A flat container of Tasks within a Matter (no nesting). A Task's Project must belong to the Task's Matter.</summary>

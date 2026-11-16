@@ -56,8 +56,8 @@ test.describe('Matter Summary: Details groups and the Team panel (#1376)', () =>
       matterTypeIds: types.slice(0, 2).map((t) => t.id),
       currentStateId: states[0]?.id,
       matterCategoryId: opts.category ? categories[0]?.id : undefined,
-      dmsPath: '\\\\fs01\\dms\\Matters\\1048\\0017',
-      dfsPath: 'https://dfs.example.com/matters/10482/0017',
+      dmsPaths: ['\\\\fs01\\dms\\Matters\\1048\\0017'],
+      dfsPaths: ['https://dfs.example.com/matters/10482/0017'],
     });
     const titles = (await admin.get<Json[]>('/api/v1/team-titles')).filter((t) => t.isActive);
     const specs: [string, string, string, string?, string?][] = [

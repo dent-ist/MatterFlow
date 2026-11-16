@@ -25,6 +25,7 @@ import { FixedPage, ScrollArea } from '../../../shared/ui/fixed-page';
 import { restoreTabFocus } from '../../../shared/ui/row-nav';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { RecordAction, RecordHeader } from '../../../shared/ui/record-header';
+import { BusinessNumberPipe, formatBusinessNumber } from '../../../shared/pipes/matter-ref.pipe';
 
 type Tab = 'details' | 'matters';
 
@@ -39,6 +40,7 @@ const INACTIVE_REASON = 'This client is inactive. Set it active to add matters.'
 @Component({
   selector: 'mf-client-detail-page',
   imports: [
+    BusinessNumberPipe,
     FixedPage,
     RecordHeader,
     RecordState,
@@ -64,8 +66,8 @@ const INACTIVE_REASON = 'This client is inactive. Set it active to add matters.'
             <mf-record-header
               kind="client"
               [parents]="[{ label: 'Clients', link: '/clients' }]"
-              [current]="c.clientNumber + ' ' + c.name"
-              [ref]="c.clientNumber"
+              [current]="(c.clientNumber | businessNumber) + ' ' + c.name"
+              [ref]="c.clientNumber | businessNumber"
               [name]="c.name"
               [active]="c.isActive"
               [actions]="headerActions()"
@@ -124,14 +126,14 @@ const INACTIVE_REASON = 'This client is inactive. Set it active to add matters.'
             >
               @if (c.isActive) {
                 <p data-toggle-body>
-                  {{ c.clientNumber }} {{ c.name }} becomes inactive: new matters can't be created
-                  for it, its existing matters and tasks keep working, and you can set it active
-                  again.
+                  {{ c.clientNumber | businessNumber }} {{ c.name }} becomes inactive: new matters
+                  can't be created for it, its existing matters and tasks keep working, and you can
+                  set it active again.
                 </p>
               } @else {
                 <p data-toggle-body>
-                  {{ c.clientNumber }} {{ c.name }} becomes active and new matters can be created
-                  for it again.
+                  {{ c.clientNumber | businessNumber }} {{ c.name }} becomes active and new matters
+                  can be created for it again.
                 </p>
               }
             </mf-confirm-dialog>
@@ -232,7 +234,10 @@ export class ClientDetailPage {
       const c = this.state() === 'ready' ? this.client() : null;
       this.pageTitle.pin(
         c
-          ? recordTitle(c.clientNumber + ' ' + c.name, recordTabLabel('client', this.current()))
+          ? recordTitle(
+              formatBusinessNumber(c.clientNumber) + ' ' + c.name,
+              recordTabLabel('client', this.current()),
+            )
           : recordStateTitle('client', this.state()),
       );
     });

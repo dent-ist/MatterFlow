@@ -95,4 +95,51 @@ public class MatterFieldRulesTests
         error.Code.ShouldBe(ErrorCodes.InvalidPath);
         error.FieldErrors!["dmsPath"][0].Code.ShouldBe(MatterFieldRules.PathTooLong);
     }
+
+    [Fact]
+    public void A_list_skips_blank_entries_trims_the_rest_and_keeps_the_order()
+    {
+        var result = MatterFieldRules.CleanPaths([" https://a.example.com/x ", null, "", @"\\fs01\share"], "dmsPaths", []);
+
+        result.IsSuccess.ShouldBeTrue();
+        result.Value.ShouldBe(["https://a.example.com/x", @"\\fs01\share"]);
+        MatterFieldRules.CleanPaths(null, "dmsPaths", []).Value.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void A_list_names_every_bad_entry_by_its_place_in_the_request()
+    {
+        var error = MatterFieldRules.CleanPaths(["https://ok.example.com", @"C:\x", "", "ftp://h/x"], "dfsPaths", []).Error!;
+
+        error.Code.ShouldBe(ErrorCodes.InvalidPath);
+        error.FieldErrors!.Keys.ShouldBe(["dfsPaths[1]", "dfsPaths[3]"], ignoreOrder: true);
+        error.FieldErrors["dfsPaths[1]"][0].Code.ShouldBe(MatterFieldRules.PathDriveLetter);
+        error.FieldErrors["dfsPaths[3]"][0].Code.ShouldBe(MatterFieldRules.PathFormat);
+    }
+
+    [Fact]
+    public void The_same_path_twice_ignoring_case_is_refused_at_the_second_place()
+    {
+        var error = MatterFieldRules.CleanPaths(["https://a.example.com/x", "HTTPS://A.EXAMPLE.COM/x"], "dmsPaths", []).Error!;
+
+        error.FieldErrors!["dmsPaths[1]"][0].Code.ShouldBe(MatterFieldRules.PathDuplicate);
+        error.FieldErrors["dmsPaths[1]"][0].Message.ShouldBe(MatterFieldRules.DuplicateMessage);
+    }
+
+    [Fact]
+    public void Ten_paths_are_fine_and_eleven_are_refused_on_the_list_itself()
+    {
+        string[] ten = [.. Enumerable.Range(1, 10).Select(i => $"https://h.example.com/{i}")];
+
+        MatterFieldRules.CleanPaths(ten, "dmsPaths", []).IsSuccess.ShouldBeTrue();
+        var error = MatterFieldRules.CleanPaths([.. ten, "https://h.example.com/11"], "dmsPaths", []).Error!;
+        error.FieldErrors!["dmsPaths"][0].Code.ShouldBe(MatterFieldRules.TooManyPaths);
+    }
+
+    [Fact]
+    public void A_path_the_matter_already_has_is_kept_even_if_the_rules_would_refuse_it_today()
+    {
+        MatterFieldRules.CleanPaths([@"D:\old"], "dmsPaths", [@"D:\old"]).Value.ShouldBe([@"D:\old"]);
+        MatterFieldRules.CleanPaths([@"D:\old"], "dmsPaths", []).IsFailure.ShouldBeTrue();
+    }
 }

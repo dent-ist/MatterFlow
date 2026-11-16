@@ -76,19 +76,107 @@ export function pathProblem(value: string | null | undefined): string | null {
   return PATH_FORMAT_MESSAGE;
 }
 
-/** The path value to send: trimmed, undefined (cleared) when empty. */
-export function pathToSend(value: string | null | undefined): string | undefined {
-  const text = (value ?? '').trim();
-  return text === '' ? undefined : text;
+/** The help line under a list of paths on the Matter form. */
+export const PATHS_HELP =
+  'A network path (\\\\server\\share\\...) or a web address (https://...). Optional. Up to 10.';
+
+/** The most paths one matter may carry of one kind (the API answers `TOO_MANY_PATHS` over it). */
+export const PATHS_MAX = 10;
+export const PATH_DUPLICATE_MESSAGE = 'This path is already in the list.';
+export const PATHS_TOO_MANY_MESSAGE = `Use at most ${PATHS_MAX} paths of one kind.`;
+
+/** The message of the codes of a list entry. */
+const LIST_MESSAGE_OF_CODE: Readonly<Record<string, string>> = {
+  ...MESSAGE_OF_CODE,
+  PATH_DUPLICATE: PATH_DUPLICATE_MESSAGE,
+  TOO_MANY_PATHS: PATHS_TOO_MANY_MESSAGE,
+};
+
+/** One line of a path list on the form: the key stays while the line is on screen (so a removal does not move the typing into the next line). */
+export interface PathRow {
+  key: number;
+  text: string;
+}
+
+let rowCounter = 0;
+
+export function newPathRow(text = ''): PathRow {
+  rowCounter += 1;
+  return { key: rowCounter, text };
+}
+
+/** The lines for a stored list: one per path, or one empty line when there is none (the field is always there to type in). */
+export function pathRowsOf(values: readonly string[] | null | undefined): PathRow[] {
+  return values && values.length > 0 ? values.map((v) => newPathRow(v)) : [newPathRow()];
+}
+
+/** The paths typed so far, trimmed, without the empty lines. */
+export function typedPaths(rows: readonly PathRow[]): string[] {
+  return rows.map((r) => r.text.trim()).filter((t) => t !== '');
 }
 
 /**
- * The message the API gave a path field (400 `INVALID_PATH`) keyed by the field's code, so the screen words match the spec whatever the server wrote; null when
- * the error is not about this field.
+ * The message under each line, in the order of the lines (null: fine). A line is wrong by the rule of one path, or because the same path (ignoring letter case) is typed
+ * higher up in the list; an empty line is fine.
  */
-export function serverPathMessage(err: unknown, field: 'dmsPath' | 'dfsPath'): string | null {
-  if (!(err instanceof ApiError)) return null;
-  const entry = err.problem?.errors?.[field]?.[0];
-  if (!entry) return null;
-  return MESSAGE_OF_CODE[entry.code] ?? entry.message;
+export function pathRowProblems(rows: readonly PathRow[]): (string | null)[] {
+  const seen = new Set<string>();
+  return rows.map((r) => {
+    const text = r.text.trim();
+    if (text === '') return null;
+    const own = pathProblem(text);
+    if (own) return own;
+    const key = text.toLowerCase();
+    if (seen.has(key)) return PATH_DUPLICATE_MESSAGE;
+    seen.add(key);
+    return null;
+  });
+}
+
+/** The message for the whole list (more lines with text than the limit), or null. */
+export function pathListProblem(rows: readonly PathRow[]): string | null {
+  return typedPaths(rows).length > PATHS_MAX ? PATHS_TOO_MANY_MESSAGE : null;
+}
+
+/** What the request carries: the non-empty paths, trimmed, in order, and for each one the index of its line (to put a server message under the right line). */
+export function pathsToSend(rows: readonly PathRow[]): { values: string[]; lineOf: number[] } {
+  const values: string[] = [];
+  const lineOf: number[] = [];
+  rows.forEach((r, i) => {
+    const text = r.text.trim();
+    if (text !== '') {
+      values.push(text);
+      lineOf.push(i);
+    }
+  });
+  return { values, lineOf };
+}
+
+/**
+ * The messages the API gave a path list (400 `INVALID_PATH`, keys `dmsPaths[n]` with n the place in the request): one per line (by the line's index, through `lineOf`) and
+ * one for the list itself. The words are chosen by the field codes, so they read as the UI spec words them.
+ */
+export function serverPathMessages(
+  err: unknown,
+  field: 'dmsPaths' | 'dfsPaths',
+  lineOf: readonly number[],
+): { lines: Record<number, string>; list: string | null } {
+  const result: { lines: Record<number, string>; list: string | null } = { lines: {}, list: null };
+  if (!(err instanceof ApiError)) return result;
+  const errors = err.problem?.errors ?? {};
+  for (const [key, entries] of Object.entries(errors)) {
+    const entry = entries?.[0];
+    if (!entry) continue;
+    const message = LIST_MESSAGE_OF_CODE[entry.code] ?? entry.message;
+    if (key === field) {
+      result.list = message;
+      continue;
+    }
+    const match = new RegExp(`^${field}\\[(\\d+)\\]$`).exec(key);
+    if (match) {
+      const line = lineOf[Number(match[1])];
+      if (line !== undefined) result.lines[line] = message;
+    }
+  }
+  return result;
 }

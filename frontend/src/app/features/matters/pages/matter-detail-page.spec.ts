@@ -410,6 +410,40 @@ describe('MatterDetailPage', () => {
     expect(lastTab()).toBe('tasks');
   });
 
+  it('shows the client number with 5 digits even when it arrives without the zeros (#1392)', async () => {
+    await create(
+      ['Matter.View', 'Audit.View', 'Client.View', 'Task.View'],
+      aMatter({ clientNumber: '343', clientIsActive: false }),
+    );
+    expect(el().querySelector('[data-client-inactive-banner]')?.textContent).toContain(
+      'The client 00343 is inactive.',
+    );
+    const clientRow = Array.from(el().querySelectorAll('[data-details-tab] .pg-mono')).map((e) =>
+      e.textContent!.trim(),
+    );
+    expect(clientRow).toContain('00343');
+    expect(clientRow).not.toContain('343');
+  });
+
+  it('shows every DMS and DFS path on its own line with its own Copy button, and Not set when there is none (#1391)', async () => {
+    await create(
+      ['Matter.View', 'Audit.View', 'Client.View', 'Task.View'],
+      aMatter({
+        dmsPaths: ['\\\\fs01\\dms\\one', 'https://dms.example.com/two'],
+        dfsPaths: [],
+      }),
+    );
+    const dms = el().querySelector('[data-dms-path]')!;
+    expect(Array.from(dms.querySelectorAll('[data-path-row]'))).toHaveLength(2);
+    expect(
+      Array.from(dms.querySelectorAll('button.mf-copy')).map((b) => b.getAttribute('aria-label')),
+    ).toEqual(['Copy DMS Path 1', 'Copy DMS Path 2']);
+    expect(dms.querySelectorAll('[data-path-link]')).toHaveLength(1);
+    const dfs = el().querySelector('[data-dfs-path]')!;
+    expect(dfs.querySelectorAll('[data-path-row]')).toHaveLength(0);
+    expect(dfs.querySelector('[data-path-none]')?.textContent).toBe('Not set');
+  });
+
   it('shows the Summary as the first tab with the matter details as a plain list: CM number first, only existing fields, custom fields as rows, AI allowed', async () => {
     await create(
       ['Matter.View', 'Audit.View', 'Client.View', 'Task.View'],
@@ -434,8 +468,8 @@ describe('MatterDetailPage', () => {
       'Sensitive',
       'Primary PM',
       'Secondary PM',
-      'DMS Path',
-      'DFS Path',
+      'DMS Paths',
+      'DFS Paths',
     ]);
     expect(
       Array.from(summary.querySelectorAll('[data-details-group]')).map((h) =>

@@ -354,7 +354,7 @@ public sealed class MatterService(
                 "A sensitive matter needs a project manager, or be created by someone who can see all sensitive matters.");
         }
 
-        var fields = await CheckFieldsAsync(request.MatterTypeIds, [], request.MatterCategoryId, request.CurrentStateId, request.DmsPath, request.DfsPath, null, ct);
+        var fields = await CheckFieldsAsync(request.MatterTypeIds, [], request.MatterCategoryId, request.CurrentStateId, request.DmsPaths, request.DfsPaths, [], null, ct);
         if (fields.IsFailure)
             return fields.Error!;
 
@@ -384,8 +384,6 @@ public sealed class MatterService(
             AiAllowed = request.AiAllowed,
             MatterCategoryId = request.MatterCategoryId,
             CurrentStateId = request.CurrentStateId,
-            DmsPath = fields.Value.Dms,
-            DfsPath = fields.Value.Dfs,
         };
         db.Set<Matter>().Add(matter);
         var newManagers = wantsManagers ? NewlySet(matter, request.PrimaryManagerId, request.SecondaryManagerId) : [];
@@ -422,6 +420,16 @@ public sealed class MatterService(
             {
                 // Event 7: the matter has its id now; the rows commit with the matter.
                 await NotifyManagersSetAsync(matter, newManagers, ct);
+                await db.SaveChangesAsync(ct);
+            }
+
+            if (fields.Value.Dms.Length > 0 || fields.Value.Dfs.Length > 0)
+            {
+                // Created with paths: the rows carry the matter id (known only now).
+                AddPathRows(matter.Id, MatterPathKinds.Dms, fields.Value.Dms);
+                AddPathRows(matter.Id, MatterPathKinds.Dfs, fields.Value.Dfs);
+                AuditPathsChange(matter, MatterPathKinds.Dms, [], fields.Value.Dms);
+                AuditPathsChange(matter, MatterPathKinds.Dfs, [], fields.Value.Dfs);
                 await db.SaveChangesAsync(ct);
             }
 
@@ -490,7 +498,8 @@ public sealed class MatterService(
         }
 
         var typeRows = await db.Set<MatterMatterType>().Where(t => t.MatterId == id).ToListAsync(ct);
-        var fields = await CheckFieldsAsync(request.MatterTypeIds, [.. typeRows.Select(t => t.MatterTypeId)], request.MatterCategoryId, request.CurrentStateId, request.DmsPath, request.DfsPath, matter, ct);
+        var pathRows = await db.Set<MatterPath>().Where(p => p.MatterId == id).ToListAsync(ct);
+        var fields = await CheckFieldsAsync(request.MatterTypeIds, [.. typeRows.Select(t => t.MatterTypeId)], request.MatterCategoryId, request.CurrentStateId, request.DmsPaths, request.DfsPaths, pathRows, matter, ct);
         if (fields.IsFailure)
             return fields.Error!;
 
@@ -549,8 +558,14 @@ public sealed class MatterService(
             }
         }
 
-        matter.DmsPath = fields.Value.Dms; // the paths are plain fields: the audit interceptor records a change as FIELD_CHANGED
-        matter.DfsPath = fields.Value.Dfs;
+        var pathsChanged = ApplyPaths(matter, pathRows, MatterPathKinds.Dms, fields.Value.Dms);
+        pathsChanged |= ApplyPaths(matter, pathRows, MatterPathKinds.Dfs, fields.Value.Dfs);
+        if (pathsChanged)
+        {
+            // The path rows are not part of the matter row: touch it, so the row version moves and "modified" shows the change like any other edit.
+            db.Entry(matter).Property(m => m.ModifiedAtUtc).IsModified = true;
+        }
+
         if (updatedManagers.Count > 0)
             await NotifyManagersSetAsync(matter, updatedManagers, ct); // event 7, in the same save
         OrganizationSupport.TrackOriginalRowVersion(db, matter, request.RowVersion);
@@ -788,12 +803,12 @@ public sealed class MatterService(
         OrganizationSupport.Utc(r.Matter.CreatedAtUtc),
         OrganizationSupport.Utc(r.Matter.ModifiedAtUtc),
         names is null ? [] : names.TypesOf(r.Matter.Id),
+        names is null ? [] : names.PathsOf(r.Matter.Id, MatterPathKinds.Dms),
+        names is null ? [] : names.PathsOf(r.Matter.Id, MatterPathKinds.Dfs),
         states?.OnHold,
         states?.AtRisk,
         r.Matter.AiAllowed,
         names is null ? null : MatterListNames.RefOf(names.States, r.Matter.CurrentStateId),
-        r.Matter.DmsPath,
-        r.Matter.DfsPath,
         names is null ? null : MatterListNames.RefOf(names.Categories, r.Matter.MatterCategoryId));
 
     /// <summary>The names of the Matter Type, Matter Category and Current State items (inactive ones too), and which types the loaded matters carry, for the answers.</summary>
@@ -801,8 +816,13 @@ public sealed class MatterService(
         IReadOnlyDictionary<int, MatterListItemInfo> Types,
         IReadOnlyDictionary<int, MatterListItemInfo> States,
         IReadOnlyDictionary<int, MatterListItemInfo> Categories,
-        IReadOnlyDictionary<int, int[]> TypeIdsByMatter)
+        IReadOnlyDictionary<int, int[]> TypeIdsByMatter,
+        IReadOnlyDictionary<int, IReadOnlyList<MatterPath>> PathsByMatter)
     {
+        /// <summary>The paths of one kind of a matter, in the order the person gave.</summary>
+        public IReadOnlyList<string> PathsOf(int matterId, string kind) =>
+            PathsByMatter.TryGetValue(matterId, out var rows) ? MatterService.PathsOf(rows, kind) : [];
+
         /// <summary>The Matter Types of a matter as lists show them: in the order of the Matter Types list, then by name.</summary>
         public IReadOnlyList<MatterListRef> TypesOf(int matterId) =>
             TypeIdsByMatter.TryGetValue(matterId, out var ids)
@@ -819,11 +839,16 @@ public sealed class MatterService(
             ? new Dictionary<int, int[]>()
             : (await db.Set<MatterMatterType>().AsNoTracking().Where(t => ids.Contains(t.MatterId)).ToListAsync(ct))
                 .GroupBy(t => t.MatterId).ToDictionary(g => g.Key, g => g.Select(t => t.MatterTypeId).ToArray());
+        IReadOnlyDictionary<int, IReadOnlyList<MatterPath>> paths = ids.Length == 0
+            ? new Dictionary<int, IReadOnlyList<MatterPath>>()
+            : (await db.Set<MatterPath>().AsNoTracking().Where(p => ids.Contains(p.MatterId)).ToListAsync(ct))
+                .GroupBy(p => p.MatterId).ToDictionary(g => g.Key, g => (IReadOnlyList<MatterPath>)g.ToList());
         return new(
             types,
             await MatterListNames.LoadAsync(lists, MatterListKind.CurrentState, ct),
             await MatterListNames.LoadAsync(lists, MatterListKind.MatterCategory, ct),
-            byMatter);
+            byMatter,
+            paths);
     }
 
     /// <summary>The chosen items in the order of their list (position, then name); an id the list no longer knows is shown as "Item n" last.</summary>
@@ -906,10 +931,10 @@ public sealed class MatterService(
         id is { } v ? items.TryGetValue(v, out var item) ? item.Name : $"Item {v.ToString(CultureInfo.InvariantCulture)}" : null;
 
     /// <summary>
-    /// Checks the new matter fields: the chosen type and state (see <see cref="CheckChoiceAsync"/>) and cleans both paths. An unchanged stored path is accepted as it is
+    /// Checks the new matter fields: the chosen type and state (see <see cref="CheckChoiceAsync"/>) and cleans both path lists. A path the matter already has is accepted as it is
     /// (a value saved before the rules tightened does not block saving other changes).
     /// </summary>
-    private async Task<Result<(string? Dms, string? Dfs, int[] Types)>> CheckFieldsAsync(IReadOnlyCollection<int>? typeIds, IReadOnlyCollection<int> currentTypeIds, int? categoryId, int? stateId, string? dms, string? dfs, Matter? current, CancellationToken ct)
+    private async Task<Result<(string[] Dms, string[] Dfs, int[] Types)>> CheckFieldsAsync(IReadOnlyCollection<int>? typeIds, IReadOnlyCollection<int> currentTypeIds, int? categoryId, int? stateId, string[]? dms, string[]? dfs, IReadOnlyList<MatterPath> currentPaths, Matter? current, CancellationToken ct)
     {
         var types = await CheckTypesAsync(typeIds, currentTypeIds, ct);
         if (types.IsFailure)
@@ -923,16 +948,24 @@ public sealed class MatterService(
         if (state.IsFailure)
             return state.Error!;
 
-        var cleanDms = Unchanged(dms, current?.DmsPath) ? Result<string?>.Success(current?.DmsPath) : MatterFieldRules.CleanPath(dms, "dmsPath");
+        var cleanDms = MatterFieldRules.CleanPaths(dms, "dmsPaths", PathsOf(currentPaths, MatterPathKinds.Dms));
+        var cleanDfs = MatterFieldRules.CleanPaths(dfs, "dfsPaths", PathsOf(currentPaths, MatterPathKinds.Dfs));
+        if (cleanDms.IsFailure && cleanDfs.IsFailure)
+        {
+            var both = cleanDms.Error!.FieldErrors!.Concat(cleanDfs.Error!.FieldErrors!).ToDictionary(kv => kv.Key, kv => kv.Value);
+            return new Error(ErrorType.Validation, ErrorCodes.InvalidPath, cleanDms.Error.Message, both);
+        }
+
         if (cleanDms.IsFailure)
             return cleanDms.Error!;
-
-        var cleanDfs = Unchanged(dfs, current?.DfsPath) ? Result<string?>.Success(current?.DfsPath) : MatterFieldRules.CleanPath(dfs, "dfsPath");
         if (cleanDfs.IsFailure)
             return cleanDfs.Error!;
 
         return (cleanDms.Value, cleanDfs.Value, types.Value);
     }
+
+    private static string[] PathsOf(IEnumerable<MatterPath> rows, string kind) =>
+        [.. rows.Where(p => p.Kind == kind).OrderBy(p => p.Position).Select(p => p.Path)];
 
     /// <summary>
     /// The chosen Matter Types (epic #1368): each must exist and, unless the matter already has it, be active. Repeated ids count once. An empty or missing list means "no type".
@@ -959,7 +992,46 @@ public sealed class MatterService(
         return wanted;
     }
 
-    private static bool Unchanged(string? sent, string? stored) => stored is not null && string.Equals(sent?.Trim(), stored, StringComparison.Ordinal);
+    private void AddPathRows(int matterId, string kind, IReadOnlyList<string> paths) =>
+        db.Set<MatterPath>().AddRange(paths.Select((path, i) => new MatterPath { MatterId = matterId, Kind = kind, Position = i + 1, Path = path }));
+
+    /// <summary>
+    /// Makes the stored rows of one kind equal the new list: the rows keep their place, so a path that moved is an update of the text at that place, extra rows are added or removed.
+    /// Returns true (and queues the audit event) when the list changed.
+    /// </summary>
+    private bool ApplyPaths(Matter matter, List<MatterPath> rows, string kind, string[] wanted)
+    {
+        var have = rows.Where(r => r.Kind == kind).OrderBy(r => r.Position).ToList();
+        if (have.Select(r => r.Path).SequenceEqual(wanted, StringComparer.Ordinal))
+            return false;
+
+        AuditPathsChange(matter, kind, [.. have.Select(r => r.Path)], wanted);
+        for (var i = 0; i < wanted.Length; i++)
+        {
+            if (i < have.Count)
+                have[i].Path = wanted[i];
+            else
+                db.Set<MatterPath>().Add(new MatterPath { MatterId = matter.Id, Kind = kind, Position = i + 1, Path = wanted[i] });
+        }
+
+        db.Set<MatterPath>().RemoveRange(have.Skip(wanted.Length));
+        return true;
+    }
+
+    /// <summary>Queues the dedicated audit event of a change to the paths of one kind (old and new list as text, the paths joined with "; "; nothing is queued when both lists are empty).</summary>
+    private void AuditPathsChange(Matter matter, string kind, IReadOnlyCollection<string> before, IReadOnlyCollection<string> after)
+    {
+        if (before.Count == 0 && after.Count == 0)
+            return;
+
+        AuditListChange(
+            matter,
+            OrganizationAuditEvents.MatterPathsChanged,
+            kind == MatterPathKinds.Dms ? "DmsPaths" : "DfsPaths",
+            kind == MatterPathKinds.Dms ? "DMS Paths" : "DFS Paths",
+            before.Count == 0 ? null : string.Join("; ", before),
+            after.Count == 0 ? null : string.Join("; ", after));
+    }
 
     /// <summary>The ids of the items of a pick list (inactive ones too) whose name contains the text, for the list search.</summary>
     private async Task<int[]> IdsNamedAsync(MatterListKind kind, string text, CancellationToken ct) =>

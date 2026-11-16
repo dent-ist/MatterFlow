@@ -31,10 +31,11 @@ Totals (counted by `tools/db/schema-fingerprint.sql` on a database built from th
 | [FormVersion](#formversion) | Forms and custom fields | Configuration | 13 | 5 |
 | [Holiday](#holiday) | Availability and Calendar | Identity | 22 | 3 |
 | [HolidayCalendar](#holidaycalendar) | Availability and Calendar | Identity | 12 | 2 |
-| [Matter](#matter) | Clients, Matters and Projects | Organization | 22 | 8 |
+| [Matter](#matter) | Clients, Matters and Projects | Organization | 20 | 8 |
 | [MatterCategory](#mattercategory) | Clients, Matters and Projects | Configuration | 8 | 2 |
 | [MatterEvent](#matterevent) | Clients, Matters and Projects | Organization | 12 | 3 |
 | [MatterMatterType](#mattermattertype) | Clients, Matters and Projects | Organization | 2 | 2 |
+| [MatterPath](#matterpath) | Clients, Matters and Projects | Organization | 5 | 1 |
 | [MatterTeamMember](#matterteammember) | Clients, Matters and Projects | Organization | 10 | 5 |
 | [MatterType](#mattertype) | Clients, Matters and Projects | Configuration | 9 | 2 |
 | [Note](#note) | Notes | Notes | 16 | 5 |
@@ -271,10 +272,10 @@ A law-firm client with a zero-padded 5-digit client number.
 A client case. Business reference is client number plus matter number (CM Number). Has Sensitive flag, Primary and Secondary project manager, an AI allowed switch and custom fields.
 
 - **Module:** Organization. **Area:** Clients, Matters and Projects.
-- **Scripts:** created by script 5; changed by scripts 28, 35, 37, 51, 64, 68, 69.
+- **Scripts:** created by script 5; changed by scripts 28, 35, 37, 51, 64, 68, 69, 78.
 - **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_Matter` (MatterId), int identity.
-- **Columns (22; `?` = nullable):** `MatterId int`, `ClientId int`, `ClientNumber char(5)`, `MatterNumber char(5)`, `MatterRef char(11)`, `Name nvarchar(300)`, `IsActive bit`, `IsSensitive bit`, `CustomFieldsJson nvarchar(max)?`, `PrimaryManagerId int?`, `SecondaryManagerId int?`, `AiAllowed tinyint`, `MatterTypeId int?` (deprecated since script 69: no longer read or written, the Matter Types of a matter are the rows of `MatterMatterType`), `CurrentStateId int?`, `DmsPath nvarchar(1000)?`, `DfsPath nvarchar(1000)?`, `MatterCategoryId int?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
+- **Columns (20; `?` = nullable):** `MatterId int`, `ClientId int`, `ClientNumber char(5)`, `MatterNumber char(5)`, `MatterRef char(11)`, `Name nvarchar(300)`, `IsActive bit`, `IsSensitive bit`, `CustomFieldsJson nvarchar(max)?`, `PrimaryManagerId int?`, `SecondaryManagerId int?`, `AiAllowed tinyint`, `MatterTypeId int?` (deprecated since script 69: no longer read or written, the Matter Types of a matter are the rows of `MatterMatterType`), `CurrentStateId int?`, `MatterCategoryId int?`. The DMS and DFS paths of a matter are the rows of `MatterPath` (script 78 moved the former `DmsPath` and `DfsPath` columns there). Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (7):**
   - `FK_Matter_CurrentState`: `CurrentStateId` to `CurrentState(CurrentStateId)`
   -   - `FK_Matter_MatterCategory`: `MatterCategoryId` to `MatterCategory(MatterCategoryId)`
@@ -345,6 +346,20 @@ The Matter Types chosen on a matter (a multi-select; epic #1368). One row per ma
   - `FK_MatterMatterType_Matter`: `MatterId` to `Matter(MatterId)`
   - `FK_MatterMatterType_MatterType`: `MatterTypeId` to `MatterType(MatterTypeId)`
 - **Indexes and unique constraints (1):** `IX_MatterMatterType_MatterType` (MatterTypeId,MatterId).
+
+### MatterPath
+
+The DMS paths and DFS paths of a matter (epic #1389, issue #1391): one row per path, at most 10 per kind, in the order the person gave (`Position`). A path is a UNC path or an http/https address, at most 1000 characters; there is no label per path. Script 78 copied each former single `Matter.DmsPath` and `Matter.DfsPath` in as position 1 of its kind. The same text twice in one list is refused by the application, not by a key (a 1000-character path is too long for an index). Changes are audited by `MATTER_PATHS_CHANGED` events.
+
+- **Module:** Organization. **Area:** Clients, Matters and Projects.
+- **Scripts:** created by script 78.
+- **Report login (`lpt_report_reader`):** allow.
+- **Primary key:** `PK_MatterPath` (MatterPathId), int identity.
+- **Columns (5; `?` = nullable):** `MatterPathId int`, `MatterId int`, `Kind char(3)` (`DMS` or `DFS`), `Position tinyint` (1 to 10), `Path nvarchar(1000)`.
+- **Foreign keys (1):**
+  - `FK_MatterPath_Matter`: `MatterId` to `Matter(MatterId)`
+- **Indexes and unique constraints (1):** `UQ_MatterPath_MatterKindPosition` (MatterId,Kind,Position) - unique.
+- **Check constraints (3):** `CK_MatterPath_Kind`, `CK_MatterPath_Path`, `CK_MatterPath_Position`.
 
 ### MatterTeamMember
 

@@ -4,10 +4,18 @@ import {
   PATH_CREDENTIALS_MESSAGE,
   PATH_DRIVE_LETTER_MESSAGE,
   PATH_FORMAT_MESSAGE,
-  isWebAddress,
   pathProblem,
-  pathToSend,
-  serverPathMessage,
+  PATHS_MAX,
+  PATHS_TOO_MANY_MESSAGE,
+  PATH_DUPLICATE_MESSAGE,
+  isWebAddress,
+  newPathRow,
+  pathListProblem,
+  pathRowProblems,
+  pathRowsOf,
+  pathsToSend,
+  serverPathMessages,
+  typedPaths,
 } from './matter-paths';
 
 describe('DMS and DFS path rule (UI spec 3.3)', () => {
@@ -67,27 +75,77 @@ describe('DMS and DFS path rule (UI spec 3.3)', () => {
     expect(isWebAddress('https://a.example/x')).toBe(true);
     expect(isWebAddress('\\\\fs01\\share')).toBe(false);
     expect(isWebAddress(undefined)).toBe(false);
-    expect(pathToSend('  \\\\fs01\\share ')).toBe('\\\\fs01\\share');
-    expect(pathToSend('  ')).toBeUndefined();
   });
 
-  it('maps the API field codes to the same sentences', () => {
-    const error = (code: string, message: string) =>
-      new ApiError(
-        400,
-        'INVALID_PATH',
-        message,
-        { errors: { dmsPath: [{ code, message }] } },
-        new HttpErrorResponse({ status: 400 }),
-      );
-    expect(serverPathMessage(error('PATH_DRIVE_LETTER', 'x'), 'dmsPath')).toBe(
+  it('starts a list with one empty line and keeps a stored list as it is', () => {
+    expect(pathRowsOf(null).map((r) => r.text)).toEqual(['']);
+    expect(pathRowsOf([]).map((r) => r.text)).toEqual(['']);
+    const rows = pathRowsOf(['https://a.example/x', '\\\\fs01\\share']);
+    expect(rows.map((r) => r.text)).toEqual(['https://a.example/x', '\\\\fs01\\share']);
+    expect(new Set(rows.map((r) => r.key)).size).toBe(2);
+  });
+
+  it('sends the typed paths trimmed, in order, without the empty lines, and remembers each line', () => {
+    const rows = [
+      newPathRow(' https://a.example/x '),
+      newPathRow(' '),
+      newPathRow('\\\\fs01\\share'),
+    ];
+    expect(typedPaths(rows)).toEqual(['https://a.example/x', '\\\\fs01\\share']);
+    expect(pathsToSend(rows)).toEqual({
+      values: ['https://a.example/x', '\\\\fs01\\share'],
+      lineOf: [0, 2],
+    });
+  });
+
+  it('checks every line by the one-path rule and flags the same path typed again, ignoring letter case', () => {
+    const rows = [
+      newPathRow('https://a.example/x'),
+      newPathRow('C:\\x'),
+      newPathRow(''),
+      newPathRow('HTTPS://A.example/X'),
+    ];
+    expect(pathRowProblems(rows)).toEqual([
+      null,
       PATH_DRIVE_LETTER_MESSAGE,
+      null,
+      PATH_DUPLICATE_MESSAGE,
+    ]);
+  });
+
+  it('allows ten paths of a kind and refuses the eleventh', () => {
+    const ten = Array.from({ length: PATHS_MAX }, (_, i) => newPathRow(`https://a.example/${i}`));
+    expect(pathListProblem(ten)).toBeNull();
+    expect(pathListProblem([...ten, newPathRow('https://a.example/11')])).toBe(
+      PATHS_TOO_MANY_MESSAGE,
     );
-    expect(serverPathMessage(error('PATH_CREDENTIALS', 'x'), 'dmsPath')).toBe(
-      PATH_CREDENTIALS_MESSAGE,
+    expect(pathListProblem([...ten, newPathRow('  ')])).toBeNull();
+  });
+
+  it('puts the API messages under the right line, by the field codes', () => {
+    const error = (errors: Record<string, { code: string; message: string }[]>) =>
+      new ApiError(400, 'INVALID_PATH', 'x', { errors }, new HttpErrorResponse({ status: 400 }));
+    const result = serverPathMessages(
+      error({
+        'dmsPaths[0]': [{ code: 'PATH_FORMAT', message: 'x' }],
+        'dmsPaths[1]': [{ code: 'PATH_DUPLICATE', message: 'x' }],
+        dmsPaths: [{ code: 'TOO_MANY_PATHS', message: 'x' }],
+        'dfsPaths[0]': [{ code: 'PATH_FORMAT', message: 'x' }],
+      }),
+      'dmsPaths',
+      [0, 2],
     );
-    expect(serverPathMessage(error('PATH_FORMAT', 'x'), 'dmsPath')).toBe(PATH_FORMAT_MESSAGE);
-    expect(serverPathMessage(error('PATH_FORMAT', 'x'), 'dfsPath')).toBeNull();
-    expect(serverPathMessage(new Error('x'), 'dmsPath')).toBeNull();
+    expect(result).toEqual({
+      lines: { 0: PATH_FORMAT_MESSAGE, 2: PATH_DUPLICATE_MESSAGE },
+      list: PATHS_TOO_MANY_MESSAGE,
+    });
+    expect(serverPathMessages(new Error('x'), 'dmsPaths', [])).toEqual({ lines: {}, list: null });
+    expect(
+      serverPathMessages(
+        error({ 'dmsPaths[0]': [{ code: 'PATH_CREDENTIALS', message: 'x' }] }),
+        'dfsPaths',
+        [0],
+      ),
+    ).toEqual({ lines: {}, list: null });
   });
 });

@@ -17,6 +17,10 @@ import { Tip } from '../../../shared/ui/tip';
     :host {
       display: block;
     }
+    /* Several paths in one field sit one under the other. */
+    :host(:not(:first-child)) {
+      margin-top: var(--mf-s1);
+    }
     .pv {
       display: flex;
       align-items: flex-start;

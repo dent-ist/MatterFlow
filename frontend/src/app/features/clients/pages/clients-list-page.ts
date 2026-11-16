@@ -48,6 +48,7 @@ import { Pager } from '../../../shared/ui/pager';
 import { TaskCount } from '../../../shared/ui/task-count';
 import { RowLink, registerTableSkip, restoreRowFocus } from '../../../shared/ui/row-nav';
 import { IntPipe } from '../../../shared/ui/number-format';
+import { BusinessNumberPipe } from '../../../shared/pipes/matter-ref.pipe';
 
 /** Bone widths of a skeleton row, per column key. */
 const BONES: Record<string, string> = {
@@ -68,6 +69,7 @@ const BONES: Record<string, string> = {
 @Component({
   selector: 'mf-clients-list-page',
   imports: [
+    BusinessNumberPipe,
     IntPipe,
     FixedPage,
     NgTemplateOutlet,
@@ -193,7 +195,7 @@ const BONES: Record<string, string> = {
               >
                 <mf-active-badge mfCardBadges [active]="c.isActive" />
                 <p mfCardMeta class="rc-line" data-card-meta>
-                  <span class="rc-ref">{{ c.clientNumber }}</span>
+                  <span class="rc-ref">{{ c.clientNumber | businessNumber }}</span>
                   <span class="rc-sep" aria-hidden="true">-</span><span class="mf-sr-only">, </span>
                   <span class="rc-text"
                     >{{ c.matterCount | mfInt }} {{ c.matterCount === 1 ? 'matter' : 'matters'
@@ -275,7 +277,7 @@ const BONES: Record<string, string> = {
               (onClick)="go('/clients/new')"
             />
             <ng-template mfCell="clientNumber" let-c>
-              <td class="pg-mono pg-nowrap">{{ c.clientNumber }}</td>
+              <td class="pg-mono pg-nowrap">{{ c.clientNumber | businessNumber }}</td>
             </ng-template>
             <ng-template mfCell="name" let-c>
               <td class="cl-name">

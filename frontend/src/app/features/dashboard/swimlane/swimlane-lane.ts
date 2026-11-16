@@ -21,6 +21,7 @@ import { DashSkeleton } from '../ui/dash-skeleton';
 import { SwimlaneCardView, initials } from './swimlane-card';
 import { Density, GroupBy, LANE_HINTS, LaneModel, LaneRow, GroupNode } from './swimlane-model';
 import { IntPipe } from '../../../shared/ui/number-format';
+import { BusinessNumberPipe, formatBusinessNumber } from '../../../shared/pipes/matter-ref.pipe';
 
 /** How many cards a lane draws before "Show More": a lane holds at most 200, and a long board stays quick to draw. */
 export const LANE_PAGE = 40;
@@ -43,7 +44,15 @@ let nextId = 0;
  */
 @Component({
   selector: 'mf-swimlane-lane',
-  imports: [Badge, CountChip, IntPipe, DashSkeleton, SwimlaneCardView, RouterLink],
+  imports: [
+    BusinessNumberPipe,
+    Badge,
+    CountChip,
+    IntPipe,
+    DashSkeleton,
+    SwimlaneCardView,
+    RouterLink,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(keydown)': 'onKey($event)',
@@ -142,7 +151,7 @@ let nextId = 0;
                     ></i>
                     <span class="node-label">
                       @if (row.node.kind === 'client') {
-                        <span class="mf-ref">{{ row.node.clientNumber }}</span>
+                        <span class="mf-ref">{{ row.node.clientNumber | businessNumber }}</span>
                       } @else {
                         <span class="mf-ref">{{ row.node.matterRef }}</span>
                       }
@@ -622,7 +631,7 @@ export class SwimlaneLane {
   protected groupLabel(node: GroupNode): string {
     const head =
       node.kind === 'client'
-        ? `${node.label}, client ${node.clientNumber}`
+        ? `${node.label}, client ${formatBusinessNumber(node.clientNumber)}`
         : `${node.label}, matter ${node.matterRef}`;
     return `${head}, ${node.count} ${node.count === 1 ? 'task' : 'tasks'}`;
   }

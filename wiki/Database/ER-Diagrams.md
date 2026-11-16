@@ -123,7 +123,7 @@ erDiagram
 
 ## Clients, Matters and Projects
 
-Tables: `Client`, `Matter`, `Project`, `MatterEvent`, `MatterType`, `MatterMatterType`, `MatterCategory`, `CurrentState`, `TeamTitle`, `MatterTeamMember`.
+Tables: `Client`, `Matter`, `Project`, `MatterEvent`, `MatterType`, `MatterMatterType`, `MatterPath`, `MatterCategory`, `CurrentState`, `TeamTitle`, `MatterTeamMember`.
 
 A Matter belongs to one Client. The Matter keeps a copy of the client number (`ClientNumber`) and the composite foreign key `ClientId + ClientNumber` keeps it equal to the client's (`ON UPDATE CASCADE`). The business reference of a matter is `MatterRef` = client number + `-` + matter number (the CM Number, for example `00343-00012`). `PrimaryManagerId` and `SecondaryManagerId` point at `AppUser` (script 28). `IsSensitive` drives the Sensitive matter rule. `MatterCategoryId` (script 68) and `CurrentStateId` (both optional) point at the admin lists `MatterCategory` and `CurrentState`; the Matter Types of a matter are the rows of the junction `MatterMatterType` (script 69; the old column `MatterTypeId` is deprecated); `DmsPath` and `DfsPath` are optional text; the team of a matter is `MatterTeamMember` rows with a `TeamTitle` (script 64).
 
@@ -152,6 +152,13 @@ erDiagram
   MatterMatterType {
     int MatterId PK
     int MatterTypeId PK
+  }
+  MatterPath {
+    int MatterPathId PK
+    int MatterId FK
+    char_3 Kind
+    tinyint Position
+    nvarchar_1000 Path
   }
   MatterCategory {
     int MatterCategoryId PK
@@ -203,6 +210,7 @@ erDiagram
   Matter ||--o{ MatterEvent : "MatterId"
   Matter ||--o{ MatterTeamMember : "MatterId"
   MatterCategory |o--o{ Matter : "MatterCategoryId"
+  Matter ||--o{ MatterPath : "MatterId"
   Matter ||--o{ MatterMatterType : "MatterId"
   MatterType ||--o{ MatterMatterType : "MatterTypeId"
   CurrentState |o--o{ Matter : "CurrentStateId"

@@ -33,12 +33,15 @@ import { NotificationService } from '../../../core/notify/notification.service';
 import { metaNumber, serverFormErrors } from '../../../shared/forms/api-errors';
 import { focusFirstInvalid } from '../../../shared/forms/focus-invalid';
 import {
-  PATH_MAX_LENGTH,
-  pathProblem,
-  pathToSend,
-  serverPathMessage,
+  PathRow,
+  pathListProblem,
+  pathRowProblems,
+  pathRowsOf,
+  pathsToSend,
+  serverPathMessages,
+  typedPaths,
 } from '../../../shared/forms/matter-paths';
-import { normalizeNumber } from '../../../shared/pipes/matter-ref.pipe';
+import { formatBusinessNumber, normalizeNumber } from '../../../shared/pipes/matter-ref.pipe';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
 import {
@@ -51,13 +54,24 @@ import { NumberInput, numberProblem } from '../../../shared/ui/number-input';
 import { TagChips } from '../../../shared/ui/tag-chips';
 import { TextField } from '../../../shared/ui/text-field';
 import { AI_OPTIONS } from './matter-ai';
+import { MatterPathList } from './matter-path-list';
 
 function clientOption(c: ClientResponse): PickerOption {
-  return { id: c.clientId, label: `${c.clientNumber} ${c.name}`, inactive: !c.isActive };
+  return {
+    id: c.clientId,
+    label: `${formatBusinessNumber(c.clientNumber)} ${c.name}`,
+    inactive: !c.isActive,
+  };
 }
 
 function idText(ref: MatterListRef | undefined): string {
   return ref ? String(ref.id) : '';
+}
+
+/** True when the typed paths are the stored ones, in the same order. */
+function samePaths(typed: readonly string[], stored: readonly string[] | undefined): boolean {
+  const have = stored ?? [];
+  return typed.length === have.length && typed.every((t, i) => t === have[i]);
 }
 
 /** The ids of a matter's Matter Types as the dropdown holds them (text), in the order the API lists them. */
@@ -132,8 +146,8 @@ export function pickListItemsMulti(
  * the same way. Epic #1368 moved creating (#1371) and editing (#1381) to one full page (`MatterFormPage`, routes `/matters/new` and `/matters/:id/edit`), which holds this
  * component and shows its busy flag, error and Save in the page's own chrome.
  * Fields, in this order: Client, Matter number, CM Number (a read-only preview of client number plus matter number, never typed), Matter name, Sensitive matter, AI allowed,
- * Matter Types (several can be chosen), Matter Category (one), Current State, DMS Path, DFS Path (epic #1298; all optional and "Not Set" is the first choice of the single lists)
- * and the custom fields. On Save the Types, Category, State and the two paths are sent as full values (the API treats them so: leaving one out clears it), starting from the
+ * Matter Types (several can be chosen), Matter Category (one), Current State, DMS Paths and DFS Paths (epic #1298, several of each since #1391; all optional and "Not Set" is the first choice of the single lists)
+ * and the custom fields. On Save the Types, Category, State and the two path lists are sent as full values (the API treats them so: leaving one out clears it), starting from the
  * matter's own. Labels, help texts, validation messages and the unsaved-changes question are the same in both modes.
  *
  * New (`matter` null): Client and Matter number are editable (`clientId` preselects the client, from a Client page). Edit (`matter` given): Client and Matter number sit in the
@@ -152,6 +166,7 @@ export function pickListItemsMulti(
     NumberInput,
     TextField,
     TagChips,
+    MatterPathList,
     CustomFieldsEditor,
     RouterLink,
   ],
@@ -219,7 +234,7 @@ export function pickListItemsMulti(
         <mf-entity-picker
           inputId="matter-client"
           label="Client"
-          placeholder="343 or Acme"
+          placeholder="00343 or Acme"
           [required]="true"
           [locked]="isEdit()"
           [search]="searchClients"
@@ -399,28 +414,26 @@ export function pickListItemsMulti(
         >
       </div>
 
-      <mf-text-field
-        inputId="matter-dms-path"
-        label="DMS Path"
-        data-dms-path
-        help="A network path (\\servershare...) or a web address (https://...). Optional."
-        [maxLength]="pathLimit"
-        [counter]="true"
-        [error]="dmsError()"
-        (blurred)="dmsTouched.set(true)"
-        [(value)]="dmsPath"
+      <mf-matter-path-list
+        label="DMS Paths"
+        singular="DMS Path"
+        idBase="matter-dms-path"
+        data-dms-paths
+        [submitted]="submitted()"
+        [lineErrors]="dmsServer().lines"
+        [listError]="dmsServer().list"
+        [(rows)]="dmsRows"
       />
 
-      <mf-text-field
-        inputId="matter-dfs-path"
-        label="DFS Path"
-        data-dfs-path
-        help="A network path (\\servershare...) or a web address (https://...). Optional."
-        [maxLength]="pathLimit"
-        [counter]="true"
-        [error]="dfsError()"
-        (blurred)="dfsTouched.set(true)"
-        [(value)]="dfsPath"
+      <mf-matter-path-list
+        label="DFS Paths"
+        singular="DFS Path"
+        idBase="matter-dfs-path"
+        data-dfs-paths
+        [submitted]="submitted()"
+        [lineErrors]="dfsServer().lines"
+        [listError]="dfsServer().list"
+        [(rows)]="dfsRows"
       />
 
       <mf-custom-fields-editor
@@ -493,11 +506,18 @@ export class MatterForm {
   /** Matter Category and Current State: the chosen item's id as text, `''` for "Not Set". */
   protected readonly matterCategoryId = signal('');
   protected readonly currentStateId = signal('');
-  protected readonly dmsPath = signal('');
-  protected readonly dfsPath = signal('');
-  protected readonly dmsTouched = signal(false);
-  protected readonly dfsTouched = signal(false);
-  protected readonly pathLimit = PATH_MAX_LENGTH;
+  /** The lines of the DMS Paths and DFS Paths lists (one empty line when there is no path). */
+  protected readonly dmsRows = signal<PathRow[]>(pathRowsOf(null));
+  protected readonly dfsRows = signal<PathRow[]>(pathRowsOf(null));
+  /** What the server said about each list after the last Save, by line (see `serverPathMessages`). */
+  protected readonly dmsServer = signal<{ lines: Record<number, string>; list: string | null }>({
+    lines: {},
+    list: null,
+  });
+  protected readonly dfsServer = signal<{ lines: Record<number, string>; list: string | null }>({
+    lines: {},
+    list: null,
+  });
   private readonly types = signal<readonly MatterListItemView[]>([]);
   private readonly categories = signal<readonly MatterListItemView[]>([]);
   private readonly states = signal<readonly MatterListItemView[]>([]);
@@ -516,17 +536,6 @@ export class MatterForm {
   );
   protected readonly stateItems = computed(() =>
     pickListItems(this.states(), this.matter()?.currentState, this.currentStateId()),
-  );
-  /** A path is checked when the person leaves the field and on Save, never per keystroke; a server answer shows until the next Save. */
-  protected readonly dmsError = computed(
-    () =>
-      this.fieldError('dmsPath') ||
-      (this.dmsTouched() || this.submitted() ? pathProblem(this.dmsPath()) : null),
-  );
-  protected readonly dfsError = computed(
-    () =>
-      this.fieldError('dfsPath') ||
-      (this.dfsTouched() || this.submitted() ? pathProblem(this.dfsPath()) : null),
   );
   /** The host shows these in its own chrome (the page's banner and buttons). */
   readonly busy = signal(false);
@@ -596,8 +605,8 @@ export class MatterForm {
         this.matterTypeIds().length > 0 ||
         this.matterCategoryId() !== '' ||
         this.currentStateId() !== '' ||
-        this.dmsPath().trim() !== '' ||
-        this.dfsPath().trim() !== '' ||
+        typedPaths(this.dmsRows()).length > 0 ||
+        typedPaths(this.dfsRows()).length > 0 ||
         this.customTouched()
       );
     }
@@ -608,8 +617,8 @@ export class MatterForm {
       !sameIds(this.matterTypeIds(), idTexts(m.matterTypes)) ||
       this.matterCategoryId() !== idText(m.matterCategory) ||
       this.currentStateId() !== idText(m.currentState) ||
-      this.dmsPath().trim() !== (m.dmsPath ?? '') ||
-      this.dfsPath().trim() !== (m.dfsPath ?? '') ||
+      !samePaths(typedPaths(this.dmsRows()), m.dmsPaths) ||
+      !samePaths(typedPaths(this.dfsRows()), m.dfsPaths) ||
       this.numberChanged() ||
       this.customTouched()
     );
@@ -626,7 +635,7 @@ export class MatterForm {
           m
             ? {
                 id: m.clientId,
-                label: `${m.clientNumber} ${m.clientName}`,
+                label: `${formatBusinessNumber(m.clientNumber)} ${m.clientName}`,
                 inactive: !m.clientIsActive,
               }
             : null,
@@ -638,10 +647,10 @@ export class MatterForm {
         this.matterTypeIds.set(idTexts(m?.matterTypes));
         this.matterCategoryId.set(idText(m?.matterCategory));
         this.currentStateId.set(idText(m?.currentState));
-        this.dmsPath.set(m?.dmsPath ?? '');
-        this.dfsPath.set(m?.dfsPath ?? '');
-        this.dmsTouched.set(false);
-        this.dfsTouched.set(false);
+        this.dmsRows.set(pathRowsOf(m?.dmsPaths));
+        this.dfsRows.set(pathRowsOf(m?.dfsPaths));
+        this.dmsServer.set({ lines: {}, list: null });
+        this.dfsServer.set({ lines: {}, list: null });
         void this.loadLists();
         this.customValues.set({ ...(m?.formValues ?? {}) });
         this.customVersionId.set(m?.publishedFormVersionId ?? null);
@@ -731,9 +740,16 @@ export class MatterForm {
     const problem = numberProblem(this.number(), 'matter number');
     if (problem) problems.push(problem);
     if (this.name().trim() === '') problems.push('Enter a matter name.');
-    for (const problem of [pathProblem(this.dmsPath()), pathProblem(this.dfsPath())]) {
+    for (const problem of [
+      ...pathRowProblems(this.dmsRows()),
+      ...pathRowProblems(this.dfsRows()),
+      pathListProblem(this.dmsRows()),
+      pathListProblem(this.dfsRows()),
+    ]) {
       if (problem && !problems.includes(problem)) problems.push(problem);
     }
+    this.dmsServer.set({ lines: {}, list: null });
+    this.dfsServer.set({ lines: {}, list: null });
     this.customErrors.set([]);
     const custom = this.customEditor()?.collect(this.isEdit() ? this.customValues() : undefined);
     problems.push(...customFieldsProblems(custom));
@@ -783,8 +799,8 @@ export class MatterForm {
           matterTypeIds: typeIdsToSend(this.matterTypeIds()),
           matterCategoryId: listId(this.matterCategoryId()),
           currentStateId: listId(this.currentStateId()),
-          dmsPath: pathToSend(this.dmsPath()),
-          dfsPath: pathToSend(this.dfsPath()),
+          dmsPaths: pathsToSend(this.dmsRows()).values,
+          dfsPaths: pathsToSend(this.dfsRows()).values,
           formValues: custom,
         }),
       );
@@ -824,8 +840,8 @@ export class MatterForm {
           matterTypeIds: typeIdsToSend(this.matterTypeIds()),
           matterCategoryId: listId(this.matterCategoryId()),
           currentStateId: listId(this.currentStateId()),
-          dmsPath: pathToSend(this.dmsPath()),
-          dfsPath: pathToSend(this.dfsPath()),
+          dmsPaths: pathsToSend(this.dmsRows()).values,
+          dfsPaths: pathsToSend(this.dfsRows()).values,
           confirmLossOfAccess: confirmLoss || undefined,
           formValues: custom,
           rowVersion: current.rowVersion,
@@ -866,11 +882,9 @@ export class MatterForm {
     // The number endpoint names its field `number`; the form calls it `matterNumber`.
     const base = { ...split.base };
     if (base['number'] && !base['matterNumber']) base['matterNumber'] = base['number'];
-    // The path messages are chosen by the API's field codes, so they read as the UI spec words them.
-    for (const field of ['dmsPath', 'dfsPath'] as const) {
-      const message = serverPathMessage(err, field);
-      if (message) base[field] = message;
-    }
+    // The path messages are chosen by the API's field codes, so they read as the UI spec words them; each goes under its own line.
+    this.dmsServer.set(serverPathMessages(err, 'dmsPaths', pathsToSend(this.dmsRows()).lineOf));
+    this.dfsServer.set(serverPathMessages(err, 'dfsPaths', pathsToSend(this.dfsRows()).lineOf));
     this.serverErrors.set(base);
     this.customErrors.set(split.form);
     this.summary.set(errors.summary);
