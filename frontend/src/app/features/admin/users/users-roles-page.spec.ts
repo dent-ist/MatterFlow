@@ -214,7 +214,7 @@ describe('Users page tabs (Users, Roles, Pods)', () => {
 
   it('puts Filters with its count and Clear filters in the page header, and Clear keeps the segment (#431)', async () => {
     const router = await open(
-      '/admin/users?status=all&name=a&email=firm',
+      '/admin/users?status=all&firstName=a&email=firm',
       'User.View',
       'Role.Manage',
     );
@@ -230,7 +230,7 @@ describe('Users page tabs (Users, Roles, Pods)', () => {
     clear.click();
     await settle();
     expect(router.url).toContain('status=all');
-    expect(router.url).not.toContain('name=');
+    expect(router.url).not.toContain('firstName=');
     expect(router.url).not.toContain('email=');
 
     // The Roles and Pods tabs have no column filters: no Filters button there.

@@ -62,8 +62,6 @@
           [filters]="filters"
           [emptyText]="tab() === 'pending' ? 'No one is waiting for access.' : 'No users found.'"
           [actions]="true"
-          [rowClickable]="true"
-          (rowClick)="open($event)"
           [rowClass]="rowClass"
           [bones]="bones"
           [sort]="sortExpr()"

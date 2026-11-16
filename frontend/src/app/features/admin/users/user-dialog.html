@@ -100,7 +100,7 @@
             }
 
             <section class="ud-sec" aria-labelledby="ud-access" data-section="access">
-              <h3 id="ud-access">Access</h3>
+              <h2 id="ud-access">Access</h2>
               <div id="ud-access-body">
                 <fieldset class="ud-roles" [disabled]="!canManage()">
                   <legend class="mf-sr-only">Roles</legend>
@@ -135,13 +135,13 @@
                   </p>
                 }
                 <div class="ud-perms" role="group" aria-labelledby="ud-perms-h" data-permissions>
-                  <h4 id="ud-perms-h">
+                  <h3 id="ud-perms-h">
                     @if (rolesChanged()) {
                       After you save: {{ permissionTotal() | mfInt }} permissions
                     } @else {
                       Effective permissions ({{ permissionTotal() | mfInt }})
                     }
-                  </h4>
+                  </h3>
                   @if (rolesChanged()) {
                     <p class="ud-note" data-permissions-preview>
                       This is what the ticked roles give. It applies after you save.
@@ -169,7 +169,7 @@
             </section>
 
             <section class="ud-sec" aria-labelledby="ud-pods" data-section="pods">
-              <h3 id="ud-pods">Pods</h3>
+              <h2 id="ud-pods">Pods</h2>
               <div id="ud-pods-body">
                 @if (summary(); as s) {
                   <mf-user-pods-cell
@@ -190,7 +190,7 @@
             </section>
 
             <section class="ud-sec" aria-labelledby="ud-avail" data-section="availability">
-              <h3 id="ud-avail">Availability</h3>
+              <h2 id="ud-avail">Availability</h2>
               <div id="ud-avail-body">
                 <p class="ud-sentence" data-availability-sentence>{{ availabilitySentence() }}</p>
                 @if (canManage()) {
@@ -215,7 +215,7 @@
             </section>
 
             <section class="ud-sec" aria-labelledby="ud-profile" data-section="profile">
-              <h3 id="ud-profile">Profile</h3>
+              <h2 id="ud-profile">Profile</h2>
               <div id="ud-profile-body">
                 <fieldset class="ud-fields" [disabled]="!canManage()">
                   <legend class="mf-sr-only">Profile</legend>
