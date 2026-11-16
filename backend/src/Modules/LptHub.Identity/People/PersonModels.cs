@@ -8,7 +8,7 @@ namespace LptHub.Identity.People;
 /// <param name="LastName">Last name; may be empty for a system user whose display name is one word.</param>
 /// <param name="DisplayName">First and last name together, for lists and pickers.</param>
 /// <param name="PersonType"><c>INTERNAL</c> or <c>EXTERNAL</c>.</param>
-/// <param name="Title">Title or role (for example Partner).</param>
+/// <param name="Title">Title (for example Partner).</param>
 /// <param name="Email">E-mail address, if known.</param>
 /// <param name="Comments">Free comments.</param>
 /// <param name="CompanyName">External company name; always null for an internal person.</param>
@@ -47,7 +47,7 @@ public sealed record PersonDto(
 /// <param name="PersonId">Person id.</param>
 /// <param name="DisplayName">First and last name together.</param>
 /// <param name="PersonType"><c>INTERNAL</c> or <c>EXTERNAL</c>.</param>
-/// <param name="Title">Title or role.</param>
+/// <param name="Title">Title.</param>
 /// <param name="Email">E-mail address, if known.</param>
 /// <param name="CompanyName">External company name.</param>
 /// <param name="UserId">The linked user of a system-user person, otherwise null.</param>
@@ -86,7 +86,7 @@ public sealed record CreatePersonRequest
     [Required, StringLength(10)]
     public string PersonType { get; init; } = string.Empty;
 
-    /// <summary>Title or role (max 100).</summary>
+    /// <summary>Title (max 100).</summary>
     [StringLength(100)]
     public string? Title { get; init; }
 
@@ -121,7 +121,7 @@ public sealed record UpdatePersonRequest
     [Required, StringLength(10)]
     public string PersonType { get; init; } = string.Empty;
 
-    /// <summary>Title or role (max 100).</summary>
+    /// <summary>Title (max 100).</summary>
     [StringLength(100)]
     public string? Title { get; init; }
 

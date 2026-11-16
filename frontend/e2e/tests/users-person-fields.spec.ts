@@ -6,11 +6,19 @@ import { SIZES, noSideScroll, shot } from '../support/labels';
 import { expectFocusInUserDialog, userDialog, userName, userRow } from '../support/users-grid';
 
 /**
- * Epic #1389, issue #1394: the person fields of the user record. Administration > Users > the user dialog (Profile) has Title or Role, Office, Employment Status,
- * Industry Join Date (month and year) and Comments; Administration > Lists > People holds the Offices and Employment Statuses lists; the Users grid has Title or Role,
+ * Epic #1389, issue #1394: the person fields of the user record. Administration > Users > the user dialog (Profile) has Title, Office, Employment Status,
+ * Industry Join Date (month and year) and Comments; Administration > Lists > People holds the Offices and Employment Statuses lists; the Users grid has Title,
  * Office and Employment Status as optional columns. The Employment Status is the HR status of the person, not the account state. Screenshots go to E2E_SCREENSHOTS.
  */
 const TAG = `upf${Math.floor(Math.random() * 90000) + 10000}`;
+
+/** The Office list starts empty (owner decision), so the specs add the two offices they use (names are unique per run). */
+const HEAD = `Head ${TAG}`;
+const REMOTE = `Remote ${TAG}`;
+
+test.beforeAll(async ({ admin }) => {
+  for (const name of [HEAD, REMOTE]) await admin.post('/api/v1/offices', { name });
+});
 
 const dropdown = (page: Page, label: string) =>
   asDropdown(userDialog(page).locator(`mf-dropdown button[aria-label^="${label}:"]`));
@@ -34,7 +42,7 @@ async function axeClean(page: Page) {
 }
 
 test.describe('the person fields of the user record (#1394)', () => {
-  test('the Profile saves Title or Role, Office, Employment Status, Industry Join Date and Comments, and the dialog shows them again', async ({
+  test('the Profile saves Title, Office, Employment Status, Industry Join Date and Comments, and the dialog shows them again', async ({
     page,
     personas,
   }) => {
@@ -54,8 +62,8 @@ test.describe('the person fields of the user record (#1394)', () => {
       ]);
       await expect(profile).toContainText('Not the same as the account being active');
       if (size === SIZES[0]) {
-        await dialog.getByLabel('Title or Role').fill('Senior Project Manager');
-        await dropdown(page, 'Office').selectOption({ label: 'Head Office' });
+        await dialog.getByLabel('Title').fill('Senior Project Manager');
+        await dropdown(page, 'Office').selectOption({ label: HEAD });
         await dropdown(page, 'Employment Status').selectOption({ label: 'On Leave' });
         await dropdown(page, 'Month').selectOption({ label: 'March' });
         await dropdown(page, 'Year').selectOption({ label: '2018' });
@@ -69,8 +77,8 @@ test.describe('the person fields of the user record (#1394)', () => {
         await expect(page.locator('[data-panel-primary]')).toHaveAttribute('aria-disabled', 'true');
       } else {
         // The saved values are there again in a fresh dialog.
-        await expect(dialog.getByLabel('Title or Role')).toHaveValue('Senior Project Manager');
-        await expect(dropdown(page, 'Office')).toContainText('Head Office');
+        await expect(dialog.getByLabel('Title')).toHaveValue('Senior Project Manager');
+        await expect(dropdown(page, 'Office')).toContainText(HEAD);
         await expect(dropdown(page, 'Employment Status')).toContainText('On Leave');
         await expect(dropdown(page, 'Month')).toContainText('March');
         await expect(dropdown(page, 'Year')).toContainText('2018');
@@ -100,7 +108,7 @@ test.describe('the person fields of the user record (#1394)', () => {
     await expect(page.locator('[data-panel-primary]')).not.toHaveAttribute('aria-disabled', 'true');
   });
 
-  test('Title or Role, Office and Employment Status are optional Users columns that sort and filter, the account Status stays a separate column', async ({
+  test('Title, Office and Employment Status are optional Users columns that sort and filter, the account Status stays a separate column', async ({
     page,
     personas,
     admin,
@@ -118,22 +126,20 @@ test.describe('the person fields of the user record (#1394)', () => {
         rowVersion: detail.personRowVersion,
       });
     };
-    await set(a.userId, `Zeta ${TAG}`, 'Head Office', 'Active');
-    await set(b.userId, `Alpha ${TAG}`, 'Remote', 'Departed');
+    await set(a.userId, `Zeta ${TAG}`, HEAD, 'Active');
+    await set(b.userId, `Alpha ${TAG}`, REMOTE, 'Departed');
 
     for (const size of SIZES) {
       await page.setViewportSize(size);
       await page.goto(`/admin/users?status=all&account=e2e-${TAG}col`);
       await expect(page.getByRole('columnheader', { name: 'Employment Status' })).toHaveCount(0);
       await page.getByRole('button', { name: 'Columns', exact: true }).click();
-      for (const label of ['Title or Role', 'Office', 'Employment Status'])
+      for (const label of ['Title', 'Office', 'Employment Status'])
         await page.getByLabel(label, { exact: true }).check();
       await page.getByRole('button', { name: 'Columns', exact: true }).click();
       await expect(page.getByRole('columnheader', { name: 'Employment Status' })).toBeVisible();
       await expect(page.locator('thead th').filter({ hasText: /^\s*Status\s*$/i })).toBeVisible();
-      await expect(page.locator(`tr[data-record-id="${a.userId}"] [data-office]`)).toHaveText(
-        'Head Office',
-      );
+      await expect(page.locator(`tr[data-record-id="${a.userId}"] [data-office]`)).toHaveText(HEAD);
       await expect(
         page.locator(`tr[data-record-id="${b.userId}"] [data-employment-status]`),
       ).toHaveText('Departed');
@@ -141,8 +147,8 @@ test.describe('the person fields of the user record (#1394)', () => {
       await noSideScroll(page, `users grid at ${size.width}`);
     }
 
-    // Sorted by Title or Role: Alpha before Zeta; the filter finds one of them.
-    await page.getByRole('columnheader', { name: 'Title or Role' }).getByRole('button').click();
+    // Sorted by Title: Alpha before Zeta; the filter finds one of them.
+    await page.getByRole('columnheader', { name: 'Title' }).getByRole('button').click();
     await expect(page.locator('tbody tr[data-record-id]').first()).toHaveAttribute(
       'data-record-id',
       String(b.userId),

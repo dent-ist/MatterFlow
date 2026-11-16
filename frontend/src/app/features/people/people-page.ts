@@ -50,13 +50,13 @@ export const PERSON_TYPE_OPTIONS = [
 const SORT_OPTIONS = [
   { value: 'name', label: 'Name' },
   { value: 'type', label: 'Type' },
-  { value: 'title', label: 'Title or Role' },
+  { value: 'title', label: 'Title' },
   { value: 'company', label: 'Company' },
 ];
 
 /**
  * People (epic #1373, issue #1375; mockup `docs/design/mockups/vendor-management`, screen `people`): the shared address book for matter teams and vendor contacts. A grid of Name (the
- * button that opens the person), Email, Type (System User, Internal or External), Title or Role and Company (Status is an optional column), with Search (name, email, company or title), the Type and
+ * button that opens the person), Email, Type (System User, Internal or External), Title and Company (Status is an optional column), with Search (name, email, company or title), the Type and
  * Status filters, sorting and paging (25, 50, 100) on the server. `People.View` reads (the name opens a read-only view); `People.Manage` adds New Person and one row icon button,
  * Deactivate or Reactivate (a person is never deleted; a system user's person cannot be deactivated here). State lives in the address (`q`, `type`, `status`, `page`, `size`, `sort`).
  */
@@ -284,7 +284,7 @@ export class PeoplePage extends ServerListPage<PersonDto> {
   protected readonly bones = BONES;
   protected readonly personKey = (p: PersonDto): number => p.personId;
 
-  /** Default columns at 1366: Name 200+, Email 320, Type 140, Title or Role 176, Company 140, actions 48 = 1024 of the 1098 px; Status is one click away in Columns (D-43a). */
+  /** Default columns at 1366: Name 200+, Email 320, Type 140, Title 176, Company 140, actions 48 = 1024 of the 1098 px; Status is one click away in Columns (D-43a). */
   protected readonly gridDefs = computed((): RecordGridColumn[] => [
     // The spring: no width, so it takes the free room in every state (#1245).
     { key: 'name', label: 'Name', locked: true, sort: 'name', minWidth: '200px' },
@@ -303,7 +303,7 @@ export class PeoplePage extends ServerListPage<PersonDto> {
     },
     {
       key: 'title',
-      label: 'Title or Role',
+      label: 'Title',
       sort: 'title',
       width: 'var(--mf-col-title-w)',
       minWidth: 'var(--mf-col-title-w)',

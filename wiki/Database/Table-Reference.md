@@ -212,7 +212,7 @@ The shared People list (epic #1373): a person is Internal or External and is use
 
 ### Office
 
-Admin-managed list: the Office of an internal person (optional; `Person.OfficeId`), chosen on the user record (Administration > Users) and maintained on Administration > Lists > Offices. Names are unique; a used item is deactivated, an unused one may be deleted. Script 79 seeds three generic offices.
+Admin-managed list: the Office of an internal person (optional; `Person.OfficeId`), chosen on the user record (Administration > Users) and maintained on Administration > Lists > Offices. Names are unique; a used item is deactivated, an unused one may be deleted. The list starts empty (the firm adds its own branch offices); a person's office stays empty until someone sets it.
 
 - **Module:** Identity. **Area:** Identity and access.
 - **Scripts:** created and seeded by script 79.

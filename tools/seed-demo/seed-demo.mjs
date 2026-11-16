@@ -413,10 +413,10 @@ async function ensurePods(admin, ctx, opts, summary) {
 
 /**
  * The person fields of Test User <i> (issue #1394), worked out from the number so a repeated run saves the same values: the title follows the role, the office
- * cycles through the starter offices, nearly everyone is Active (one in seventeen On Leave, one in twenty-three Departed), and the industry join date is a
+ * leaves the office empty (the Office list starts empty and is the firm's own to fill), nearly everyone is Active (one in seventeen On Leave, one in twenty-three Departed), and the industry join date is a
  * month between 2004 and 2024 (never in the future).
  */
-function personDetailsFor(entry, offices, statuses) {
+function personDetailsFor(entry, statuses) {
   const byName = (list, name) => list.find((x) => x.name === name)?.id;
   const titles = {
     Director: 'Director of Litigation Support',
@@ -428,8 +428,7 @@ function personDetailsFor(entry, offices, statuses) {
   const month = 1 + ((entry.i * 5) % 12);
   return {
     title: titles[entry.roleName] ?? entry.roleName,
-    notes: entry.i % 5 === 0 ? 'Works across two offices; covers for the Project Managers.' : undefined,
-    officeId: offices.length > 0 ? offices[entry.i % offices.length].id : undefined,
+    notes: entry.i % 5 === 0 ? 'Covers for the Project Managers.' : undefined,
     employmentStatusId: byName(statuses, status),
     industryJoinMonth: `${year}-${pad(month, 2)}`,
   };
@@ -465,8 +464,7 @@ async function ensureUsers(admin, ctx, opts, summary) {
     `Users: ${summary.usersExisting} of ${opts.users} already set up, ${todo.length} to create or finish.`,
   );
   if (opts.dryRun || todo.length === 0) return;
-  // The Office and Employment Status lists (epic #1389, issue #1394) the person fields below pick from.
-  const offices = await admin.get('/api/v1/offices');
+  // The Employment Status list (epic #1389, issue #1394) the person fields below pick from; the Office list starts empty and the demo leaves offices unset.
   const statuses = await admin.get('/api/v1/employment-statuses');
 
   let done = 0;
@@ -501,7 +499,7 @@ async function ensureUsers(admin, ctx, opts, summary) {
       // Title, office, employment status, industry join date and comments of the person record (#1394): plausible, the same on every run.
       const person = await admin.get(`/api/v1/users/${entry.userId}`);
       await admin.put(`/api/v1/users/${entry.userId}/person-details`, {
-        ...personDetailsFor(entry, offices, statuses),
+        ...personDetailsFor(entry, statuses),
         rowVersion: person.personRowVersion,
       });
       const pods = podIdsFor(entry.i, ctx.pods);

@@ -1055,7 +1055,7 @@ describe('UsersPage', () => {
       await settle();
     };
 
-    it('shows the saved Title or Role, Office, Employment Status, Industry Join Date and Comments, and how long that is', async () => {
+    it('shows the saved Title, Office, Employment Status, Industry Join Date and Comments, and how long that is', async () => {
       await createWith(
         (a) =>
           Object.assign(a.users[1], {
@@ -1202,7 +1202,7 @@ describe('UsersPage', () => {
       expect(document.querySelector('#user-title')).toBeNull();
     });
 
-    it('has Title or Role, Office and Employment Status as optional grid columns (hidden at first) that sort and filter', async () => {
+    it('has Title, Office and Employment Status as optional grid columns (hidden at first) that sort and filter', async () => {
       await createWith((a) => {
         Object.assign(a.users[1], { title: 'Partner', officeId: 1, employmentStatusId: 2 });
         Object.assign(a.users[0], { title: 'Admin', officeId: 2, employmentStatusId: 1 });

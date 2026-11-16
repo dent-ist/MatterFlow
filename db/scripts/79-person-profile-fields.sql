@@ -1,11 +1,12 @@
 -- 79-person-profile-fields.sql
 -- Purpose: Users #1394 (epic #1389). More fields on the person record of an INTERNAL person (the user record on Administration > Users shows them):
---   Office and Employment Status (two new admin-managed lists, dbo.Office and dbo.EmploymentStatus, same shape as dbo.MatterCategory) and the Industry Join Date
+--   Office (the person's branch office) and Employment Status (two new admin-managed lists, dbo.Office and dbo.EmploymentStatus, same shape as dbo.MatterCategory) and the Industry Join Date
 --   (month and year only: a date stored as the first day of the month). Title, Email and Notes already exist on dbo.Person (Title, Email, Comments), so nothing is added for them.
 -- Owner: Identity (people, users).
 -- Notes:
 --   * Employment Status is the HR status of the person (Active, On Leave, Departed). It is NOT the account state of the user (active, deactivated, pending access), which stays on dbo.AppUser.
---   * Seeded here: the three statuses and three generic offices. An administrator renames, reorders, deactivates or deletes them on Administration > Lists.
+--   * Seeded here: the three statuses only. The Office list starts EMPTY (owner decision): the firm adds its own branch offices on Administration > Lists > Offices, and a person's
+--     office stays empty until someone sets it. An administrator renames, reorders, deactivates or deletes the statuses on Administration > Lists.
 --   * A used item is deactivated, never deleted (the foreign keys are the backstop; the application refuses the delete with IN_USE).
 --   * The three person columns are for INTERNAL people only (CK_Person_ProfileInternal) and are NULL for every existing person: no backfill.
 --   * The new tables are classified in db/report-access.json (allow) and granted like dbo.MatterCategory.
@@ -54,10 +55,6 @@ GO
 
 INSERT dbo.EmploymentStatus (Name, SortOrder, IsActive)
 VALUES (N'Active', 1, 1), (N'On Leave', 2, 1), (N'Departed', 3, 1);
-GO
-
-INSERT dbo.Office (Name, SortOrder, IsActive)
-VALUES (N'Head Office', 1, 1), (N'Branch Office', 2, 1), (N'Remote', 3, 1);
 GO
 
 ALTER TABLE dbo.Person ADD OfficeId INT NULL, EmploymentStatusId INT NULL, IndustryJoinDate DATE NULL;

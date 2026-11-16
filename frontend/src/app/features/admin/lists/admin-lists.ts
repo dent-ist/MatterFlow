@@ -312,7 +312,7 @@ export const ADMIN_LISTS: readonly AdminListDef[] = [
     group: 'People',
     label: 'Offices',
     permission: 'User.Manage',
-    hint: 'Where a person works',
+    hint: 'Branch office of a person',
     shownOn: 'Shown on: user record (Administration > Users), Users list (column and filter).',
     rule: PEOPLE_RULE,
     newLabel: 'New Office',

@@ -238,7 +238,7 @@ export class UsersPage implements OnInit {
     // account state in the Status column at the right.
     {
       key: 'title',
-      label: 'Title or Role',
+      label: 'Title',
       defaultHidden: true,
       extra: true,
       sort: 'title',
@@ -346,7 +346,7 @@ export class UsersPage implements OnInit {
         presets: ['today', 'last7', 'last30', 'thisMonth'],
       },
       { key: 'email', label: 'Email', column: 'email', type: 'text' },
-      { key: 'title', label: 'Title or Role', column: 'title', type: 'text' },
+      { key: 'title', label: 'Title', column: 'title', type: 'text' },
       {
         key: 'officeId',
         label: 'Office',
@@ -449,7 +449,7 @@ export class UsersPage implements OnInit {
   protected readonly sortOptions: readonly SortOption[] = [
     { value: 'firstName', label: 'First Name' },
     { value: 'lastName', label: 'Last Name' },
-    { value: 'title', label: 'Title or Role' },
+    { value: 'title', label: 'Title' },
     { value: 'office', label: 'Office' },
     { value: 'employmentStatus', label: 'Employment Status' },
     { value: 'lastSeen', label: 'Last Seen' },

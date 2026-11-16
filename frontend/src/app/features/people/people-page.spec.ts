@@ -115,7 +115,7 @@ describe('PeoplePage', () => {
     ).toContain('3');
   });
 
-  it('is the People page: header with the description, then a grid of Name, Email, Type, Title or Role and Company (Status is optional)', async () => {
+  it('is the People page: header with the description, then a grid of Name, Email, Type, Title and Company (Status is optional)', async () => {
     const f = await create();
     const el: HTMLElement = f.nativeElement;
     expect(el.querySelector('h1')!.textContent).toContain('People');
@@ -123,7 +123,7 @@ describe('PeoplePage', () => {
       'The shared address book for matter teams and vendor contacts.',
     );
     const heads = Array.from(el.querySelectorAll('thead th')).map((h) => h.textContent!.trim());
-    expect(heads).toEqual(['Name', 'Email', 'Type', 'Title or Role', 'Company', 'Actions']);
+    expect(heads).toEqual(['Name', 'Email', 'Type', 'Title', 'Company', 'Actions']);
     expect(api.listPeople).toHaveBeenCalledWith(undefined, undefined, true, 1, 50, undefined);
   });
 

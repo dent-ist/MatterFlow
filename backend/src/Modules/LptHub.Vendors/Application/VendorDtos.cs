@@ -123,7 +123,7 @@ public sealed class UpdateVendorRequest
 /// <param name="PersonId">The person in the People list.</param>
 /// <param name="PersonName">First and last name.</param>
 /// <param name="PersonType"><c>INTERNAL</c> or <c>EXTERNAL</c>.</param>
-/// <param name="PersonTitle">Title or role, or null.</param>
+/// <param name="PersonTitle">Title, or null.</param>
 /// <param name="PersonEmail">E-mail address, or null.</param>
 /// <param name="PersonCompany">Company name of an external person, or null.</param>
 /// <param name="PersonIsActive">False once the person is deactivated in People (the contact stays).</param>

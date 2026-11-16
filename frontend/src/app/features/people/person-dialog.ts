@@ -39,8 +39,8 @@ const EMAIL_SHAPE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
 
 /**
  * New Person / Edit Person (epic #1373, issue #1375; mockup screen `person-new`, `person-user`): a 768 px (large, two-column) `mf-form-dialog` with First Name, Last Name, Internal or External,
- * Title or Role, Email, Company Name (External only) and Comments. A system user opens with the account's name, email and type as plain text (they follow the user; the API refuses
- * a change) and a banner that points to Administration > Users; Title or Role and Comments stay editable. Without `People.Manage` the same dialog is a read-only view
+ * Title, Email, Company Name (External only) and Comments. A system user opens with the account's name, email and type as plain text (they follow the user; the API refuses
+ * a change) and a banner that points to Administration > Users; Title and Comments stay editable. Without `People.Manage` the same dialog is a read-only view
  * with one Close button.
  */
 @Component({
@@ -103,7 +103,7 @@ const EMAIL_SHAPE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
               } @else {
                 Administration, Users.
               }
-              Title or Role and Comments can be edited here.</span
+              Title and Comments can be edited here.</span
             >
           </p>
         }
@@ -192,14 +192,14 @@ const EMAIL_SHAPE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
         @if (canManage()) {
           <mf-text-field
             inputId="person-title"
-            label="Title or Role"
+            label="Title"
             [maxLength]="200"
             [error]="fieldError('title')"
             [(value)]="title"
           />
         } @else {
           <div class="mf-field" data-plain-field="title">
-            <span class="mf-field__label">Title or Role</span>
+            <span class="mf-field__label">Title</span>
             <p class="pd__value" [class.pd__none]="!title()">{{ title() || 'None' }}</p>
           </div>
         }

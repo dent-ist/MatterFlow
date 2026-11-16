@@ -29,7 +29,7 @@ public class Person : AuditedEntity<int>
     /// <summary>See <see cref="PersonTypes"/>.</summary>
     public string PersonType { get; set; } = PersonTypes.Internal;
 
-    /// <summary>Title or role, for example Partner or Paralegal.</summary>
+    /// <summary>Title, for example Partner or Paralegal.</summary>
     public string? Title { get; set; }
 
     public string? Email { get; set; }

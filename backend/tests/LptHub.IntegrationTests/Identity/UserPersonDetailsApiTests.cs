@@ -56,6 +56,16 @@ public sealed class UserPersonDetailsApiTests(SqlServerFixture sql) : IAsyncLife
 
     private static async Task<JsonElement> ListAsync(HttpClient client, string url) => await JsonAsync(await client.GetAsync(url));
 
+    /// <summary>An office by name: the list starts empty (owner decision), so the test adds it (or finds the one an earlier step added).</summary>
+    private async Task<int> OfficeAsync(string name)
+    {
+        var admin = As(Admin);
+        var existing = (await ListAsync(admin, "/api/v1/offices")).EnumerateArray().FirstOrDefault(o => o.GetProperty("name").GetString() == name);
+        if (existing.ValueKind == JsonValueKind.Object)
+            return existing.GetProperty("id").GetInt32();
+        return (await JsonAsync(await admin.PostAsJsonAsync("/api/v1/offices", new { name }), HttpStatusCode.Created)).GetProperty("id").GetInt32();
+    }
+
     private static int IdOf(JsonElement list, string name) => list.EnumerateArray().Single(i => i.GetProperty("name").GetString() == name).GetProperty("id").GetInt32();
 
     private static object Details(string? title = null, string? notes = null, int? officeId = null, int? statusId = null, string? month = null, string rowVersion = "") =>
@@ -65,13 +75,13 @@ public sealed class UserPersonDetailsApiTests(SqlServerFixture sql) : IAsyncLife
         await JsonAsync(await As(Admin).PutAsJsonAsync($"/api/v1/users/{userId}/person-details", body), expected);
 
     [Fact]
-    public async Task The_status_list_starts_with_Active_On_Leave_and_Departed_and_there_are_starter_offices()
+    public async Task The_status_list_starts_with_Active_On_Leave_and_Departed_and_the_office_list_starts_empty()
     {
         var statuses = await ListAsync(As(Admin), "/api/v1/employment-statuses");
         statuses.EnumerateArray().Select(i => i.GetProperty("name").GetString()).ShouldBe(["Active", "On Leave", "Departed"]);
         var offices = await ListAsync(As(Admin), "/api/v1/offices");
-        offices.GetArrayLength().ShouldBeGreaterThan(0);
-        offices.EnumerateArray().ShouldAllBe(o => o.GetProperty("isActive").GetBoolean() && o.GetProperty("inUseCount").GetInt32() == 0);
+        offices.GetArrayLength().ShouldBe(0);
+        statuses.EnumerateArray().ShouldAllBe(o => o.GetProperty("isActive").GetBoolean() && o.GetProperty("inUseCount").GetInt32() == 0);
     }
 
     [Fact]
@@ -90,6 +100,7 @@ public sealed class UserPersonDetailsApiTests(SqlServerFixture sql) : IAsyncLife
         // The old row version is stale now.
         (await admin.PutAsJsonAsync($"/api/v1/offices/{id}", new { name = "Berlin", isActive = true, rowVersion = created.GetProperty("rowVersion").GetString() })).StatusCode.ShouldBe(HttpStatusCode.Conflict);
 
+        await OfficeAsync("Second Office"); // the list starts empty, so a second item is needed to reorder
         var all = await ListAsync(admin, "/api/v1/offices");
         var ids = all.EnumerateArray().Select(i => i.GetProperty("id").GetInt32()).Reverse().ToArray();
         var reordered = await JsonAsync(await admin.PutAsJsonAsync("/api/v1/offices/order", new { ids }));
@@ -117,13 +128,12 @@ public sealed class UserPersonDetailsApiTests(SqlServerFixture sql) : IAsyncLife
     {
         var userId = await NewUserAsync(@"ke\dana");
         var admin = As(Admin);
-        var offices = await ListAsync(admin, "/api/v1/offices");
         var statuses = await ListAsync(admin, "/api/v1/employment-statuses");
         var before = await JsonAsync(await admin.GetAsync($"/api/v1/users/{userId}"));
         before.GetProperty("title").ValueKind.ShouldBe(JsonValueKind.Null);
         before.GetProperty("industryJoinMonth").ValueKind.ShouldBe(JsonValueKind.Null);
 
-        var saved = await SaveAsync(userId, Details("  Senior Project Manager ", "Prefers morning calls.\nLeads the Alpha team.", IdOf(offices, "Head Office"), IdOf(statuses, "On Leave"), "2018-03", before.GetProperty("personRowVersion").GetString()!));
+        var saved = await SaveAsync(userId, Details("  Senior Project Manager ", "Prefers morning calls.\nLeads the Alpha team.", await OfficeAsync("Head Office"), IdOf(statuses, "On Leave"), "2018-03", before.GetProperty("personRowVersion").GetString()!));
         saved.GetProperty("title").GetString().ShouldBe("Senior Project Manager");
         saved.GetProperty("notes").GetString().ShouldBe("Prefers morning calls.\nLeads the Alpha team.");
         saved.GetProperty("officeName").GetString().ShouldBe("Head Office");
@@ -157,14 +167,13 @@ public sealed class UserPersonDetailsApiTests(SqlServerFixture sql) : IAsyncLife
     {
         var userId = await NewUserAsync(@"ke\eli");
         var admin = As(Admin);
-        var offices = await ListAsync(admin, "/api/v1/offices");
         var statuses = await ListAsync(admin, "/api/v1/employment-statuses");
         var first = await JsonAsync(await admin.GetAsync($"/api/v1/users/{userId}"));
         var rowVersion = first.GetProperty("personRowVersion").GetString()!;
 
-        var one = await SaveAsync(userId, Details("Analyst", null, IdOf(offices, "Branch Office"), IdOf(statuses, "Active"), "2020-11", rowVersion));
-        await SaveAsync(userId, Details("Analyst", null, IdOf(offices, "Branch Office"), IdOf(statuses, "Active"), "2020-11", rowVersion), HttpStatusCode.Conflict); // stale
-        var two = await SaveAsync(userId, Details("Lead Analyst", null, IdOf(offices, "Remote"), IdOf(statuses, "Departed"), "2019-06", one.GetProperty("personRowVersion").GetString()!));
+        var one = await SaveAsync(userId, Details("Analyst", null, await OfficeAsync("Branch Office"), IdOf(statuses, "Active"), "2020-11", rowVersion));
+        await SaveAsync(userId, Details("Analyst", null, await OfficeAsync("Branch Office"), IdOf(statuses, "Active"), "2020-11", rowVersion), HttpStatusCode.Conflict); // stale
+        var two = await SaveAsync(userId, Details("Lead Analyst", null, await OfficeAsync("Remote"), IdOf(statuses, "Departed"), "2019-06", one.GetProperty("personRowVersion").GetString()!));
 
         var personId = (await _factory.WithDbAsync(db => db.Set<Person>().SingleAsync(p => p.UserId == userId))).Id.ToString();
         var events = await _factory.WithDbAsync(db => db.Set<AuditEvent>().Where(e => e.ObjectType == "Person" && e.ObjectId == personId).OrderBy(e => e.Id).ToListAsync());
@@ -178,7 +187,7 @@ public sealed class UserPersonDetailsApiTests(SqlServerFixture sql) : IAsyncLife
 
         // Nothing changed: no new events.
         var count = events.Count;
-        await SaveAsync(userId, Details("Lead Analyst", null, IdOf(offices, "Remote"), IdOf(statuses, "Departed"), "2019-06", two.GetProperty("personRowVersion").GetString()!));
+        await SaveAsync(userId, Details("Lead Analyst", null, await OfficeAsync("Remote"), IdOf(statuses, "Departed"), "2019-06", two.GetProperty("personRowVersion").GetString()!));
         (await _factory.WithDbAsync(db => db.Set<AuditEvent>().CountAsync(e => e.ObjectType == "Person" && e.ObjectId == personId))).ShouldBe(count);
 
         var rv = (await JsonAsync(await admin.GetAsync($"/api/v1/users/{userId}"))).GetProperty("personRowVersion").GetString()!;
@@ -196,10 +205,9 @@ public sealed class UserPersonDetailsApiTests(SqlServerFixture sql) : IAsyncLife
     public async Task The_users_list_sorts_and_filters_by_title_office_and_employment_status()
     {
         var admin = As(Admin);
-        var offices = await ListAsync(admin, "/api/v1/offices");
         var statuses = await ListAsync(admin, "/api/v1/employment-statuses");
-        var head = IdOf(offices, "Head Office");
-        var remote = IdOf(offices, "Remote");
+        var head = await OfficeAsync("Head Office");
+        var remote = await OfficeAsync("Remote");
         var onLeave = IdOf(statuses, "On Leave");
         foreach (var (account, title, office, status) in new[] { (@"ke\ann", "Paralegal", head, onLeave), (@"ke\bob", "Attorney", remote, IdOf(statuses, "Active")), (@"ke\cy", (string?)null, (int?)null, (int?)null) })
         {
