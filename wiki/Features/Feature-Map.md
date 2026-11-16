@@ -52,7 +52,7 @@
 
 | Page (menu) | Backend module | Tables | Endpoints | Frontend route and folder | Permission | Tests |
 |---|---|---|---|---|---|---|
-| Users | Identity | `AppUser`, `UserIdentity`, `UserRole`, `PodMember` | `/users` (list, counts, get, put, `PUT /users/{id}/roles`, `PUT /users/{id}/status`), `GET/PUT /users/{id}/pods` (PodsController), `/users/lookup` | `/admin/users`; `admin/users/` | `User.View`, `User.Manage` | `Identity/`; e2e `users-*` |
+| Users | Identity | `AppUser`, `UserIdentity`, `UserRole`, `PodMember`, `Person` (title, comments, office, employment status, industry join date of the user record) | `/users` (list, counts, get, put, `PUT /users/{id}/roles`, `PUT /users/{id}/status`, `PUT /users/{id}/person-details`), `GET/PUT /users/{id}/pods` (PodsController), `/users/lookup` | `/admin/users`; `admin/users/` | `User.View`, `User.Manage` | `Identity/`; e2e `users-*` |
 | Roles (incl. the Landing Page field) | Identity | `Role`, `RolePermission`, `Permission` | `/roles`, `/permissions`, `/roles/{id}/landing-page` | `/admin/roles`; `admin/roles/` | `Role.Manage` | e2e `users-us6-editors` |
 | Pods | Identity | `Pod`, `PodMember` | `/pods` (list, get, create, update, members, primary, `member-candidates`) | `/admin/pods`; `admin/pods/` | `Pod.Manage`, `Pod.ManageMembers` | e2e `users-pods` |
 | Task Types | Configuration | `TaskType`, `TaskTypeWorkflowEligibility`, `FormDefinition`, `FormVersion`, `FormField` | `/task-types`, `/forms` | `/admin/task-types`; `admin/task-types/` | `TaskType.Manage` | e2e `ty*` |
@@ -63,6 +63,7 @@
 | Lists: On-Hold Reasons (Task) | Configuration | `OnHoldReason` | `/on-hold-reasons` | `/admin/lists/on-hold-reasons`; `admin/on-hold-reasons/` | `OnHoldReason.Manage` | `Tasks/OnHoldReasonTests`; e2e `pv-task-types-on-hold` |
 | Lists: Note Tags (Notes) | Notes | `NoteTag` | `/note-tags` | `/admin/lists/note-tags`; `admin/note-tags/` | `StatusLabel.Manage` (see Routing) | |
 | Lists: Matter Types, Matter Categories, Current States, Team Titles (Matter) | Configuration | `MatterType`, `MatterCategory`, `CurrentState`, `TeamTitle` | `/matter-types`, `/matter-categories`, `/current-states`, `/team-titles` | `/admin/lists/matter-types` and the other three; `admin/matter-lists/` | `MatterList.Manage` | e2e `lists-*` |
+| Lists: Offices, Employment Statuses (People) | Identity | `Office`, `EmploymentStatus` | `/offices`, `/employment-statuses` | `/admin/lists/offices`, `/admin/lists/employment-statuses`; the shared body `admin/matter-lists/` | `User.Manage` (read: `User.View` or `User.Manage`) | `Identity/PersonLists/`; e2e `users-person-fields` |
 | Lists: Link Roles (Assets) | Assets, Configuration | `AssetLinkRole` | `/asset-link-roles` | `/admin/lists/link-roles`; `admin/asset-link-roles/` | `AssetType.Manage` | e2e `ad5-link-roles` |
 | Asset Types | Assets, Configuration | `AssetType`, `FormDefinition` | `/asset-types` | `/admin/asset-types`; `admin/asset-types/` | `AssetType.Manage` | e2e `ad4-*` |
 | Custom Fields | Configuration | `FormDefinition`, `FormVersion`, `FormField` | `/forms/custom-fields` and `/forms/...` | `/admin/custom-fields`; `admin/custom-fields/` | `CustomField.Manage` | e2e `ad6-custom-fields` |

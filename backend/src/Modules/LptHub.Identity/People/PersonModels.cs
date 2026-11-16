@@ -17,6 +17,11 @@ namespace LptHub.Identity.People;
 /// <param name="UserIsActive">For a system-user person: whether the user is active (the person stays when the user is deactivated); otherwise null.</param>
 /// <param name="IsActive">False once deactivated (people are never deleted).</param>
 /// <param name="RowVersion">Concurrency token (base64); send it back on update.</param>
+/// <param name="OfficeId">Office of an internal person (admin list), otherwise null. Changed on Administration > Users.</param>
+/// <param name="OfficeName">Name of the office.</param>
+/// <param name="EmploymentStatusId">Employment Status of an internal person (admin list: Active, On Leave, Departed), otherwise null. The HR status, not the account state of a user.</param>
+/// <param name="EmploymentStatusName">Name of the employment status.</param>
+/// <param name="IndustryJoinMonth">Month and year (<c>yyyy-MM</c>) the person started working in this industry, otherwise null.</param>
 public sealed record PersonDto(
     [property: Required] int PersonId,
     [property: Required] string FirstName,
@@ -31,7 +36,12 @@ public sealed record PersonDto(
     [property: Required] bool IsSystemUser,
     bool? UserIsActive,
     [property: Required] bool IsActive,
-    [property: Required] string RowVersion);
+    [property: Required] string RowVersion,
+    int? OfficeId = null,
+    string? OfficeName = null,
+    int? EmploymentStatusId = null,
+    string? EmploymentStatusName = null,
+    string? IndustryJoinMonth = null);
 
 /// <summary>A person in a picker: compact, for the Team and vendor-contact comboboxes.</summary>
 /// <param name="PersonId">Person id.</param>

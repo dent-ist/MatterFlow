@@ -22,6 +22,7 @@ import { ApiError } from '../../../core/http/api-error';
 import {
   IdentityAdminApi,
   PodChoice,
+  PersonListItemView,
   RoleSummaryDto,
   UserCountsDto,
   UserPodDto,
@@ -78,7 +79,15 @@ type StatusOption = UserStatusFilter;
 const STATUS_VALUES: readonly StatusOption[] = ['pending', 'active', 'inactive', 'all'];
 
 /** The columns the server can sort by (#436); anything else in the address is ignored. */
-const SORT_FIELDS: readonly UserSortKey[] = ['firstName', 'lastName', 'firstSeen', 'lastSeen'];
+const SORT_FIELDS: readonly UserSortKey[] = [
+  'firstName',
+  'lastName',
+  'title',
+  'office',
+  'employmentStatus',
+  'firstSeen',
+  'lastSeen',
+];
 
 /** Bone widths of a skeleton row, per column key. */
 const BONES: Record<string, string> = {
@@ -86,6 +95,9 @@ const BONES: Record<string, string> = {
   lastName: '9rem',
   account: '6rem',
   email: '10rem',
+  title: '9rem',
+  office: '7rem',
+  employmentStatus: '7rem',
   roles: '7rem',
   pods: '8rem',
   availability: '6rem',
@@ -222,6 +234,35 @@ export class UsersPage implements OnInit {
       width: '12rem',
       minWidth: '12rem',
     },
+    // The person record's fields (#1394), optional like Account and Email. Employment Status is the HR status (Active, On Leave, Departed), not the
+    // account state in the Status column at the right.
+    {
+      key: 'title',
+      label: 'Title or Role',
+      defaultHidden: true,
+      extra: true,
+      sort: 'title',
+      width: 'var(--mf-col-title-w)',
+      minWidth: 'var(--mf-col-title-w)',
+    },
+    {
+      key: 'office',
+      label: 'Office',
+      defaultHidden: true,
+      extra: true,
+      sort: 'office',
+      width: '10rem',
+      minWidth: '10rem',
+    },
+    {
+      key: 'employmentStatus',
+      label: 'Employment Status',
+      defaultHidden: true,
+      extra: true,
+      sort: 'employmentStatus',
+      width: '10rem',
+      minWidth: '10rem',
+    },
     { key: 'roles', label: 'Roles', width: '9rem', minWidth: '9rem' },
     { key: 'pods', label: 'Pods', width: '10rem', minWidth: '10rem' },
     { key: 'availability', label: 'Availability', width: '8rem', minWidth: '8rem' },
@@ -267,6 +308,15 @@ export class UsersPage implements OnInit {
     () => parseSortExpression(this.sortExpr())?.field ?? null,
   );
   protected readonly sortDir = computed(() => parseSortExpression(this.sortExpr())?.dir ?? null);
+  /** The Office and Employment Status lists for the two filters (read once; an empty list leaves the filter with "Any" only). */
+  private readonly offices = signal<readonly PersonListItemView[]>([]);
+  private readonly employmentStatuses = signal<readonly PersonListItemView[]>([]);
+  private readonly officeOptions = computed(() =>
+    this.offices().map((o) => ({ value: String(o.id), label: o.name })),
+  );
+  private readonly statusOptions = computed(() =>
+    this.employmentStatuses().map((o) => ({ value: String(o.id), label: o.name })),
+  );
   /** One array per load of the roles: the Roles control keeps what the person ticked while the list reloads under it. */
   private readonly roleOptions = computed(() =>
     this.roles().map((r) => ({ value: String(r.roleId), label: r.name })),
@@ -296,6 +346,25 @@ export class UsersPage implements OnInit {
         presets: ['today', 'last7', 'last30', 'thisMonth'],
       },
       { key: 'email', label: 'Email', column: 'email', type: 'text' },
+      { key: 'title', label: 'Title or Role', column: 'title', type: 'text' },
+      {
+        key: 'officeId',
+        label: 'Office',
+        column: 'office',
+        type: 'select',
+        allLabel: 'Any',
+        options: this.officeOptions(),
+        normalize: (v) => (/^[1-9]\d{0,9}$/.test(v) ? v : null),
+      },
+      {
+        key: 'employmentStatusId',
+        label: 'Employment Status',
+        column: 'employmentStatus',
+        type: 'select',
+        allLabel: 'Any',
+        options: this.statusOptions(),
+        normalize: (v) => (/^[1-9]\d{0,9}$/.test(v) ? v : null),
+      },
       {
         key: 'roleId',
         label: 'Roles',
@@ -380,6 +449,9 @@ export class UsersPage implements OnInit {
   protected readonly sortOptions: readonly SortOption[] = [
     { value: 'firstName', label: 'First Name' },
     { value: 'lastName', label: 'Last Name' },
+    { value: 'title', label: 'Title or Role' },
+    { value: 'office', label: 'Office' },
+    { value: 'employmentStatus', label: 'Employment Status' },
     { value: 'lastSeen', label: 'Last Seen' },
     { value: 'firstSeen', label: 'First Seen' },
   ];
@@ -425,6 +497,7 @@ export class UsersPage implements OnInit {
 
   async ngOnInit(): Promise<void> {
     void this.loadRoles();
+    void this.loadPersonLists();
     try {
       const counts = await firstValueFrom(this.api.userCounts());
       this.counts.set(counts);
@@ -862,6 +935,19 @@ export class UsersPage implements OnInit {
     return user.roles.length ? user.roles.join(', ') : 'None';
   }
 
+  private async loadPersonLists(): Promise<void> {
+    try {
+      const [offices, statuses] = await Promise.all([
+        firstValueFrom(this.api.listOffices()),
+        firstValueFrom(this.api.listEmploymentStatuses()),
+      ]);
+      this.offices.set(offices);
+      this.employmentStatuses.set(statuses);
+    } catch {
+      /* the two filters then offer "Any" only */
+    }
+  }
+
   private async loadRoles(): Promise<void> {
     try {
       this.roles.set(await firstValueFrom(this.api.listRoles()));
@@ -879,6 +965,11 @@ export class UsersPage implements OnInit {
         lastName: f.text('lastName'),
         account: f.text('account'),
         email: f.text('email'),
+        title: f.text('title') || undefined,
+        officeId: f.text('officeId') ? Number(f.text('officeId')) : undefined,
+        employmentStatusId: f.text('employmentStatusId')
+          ? Number(f.text('employmentStatusId'))
+          : undefined,
         roleIds: f.list('roleId').map(Number),
         availability: f.text('availability') || undefined,
         registeredFrom: this.registered().from || undefined,

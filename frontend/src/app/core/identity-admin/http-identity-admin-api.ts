@@ -1,6 +1,12 @@
 import { Injectable, Injector, inject } from '@angular/core';
 import { EMPTY, Observable, defer, expand, from, reduce, shareReplay, switchMap } from 'rxjs';
-import type { PodsClient, RolesClient, UsersClient } from '../../api/generated/api-client';
+import type {
+  EmploymentStatusesClient,
+  OfficesClient,
+  PodsClient,
+  RolesClient,
+  UsersClient,
+} from '../../api/generated/api-client';
 import {
   IdentityAdminApi,
   PagedResultOfUserSummaryDto,
@@ -15,6 +21,8 @@ import {
   UserCountsDto,
   UserDetailDto,
   UserListQuery,
+  PersonListItemView,
+  UpdateUserPersonDetailsRequest,
 } from './identity-admin-api';
 
 /**
@@ -60,6 +68,9 @@ export class HttpIdentityAdminApi extends IdentityAdminApi {
         q.dir,
         firstName,
         lastName,
+        q.title,
+        q.officeId,
+        q.employmentStatusId,
       ),
     );
   }
@@ -87,6 +98,29 @@ export class HttpIdentityAdminApi extends IdentityAdminApi {
     rowVersion: string,
   ): Observable<UserDetailDto> {
     return this.withUsers((c) => c.updateUserProfile(userId, { displayName, email, rowVersion }));
+  }
+
+  updateUserPersonDetails(
+    userId: number,
+    request: UpdateUserPersonDetailsRequest,
+  ): Observable<UserDetailDto> {
+    return this.withUsers((c) => c.updateUserPersonDetails(userId, request));
+  }
+
+  listOffices(): Observable<PersonListItemView[]> {
+    return this.client$.pipe(
+      switchMap((m) => this.injector.get<OfficesClient>(m.OfficesClient).listOffices()),
+    );
+  }
+
+  listEmploymentStatuses(): Observable<PersonListItemView[]> {
+    return this.client$.pipe(
+      switchMap((m) =>
+        this.injector
+          .get<EmploymentStatusesClient>(m.EmploymentStatusesClient)
+          .listEmploymentStatuses(),
+      ),
+    );
   }
 
   listRoles(): Observable<RoleSummaryDto[]> {

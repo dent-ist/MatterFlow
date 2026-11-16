@@ -109,6 +109,21 @@
               <span class="pg-clip">{{ u.email }}</span>
             </td>
           </ng-template>
+          <ng-template mfCell="title" let-u>
+            <td class="us-clip" data-title [attr.title]="u.title">
+              <span class="pg-clip">{{ u.title }}</span>
+            </td>
+          </ng-template>
+          <ng-template mfCell="office" let-u>
+            <td class="us-clip" data-office [attr.title]="u.officeName">
+              <span class="pg-clip">{{ u.officeName }}</span>
+            </td>
+          </ng-template>
+          <ng-template mfCell="employmentStatus" let-u>
+            <td class="us-clip" data-employment-status [attr.title]="u.employmentStatusName">
+              <span class="pg-clip">{{ u.employmentStatusName }}</span>
+            </td>
+          </ng-template>
           <ng-template mfCell="roles" let-u>
             <td class="us-roles" [attr.title]="rolesLabel(u)">
               @if (u.isPending && canManage()) {

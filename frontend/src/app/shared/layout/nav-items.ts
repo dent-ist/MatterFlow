@@ -144,7 +144,7 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
     permissions: ['TaskType.Manage', 'Workflow.Manage'],
   },
   {
-    // Administration > Lists (epic #1314): the lists of choices (Matter Types, Matter Categories, Current States, Team Titles, Priorities, Status Labels, On-Hold Reasons, Note Tags, Link Roles, Vendor Services, Vendor Areas) in one
+    // Administration > Lists (epic #1314): the lists of choices (Matter Types, Matter Categories, Current States, Team Titles, Priorities, Status Labels, On-Hold Reasons, Note Tags, Link Roles, Vendor Services, Vendor Areas, Offices, Employment Statuses) in one
     // master-detail page. It replaces Labels and Matter Lists. Shown when the person manages any one of them (Note Tags use StatusLabel.Manage, Link Roles AssetType.Manage);
     // `/admin/lists` opens the first list they may manage. `admin-lists.spec.ts` keeps this list in step with the registry.
     label: 'Lists',
@@ -158,6 +158,8 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
       'AssetType.Manage',
       // Vendor Services and Vendor Areas (#1378).
       'Vendor.Manage',
+      // Offices and Employment Statuses (#1394).
+      'User.Manage',
     ],
   },
   {

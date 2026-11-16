@@ -26,6 +26,9 @@ public class UsersController(UserAdministration users) : ControllerBase
     /// <param name="name">Fragment of the display name.</param>
     /// <param name="firstName">Fragment of the first name (linked person).</param>
     /// <param name="lastName">Fragment of the last name (linked person).</param>
+    /// <param name="title">Fragment of the title (linked person).</param>
+    /// <param name="officeId">Only people of this office (linked person).</param>
+    /// <param name="employmentStatusId">Only people with this employment status (the HR status of the linked person, not the account state).</param>
     /// <param name="account">Fragment of the Windows account.</param>
     /// <param name="email">Fragment of the e-mail.</param>
     /// <param name="roleId">Role ids; repeat the parameter for several (any of them).</param>
@@ -34,7 +37,7 @@ public class UsersController(UserAdministration users) : ControllerBase
     /// <param name="registeredTo">Last day (viewer's zone, inclusive), <c>yyyy-MM-dd</c>.</param>
     /// <param name="page">1-based page.</param>
     /// <param name="pageSize">Items per page (default 25, max 100).</param>
-    /// <param name="sort"><c>name</c>, <c>firstName</c>, <c>lastName</c>, <c>firstSeen</c> (first sign-in) or <c>lastSeen</c> (last sign-in, <c>lastLoginAtUtc</c> of the row; people who never signed in are last). Omitted: waiting people first, then active, then inactive, then name.</param>
+    /// <param name="sort"><c>name</c>, <c>firstName</c>, <c>lastName</c>, <c>firstSeen</c> (first sign-in) or <c>title</c>, <c>office</c>, <c>employmentStatus</c> or <c>lastSeen</c> (last sign-in, <c>lastLoginAtUtc</c> of the row; people who never signed in are last). Omitted: waiting people first, then active, then inactive, then name.</param>
     /// <param name="dir"><c>asc</c> (default) or <c>desc</c>, with <paramref name="sort"/>; ties are broken by id so paging is stable.</param>
     /// <param name="cancellationToken">Request cancellation.</param>
     [HttpGet(Name = "ListUsers")]
@@ -56,11 +59,14 @@ public class UsersController(UserAdministration users) : ControllerBase
         [FromQuery, StringLength(4)] string? dir = null,
         [FromQuery, StringLength(200)] string? firstName = null,
         [FromQuery, StringLength(200)] string? lastName = null,
+        [FromQuery, StringLength(200)] string? title = null,
+        [FromQuery] int? officeId = null,
+        [FromQuery] int? employmentStatusId = null,
         CancellationToken cancellationToken = default)
     {
         var sortKey = UserSortKeys.Canonical(sort);
         if (sort is not null && sortKey is null)
-            return this.Problem(Error.Validation("sort", "INVALID", "sort must be name, firstName, lastName, firstSeen or lastSeen."));
+            return this.Problem(Error.Validation("sort", "INVALID", "sort must be name, firstName, lastName, firstSeen, lastSeen, title, office or employmentStatus."));
         if (dir is not null && !string.Equals(dir, "asc", StringComparison.OrdinalIgnoreCase) && !string.Equals(dir, "desc", StringComparison.OrdinalIgnoreCase))
             return this.Problem(Error.Validation("dir", "INVALID", "dir must be asc or desc."));
         if (!UserListStatuses.IsValid(status))
@@ -74,7 +80,7 @@ public class UsersController(UserAdministration users) : ControllerBase
         if (from is not null && to is not null && from > to)
             return this.Problem(Error.Validation("registeredFrom", "INVALID", "The start date must not be after the end date."));
 
-        var filter = new UserListFilter(status, search, name, account, email, roleId, availability, from, to, sortKey, string.Equals(dir, "desc", StringComparison.OrdinalIgnoreCase), firstName, lastName);
+        var filter = new UserListFilter(status, search, name, account, email, roleId, availability, from, to, sortKey, string.Equals(dir, "desc", StringComparison.OrdinalIgnoreCase), firstName, lastName, title, officeId, employmentStatusId);
         return Ok(await users.ListAsync(filter, new PageRequest(page, pageSize), cancellationToken));
     }
 
@@ -128,4 +134,14 @@ public class UsersController(UserAdministration users) : ControllerBase
     [ProducesResponseType<UserDetailDto>(StatusCodes.Status200OK, "application/json")]
     public async Task<IActionResult> UpdateProfile(int userId, [FromBody] UpdateUserProfileRequest request, CancellationToken cancellationToken) =>
         this.ToActionResult(await users.UpdateProfileAsync(userId, request.DisplayName, request.Email, request.RowVersion, cancellationToken));
+
+    /// <summary>
+    /// Edits the person fields of a user: Title, Notes, Office, Employment Status (the HR status, not the account state) and Industry Join Date (<c>yyyy-MM</c>, month and year only).
+    /// Every field is replaced; send the <c>personRowVersion</c> of the last read as <c>rowVersion</c> (409 <c>CONCURRENCY_CONFLICT</c> when the person changed since).
+    /// </summary>
+    [HttpPut("{userId:int}/person-details", Name = "UpdateUserPersonDetails")]
+    [RequirePermission(Permissions.User.Manage)]
+    [ProducesResponseType<UserDetailDto>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> UpdatePersonDetails(int userId, [FromBody] UpdateUserPersonDetailsRequest request, CancellationToken cancellationToken) =>
+        this.ToActionResult(await users.UpdatePersonDetailsAsync(userId, request, cancellationToken));
 }

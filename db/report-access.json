@@ -65,6 +65,11 @@
       "reason": "Business data that reports may read."
     },
     {
+      "name": "EmploymentStatus",
+      "access": "allow",
+      "reason": "Business data that reports may read."
+    },
+    {
       "name": "FormDefinition",
       "access": "allow",
       "reason": "Business data that reports may read."
@@ -173,6 +178,11 @@
       "name": "NotificationPreference",
       "access": "deny",
       "reason": "Per-person notification switches, not report data."
+    },
+    {
+      "name": "Office",
+      "access": "allow",
+      "reason": "Business data that reports may read."
     },
     {
       "name": "OnHoldReason",

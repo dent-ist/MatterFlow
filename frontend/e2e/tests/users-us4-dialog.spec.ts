@@ -490,7 +490,9 @@ test.describe('#443 read-only variants and #444 conflicts', () => {
       page.locator('[data-panel-cancel]').getByRole('button', { name: 'Close' }),
     ).toBeVisible();
     await expect(page.locator('[data-role]').first()).toBeDisabled();
-    await expect(page.locator('[data-name]')).toBeDisabled();
+    // The profile of a read-only dialog is plain text (D-35, #1394), not a disabled field.
+    await expect(page.locator('[data-name]')).toHaveCount(0);
+    await expect(page.locator('[data-name-text]')).toBeVisible();
     expect(await axeClean(page)).toEqual([]);
   });
 

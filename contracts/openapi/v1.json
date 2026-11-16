@@ -5584,6 +5584,366 @@
         }
       }
     },
+    "/api/v1/offices": {
+      "get": {
+        "tags": [
+          "Offices"
+        ],
+        "operationId": "ListOffices",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PersonListItemView"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Offices"
+        ],
+        "operationId": "CreateOffice",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePersonListItemRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePersonListItemRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePersonListItemRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonListItemView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/offices/{id}": {
+      "put": {
+        "tags": [
+          "Offices"
+        ],
+        "operationId": "UpdateOffice",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePersonListItemRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePersonListItemRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePersonListItemRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonListItemView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Offices"
+        ],
+        "operationId": "DeleteOffice",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": { }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/offices/order": {
+      "put": {
+        "tags": [
+          "Offices"
+        ],
+        "operationId": "ReorderOffices",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderPersonListRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderPersonListRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderPersonListRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PersonListItemView"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/employment-statuses": {
+      "get": {
+        "tags": [
+          "EmploymentStatuses"
+        ],
+        "operationId": "ListEmploymentStatuses",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PersonListItemView"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "EmploymentStatuses"
+        ],
+        "operationId": "CreateEmploymentStatus",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePersonListItemRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePersonListItemRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePersonListItemRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonListItemView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/employment-statuses/{id}": {
+      "put": {
+        "tags": [
+          "EmploymentStatuses"
+        ],
+        "operationId": "UpdateEmploymentStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePersonListItemRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePersonListItemRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePersonListItemRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonListItemView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "EmploymentStatuses"
+        ],
+        "operationId": "DeleteEmploymentStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "content": {
+              "application/json": { }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/employment-statuses/order": {
+      "put": {
+        "tags": [
+          "EmploymentStatuses"
+        ],
+        "operationId": "ReorderEmploymentStatuses",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderPersonListRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderPersonListRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReorderPersonListRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PersonListItemView"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/pods": {
       "get": {
         "tags": [
@@ -6410,6 +6770,31 @@
               "minLength": 0,
               "type": "string"
             }
+          },
+          {
+            "name": "title",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "officeId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "employmentStatusId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
           }
         ],
         "responses": {
@@ -6609,6 +6994,57 @@
             "application/*+json": {
               "schema": {
                 "$ref": "#/components/schemas/SetUserActiveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDetailDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/{userId}/person-details": {
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "UpdateUserPersonDetails",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserPersonDetailsRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserPersonDetailsRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserPersonDetailsRequest"
               }
             }
           },
@@ -25687,6 +26123,21 @@
           }
         }
       },
+      "CreatePersonListItemRequest": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      },
       "CreatePersonRequest": {
         "required": [
           "firstName",
@@ -33367,6 +33818,72 @@
           },
           "rowVersion": {
             "type": "string"
+          },
+          "officeId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "officeName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "employmentStatusId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "employmentStatusName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "industryJoinMonth": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "PersonListItemView": {
+        "required": [
+          "id",
+          "name",
+          "sortOrder",
+          "isActive",
+          "rowVersion",
+          "inUseCount"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "rowVersion": {
+            "type": "string"
+          },
+          "inUseCount": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -35013,6 +35530,21 @@
         "properties": {
           "rowVersion": {
             "type": "string"
+          }
+        }
+      },
+      "ReorderPersonListRequest": {
+        "required": [
+          "ids"
+        ],
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
           }
         }
       },
@@ -40926,6 +41458,25 @@
           }
         }
       },
+      "UpdatePersonListItemRequest": {
+        "required": [
+          "name",
+          "isActive",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
       "UpdatePersonRequest": {
         "required": [
           "firstName",
@@ -41720,6 +42271,54 @@
           }
         }
       },
+      "UpdateUserPersonDetailsRequest": {
+        "required": [
+          "title",
+          "notes",
+          "officeId",
+          "employmentStatusId",
+          "industryJoinMonth",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "notes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "officeId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "employmentStatusId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "industryJoinMonth": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
       "UpdateUserProfileRequest": {
         "required": [
           "displayName",
@@ -42146,6 +42745,56 @@
               "integer"
             ],
             "format": "int32"
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "notes": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "officeId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "officeName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "employmentStatusId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "employmentStatusName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "industryJoinMonth": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "personRowVersion": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -42522,6 +43171,24 @@
           "lastName": {
             "type": "string",
             "default": ""
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "officeName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "employmentStatusName": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -43991,6 +44658,12 @@
     },
     {
       "name": "People"
+    },
+    {
+      "name": "Offices"
+    },
+    {
+      "name": "EmploymentStatuses"
     },
     {
       "name": "Pods"

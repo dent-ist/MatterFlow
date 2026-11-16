@@ -5,6 +5,11 @@ import {
   numericDay,
   numericInstant,
   numericTime,
+  MONTH_NAMES,
+  monthYear,
+  readableMonthYear,
+  yearsSinceMonth,
+  yearsText,
   readableDate,
   readableInstant,
 } from './numeric-date';
@@ -67,5 +72,31 @@ describe('numeric date format (UI-23)', () => {
     expect(readableDate('2026-10-26')).toBe('October 26, 2026');
     expect(readableDate('2026-10-26', '16:00')).toBe('October 26, 2026, 4:00 PM');
     expect(readableInstant('2026-10-26T20:00:00Z', NY)).toBe('October 26, 2026, 4:00 PM');
+  });
+});
+
+describe('month and year only (D-60a)', () => {
+  it('shows a month and a year as Mar 2018 and spells it out for tooltips', () => {
+    expect(monthYear('2018-03')).toBe('Mar 2018');
+    expect(monthYear('2018-03-01')).toBe('Mar 2018');
+    expect(monthYear('1999-12')).toBe('Dec 1999');
+    expect(monthYear('')).toBe('');
+    expect(monthYear(undefined)).toBe('');
+    expect(monthYear('2018-13')).toBe('2018-13');
+    expect(readableMonthYear('2018-03')).toBe('March 2018');
+    expect(MONTH_NAMES).toHaveLength(12);
+    expect(MONTH_NAMES[0]).toBe('January');
+  });
+
+  it('counts whole years to today in the zone and words them', () => {
+    expect(yearsSinceMonth('2018-03', NOW, NY)).toBe(8);
+    expect(yearsSinceMonth('2018-10', NOW, NY)).toBe(8);
+    expect(yearsSinceMonth('2018-11', NOW, NY)).toBe(7);
+    expect(yearsSinceMonth('2026-10', NOW, NY)).toBe(0);
+    expect(yearsSinceMonth('2030-01', NOW, NY)).toBe(0);
+    expect(yearsSinceMonth('nonsense', NOW, NY)).toBeNull();
+    expect(yearsText(0)).toBe('Less than 1 year');
+    expect(yearsText(1)).toBe('1 year');
+    expect(yearsText(8)).toBe('8 years');
   });
 });

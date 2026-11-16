@@ -464,13 +464,15 @@ test.describe('Services and Areas on Administration > Lists (#1378)', () => {
     await expect(page.getByRole('menuitem', { name: 'Delete' })).toHaveCount(0);
   });
 
-  test('the System Admin sees eleven lists in five groups, Vendors last', async ({ page }) => {
+  test('the System Admin sees thirteen lists in six groups, People last', async ({ page }) => {
     await page.setViewportSize(SIZES[0]);
     await page.goto('/admin/lists/vendor-areas');
     const options = page.getByRole('listbox', { name: 'Lists' }).getByRole('option');
-    await expect(options).toHaveCount(11);
+    await expect(options).toHaveCount(13);
     await expect(options.nth(9)).toContainText('Vendor Services');
     await expect(options.nth(10)).toContainText('Vendor Areas');
+    await expect(options.nth(11)).toContainText('Offices');
+    await expect(options.nth(12)).toContainText('Employment Statuses');
     await expect(page.getByRole('heading', { level: 2 })).toHaveText('Vendor Areas');
   });
 });
