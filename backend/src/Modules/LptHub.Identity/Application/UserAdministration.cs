@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Linq.Expressions;
 using LptHub.Audit.Contracts;
 using LptHub.Identity.Contracts;
@@ -33,10 +34,13 @@ public static class UserSortKeys
     public const string LastName = "lastName";
     public const string FirstSeen = "firstSeen";
     public const string LastSeen = "lastSeen";
+    public const string Title = "title";
+    public const string Office = "office";
+    public const string EmploymentStatus = "employmentStatus";
 
     /// <summary>The key as written above (the address is case-insensitive), or null when it is not one of them.</summary>
     public static string? Canonical(string? value) =>
-        new[] { Name, FirstName, LastName, FirstSeen, LastSeen }.FirstOrDefault(k => string.Equals(k, value, StringComparison.OrdinalIgnoreCase));
+        new[] { Name, FirstName, LastName, FirstSeen, LastSeen, Title, Office, EmploymentStatus }.FirstOrDefault(k => string.Equals(k, value, StringComparison.OrdinalIgnoreCase));
 }
 
 /// <summary>Filters of the users list. The column filters combine with AND; <see cref="Search"/> is the older any-column search.</summary>
@@ -51,7 +55,10 @@ public static class UserSortKeys
 /// <param name="Availability"><c>AVAILABLE</c>, <c>OUT_OF_OFFICE</c> or <c>OFF_HOURS</c>, evaluated now.</param>
 /// <param name="RegisteredFrom">First day (viewer's zone) of the first-seen date.</param>
 /// <param name="RegisteredTo">Last day (viewer's zone, inclusive) of the first-seen date.</param>
-/// <param name="Sort"><c>name</c>, <c>firstName</c>, <c>lastName</c>, <c>firstSeen</c> or <c>lastSeen</c>; null keeps the queue order (waiting people first, then active, then inactive, then name).</param>
+/// <param name="Sort"><c>name</c>, <c>firstName</c>, <c>lastName</c>, <c>firstSeen</c>, <c>lastSeen</c>, <c>title</c>, <c>office</c> or <c>employmentStatus</c>; null keeps the queue order (waiting people first, then active, then inactive, then name).</param>
+/// <param name="Title">Fragment of the title of the linked person only.</param>
+/// <param name="OfficeId">Only people whose linked person has this office.</param>
+/// <param name="EmploymentStatusId">Only people whose linked person has this employment status.</param>
 /// <param name="Descending">Sort direction for <paramref name="Sort"/>; people with no last-seen time stay last in either direction.</param>
 public sealed record UserListFilter(
     string? Status = null,
@@ -66,7 +73,10 @@ public sealed record UserListFilter(
     string? Sort = null,
     bool Descending = false,
     string? FirstName = null,
-    string? LastName = null);
+    string? LastName = null,
+    string? Title = null,
+    int? OfficeId = null,
+    int? EmploymentStatusId = null);
 
 /// <summary>
 /// Users queue and role assignment (architecture 6; baseline 6.4). Every change is audited, invalidates the effective-permission
@@ -124,6 +134,12 @@ public sealed class UserAdministration(
             query = query.Where(u => db.Set<Person>().Any(p => p.UserId == u.Id && p.FirstName.Contains(firstName)));
         if (filter.LastName?.Trim() is { Length: > 0 } lastName)
             query = query.Where(u => db.Set<Person>().Any(p => p.UserId == u.Id && p.LastName.Contains(lastName)));
+        if (filter.Title?.Trim() is { Length: > 0 } title)
+            query = query.Where(u => db.Set<Person>().Any(p => p.UserId == u.Id && p.Title != null && p.Title.Contains(title)));
+        if (filter.OfficeId is { } officeId)
+            query = query.Where(u => db.Set<Person>().Any(p => p.UserId == u.Id && p.OfficeId == officeId));
+        if (filter.EmploymentStatusId is { } statusId)
+            query = query.Where(u => db.Set<Person>().Any(p => p.UserId == u.Id && p.EmploymentStatusId == statusId));
         if (filter.Account?.Trim() is { Length: > 0 } account)
             query = query.Where(u => u.Identities.Any(i => i.Username.Contains(account)));
         if (filter.Email?.Trim() is { Length: > 0 } email)
@@ -160,6 +176,15 @@ public sealed class UserAdministration(
             UserSortKeys.LastName => filter.Descending
                 ? source.OrderByDescending(u => db.Set<Person>().Where(p => p.UserId == u.Id).Select(p => p.LastName).FirstOrDefault()).ThenBy(u => u.Id)
                 : source.OrderBy(u => db.Set<Person>().Where(p => p.UserId == u.Id).Select(p => p.LastName).FirstOrDefault()).ThenBy(u => u.Id),
+            UserSortKeys.Title => filter.Descending
+                ? source.OrderByDescending(u => db.Set<Person>().Where(p => p.UserId == u.Id).Select(p => p.Title).FirstOrDefault()).ThenBy(u => u.Id)
+                : source.OrderBy(u => db.Set<Person>().Where(p => p.UserId == u.Id).Select(p => p.Title).FirstOrDefault()).ThenBy(u => u.Id),
+            UserSortKeys.Office => filter.Descending
+                ? source.OrderByDescending(u => db.Set<Office>().Where(o => db.Set<Person>().Any(p => p.UserId == u.Id && p.OfficeId == o.Id)).Select(o => o.Name).FirstOrDefault()).ThenBy(u => u.Id)
+                : source.OrderBy(u => db.Set<Office>().Where(o => db.Set<Person>().Any(p => p.UserId == u.Id && p.OfficeId == o.Id)).Select(o => o.Name).FirstOrDefault()).ThenBy(u => u.Id),
+            UserSortKeys.EmploymentStatus => filter.Descending
+                ? source.OrderByDescending(u => db.Set<EmploymentStatus>().Where(e => db.Set<Person>().Any(p => p.UserId == u.Id && p.EmploymentStatusId == e.Id)).Select(e => e.Name).FirstOrDefault()).ThenBy(u => u.Id)
+                : source.OrderBy(u => db.Set<EmploymentStatus>().Where(e => db.Set<Person>().Any(p => p.UserId == u.Id && p.EmploymentStatusId == e.Id)).Select(e => e.Name).FirstOrDefault()).ThenBy(u => u.Id),
             UserSortKeys.FirstSeen => filter.Descending
                 ? source.OrderByDescending(u => u.CreatedAtUtc).ThenBy(u => u.Id)
                 : source.OrderBy(u => u.CreatedAtUtc).ThenBy(u => u.Id),
@@ -208,6 +233,9 @@ public sealed class UserAdministration(
                 Account = u.Identities.OrderBy(i => i.Id).Select(i => i.Username).FirstOrDefault(),
                 FirstName = db.Set<Person>().Where(p => p.UserId == u.Id).Select(p => p.FirstName).FirstOrDefault(),
                 LastName = db.Set<Person>().Where(p => p.UserId == u.Id).Select(p => p.LastName).FirstOrDefault(),
+                Title = db.Set<Person>().Where(p => p.UserId == u.Id).Select(p => p.Title).FirstOrDefault(),
+                OfficeName = db.Set<Office>().Where(o => db.Set<Person>().Any(p => p.UserId == u.Id && p.OfficeId == o.Id)).Select(o => o.Name).FirstOrDefault(),
+                EmploymentStatusName = db.Set<EmploymentStatus>().Where(e => db.Set<Person>().Any(p => p.UserId == u.Id && p.EmploymentStatusId == e.Id)).Select(e => e.Name).FirstOrDefault(),
                 LastLogin = u.Identities.Max(i => i.LastLoginAt),
                 HasAccess = u.Roles.Any(ur => ur.Role.IsActive && (ur.Role.IsSystemAdmin || ur.Role.Permissions.Any(rp => rp.Permission.IsActive))),
                 IsAdmin = u.Roles.Any(r => r.Role.IsSystemAdmin && r.Role.IsActive),
@@ -232,7 +260,7 @@ public sealed class UserAdministration(
         var items = rows
             .Select(r => ToSummary(r.User, r.Account, r.LastLogin, !r.HasAccess, r.IsAdmin, r.Roles, podsByUser[r.User.Id].ToArray())
                 with
-            { FirstName = r.FirstName ?? string.Empty, LastName = r.LastName ?? string.Empty, Availability = UserAvailabilitySummary.From(states[r.User.Id]), OpenTaskCount = openTasks is null ? null : openTasks.GetValueOrDefault(r.User.Id) })
+            { FirstName = r.FirstName ?? string.Empty, LastName = r.LastName ?? string.Empty, Title = r.Title, OfficeName = r.OfficeName, EmploymentStatusName = r.EmploymentStatusName, Availability = UserAvailabilitySummary.From(states[r.User.Id]), OpenTaskCount = openTasks is null ? null : openTasks.GetValueOrDefault(r.User.Id) })
             .ToList();
         return new PagedResult<UserSummaryDto>(items, total, page.Page, page.PageSize);
     }
@@ -271,6 +299,10 @@ public sealed class UserAdministration(
                 .Distinct()
                 .ToListAsync(ct);
 
+        var person = await db.Set<Person>().AsNoTracking().FirstOrDefaultAsync(p => p.UserId == userId, ct);
+        var officeName = person?.OfficeId is { } officeId ? await db.Set<Office>().Where(o => o.Id == officeId).Select(o => o.Name).FirstOrDefaultAsync(ct) : null;
+        var statusName = person?.EmploymentStatusId is { } statusId ? await db.Set<EmploymentStatus>().Where(e => e.Id == statusId).Select(e => e.Name).FirstOrDefaultAsync(ct) : null;
+
         return new UserDetailDto(
             row.User.Id,
             row.User.DisplayName,
@@ -286,7 +318,15 @@ public sealed class UserAdministration(
             Utc(row.User.CreatedAtUtc),
             row.LastLogin is { } login ? Utc(login) : null,
             Convert.ToBase64String(row.User.RowVersion),
-            CanSeeTaskCounts ? (await taskCounts.OpenByAssigneeAsync([userId], ct)).GetValueOrDefault(userId) : null);
+            CanSeeTaskCounts ? (await taskCounts.OpenByAssigneeAsync([userId], ct)).GetValueOrDefault(userId) : null,
+            person?.Title,
+            person?.Comments,
+            person?.OfficeId,
+            officeName,
+            person?.EmploymentStatusId,
+            statusName,
+            person?.IndustryJoinDate is { } joined ? joined.ToString("yyyy-MM", CultureInfo.InvariantCulture) : null,
+            person is null ? null : Convert.ToBase64String(person.RowVersion));
     }
 
     /// <summary>
@@ -452,6 +492,132 @@ public sealed class UserAdministration(
         invalidator.InvalidateUser(userId);
         return await GetAsync(userId, ct);
     }
+
+    /// <summary>
+    /// Edits the person fields of a user (epic #1389, issue #1394): Title, Notes (the person's comments), Office, Employment Status and Industry Join Date (month and year).
+    /// Every field is replaced. An office or status that is deactivated can stay on the person but cannot be chosen again. Concurrency is the person's own row version.
+    /// Office, status and join date changes are audited with names (<c>PERSON_OFFICE_CHANGED</c>, <c>PERSON_EMPLOYMENT_STATUS_CHANGED</c>, <c>PERSON_INDUSTRY_JOIN_CHANGED</c>); title and notes by the generic field audit.
+    /// </summary>
+    public async Task<Result<UserDetailDto>> UpdatePersonDetailsAsync(int userId, UpdateUserPersonDetailsRequest request, CancellationToken ct)
+    {
+        byte[] version;
+        try
+        {
+            version = Convert.FromBase64String(request.RowVersion ?? string.Empty);
+        }
+        catch (FormatException)
+        {
+            return Error.Validation("rowVersion", "INVALID", "The row version is not valid. Reload the user and try again.");
+        }
+
+        var person = await db.Set<Person>().FirstOrDefaultAsync(p => p.UserId == userId, ct);
+        if (person is null)
+            return await db.Set<AppUser>().AnyAsync(u => u.Id == userId, ct) ? Error.Conflict(ErrorCodes.ConcurrencyConflict, "This user has no person record yet. Save the name first.") : NotFoundUser();
+        if (!person.RowVersion.AsSpan().SequenceEqual(version))
+            return Error.Conflict(ErrorCodes.ConcurrencyConflict, "The user was changed by someone else. Reload and try again.");
+
+        var errors = new Dictionary<string, IReadOnlyList<FieldError>>();
+        void Invalid(string field, string code, string message) => errors[field] = [new FieldError(code, message)];
+
+        var title = request.Title?.Trim();
+        if (string.IsNullOrEmpty(title))
+            title = null;
+        else if (title.Length > 100)
+            Invalid("title", "MAX_LENGTH", "Use at most 100 characters.");
+        var notes = request.Notes?.Trim();
+        if (string.IsNullOrEmpty(notes))
+            notes = null;
+        else if (notes.Length > 2000)
+            Invalid("notes", "MAX_LENGTH", "Use at most 2000 characters.");
+
+        string? officeName = null;
+        if (request.OfficeId is { } officeId)
+        {
+            var office = await db.Set<Office>().AsNoTracking().FirstOrDefaultAsync(o => o.Id == officeId, ct);
+            if (office is null || (!office.IsActive && officeId != person.OfficeId))
+                Invalid("officeId", "INVALID", "Choose an office from the list.");
+            officeName = office?.Name;
+        }
+
+        string? statusName = null;
+        if (request.EmploymentStatusId is { } statusId)
+        {
+            var status = await db.Set<EmploymentStatus>().AsNoTracking().FirstOrDefaultAsync(e => e.Id == statusId, ct);
+            if (status is null || (!status.IsActive && statusId != person.EmploymentStatusId))
+                Invalid("employmentStatusId", "INVALID", "Choose an employment status from the list.");
+            statusName = status?.Name;
+        }
+
+        DateOnly? joined = null;
+        if (!string.IsNullOrWhiteSpace(request.IndustryJoinMonth))
+        {
+            if (!DateOnly.TryParseExact(request.IndustryJoinMonth.Trim() + "-01", "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed) || parsed.Year < 1950)
+                Invalid("industryJoinMonth", "INVALID", "Choose a month and year from 1950 on.");
+            else if (parsed > DateOnly.FromDateTime(clock.UtcNow))
+                Invalid("industryJoinMonth", "FUTURE", "The month cannot be in the future.");
+            else
+                joined = parsed;
+        }
+
+        if (errors.Count > 0)
+            return Error.Validation("Some fields are not valid.", errors, ErrorCodes.ValidationFailed);
+
+        var changes = new List<AuditEntry>();
+        if (person.OfficeId != request.OfficeId)
+        {
+            var old = person.OfficeId is { } oldId ? await db.Set<Office>().Where(o => o.Id == oldId).Select(o => o.Name).FirstOrDefaultAsync(ct) : null;
+            changes.Add(PersonEvent("PERSON_OFFICE_CHANGED", person.Id, "Office", "Office", old, officeName));
+        }
+
+        if (person.EmploymentStatusId != request.EmploymentStatusId)
+        {
+            var old = person.EmploymentStatusId is { } oldId ? await db.Set<EmploymentStatus>().Where(e => e.Id == oldId).Select(e => e.Name).FirstOrDefaultAsync(ct) : null;
+            changes.Add(PersonEvent("PERSON_EMPLOYMENT_STATUS_CHANGED", person.Id, "EmploymentStatus", "Employment Status", old, statusName));
+        }
+
+        if (person.IndustryJoinDate != joined)
+            changes.Add(PersonEvent("PERSON_INDUSTRY_JOIN_CHANGED", person.Id, "IndustryJoinDate", "Industry Join Date", MonthText(person.IndustryJoinDate), MonthText(joined)));
+
+        person.Title = title;
+        person.Comments = notes;
+        person.OfficeId = request.OfficeId;
+        person.EmploymentStatusId = request.EmploymentStatusId;
+        person.IndustryJoinDate = joined;
+        if (!db.Entry(person).Properties.Any(p => p.IsModified) && changes.Count == 0)
+            return await GetAsync(userId, ct);
+
+        foreach (var change in changes)
+            audit.Write(change);
+        db.Entry(person).Property(p => p.RowVersion).OriginalValue = version;
+        try
+        {
+            await db.SaveChangesAsync(ct); // [Audited] Person writes the field-level events for title and notes
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Error.Conflict(ErrorCodes.ConcurrencyConflict, "The user was changed by someone else. Reload and try again.");
+        }
+
+        return await GetAsync(userId, ct);
+    }
+
+    private static string? MonthText(DateOnly? value) => value?.ToString("MMM yyyy", CultureInfo.InvariantCulture);
+
+    private static AuditEntry PersonEvent(string type, int personId, string fieldKey, string label, string? oldValue, string? newValue) => new()
+    {
+        EventType = type,
+        ObjectType = "Person",
+        ObjectId = personId.ToString(CultureInfo.InvariantCulture),
+        FieldKey = fieldKey,
+        OldValue = oldValue,
+        NewValue = newValue,
+        Summary = (oldValue, newValue) switch
+        {
+            (null, not null) => $"{label} set to {newValue}.",
+            (not null, null) => $"{label} cleared (was {oldValue}).",
+            _ => $"{label} changed from {oldValue} to {newValue}.",
+        },
+    };
 
     private async Task<bool> WouldLoseLastAdminAsync(int userId, CancellationToken ct)
     {

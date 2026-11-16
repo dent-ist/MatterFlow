@@ -24,6 +24,7 @@ Totals (counted by `tools/db/schema-fingerprint.sql` on a database built from th
 | [Client](#client) | Clients, Matters and Projects | Organization | 10 | 2 |
 | [CurrentState](#currentstate) | Clients, Matters and Projects | Configuration | 9 | 2 |
 | [CustomFieldIndex](#customfieldindex) | Forms and custom fields | Configuration | 10 | 1 |
+| [EmploymentStatus](#employmentstatus) | Identity and access | Identity | 8 | 2 |
 | [FormDefinition](#formdefinition) | Forms and custom fields | Configuration | 11 | 4 |
 | [FormField](#formfield) | Forms and custom fields | Configuration | 14 | 1 |
 | [FormFieldOption](#formfieldoption) | Forms and custom fields | Configuration | 6 | 1 |
@@ -46,9 +47,10 @@ Totals (counted by `tools/db/schema-fingerprint.sql` on a database built from th
 | [NoteTemplateTag](#notetemplatetag) | Notes | Notes | 2 | 2 |
 | [Notification](#notification) | Audit, Notifications, Settings and platform | Notifications | 11 | 3 |
 | [NotificationPreference](#notificationpreference) | Audit, Notifications, Settings and platform | Notifications | 4 | 1 |
+| [Office](#office) | Identity and access | Identity | 8 | 2 |
 | [OnHoldReason](#onholdreason) | Tasks and task configuration | Configuration | 9 | 2 |
 | [Permission](#permission) | Identity and access | Identity | 5 | 0 |
-| [Person](#person) | Identity and access | Identity | 15 | 3 |
+| [Person](#person) | Identity and access | Identity | 18 | 5 |
 | [Pod](#pod) | Identity and access | Identity | 10 | 3 |
 | [PodMember](#podmember) | Identity and access | Identity | 3 | 2 |
 | [Priority](#priority) | Tasks and task configuration | Configuration | 11 | 2 |
@@ -195,16 +197,48 @@ Junction: roles of a user, with who granted and when.
 The shared People list (epic #1373): a person is Internal or External and is used by the matter Team and, later, by vendor contacts. Every user has one linked person (`UserId`, unique): created with the user by the application (script 72 backfilled the existing users), name and e-mail kept in step with the user, kept when the user is deactivated. Internal people without a login and external people have no `UserId`. People are deactivated, never deleted. `CompanyName` is for external people only; a person linked to a user is always internal.
 
 - **Module:** Identity. **Area:** Identity and access.
-- **Scripts:** created by script 71 (rows for existing users by script 72).
+- **Scripts:** created by script 71 (rows for existing users by script 72); Office, Employment Status and Industry Join Date added by script 79.
 - **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_Person` (PersonId), int identity.
-- **Columns (15; `?` = nullable):** `PersonId int`, `FirstName nvarchar(200)`, `LastName nvarchar(200)`, `PersonType varchar(10)`, `Title nvarchar(100)?`, `Email nvarchar(320)?`, `Comments nvarchar(2000)?`, `CompanyName nvarchar(200)?`, `UserId int?`, `IsActive bit`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
-- **Foreign keys (3):**
+- **Columns (18; `?` = nullable):** `PersonId int`, `FirstName nvarchar(200)`, `LastName nvarchar(200)`, `PersonType varchar(10)`, `Title nvarchar(100)?`, `Email nvarchar(320)?`, `Comments nvarchar(2000)?` (shown as Comments on the user record), `CompanyName nvarchar(200)?`, `UserId int?`, `IsActive bit`, `OfficeId int?`, `EmploymentStatusId int?`, `IndustryJoinDate date?` (script 79). Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
+- **Foreign keys (5):**
   - `FK_Person_CreatedBy`: `CreatedByUserId` to `AppUser(UserId)`
+  - `FK_Person_EmploymentStatus`: `EmploymentStatusId` to `EmploymentStatus(EmploymentStatusId)`
+  - `FK_Person_Office`: `OfficeId` to `Office(OfficeId)`
   - `FK_Person_ModifiedBy`: `ModifiedByUserId` to `AppUser(UserId)`
   - `FK_Person_User`: `UserId` to `AppUser(UserId)`
-- **Indexes and unique constraints (3):** `IX_Person_Email` (Email) - filter [Email] IS NOT NULL; `IX_Person_Name` (LastName,FirstName); `UQ_Person_User` (UserId) - filter [UserId] IS NOT NULL; unique.
-- **Check constraints (4):** `CK_Person_Company`, `CK_Person_FirstName`, `CK_Person_Type`, `CK_Person_User`.
+- **Indexes and unique constraints (5):** `IX_Person_Email` (Email) - filter [Email] IS NOT NULL; `IX_Person_EmploymentStatus` (EmploymentStatusId) - filter [EmploymentStatusId] IS NOT NULL; `IX_Person_Office` (OfficeId) - filter [OfficeId] IS NOT NULL; `IX_Person_Name` (LastName,FirstName); `UQ_Person_User` (UserId) - filter [UserId] IS NOT NULL; unique.
+- **Check constraints (6):** `CK_Person_Company`, `CK_Person_FirstName`, `CK_Person_IndustryJoinDate` (the first day of a month, 1950 or later), `CK_Person_ProfileInternal` (office, employment status and join date only for an INTERNAL person), `CK_Person_Type`, `CK_Person_User`.
+
+### Office
+
+Admin-managed list: the Office of an internal person (optional; `Person.OfficeId`), chosen on the user record (Administration > Users) and maintained on Administration > Lists > Offices. Names are unique; a used item is deactivated, an unused one may be deleted. The list starts empty (the firm adds its own branch offices); a person's office stays empty until someone sets it.
+
+- **Module:** Identity. **Area:** Identity and access.
+- **Scripts:** created and seeded by script 79.
+- **Report login (`lpt_report_reader`):** allow.
+- **Primary key:** `PK_Office` (OfficeId), int identity.
+- **Columns (8; `?` = nullable):** `OfficeId int`, `Name nvarchar(100)`, `SortOrder int`, `IsActive bit`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
+- **Foreign keys (2):**
+  - `FK_Office_CreatedBy`: `CreatedByUserId` to `AppUser(UserId)`
+  - `FK_Office_ModifiedBy`: `ModifiedByUserId` to `AppUser(UserId)`
+- **Indexes and unique constraints (2):** `IX_Office_Sort` (SortOrder); `UQ_Office_Name` (Name) - unique.
+- **Check constraints (1):** `CK_Office_Name`.
+
+### EmploymentStatus
+
+Admin-managed list: the Employment Status of an internal person (optional; `Person.EmploymentStatusId`). It is the HR status of the person (script 79 seeds Active, On Leave, Departed) and is not the account state of the user (active, deactivated, pending access), which stays on `AppUser`. Maintained on Administration > Lists > Employment Statuses. Names are unique; a used item is deactivated, an unused one may be deleted.
+
+- **Module:** Identity. **Area:** Identity and access.
+- **Scripts:** created and seeded by script 79.
+- **Report login (`lpt_report_reader`):** allow.
+- **Primary key:** `PK_EmploymentStatus` (EmploymentStatusId), int identity.
+- **Columns (8; `?` = nullable):** `EmploymentStatusId int`, `Name nvarchar(100)`, `SortOrder int`, `IsActive bit`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
+- **Foreign keys (2):**
+  - `FK_EmploymentStatus_CreatedBy`: `CreatedByUserId` to `AppUser(UserId)`
+  - `FK_EmploymentStatus_ModifiedBy`: `ModifiedByUserId` to `AppUser(UserId)`
+- **Indexes and unique constraints (2):** `IX_EmploymentStatus_Sort` (SortOrder); `UQ_EmploymentStatus_Name` (Name) - unique.
+- **Check constraints (1):** `CK_EmploymentStatus_Name`.
 
 ### Pod
 

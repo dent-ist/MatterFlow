@@ -68,7 +68,7 @@ describe('PersonDialog', () => {
     return f;
   }
 
-  it('New Person: a large (768 px) two-column form with First Name, Last Name, Internal or External, Company, Title or Role, Email and Comments', async () => {
+  it('New Person: a large (768 px) two-column form with First Name, Last Name, Internal or External, Company, Title, Email and Comments', async () => {
     await start();
     expect(q('[data-panel-title]')!.textContent).toContain('New Person');
     const labels = Array.from(
@@ -79,7 +79,7 @@ describe('PersonDialog', () => {
     expect(labels.join('|')).toContain('First Name (required)');
     expect(labels.join('|')).toContain('Last Name (required)');
     expect(labels).toContain('Internal or External');
-    expect(labels).toContain('Title or Role');
+    expect(labels).toContain('Title');
     expect(labels.join('|')).toContain('Email');
     expect(labels).toContain('Company');
     expect(labels.join('|')).toContain('Comments');
@@ -176,7 +176,7 @@ describe('PersonDialog', () => {
     expect(f.componentInstance.open()).toBe(false);
   });
 
-  it('a system user: name, email and type are plain text with the banner; Title or Role and Comments stay editable', async () => {
+  it('a system user: name, email and type are plain text with the banner; Title and Comments stay editable', async () => {
     const f = await start(
       aPerson({
         personId: 3,

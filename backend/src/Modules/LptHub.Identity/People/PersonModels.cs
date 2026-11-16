@@ -8,7 +8,7 @@ namespace LptHub.Identity.People;
 /// <param name="LastName">Last name; may be empty for a system user whose display name is one word.</param>
 /// <param name="DisplayName">First and last name together, for lists and pickers.</param>
 /// <param name="PersonType"><c>INTERNAL</c> or <c>EXTERNAL</c>.</param>
-/// <param name="Title">Title or role (for example Partner).</param>
+/// <param name="Title">Title (for example Partner).</param>
 /// <param name="Email">E-mail address, if known.</param>
 /// <param name="Comments">Free comments.</param>
 /// <param name="CompanyName">External company name; always null for an internal person.</param>
@@ -17,6 +17,11 @@ namespace LptHub.Identity.People;
 /// <param name="UserIsActive">For a system-user person: whether the user is active (the person stays when the user is deactivated); otherwise null.</param>
 /// <param name="IsActive">False once deactivated (people are never deleted).</param>
 /// <param name="RowVersion">Concurrency token (base64); send it back on update.</param>
+/// <param name="OfficeId">Office of an internal person (admin list), otherwise null. Changed on Administration > Users.</param>
+/// <param name="OfficeName">Name of the office.</param>
+/// <param name="EmploymentStatusId">Employment Status of an internal person (admin list: Active, On Leave, Departed), otherwise null. The HR status, not the account state of a user.</param>
+/// <param name="EmploymentStatusName">Name of the employment status.</param>
+/// <param name="IndustryJoinMonth">Month and year (<c>yyyy-MM</c>) the person started working in this industry, otherwise null.</param>
 public sealed record PersonDto(
     [property: Required] int PersonId,
     [property: Required] string FirstName,
@@ -31,13 +36,18 @@ public sealed record PersonDto(
     [property: Required] bool IsSystemUser,
     bool? UserIsActive,
     [property: Required] bool IsActive,
-    [property: Required] string RowVersion);
+    [property: Required] string RowVersion,
+    int? OfficeId = null,
+    string? OfficeName = null,
+    int? EmploymentStatusId = null,
+    string? EmploymentStatusName = null,
+    string? IndustryJoinMonth = null);
 
 /// <summary>A person in a picker: compact, for the Team and vendor-contact comboboxes.</summary>
 /// <param name="PersonId">Person id.</param>
 /// <param name="DisplayName">First and last name together.</param>
 /// <param name="PersonType"><c>INTERNAL</c> or <c>EXTERNAL</c>.</param>
-/// <param name="Title">Title or role.</param>
+/// <param name="Title">Title.</param>
 /// <param name="Email">E-mail address, if known.</param>
 /// <param name="CompanyName">External company name.</param>
 /// <param name="UserId">The linked user of a system-user person, otherwise null.</param>
@@ -76,7 +86,7 @@ public sealed record CreatePersonRequest
     [Required, StringLength(10)]
     public string PersonType { get; init; } = string.Empty;
 
-    /// <summary>Title or role (max 100).</summary>
+    /// <summary>Title (max 100).</summary>
     [StringLength(100)]
     public string? Title { get; init; }
 
@@ -111,7 +121,7 @@ public sealed record UpdatePersonRequest
     [Required, StringLength(10)]
     public string PersonType { get; init; } = string.Empty;
 
-    /// <summary>Title or role (max 100).</summary>
+    /// <summary>Title (max 100).</summary>
     [StringLength(100)]
     public string? Title { get; init; }
 

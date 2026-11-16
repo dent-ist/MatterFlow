@@ -76,7 +76,7 @@ export function titleItems(
 
 /**
  * Edit Team (epic #1373, issue #1376; mockup screen `matter-team-filled`): a large (768 px) `mf-form-dialog` for the people of a matter. The saved people are a list (avatar, name, the muted
- * "title or role, company or e-mail", the System User / Internal / External chip, the Title dropdown, a Remove icon button); under it is ALWAYS one empty row, the person combobox
+ * "title, company or e-mail", the System User / Internal / External chip, the Title dropdown, a Remove icon button); under it is ALWAYS one empty row, the person combobox
  * (`mf-person-picker` with `clearOnPick`; Internal people only, #1383): type to search People, pick, and the person joins the list with no title yet and a new empty row appears, so several people go in quickly. Free
  * text is never accepted: text typed in the box with nothing picked refuses the save with "Choose a person from the list." A person who is not in People is created from the picker's own
  * inline form (`People.Manage`), always as an Internal person. Nothing is saved until Save Changes, which stays disabled until every row has a title; the footer-side summary line says what will change ("2 added, 1

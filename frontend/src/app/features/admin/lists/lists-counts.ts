@@ -3,9 +3,11 @@ import { firstValueFrom } from 'rxjs';
 import {
   AssetLinkRolesClient,
   CurrentStatesClient,
+  EmploymentStatusesClient,
   MatterCategoriesClient,
   MatterTypesClient,
   NoteTagsClient,
+  OfficesClient,
   OnHoldReasonsClient,
   PrioritiesClient,
   StatusLabelsClient,
@@ -34,6 +36,8 @@ export function listCountLoaders(): Record<AdminListKey, CountLoader> {
   const roles = inject(AssetLinkRolesClient);
   const services = inject(VendorServicesClient);
   const areas = inject(VendorAreasClient);
+  const offices = inject(OfficesClient);
+  const employmentStatuses = inject(EmploymentStatusesClient);
   const active = (rows: readonly { isActive: boolean }[]): number =>
     rows.filter((r) => r.isActive).length;
   return {
@@ -48,5 +52,8 @@ export function listCountLoaders(): Record<AdminListKey, CountLoader> {
     'link-roles': () => firstValueFrom(roles.listAssetLinkRoles()).then(active),
     'vendor-services': () => firstValueFrom(services.listVendorServices()).then(active),
     'vendor-areas': () => firstValueFrom(areas.listVendorAreas()).then(active),
+    offices: () => firstValueFrom(offices.listOffices()).then(active),
+    'employment-statuses': () =>
+      firstValueFrom(employmentStatuses.listEmploymentStatuses()).then(active),
   };
 }

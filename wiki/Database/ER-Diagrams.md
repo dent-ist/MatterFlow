@@ -32,9 +32,9 @@ The arrows only show the usual reading order of the sections, not foreign keys.
 
 ## Identity and access
 
-Tables: `AppUser`, `UserIdentity`, `Role`, `Permission`, `RolePermission`, `UserRole`, `Pod`, `PodMember`, `UserView`, `Person`.
+Tables: `AppUser`, `UserIdentity`, `Role`, `Permission`, `RolePermission`, `UserRole`, `Pod`, `PodMember`, `UserView`, `Person`, `Office`, `EmploymentStatus`.
 
-`AppUser` is the hub: almost every table points at it for who created or changed a row. Sign-in details are in `UserIdentity` (one person can have several identities). Effective permissions are the union over `UserRole`, `Role`, `RolePermission`, `Permission`. `Role.IsSystemAdmin` marks the built-in System Admin role, which holds every permission implicitly. `PodMember.IsPrimary` is the person's primary pod (at most one). `Person` (script 71) is the shared People list; a person with a `UserId` is the linked record of a system user (at most one per user), the others are added by hand.
+`AppUser` is the hub: almost every table points at it for who created or changed a row. Sign-in details are in `UserIdentity` (one person can have several identities). Effective permissions are the union over `UserRole`, `Role`, `RolePermission`, `Permission`. `Role.IsSystemAdmin` marks the built-in System Admin role, which holds every permission implicitly. `PodMember.IsPrimary` is the person's primary pod (at most one). `Person` (script 71) is the shared People list; a person with a `UserId` is the linked record of a system user (at most one per user), the others are added by hand. Script 79 adds to `Person` an optional `OfficeId`, an optional `EmploymentStatusId` (the HR status, not the account state of the user) and an `IndustryJoinDate` (month and year, stored as the first day of the month), for internal people only; `Office` and `EmploymentStatus` are admin-managed lists.
 
 ::: mermaid
 erDiagram
@@ -91,6 +91,21 @@ erDiagram
     varchar_10 PersonType "INTERNAL or EXTERNAL"
     int UserId FK "unique, nullable"
     bit IsActive
+    int OfficeId FK "nullable, internal only"
+    int EmploymentStatusId FK "nullable, internal only"
+    date IndustryJoinDate "nullable, first of month"
+  }
+  Office {
+    int OfficeId PK
+    nvarchar_100 Name "unique"
+    int SortOrder
+    bit IsActive
+  }
+  EmploymentStatus {
+    int EmploymentStatusId PK
+    nvarchar_100 Name "unique"
+    int SortOrder
+    bit IsActive
   }
   UserView {
     bigint UserViewId PK
@@ -114,6 +129,10 @@ erDiagram
   AppUser ||--o{ UserRole : "UserId"
   AppUser ||--o{ UserView : "UserId"
   AppUser |o--o| Person : "UserId"
+  Office |o--o{ Person : "OfficeId"
+  EmploymentStatus |o--o{ Person : "EmploymentStatusId"
+  AppUser |o--o{ Office : "CreatedBy, ModifiedBy"
+  AppUser |o--o{ EmploymentStatus : "CreatedBy, ModifiedBy"
   AppUser |o--o{ AppUser : "CreatedBy, ModifiedBy"
   AppUser |o--o{ Person : "CreatedBy, ModifiedBy"
   AppUser |o--o{ Pod : "CreatedBy, ModifiedBy"

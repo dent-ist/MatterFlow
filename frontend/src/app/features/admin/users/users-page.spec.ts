@@ -1,5 +1,5 @@
 import { provideCalendarFixtures } from '../../../shared/testing/calendar-testing';
-import { ddSelect } from '../../../testing/dropdown-testing.spec-util';
+import { ddChoose, ddSelect, ddText, ddValue } from '../../../testing/dropdown-testing.spec-util';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -1012,7 +1012,9 @@ describe('UsersPage', () => {
         expect(button('Save Changes')).toBeUndefined();
         expect(button('Close')).toBeDefined();
         expect(q<HTMLInputElement>('[data-role="2"]').closest('fieldset')!.disabled).toBe(true);
-        expect(q<HTMLInputElement>('[data-name]').closest('fieldset')!.disabled).toBe(true);
+        // The profile is plain text (D-35): no field to type in.
+        expect(document.querySelector('[data-name]')).toBeNull();
+        expect(q('[data-name-text]').textContent).toBe('Dana Director');
         // The pods are plain text: no button.
         expect(document.querySelector('[data-pods-trigger]')).toBeNull();
       });
@@ -1040,6 +1042,206 @@ describe('UsersPage', () => {
     });
   });
 
+  describe('the person fields of the user record (#1394)', () => {
+    const profile = (): HTMLElement => q('[data-section="profile"]');
+    const typeInto = async (selector: string, value: string): Promise<void> => {
+      const input = q<HTMLInputElement | HTMLTextAreaElement>(selector);
+      input.value = value;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      await settle();
+    };
+    const choose = async (label: string, choice: string): Promise<void> => {
+      ddChoose(document.body, label, choice);
+      await settle();
+    };
+
+    it('shows the saved Title, Office, Employment Status, Industry Join Date and Comments, and how long that is', async () => {
+      await createWith(
+        (a) =>
+          Object.assign(a.users[1], {
+            title: 'Senior Project Manager',
+            notes: 'Leads the Alpha team.',
+            officeId: 2,
+            employmentStatusId: 2,
+            industryJoinMonth: '2000-03',
+          }),
+        'User.View',
+        'User.Manage',
+      );
+      await chooseStatus('active');
+      await openRow(2);
+      expect(q<HTMLInputElement>('#user-title').value).toBe('Senior Project Manager');
+      expect(q<HTMLTextAreaElement>('#user-comments').value).toBe('Leads the Alpha team.');
+      expect(ddText(profile(), 'Office')).toBe('Branch Office');
+      expect(ddText(profile(), 'Employment Status')).toBe('On Leave');
+      expect(ddText(profile(), 'Month')).toBe('March');
+      expect(ddText(profile(), 'Year')).toBe('2000');
+      expect(q('[data-experience]').textContent).toMatch(/^\s*2\d years in the industry\.\s*$/);
+      expect(saveDisabled()).toBe(true);
+      // The labels tell the HR status from the account state.
+      expect(profile().textContent).toContain('Not the same as the account being active');
+    });
+
+    it('offers the lists of offices and employment statuses with None first, and saves every field in one request', async () => {
+      await create('User.View', 'User.Manage');
+      await chooseStatus('active');
+      await openRow(2);
+      expect(ddValue(profile(), 'Office')).toBe('');
+      expect(
+        ddSelect(profile(), 'Employment Status').options.map((o) => o.textContent.trim()),
+      ).toEqual(['None', 'Active', 'On Leave', 'Departed']);
+
+      await typeInto('#user-title', '  Partner ');
+      await typeInto('#user-comments', 'Prefers email.');
+      await choose('Office', '1');
+      await choose('Employment Status', 'Active');
+      await choose('Month', '03');
+      await choose('Year', '2018');
+      expect(saveDisabled()).toBe(false);
+      expect(q('[data-experience]').textContent).toMatch(/years in the industry\./);
+
+      const save = vi.spyOn(api, 'updateUserPersonDetails');
+      await press('Save Changes');
+      expect(save).toHaveBeenCalledTimes(1);
+      expect(save.mock.calls[0][1]).toMatchObject({
+        title: 'Partner',
+        notes: 'Prefers email.',
+        officeId: 1,
+        employmentStatusId: 1,
+        industryJoinMonth: '2018-03',
+      });
+      const saved = await firstValueFrom(api.getUser(2));
+      expect(saved).toMatchObject({
+        title: 'Partner',
+        officeName: 'Head Office',
+        employmentStatusName: 'Active',
+        industryJoinMonth: '2018-03',
+        employmentStatusId: 1,
+      });
+    });
+
+    it('clears a field when it is emptied, and sends nothing when only the roles changed', async () => {
+      await createWith(
+        (a) =>
+          Object.assign(a.users[1], {
+            title: 'Partner',
+            officeId: 1,
+            industryJoinMonth: '2018-03',
+          }),
+        'User.View',
+        'User.Manage',
+      );
+      await chooseStatus('active');
+      await openRow(2);
+      const save = vi.spyOn(api, 'updateUserPersonDetails');
+      await typeInto('#user-title', '');
+      await choose('Office', '');
+      await choose('Month', '');
+      expect(q('[data-join-error]').textContent).toContain('Choose both a month and a year.');
+      expect(saveDisabled()).toBe(true);
+      await choose('Year', '');
+      expect(document.querySelector('[data-join-error]')).toBeNull();
+      await press('Save Changes');
+      expect(save.mock.calls[0][1]).toMatchObject({
+        title: undefined,
+        officeId: undefined,
+        industryJoinMonth: undefined,
+      });
+    });
+
+    it('does not offer a month that has not come yet, and says so', async () => {
+      await create('User.View', 'User.Manage');
+      await chooseStatus('active');
+      await openRow(2);
+      const nextYear = String(new Date().getFullYear() + 1);
+      expect(
+        ddSelect(profile(), 'Year').options.some((o) => o.textContent.trim() === nextYear),
+      ).toBe(false);
+      await choose('Year', String(new Date().getFullYear()));
+      await choose('Month', '12');
+      if (new Date().getMonth() < 11) {
+        expect(q('[data-join-error]').textContent).toContain('cannot be in the future');
+        expect(saveDisabled()).toBe(true);
+      }
+    });
+
+    it('keeps an inactive office on the person, marked Inactive, and does not offer it to others', async () => {
+      await createWith(
+        (a) => {
+          Object.assign(a.users[1], { officeId: 3 });
+          const real = a.listOffices.bind(a);
+          a.listOffices = () =>
+            real().pipe(map((l) => l.map((o) => (o.id === 3 ? { ...o, isActive: false } : o))));
+        },
+        'User.View',
+        'User.Manage',
+      );
+      await chooseStatus('active');
+      await openRow(2);
+      expect(ddText(profile(), 'Office')).toBe('Remote (Inactive)');
+    });
+
+    it('shows the fields as plain text, with None for an empty one, without User.Manage', async () => {
+      await createWith(
+        (a) =>
+          Object.assign(a.users[1], {
+            title: 'Partner',
+            employmentStatusId: 3,
+            industryJoinMonth: '2018-03',
+          }),
+        'User.View',
+      );
+      await chooseStatus('active');
+      await openRow(2);
+      expect(q('[data-title-text]').textContent).toBe('Partner');
+      expect(q('[data-office-text]').textContent).toBe('None');
+      expect(q('[data-employment-status-text]').textContent).toBe('Departed');
+      expect(q('[data-join-text]').textContent).toContain('Mar 2018');
+      expect(q('[data-join-text]').getAttribute('title')).toBe('March 2018');
+      expect(q('[data-comments-text]').textContent).toBe('None');
+      expect(document.querySelector('#user-title')).toBeNull();
+    });
+
+    it('has Title, Office and Employment Status as optional grid columns (hidden at first) that sort and filter', async () => {
+      await createWith((a) => {
+        Object.assign(a.users[1], { title: 'Partner', officeId: 1, employmentStatusId: 2 });
+        Object.assign(a.users[0], { title: 'Admin', officeId: 2, employmentStatusId: 1 });
+      }, 'User.View');
+      await chooseStatus('all');
+      expect(el().querySelector('[data-record-id="2"] [data-title]')).toBeNull();
+      const grid = (fixture.componentInstance as unknown as { grid: RecordGridState }).grid;
+      grid.set({
+        order: [],
+        visible: ['firstName', 'lastName', 'title', 'office', 'employmentStatus', 'status'],
+      });
+      await settle();
+      expect(q('[data-record-id="2"] [data-title]').textContent!.trim()).toBe('Partner');
+      expect(q('[data-record-id="2"] [data-office]').textContent!.trim()).toBe('Head Office');
+      expect(q('[data-record-id="2"] [data-employment-status]').textContent!.trim()).toBe(
+        'On Leave',
+      );
+      expect(q('[data-record-id="1"] [data-employment-status]').textContent!.trim()).toBe('Active');
+      // The account state (Status) and the employment status are two columns with two names.
+      const headings = Array.from(el().querySelectorAll('thead th')).map((h) =>
+        h.textContent!.trim(),
+      );
+      expect(headings).toContain('Employment Status');
+      expect(headings).toContain('Status');
+
+      const select = ddSelect(document.body, 'Filter by Employment Status');
+      expect(select.options.map((o) => o.textContent.trim())).toEqual([
+        'Any',
+        'Active',
+        'On Leave',
+        'Departed',
+      ]);
+      select.value = '2';
+      select.dispatchEvent(new Event('change'));
+      await settle();
+      expect(rows()).toEqual(['Dana']);
+    });
+  });
+
   it('shows the last-admin guard message instead of silently failing', async () => {
     await create('User.View', 'User.Manage');
     api.currentUserId = 99; // not the admin, so only the last-admin rule applies
@@ -1064,6 +1266,7 @@ describe('UsersPage', () => {
 
     expect(button('Save Changes')).toBeUndefined();
     expect(q<HTMLInputElement>('[data-role="5"]').closest('fieldset')!.disabled).toBe(true);
+    expect(document.querySelector('[data-name]')).toBeNull(); // plain text, not a field
   });
 
   describe('availability', () => {

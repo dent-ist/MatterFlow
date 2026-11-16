@@ -5,7 +5,7 @@
   [showPrimary]="canManage()"
   primaryLabel="Save Changes"
   [secondaryLabel]="canManage() ? 'Cancel' : 'Close'"
-  [canSubmit]="dirty() && !saving()"
+  [canSubmit]="dirty() && !saving() && !saveBlocked()"
   [busy]="saving()"
   [dirty]="dirty()"
   [footerReplaced]="deactivateOpen()"
@@ -226,33 +226,148 @@
             <section class="ud-sec" aria-labelledby="ud-profile" data-section="profile">
               <h2 id="ud-profile">Profile</h2>
               <div id="ud-profile-body">
-                <fieldset class="ud-fields" [disabled]="!canManage()">
-                  <legend class="mf-sr-only">Profile</legend>
-                  <div class="mf-fld">
-                    <label for="user-name">Display Name</label>
-                    <input
-                      id="user-name"
-                      type="text"
-                      class="mf-control"
-                      maxlength="200"
-                      data-name
-                      [value]="draftName()"
-                      (input)="draftName.set($any($event.target).value)"
-                    />
-                  </div>
-                  <div class="mf-fld">
-                    <label for="user-email">Email</label>
-                    <input
-                      id="user-email"
-                      type="email"
-                      class="mf-control"
-                      maxlength="320"
-                      data-email
-                      [value]="draftEmail()"
-                      (input)="draftEmail.set($any($event.target).value)"
-                    />
-                  </div>
-                </fieldset>
+                @if (canManage()) {
+                  <fieldset class="ud-fields">
+                    <legend class="mf-sr-only">Profile</legend>
+                    <div class="mf-fld">
+                      <label for="user-name">Display Name</label>
+                      <input
+                        id="user-name"
+                        type="text"
+                        class="mf-control"
+                        maxlength="200"
+                        data-name
+                        [value]="draftName()"
+                        (input)="draftName.set($any($event.target).value)"
+                      />
+                    </div>
+                    <div class="mf-fld">
+                      <label for="user-email">Email</label>
+                      <input
+                        id="user-email"
+                        type="email"
+                        class="mf-control"
+                        maxlength="320"
+                        data-email
+                        [value]="draftEmail()"
+                        (input)="draftEmail.set($any($event.target).value)"
+                      />
+                    </div>
+                    <div class="ud-field" data-field="title">
+                      <mf-text-field
+                        inputId="user-title"
+                        label="Title"
+                        [maxLength]="100"
+                        [(value)]="draftTitle"
+                      />
+                    </div>
+                    <div class="mf-fld" data-field="office">
+                      <label for="user-office">Office</label>
+                      <mf-dropdown
+                        field
+                        fill
+                        buttonId="user-office"
+                        label="Office"
+                        data-office
+                        [items]="officeItems()"
+                        [value]="draftOffice()"
+                        (valueChange)="draftOffice.set($event)"
+                      />
+                    </div>
+                    <div class="mf-fld" data-field="employment-status">
+                      <label for="user-employment-status">Employment Status</label>
+                      <mf-dropdown
+                        field
+                        fill
+                        buttonId="user-employment-status"
+                        label="Employment Status"
+                        data-employment-status
+                        describedBy="user-employment-status-help"
+                        [items]="statusItems()"
+                        [value]="draftStatus()"
+                        (valueChange)="draftStatus.set($event)"
+                      />
+                      <p id="user-employment-status-help" class="ud-help">
+                        Whether the person works here now. Not the same as the account being active
+                        or deactivated.
+                      </p>
+                    </div>
+                    <fieldset class="ud-join" data-field="industry-join-date">
+                      <legend>Industry Join Date</legend>
+                      <div class="ud-join-row">
+                        <mf-dropdown
+                          field
+                          fill
+                          buttonId="user-join-month"
+                          label="Month"
+                          data-join-month
+                          describedBy="user-join-help"
+                          [items]="monthItems"
+                          [value]="draftJoinMonth()"
+                          [invalid]="!!joinError()"
+                          (valueChange)="draftJoinMonth.set($event)"
+                        />
+                        <mf-dropdown
+                          field
+                          fill
+                          buttonId="user-join-year"
+                          label="Year"
+                          data-join-year
+                          describedBy="user-join-help"
+                          [items]="yearItems()"
+                          [value]="draftJoinYear()"
+                          [invalid]="!!joinError()"
+                          (valueChange)="draftJoinYear.set($event)"
+                        />
+                      </div>
+                      @if (joinError()) {
+                        <p class="ud-error" role="alert" data-join-error>
+                          <i class="pi pi-exclamation-circle" aria-hidden="true"></i
+                          >{{ joinError() }}
+                        </p>
+                      }
+                      <p id="user-join-help" class="ud-help" data-experience>
+                        {{ experience() || 'When the person started working in this industry.' }}
+                      </p>
+                    </fieldset>
+                    <div class="ud-wide" data-field="comments">
+                      <mf-text-field
+                        inputId="user-comments"
+                        label="Comments"
+                        [multiline]="true"
+                        [maxLength]="2000"
+                        [counter]="true"
+                        [(value)]="draftNotes"
+                      />
+                    </div>
+                  </fieldset>
+                } @else {
+                  <dl class="ud-dl" data-profile-readonly>
+                    <dt>Display Name</dt>
+                    <dd data-name-text>{{ u.displayName }}</dd>
+                    <dt>Email</dt>
+                    <dd data-email-text>{{ u.email || 'None' }}</dd>
+                    <dt>Title</dt>
+                    <dd data-title-text>{{ u.title || 'None' }}</dd>
+                    <dt>Office</dt>
+                    <dd data-office-text>{{ u.officeName || 'None' }}</dd>
+                    <dt>Employment Status</dt>
+                    <dd data-employment-status-text>{{ u.employmentStatusName || 'None' }}</dd>
+                    <dt>Industry Join Date</dt>
+                    <dd data-join-text [attr.title]="joinReadable()">
+                      @if (u.industryJoinMonth) {
+                        {{ u.industryJoinMonth | mfMonthYear }}
+                        @if (experience()) {
+                          <span class="ud-muted">({{ experience() }})</span>
+                        }
+                      } @else {
+                        None
+                      }
+                    </dd>
+                    <dt>Comments</dt>
+                    <dd class="ud-pre" data-comments-text>{{ u.notes || 'None' }}</dd>
+                  </dl>
+                }
                 <dl class="ud-dl">
                   <dt>Account</dt>
                   <dd class="ud-mono">{{ u.windowsAccount }}</dd>
@@ -261,8 +376,9 @@
                 </dl>
                 @if (canManage()) {
                   <p class="ud-note" data-save-note>
-                    Save Changes saves the roles, name and email. Pods and availability are saved on
-                    their own.
+                    Save Changes saves the roles and the profile (name, email, title, office,
+                    employment status, industry join date and comments). Pods and availability are
+                    saved on their own.
                   </p>
                 }
               </div>

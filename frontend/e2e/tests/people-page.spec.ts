@@ -183,7 +183,7 @@ test.describe('People page (#1375)', () => {
     }
   });
 
-  test('a system user is a System User row: name, email and type are read only, Title or Role is editable, no Deactivate', async ({
+  test('a system user is a System User row: name, email and type are read only, Title is editable, no Deactivate', async ({
     page,
     personas,
     admin,

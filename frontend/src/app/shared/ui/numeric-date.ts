@@ -75,6 +75,64 @@ export function readableDate(date: string, time?: string | null): string {
   return m ? `${base}, ${numericTime(Number(m[1]), Number(m[2])).replace(/^0/, '')}` : base;
 }
 
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTHS_LONG = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
+function monthYearParts(value: string | null | undefined): { year: number; month: number } | null {
+  const m = value ? /^(\d{4})-(0[1-9]|1[0-2])/.exec(value) : null;
+  return m ? { year: Number(m[1]), month: Number(m[2]) } : null;
+}
+
+/** The names of the twelve months, for a Month choice (January to December). */
+export const MONTH_NAMES: readonly string[] = MONTHS_LONG;
+
+/**
+ * A value that is only a month and a year (`yyyy-MM`, for example the Industry Join Date of a person; no day exists, so no `MM/DD`) as `Mar 2018` (D-60a).
+ * The text itself when it is not a month and a year; empty for no value.
+ */
+export function monthYear(value: string | null | undefined): string {
+  const p = monthYearParts(value);
+  return p ? `${MONTHS[p.month - 1]} ${p.year}` : (value ?? '');
+}
+
+/** The month and year spelled out for tooltips and screen readers: `March 2018`. */
+export function readableMonthYear(value: string | null | undefined): string {
+  const p = monthYearParts(value);
+  return p ? `${MONTHS_LONG[p.month - 1]} ${p.year}` : (value ?? '');
+}
+
+/** Whole years from a month and year (`yyyy-MM`) to today in the person's zone; null when the value is not a month and a year. Never negative. */
+export function yearsSinceMonth(
+  value: string | null | undefined,
+  now: Date,
+  zone: string,
+): number | null {
+  const p = monthYearParts(value);
+  if (!p) return null;
+  const today = calendarDayInZone(now, zone);
+  const months = (today.year - p.year) * 12 + (today.month - p.month);
+  return Math.max(0, Math.floor(months / 12));
+}
+
+/** `Less than 1 year`, `1 year`, `8 years`: a length of whole years. */
+export function yearsText(years: number): string {
+  if (years < 1) return 'Less than 1 year';
+  return years === 1 ? '1 year' : `${years} years`;
+}
+
 /** An instant, spelled out in the person's zone. */
 export function readableInstant(instant: Date | string | number, zone: string): string {
   return LONG(zone, true).format(new Date(instant)).replace(' at ', ', ');
@@ -101,5 +159,13 @@ export class NumericDatePipe implements PipeTransform {
     const d = new Date(value);
     if (Number.isNaN(d.getTime())) return String(value);
     return numericInstant(d, this.clock.now(), this.zone, kind !== 'date');
+  }
+}
+
+/** `{{ value | mfMonthYear }}`: a `yyyy-MM` text as `Mar 2018` (D-60a). Empty for no value. */
+@Pipe({ name: 'mfMonthYear' })
+export class MonthYearPipe implements PipeTransform {
+  transform(value: string | null | undefined): string {
+    return value ? monthYear(value) : '';
   }
 }

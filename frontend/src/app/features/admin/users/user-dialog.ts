@@ -19,6 +19,7 @@ import { ApiError } from '../../../core/http/api-error';
 import {
   IdentityAdminApi,
   PermissionGroupDto,
+  PersonListItemView,
   PodChoice,
   RoleSummaryDto,
   UserDetailDto,
@@ -26,16 +27,25 @@ import {
 } from '../../../core/identity-admin/identity-admin-api';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { UndoService } from '../../../core/notify/undo.service';
-import { USER_TIME_ZONE } from '../../../core/time/clock';
+import { Clock, USER_TIME_ZONE } from '../../../core/time/clock';
 import { AvailabilityChip } from '../../../shared/availability/availability-chip';
 import { Badge } from '../../../shared/ui/badge';
+import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
 import { FormDialog } from '../../../shared/ui/form-dialog';
+import { TextField } from '../../../shared/ui/text-field';
 import { impactLine } from '../shared/dialog-copy';
 import { availabilityShown } from './user-availability';
 import { permissionsOfRoles, summarizePermissions } from './user-access';
 import { UserCalendarField } from '../holidays/user-calendar-field';
 import { PodsChange, UserPodsCell } from './user-pods-cell';
-import { NumericDatePipe } from '../../../shared/ui/numeric-date';
+import {
+  MONTH_NAMES,
+  MonthYearPipe,
+  NumericDatePipe,
+  readableMonthYear,
+  yearsSinceMonth,
+  yearsText,
+} from '../../../shared/ui/numeric-date';
 import { IntPipe } from '../../../shared/ui/number-format';
 import { shortAccountName } from '../../../shared/ui/person-name';
 
@@ -65,7 +75,7 @@ export function readOnlyReason(canManage: boolean, canEditPods: boolean): string
  * last seen, open tasks and the Deactivate / Activate control. Body, in order, in one scroll: Access (roles with description and permission count,
  * the grouped permissions after the save, a System Admin warning), Pods, Availability, Profile. Footer: Cancel and Save Changes.
  *
- * Save semantics are the ones the drawer had and the muted lines say so: Save Changes writes roles and profile; pods and availability save on their
+ * Save semantics are the ones the drawer had and the muted lines say so: Save Changes writes roles, profile and the person fields (title, office, employment status, industry join date, comments); pods and availability save on their
  * own, at once (with Undo for pods). Deactivate asks first, in the footer (D-31a: no dialog opens another dialog), and states the open tasks. Without
  * `User.Manage` everything is read only (with the reason), except pods for `Pod.ManageMembers`; the footer then has just Close. Esc, the X, the scrim and
  * Cancel close it, asking first while there are unsaved edits (the shared "You have unsaved changes. Discard them?" in the footer).
@@ -75,6 +85,9 @@ export function readOnlyReason(canManage: boolean, canEditPods: boolean): string
   imports: [
     IntPipe,
     NumericDatePipe,
+    MonthYearPipe,
+    Dropdown,
+    TextField,
     FormDialog,
     Button,
     RouterLink,
@@ -94,6 +107,7 @@ export class UserDialog {
   private readonly undo = inject(UndoService);
   private readonly zone = inject(USER_TIME_ZONE);
   private readonly router = inject(Router);
+  private readonly clock = inject(Clock);
 
   /** The person to show; null keeps the dialog closed. */
   readonly userId = input<number | null>(null);
@@ -135,6 +149,16 @@ export class UserDialog {
   protected readonly draftRoleIds = signal<number[]>([]);
   protected readonly draftName = signal('');
   protected readonly draftEmail = signal('');
+  // The person fields (epic #1389, issue #1394). The two lists are ids as text ('' = none); the join date is a month ('01' to '12') and a year, both '' for none.
+  protected readonly draftTitle = signal('');
+  protected readonly draftNotes = signal('');
+  protected readonly draftOffice = signal('');
+  protected readonly draftStatus = signal('');
+  protected readonly draftJoinMonth = signal('');
+  protected readonly draftJoinYear = signal('');
+  /** Office and Employment Status lists, read the first time an editor opens (only `User.Manage` edits them); null before. */
+  protected readonly offices = signal<readonly PersonListItemView[] | null>(null);
+  protected readonly statuses = signal<readonly PersonListItemView[] | null>(null);
   protected readonly saving = signal(false);
   protected readonly panelError = signal('');
   protected readonly deactivateOpen = signal(false);
@@ -162,11 +186,77 @@ export class UserDialog {
     const u = this.detail();
     if (!u || !this.canManage()) return false;
     return (
-      !sameIds(this.draftRoleIds(), u.roleIds) ||
-      this.draftName().trim() !== u.displayName ||
-      (this.draftEmail().trim() || undefined) !== (u.email ?? undefined)
+      !sameIds(this.draftRoleIds(), u.roleIds) || this.profileChanged() || this.personChanged()
     );
   });
+  /** Name or email differ from the saved ones (the user row). */
+  private readonly profileChanged = computed(() => {
+    const u = this.detail();
+    return (
+      !!u &&
+      (this.draftName().trim() !== u.displayName ||
+        (this.draftEmail().trim() || undefined) !== (u.email ?? undefined))
+    );
+  });
+  /** Title, comments, office, employment status or industry join date differ from the saved ones (the person row). */
+  private readonly personChanged = computed(() => {
+    const u = this.detail();
+    if (!u) return false;
+    return (
+      this.draftTitle().trim() !== (u.title ?? '') ||
+      this.draftNotes().trim() !== (u.notes ?? '') ||
+      this.draftOffice() !== idText(u.officeId) ||
+      this.draftStatus() !== idText(u.employmentStatusId) ||
+      this.joinMonthDraft() !== (u.industryJoinMonth ?? '')
+    );
+  });
+  /** The industry join date as `yyyy-MM` ('' for none, also while only one of month and year is chosen). */
+  private readonly joinMonthDraft = computed(() =>
+    this.draftJoinMonth() && this.draftJoinYear()
+      ? `${this.draftJoinYear()}-${this.draftJoinMonth()}`
+      : '',
+  );
+  /** Why the join date cannot be saved yet ('' when it can): one of month and year alone, or a month in the future. */
+  protected readonly joinError = computed(() => {
+    const month = this.draftJoinMonth();
+    const year = this.draftJoinYear();
+    if (!month && !year) return '';
+    if (!month || !year) return 'Choose both a month and a year.';
+    const now = this.clock.now();
+    const chosen = Number(year) * 12 + Number(month);
+    return chosen > now.getFullYear() * 12 + now.getMonth() + 1
+      ? 'The month cannot be in the future.'
+      : '';
+  });
+  protected readonly saveBlocked = computed(() => this.joinError() !== '');
+
+  protected readonly monthItems: readonly DropdownItem[] = [
+    { value: '', label: 'None' },
+    ...MONTH_NAMES.map((label, i) => ({ value: String(i + 1).padStart(2, '0'), label })),
+  ];
+  /** The years from this year back to 1950 (the first year the API takes). */
+  protected readonly yearItems = computed<readonly DropdownItem[]>(() => {
+    const items: DropdownItem[] = [{ value: '', label: 'None' }];
+    for (let y = this.clock.now().getFullYear(); y >= 1950; y--) {
+      items.push({ value: String(y), label: String(y) });
+    }
+    return items;
+  });
+  protected readonly officeItems = computed(() =>
+    listItems(this.offices(), this.draftOffice(), this.detail()?.officeName),
+  );
+  protected readonly statusItems = computed(() =>
+    listItems(this.statuses(), this.draftStatus(), this.detail()?.employmentStatusName),
+  );
+  /** "8 years in the industry" under the join date (the experience a manager looks for); empty without a valid date. */
+  protected readonly experience = computed(() => {
+    const value = this.joinMonthDraft() || this.detail()?.industryJoinMonth || '';
+    const years = yearsSinceMonth(value, this.clock.now(), this.zone);
+    return years === null ? '' : `${yearsText(years)} in the industry.`;
+  });
+  protected readonly joinReadable = computed(() =>
+    readableMonthYear(this.detail()?.industryJoinMonth),
+  );
   protected readonly rolesChanged = computed(() => {
     const u = this.detail();
     return !!u && !sameIds(this.draftRoleIds(), u.roleIds);
@@ -362,7 +452,34 @@ export class UserDialog {
     this.draftRoleIds.set([...user.roleIds]);
     this.draftName.set(user.displayName);
     this.draftEmail.set(user.email ?? '');
+    this.draftTitle.set(user.title ?? '');
+    this.draftNotes.set(user.notes ?? '');
+    this.draftOffice.set(idText(user.officeId));
+    this.draftStatus.set(idText(user.employmentStatusId));
+    this.draftJoinYear.set(user.industryJoinMonth?.slice(0, 4) ?? '');
+    this.draftJoinMonth.set(user.industryJoinMonth?.slice(5, 7) ?? '');
+    if (this.canManage()) void this.loadLists();
   }
+
+  /** The Office and Employment Status choices (once per dialog; a failed read leaves the fields on the saved value only). */
+  private async loadLists(): Promise<void> {
+    if (this.offices() !== null || this.listsLoading) return;
+    this.listsLoading = true;
+    try {
+      const [offices, statuses] = await Promise.all([
+        firstValueFrom(this.api.listOffices()),
+        firstValueFrom(this.api.listEmploymentStatuses()),
+      ]);
+      this.offices.set(offices);
+      this.statuses.set(statuses);
+    } catch {
+      /* the saved office and status stay selectable; the lists are read again the next time */
+    } finally {
+      this.listsLoading = false;
+    }
+  }
+
+  private listsLoading = false;
 
   /** The person after a save of something other than the drafts (status): the drafts the administrator is typing stay. */
   private refresh(user: UserDetailDto): void {
@@ -387,7 +504,7 @@ export class UserDialog {
 
   protected async save(): Promise<void> {
     const user = this.detail();
-    if (!user || !this.dirty() || this.saving()) return;
+    if (!user || !this.dirty() || this.saving() || this.saveBlocked()) return;
     this.saving.set(true);
     this.panelError.set('');
     const wasPending = user.isPending;
@@ -399,6 +516,20 @@ export class UserDialog {
         current = await firstValueFrom(
           this.api.updateUserProfile(current.userId, name, email, current.rowVersion),
         );
+        this.refresh(current);
+      }
+      if (this.personChanged()) {
+        current = await firstValueFrom(
+          this.api.updateUserPersonDetails(current.userId, {
+            title: this.draftTitle().trim() || undefined,
+            notes: this.draftNotes().trim() || undefined,
+            officeId: this.draftOffice() ? Number(this.draftOffice()) : undefined,
+            employmentStatusId: this.draftStatus() ? Number(this.draftStatus()) : undefined,
+            industryJoinMonth: this.joinMonthDraft() || undefined,
+            rowVersion: current.personRowVersion ?? '',
+          }),
+        );
+        this.refresh(current);
       }
       let granted = false;
       if (!sameIds(this.draftRoleIds(), current.roleIds)) {
@@ -521,6 +652,32 @@ export class UserDialog {
       this.panelError.set(err.message);
     }
   }
+}
+
+/** An id as the text a dropdown holds ('' for none). */
+function idText(id: number | null | undefined): string {
+  return id === null || id === undefined ? '' : String(id);
+}
+
+/** The items of an Office or Employment Status dropdown: None, the active items and the one the person has (even when it is deactivated). */
+function listItems(
+  list: readonly PersonListItemView[] | null,
+  chosen: string,
+  chosenName: string | undefined,
+): DropdownItem[] {
+  const items: DropdownItem[] = [{ value: '', label: 'None' }];
+  for (const item of list ?? []) {
+    if (item.isActive || String(item.id) === chosen) {
+      items.push({
+        value: String(item.id),
+        label: item.isActive ? item.name : `${item.name} (Inactive)`,
+      });
+    }
+  }
+  if (chosen && !items.some((i) => i.value === chosen) && chosenName) {
+    items.push({ value: chosen, label: chosenName });
+  }
+  return items;
 }
 
 function sameIds(a: readonly number[], b: readonly number[]): boolean {

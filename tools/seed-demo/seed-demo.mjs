@@ -411,6 +411,29 @@ async function ensurePods(admin, ctx, opts, summary) {
   }
 }
 
+/**
+ * The person fields of Test User <i> (issue #1394), worked out from the number so a repeated run saves the same values: the title follows the role, the office
+ * leaves the office empty (the Office list starts empty and is the firm's own to fill), nearly everyone is Active (one in seventeen On Leave, one in twenty-three Departed), and the industry join date is a
+ * month between 2004 and 2024 (never in the future).
+ */
+function personDetailsFor(entry, statuses) {
+  const byName = (list, name) => list.find((x) => x.name === name)?.id;
+  const titles = {
+    Director: 'Director of Litigation Support',
+    'Project Manager': entry.i % 2 === 0 ? 'Senior Project Manager' : 'Project Manager',
+    'Data Technician': entry.i % 3 === 0 ? 'Senior Data Technician' : 'Data Technician',
+  };
+  const status = entry.i % 23 === 0 ? 'Departed' : entry.i % 17 === 0 ? 'On Leave' : 'Active';
+  const year = 2004 + ((entry.i * 7) % 21);
+  const month = 1 + ((entry.i * 5) % 12);
+  return {
+    title: titles[entry.roleName] ?? entry.roleName,
+    notes: entry.i % 5 === 0 ? 'Covers for the Project Managers.' : undefined,
+    employmentStatusId: byName(statuses, status),
+    industryJoinMonth: `${year}-${pad(month, 2)}`,
+  };
+}
+
 async function ensureUsers(admin, ctx, opts, summary) {
   const domain = admin.user.includes('\\') ? admin.user.split('\\')[0] : 'KE';
   const existing = new Map();
@@ -431,8 +454,8 @@ async function ensureUsers(admin, ctx, opts, summary) {
       podIds: (found?.pods ?? []).map((p) => p.podId),
     };
     ctx.users.push(entry);
-    // A user a previous interrupted run left without role is finished; complete users are skipped.
-    if (!found || (found.roles.length === 0 && found.isActive)) todo.push({ entry, found });
+    // A user a previous interrupted run left without role (or, since #1394, without a title) is finished; complete users are skipped.
+    if (!found || (found.roles.length === 0 && found.isActive) || !found.title) todo.push({ entry, found });
   }
   summary.usersExisting = opts.users - todo.length;
   summary.usersCreated = 0;
@@ -441,6 +464,8 @@ async function ensureUsers(admin, ctx, opts, summary) {
     `Users: ${summary.usersExisting} of ${opts.users} already set up, ${todo.length} to create or finish.`,
   );
   if (opts.dryRun || todo.length === 0) return;
+  // The Employment Status list (epic #1389, issue #1394) the person fields below pick from; the Office list starts empty and the demo leaves offices unset.
+  const statuses = await admin.get('/api/v1/employment-statuses');
 
   let done = 0;
   await pool(todo, 4, async ({ entry, found }) => {
@@ -470,6 +495,12 @@ async function ensureUsers(admin, ctx, opts, summary) {
             ctx.roleByName.get('Data Technician').roleId,
         ],
         rowVersion: profile.rowVersion,
+      });
+      // Title, office, employment status, industry join date and comments of the person record (#1394): plausible, the same on every run.
+      const person = await admin.get(`/api/v1/users/${entry.userId}`);
+      await admin.put(`/api/v1/users/${entry.userId}/person-details`, {
+        ...personDetailsFor(entry, statuses),
+        rowVersion: person.personRowVersion,
       });
       const pods = podIdsFor(entry.i, ctx.pods);
       if (pods.podIds.length > 0) {

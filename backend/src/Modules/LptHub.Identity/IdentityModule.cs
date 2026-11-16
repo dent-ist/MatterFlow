@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Negotiate;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -55,6 +56,8 @@ public static class IdentityModule
         services.AddScoped<PodService>();
         services.AddScoped<People.PersonService>();
         services.AddScoped<IPersonDirectory, People.PersonDirectory>();
+        services.AddScoped(sp => new PersonLists.PersonListService<Domain.Office>(sp.GetRequiredService<DbContext>(), "An office named", p => p.OfficeId));
+        services.AddScoped(sp => new PersonLists.PersonListService<Domain.EmploymentStatus>(sp.GetRequiredService<DbContext>(), "An employment status named", p => p.EmploymentStatusId));
         services.AddScoped<IPodDirectory, PodDirectory>();
         services.AddScoped<IUserDirectory, Application.UserDirectory>();
         services.AddScoped<Application.MatterManagerEligibility>();

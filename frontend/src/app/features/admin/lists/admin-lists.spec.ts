@@ -10,7 +10,7 @@ import {
 
 /** The registry is the one source of the catalogue, the routes, the redirects, the page title and the guard (UI spec 3.1 and 4.3). */
 describe('Administration > Lists registry (UI spec 3.1)', () => {
-  it('has the eleven lists in catalogue order and five groups, with the permission of each', () => {
+  it('has the thirteen lists in catalogue order and six groups, with the permission of each', () => {
     expect(ADMIN_LISTS.map((l) => [l.group, l.key, l.label, l.permission])).toEqual([
       ['Matter', 'matter-types', 'Matter Types', 'MatterList.Manage'],
       ['Matter', 'matter-categories', 'Matter Categories', 'MatterList.Manage'],
@@ -24,6 +24,9 @@ describe('Administration > Lists registry (UI spec 3.1)', () => {
       ['Assets', 'link-roles', 'Link Roles', 'AssetType.Manage'],
       ['Vendors', 'vendor-services', 'Vendor Services', 'Vendor.Manage'],
       ['Vendors', 'vendor-areas', 'Vendor Areas', 'Vendor.Manage'],
+      // People (#1394): the lists of the person record, kept with User.Manage like the Users page.
+      ['People', 'offices', 'Offices', 'User.Manage'],
+      ['People', 'employment-statuses', 'Employment Statuses', 'User.Manage'],
     ]);
     expect(ADMIN_LIST_GROUPS.map((g) => g.name)).toEqual([
       'Matter',
@@ -31,6 +34,7 @@ describe('Administration > Lists registry (UI spec 3.1)', () => {
       'Notes',
       'Assets',
       'Vendors',
+      'People',
     ]);
     expect(ADMIN_LIST_GROUPS.map((g) => g.icon)).toEqual([
       'pi-briefcase',
@@ -38,6 +42,7 @@ describe('Administration > Lists registry (UI spec 3.1)', () => {
       'pi-file-edit',
       'pi-database',
       'pi-truck',
+      'pi-address-book',
     ]);
   });
 
@@ -91,11 +96,11 @@ describe('Administration > Lists registry (UI spec 3.1)', () => {
     for (const l of ADMIN_LISTS) expect(l.newLabel !== null, l.key).toBe(l.create);
   });
 
-  it('feeds the navigation item: it shows for any of the six permissions', () => {
+  it('feeds the navigation item: it shows for any of the seven permissions', () => {
     const item = ADMIN_NAV_ITEMS.find((i) => i.label === 'Lists')!;
     expect(item.path).toBe('/admin/lists');
     expect([...item.permissions!].sort()).toEqual([...ADMIN_LIST_PERMISSIONS].sort());
-    expect(ADMIN_LIST_PERMISSIONS).toHaveLength(6);
+    expect(ADMIN_LIST_PERMISSIONS).toHaveLength(7);
     expect(ADMIN_NAV_ITEMS.map((i) => i.label)).not.toContain('Labels');
     expect(ADMIN_NAV_ITEMS.map((i) => i.label)).not.toContain('Matter Lists');
   });

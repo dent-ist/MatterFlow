@@ -19,10 +19,12 @@ const LISTS = [
   ['link-roles', 'Link Roles', 'New Link Role'],
   ['vendor-services', 'Vendor Services', 'New Service'],
   ['vendor-areas', 'Vendor Areas', 'New Area'],
+  ['offices', 'Offices', 'New Office'],
+  ['employment-statuses', 'Employment Statuses', 'New Employment Status'],
 ] as const;
 
 test.describe('the Lists page (epic #1314)', () => {
-  test('the catalogue names all eleven lists in five groups and the editor follows the pick, at both sizes', async ({
+  test('the catalogue names all thirteen lists in six groups and the editor follows the pick, at both sizes', async ({
     page,
   }) => {
     for (const size of SIZES) {
@@ -35,7 +37,7 @@ test.describe('the Lists page (epic #1314)', () => {
       // 320 px at both sizes: the catalogue never grows.
       expect((await catalogue.boundingBox())!.width).toBeCloseTo(320, 0);
       await expect(page.getByRole('listbox', { name: 'Lists' }).getByRole('option')).toHaveCount(
-        11,
+        13,
       );
       await expect(page.getByRole('searchbox', { name: 'Find a list' })).toBeVisible();
       // The counts arrive as numbers (the lists' own GETs), never as a usage figure.
@@ -64,7 +66,7 @@ test.describe('the Lists page (epic #1314)', () => {
     await page.keyboard.press('ArrowDown');
     await expect(page.getByRole('heading', { level: 2 })).toHaveText('Matter Categories');
     await page.keyboard.press('End');
-    await expect(page.getByRole('heading', { level: 2 })).toHaveText('Vendor Areas');
+    await expect(page.getByRole('heading', { level: 2 })).toHaveText('Employment Statuses');
     await page.keyboard.press('Home');
     await expect(page.getByRole('heading', { level: 2 })).toHaveText('Matter Types');
     await expect(page).toHaveURL(/\/admin\/lists\/matter-types$/);
@@ -85,7 +87,7 @@ test.describe('the Lists page (epic #1314)', () => {
     await expect(page.locator('[data-no-match]')).toContainText('No list matches "zzz".');
     await shot(page, 'lists-no-match');
     await page.keyboard.press('Escape');
-    await expect(page.getByRole('option')).toHaveCount(11);
+    await expect(page.getByRole('option')).toHaveCount(13);
   });
 
   for (const [key, label, newLabel] of LISTS) {

@@ -238,3 +238,59 @@ fieldset {
 .ud-head:focus {
   outline: none;
 }
+
+/* The profile form: two columns in the large dialog (D-35); the join date and the comments take their own row. */
+.ud-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 var(--mf-s4);
+  align-items: start;
+}
+
+.ud-wide {
+  grid-column: 1 / -1;
+}
+
+.ud-field {
+  margin-bottom: var(--mf-s3);
+}
+
+.ud-join {
+  min-width: 0;
+  margin: 0 0 var(--mf-s3);
+
+  legend {
+    padding: 0;
+    margin-bottom: var(--mf-s1);
+    font-weight: 600;
+  }
+}
+
+.ud-join-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--mf-s2);
+}
+
+.ud-help {
+  margin: var(--mf-s1) 0 0;
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+}
+
+.ud-error {
+  display: flex;
+  align-items: center;
+  gap: var(--mf-s1);
+  margin: var(--mf-s1) 0 0;
+  color: var(--mf-danger);
+  font-size: var(--mf-fs-sm);
+}
+
+.ud-muted {
+  color: var(--mf-text-muted);
+}
+
+.ud-pre {
+  white-space: pre-wrap;
+}

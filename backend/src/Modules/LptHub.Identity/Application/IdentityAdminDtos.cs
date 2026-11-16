@@ -4,7 +4,7 @@ using LptHub.Identity.Pods;
 
 namespace LptHub.Identity.Application;
 
-/// <summary>One row of the users list. <c>FirstName</c> and <c>LastName</c> come from the linked person record (empty when the user has none, or has a one-word name for the last name). <c>Pods</c> are all of the person's Pods (inactive ones too), by name, with the primary one flagged.</summary>
+/// <summary>One row of the users list. <c>FirstName</c>, <c>LastName</c>, <c>Title</c>, <c>OfficeName</c> and <c>EmploymentStatusName</c> come from the linked person record (empty or null when the user has none, or has a one-word name for the last name; the Employment Status is the HR status of the person, not the account state). <c>Pods</c> are all of the person's Pods (inactive ones too), by name, with the primary one flagged.</summary>
 public sealed record UserSummaryDto(
     [property: Required] int UserId,
     [property: Required] string DisplayName,
@@ -21,7 +21,10 @@ public sealed record UserSummaryDto(
     UserAvailabilitySummary? Availability = null,
     int? OpenTaskCount = null,
     string FirstName = "",
-    string LastName = "");
+    string LastName = "",
+    string? Title = null,
+    string? OfficeName = null,
+    string? EmploymentStatusName = null);
 
 /// <summary>A user with the data of the detail drawer. Pod membership belongs to the Organization module and is added by that ticket.</summary>
 public sealed record UserDetailDto(
@@ -39,7 +42,15 @@ public sealed record UserDetailDto(
     [property: Required] DateTime RegisteredAtUtc,
     DateTime? LastLoginAtUtc,
     [property: Required] string RowVersion,
-    int? OpenTaskCount = null);
+    int? OpenTaskCount = null,
+    string? Title = null,
+    string? Notes = null,
+    int? OfficeId = null,
+    string? OfficeName = null,
+    int? EmploymentStatusId = null,
+    string? EmploymentStatusName = null,
+    string? IndustryJoinMonth = null,
+    string? PersonRowVersion = null);
 
 /// <summary>Counts for the tabs of the users screen.</summary>
 public sealed record UserCountsDto([property: Required] int Pending, [property: Required] int Active, [property: Required] int Inactive);
@@ -55,6 +66,17 @@ public sealed record SetUserActiveRequest(
 public sealed record UpdateUserProfileRequest(
     [Required, StringLength(200, MinimumLength = 1)] string DisplayName,
     [StringLength(320), EmailAddress] string? Email,
+    [Required] string RowVersion);
+
+/// <summary>
+/// The person fields of a user (epic #1389, issue #1394): Title, Notes, Office, Employment Status and Industry Join Date. Every field is replaced: a field left out is cleared. <c>RowVersion</c> is the <c>personRowVersion</c> of the last read of the user (the person row has its own token).
+/// </summary>
+public sealed record UpdateUserPersonDetailsRequest(
+    [StringLength(100)] string? Title,
+    [StringLength(2000)] string? Notes,
+    int? OfficeId,
+    int? EmploymentStatusId,
+    [StringLength(7), RegularExpression(@"^\d{4}-(0[1-9]|1[0-2])$")] string? IndustryJoinMonth,
     [Required] string RowVersion);
 
 /// <summary>One row of the roles list.</summary>

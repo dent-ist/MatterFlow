@@ -10,6 +10,8 @@ import {
   UserDetailDto,
   UserPodDto,
   SetUserPodsRequest,
+  PersonListItemView,
+  UpdateUserPersonDetailsRequest,
 } from '../../api/generated/api-client';
 
 export type {
@@ -24,6 +26,8 @@ export type {
   UserSummaryDto,
   UserPodDto,
   SetUserPodsRequest,
+  PersonListItemView,
+  UpdateUserPersonDetailsRequest,
 } from '../../api/generated/api-client';
 
 /** An active pod that can be assigned to a person (the choices of the Pods editor in the Users grid). */
@@ -35,7 +39,15 @@ export interface PodChoice {
 export type UserStatusFilter = 'all' | 'pending' | 'active' | 'inactive';
 
 /** The sort keys of the users list (#436). */
-export type UserSortKey = 'name' | 'firstName' | 'lastName' | 'firstSeen' | 'lastSeen';
+export type UserSortKey =
+  | 'name'
+  | 'firstName'
+  | 'lastName'
+  | 'firstSeen'
+  | 'lastSeen'
+  | 'title'
+  | 'office'
+  | 'employmentStatus';
 
 export interface UserListQuery {
   status?: UserStatusFilter;
@@ -45,6 +57,11 @@ export interface UserListQuery {
   /** Fragment of the first or last name of the linked person record. */
   firstName?: string;
   lastName?: string;
+  /** Fragment of the title of the person record. */
+  title?: string;
+  /** Only people of this office / with this employment status (the HR status of the person record, not the account state). */
+  officeId?: number;
+  employmentStatusId?: number;
   account?: string;
   email?: string;
   /** People holding any of these roles. */
@@ -86,6 +103,15 @@ export abstract class IdentityAdminApi {
     email: string | undefined,
     rowVersion: string,
   ): Observable<UserDetailDto>;
+
+  /** Saves Title, Notes, Office, Employment Status and Industry Join Date (`yyyy-MM`) of the person record; every field is replaced. */
+  abstract updateUserPersonDetails(
+    userId: number,
+    request: UpdateUserPersonDetailsRequest,
+  ): Observable<UserDetailDto>;
+  /** The Office and Employment Status lists (Administration > Lists), inactive items too; the dialog offers the active ones. */
+  abstract listOffices(): Observable<PersonListItemView[]>;
+  abstract listEmploymentStatuses(): Observable<PersonListItemView[]>;
 
   abstract listRoles(): Observable<RoleSummaryDto[]>;
   abstract getRole(roleId: number): Observable<RoleDetailDto>;
