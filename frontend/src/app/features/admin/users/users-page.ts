@@ -191,9 +191,10 @@ export class UsersPage implements OnInit {
   private readonly zone = inject(USER_TIME_ZONE);
   /**
    * The columns of the grid (the shared record grid, #1241; Administration lists, #1197): First Name and Last Name come from the person record of the user
-   * (#1390; the Last Name is the spring), the others have a fixed width so the headings do not move while the list loads, is empty or has rows. Account is
-   * the login account (it was the second line under the name). Email and First Seen are optional (the Columns button): their filters are columns too, so the
-   * list needs no "Other Filters" button. The default columns add up to about 1098 px, the visible frame at 1366.
+   * (#1390; the Last Name is the spring), the others have a fixed width so the headings do not move while the list loads, is empty or has rows. Account (the
+   * login account, it was the second line under the name), Email and First Seen are optional (the Columns button): their filters are columns too, so the list
+   * needs no "Other Filters" button. There is no room for a third name-like column by default: the default columns, with the widest Availability chip
+   * ("Out of Office until 10/25/2027", about 234 px) in the list, add up to about 1062 px and fit the 1098 px of the visible frame at 1366.
    */
   protected readonly gridDefs = signal<readonly RecordGridColumn[]>([
     {
@@ -201,11 +202,18 @@ export class UsersPage implements OnInit {
       label: 'First Name',
       locked: true,
       sort: 'firstName',
-      width: '8rem',
-      minWidth: '7rem',
+      width: '7rem',
+      minWidth: '6rem',
     },
     { key: 'lastName', label: 'Last Name', locked: true, sort: 'lastName', minWidth: '120px' },
-    { key: 'account', label: 'Account', width: '7rem', minWidth: '7rem' },
+    {
+      key: 'account',
+      label: 'Account',
+      defaultHidden: true,
+      extra: true,
+      width: '9rem',
+      minWidth: '9rem',
+    },
     {
       key: 'email',
       label: 'Email',
@@ -214,8 +222,8 @@ export class UsersPage implements OnInit {
       width: '12rem',
       minWidth: '12rem',
     },
-    { key: 'roles', label: 'Roles', width: '8rem', minWidth: '8rem' },
-    { key: 'pods', label: 'Pods', width: '11rem', minWidth: '11rem' },
+    { key: 'roles', label: 'Roles', width: '9rem', minWidth: '9rem' },
+    { key: 'pods', label: 'Pods', width: '10rem', minWidth: '10rem' },
     { key: 'availability', label: 'Availability', width: '8rem', minWidth: '8rem' },
     {
       key: 'registered',
@@ -471,7 +479,8 @@ export class UsersPage implements OnInit {
   /** The availability dialog opened or closed; when it closes the user dialog comes back. */
   protected onAvailabilityVisible(visible: boolean): void {
     this.availabilityDialogOpen.set(visible);
-    if (!visible) this.dialogAside.set(false);
+    // The user dialog comes back once the availability dialog has left the screen (two dialogs never overlap, not even while one fades out).
+    if (!visible) this.afterDialogGone(() => this.dialogAside.set(false));
   }
 
   protected editAvailability(user: UserSummaryDto): void {

@@ -4,7 +4,7 @@ import { Page } from '@playwright/test';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { Persona } from '../support/personas';
-import { userName, userRow } from '../support/users-grid';
+import { expectFocusInUserDialog, userName, userRow } from '../support/users-grid';
 
 /**
  * Users epic #422, WP-US4, moved from the side drawer to a centre dialog in epic #1389 (issue #1390): the user dialog (#438 shell, #439 Access, #440 Pods /
@@ -70,7 +70,7 @@ async function openList(page: Page, width = 1366, height = 768, extra = ''): Pro
 async function openDialog(page: Page, userId: number): Promise<void> {
   await nameOf(page, userId).click();
   await expect(page.locator('[data-panel] [data-section="access"]')).toBeVisible();
-  await expect(dialogOf(page).locator(':focus')).toHaveCount(1);
+  await expectFocusInUserDialog(page);
 }
 
 const noSideScroll = (page: Page) =>
@@ -150,7 +150,7 @@ test.describe('#438 the dialog shell', () => {
     const button = nameOf(page, worker.userId);
     await button.focus();
     await page.keyboard.press('Enter');
-    await expect(dialogOf(page).locator(':focus')).toHaveCount(1);
+    await expectFocusInUserDialog(page);
     await page.keyboard.press('Escape');
     await expect(dialogOf(page)).toHaveCount(0);
     await expect(page).not.toHaveURL(/user=/);
@@ -567,6 +567,8 @@ test.describe('axe and layout at both desktop sizes with the dialog open', () =>
       await expect(ask).toBeHidden();
       await page.locator('[data-edit-availability]').click();
       await expect(page.getByRole('dialog').last()).toBeVisible();
+      // axe reads the colours of the finished dialog, not of its fade-in.
+      await expect(page.getByRole('dialog').last()).toHaveCSS('opacity', '1');
       expect(await axeClean(page)).toEqual([]);
       expect(await noSideScroll(page)).toBe(true);
     });

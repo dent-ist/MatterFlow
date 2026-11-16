@@ -16,6 +16,7 @@ import { IdentityAdminApi } from '../../../core/identity-admin/identity-admin-ap
 import { InMemoryIdentityAdminApi } from '../../../core/identity-admin/in-memory-identity-admin-api';
 import { PendingUsersStore } from '../../../core/identity-admin/pending-users.store';
 import { SkipTarget } from '../../../shared/layout/skip-target';
+import { RecordGridState } from '../../../shared/ui/record-grid';
 import { UsersPage } from './users-page';
 
 describe('UsersPage', () => {
@@ -141,12 +142,11 @@ describe('UsersPage', () => {
     expect(TestBed.inject(PendingUsersStore).count()).toBe(2);
   });
 
-  it('shows First Name and Last Name from the person record, the account in its own column, and the first name as the one control of its cell (#1390)', async () => {
+  it('shows First Name and Last Name from the person record, and the first name as the one control of its cell (#1390)', async () => {
     await create('User.View', 'User.Manage');
     const cell = q('[data-record-id="4"] td.us-name');
     expect(cell.querySelector('button[data-open]')!.textContent!.trim()).toBe('Priya');
     expect(q('[data-record-id="4"] [data-users-last-name]').textContent!.trim()).toBe('Patel');
-    expect(q('[data-record-id="4"] td[data-account]').textContent!.trim()).toBe('ppatel');
     expect(cell.querySelectorAll('a, button').length).toBe(1);
     // The name that opens the dialog is the shared text button with the name modifier (D-44m), never a private class (#1257).
     expect(Array.from(cell.querySelector('button[data-open]')!.classList)).toEqual([
@@ -165,7 +165,6 @@ describe('UsersPage', () => {
     expect(headers).toEqual([
       'First Name',
       'Last Name',
-      'Account',
       'Roles',
       'Pods',
       'Availability',
@@ -179,7 +178,6 @@ describe('UsersPage', () => {
     ).toEqual([
       'First Name',
       'Last Name',
-      'Account',
       'Roles',
       'Pods',
       'Availability',
@@ -305,9 +303,27 @@ describe('UsersPage', () => {
     });
   });
 
-  it('marks the seeded administrator in the tooltip of the account, not as a badge', async () => {
+  it('shows the login account in its own optional Account column, and marks the seeded administrator in its tooltip, not as a badge', async () => {
     await create('User.View', 'User.Manage');
     await chooseStatus('all');
+    // The account is not a default column (there is no room for it at 1366): it is one click away in Columns.
+    expect(el().querySelector('[data-record-id="1"] [data-account]')).toBeNull();
+    const grid = (fixture.componentInstance as unknown as { grid: RecordGridState }).grid;
+    grid.set({
+      order: [],
+      visible: [
+        'firstName',
+        'lastName',
+        'account',
+        'roles',
+        'pods',
+        'availability',
+        'lastSeen',
+        'status',
+      ],
+    });
+    await settle();
+    expect(q('[data-record-id="4"] td[data-account]').textContent!.trim()).toBe('ppatel');
     expect(q('[data-record-id="1"] [data-account]').getAttribute('title')).toContain('Seeded');
   });
 
@@ -406,13 +422,13 @@ describe('UsersPage', () => {
     ).toBeNull();
     expect(el().querySelector('[data-filter-row]')).not.toBeNull();
     // The filters of the columns on screen are in the row; First Seen and Email are optional columns (Columns button), there is no "Other Filters" button (#1197).
-    for (const column of ['First Name', 'Last Name', 'Account', 'Roles', 'Availability']) {
+    for (const column of ['First Name', 'Last Name', 'Roles', 'Availability']) {
       expect(
         el().querySelector(`[aria-label^="Filter by ${column}"]`),
         `Filter by ${column}`,
       ).not.toBeNull();
     }
-    for (const column of ['First Seen', 'Email']) {
+    for (const column of ['Account', 'First Seen', 'Email']) {
       expect(el().querySelector(`[aria-label^="Filter by ${column}"]`), column).toBeNull();
     }
     expect(el().querySelector('[data-more-filters]')).toBeNull();

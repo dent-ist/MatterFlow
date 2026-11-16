@@ -155,7 +155,7 @@ test.describe('Users final verification', () => {
     expect(
       pageStops,
       'the page itself: filters, tabs, grid header and one stop on the row, far fewer than the 33 of the review',
-    ).toBeLessThanOrEqual(18); // was 13; measured 18 on the standardised page (more toolbar controls); the guarded budget is "far fewer than the 33 of the review"
+    ).toBeLessThanOrEqual(20); // was 13, then 18 on the standardised page (more toolbar controls), 20 since #1390 (the Last Name heading and its filter are two more stops); the guarded budget is "far fewer than the 33 of the review"
 
     // U3: the Roles of "Grant Access" are in the first screen of the dialog at 1366x768.
     await page.locator('button[data-open]').first().click();

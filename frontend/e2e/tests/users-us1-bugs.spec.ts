@@ -230,6 +230,7 @@ test.describe('BUG-3: the deactivation question', () => {
   }) => {
     await openList(page, 1366, 768);
     await rowButton(page, active.userId).click();
+    await expectFocusInUserDialog(page);
     await expect(page.getByRole('button', { name: 'Save Changes' })).toBeVisible();
 
     const deactivate = page.getByRole('button', { name: /^Deactivate / });

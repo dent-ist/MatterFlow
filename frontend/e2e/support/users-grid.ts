@@ -43,11 +43,11 @@ export function userDialog(page: Page): Locator {
 }
 
 /**
- * Focus is somewhere inside the open user dialog. The shared dialog puts it on the first field, or on its close button while the person is still
- * loading, so the exact control is not part of the contract.
+ * The user dialog has opened and taken the focus: it opens with the person already read, and focus starts on the status line at the top (`#ud-start`). The
+ * shared dialog moves it there when its opening animation ends, so a test waits for that before it acts (a click made earlier is overtaken by it).
  */
 export async function expectFocusInUserDialog(page: Page): Promise<void> {
-  await expect(userDialog(page).locator(':focus')).toHaveCount(1);
+  await expect(userDialog(page).locator('#ud-start')).toBeFocused();
 }
 
 /**

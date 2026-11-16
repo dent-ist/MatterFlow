@@ -9,7 +9,8 @@ import { expectFocusInUserDialog, nameParts, userDialog } from '../support/users
 
 /**
  * Users epic #422, WP-US3: the Users grid on the record-list contract (#432) and the one action column (#433).
- *  - nine columns since #1390 (First Name, Last Name, Account, Roles, Pods, Availability, Last Seen, Status, one action column), rows exactly 44 px with
+ *  - eight columns since #1390 (First Name, Last Name, Roles, Pods, Availability, Last Seen, Status, one action column; Account, Email and First Seen are
+ *    optional), rows exactly 44 px with
  *    a 130-character name, a 90-character role and two pods, no sideways scroll of the page or the table from 1366 px, no "Scroll sideways" hint;
  *  - the first name is the one control of the First Name cell and opens the dialog; focus returns to it; the accessible names carry the account;
  *  - Status is a badge only when the person is not simply Active; Email and First seen are filters in "Other Filters" only;
@@ -126,7 +127,6 @@ test.describe('#432 the grid', () => {
       expect(await headers(page)).toEqual([
         'First Name',
         'Last Name',
-        'Account',
         'Roles',
         'Pods',
         'Availability',
@@ -171,7 +171,6 @@ test.describe('#432 the grid', () => {
       expect(shown).toEqual([
         'First Name',
         'Last Name',
-        'Account',
         'Roles',
         'Pods',
         'Availability',

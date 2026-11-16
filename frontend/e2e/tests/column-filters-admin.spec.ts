@@ -20,7 +20,7 @@ const grid = (page: Page, name: string) =>
   page.getByRole('region', { name: `${name}, scrollable` });
 const chips = (page: Page) => page.getByRole('list', { name: 'Active filters' });
 
-/** An optional column of the Users list (Email, First Seen) is shown from the Columns button; its filter then joins the filter row. */
+/** An optional column of the Users list (Account, Email, First Seen) is shown from the Columns button; its filter then joins the filter row. */
 async function showColumn(page: Page, name: string): Promise<void> {
   await page.getByRole('button', { name: 'Columns', exact: true }).click();
   await page.getByLabel(name, { exact: true }).check();
@@ -59,8 +59,8 @@ test.describe('Column filters on the administration lists', () => {
       await expect(rows.first()).toBeVisible();
 
       await page.goto(`/admin/users?status=all&account=${token}`);
-      // Account is a column of the grid (#1390): the address fills its filter in the row.
-      await expect(text(page, 'Account')).toHaveValue(token);
+      // Account is an optional column of the grid (#1390): the address applies it and it shows as a chip until the column is switched on.
+      await expect(chips(page)).toContainText('Account');
       await expect(rows).toHaveCount(3);
 
       // The waiting person is Pending access.
