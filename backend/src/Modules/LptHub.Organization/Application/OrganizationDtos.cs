@@ -112,8 +112,8 @@ public sealed class ChangeNumberRequest
 /// <param name="MatterTypes">The Matter Types (none, one or several), in the order of the Matter Types list; empty when none is set. Inactive types still show here.</param>
 /// <param name="MatterCategory">The Matter Category (a single choice); null when not set. Inactive categories still show here.</param>
 /// <param name="CurrentState">The Current State (current value only; changes are in the audit log); null when not set.</param>
-/// <param name="DmsPath">The DMS location (UNC path or http/https address); null when not set.</param>
-/// <param name="DfsPath">The DFS location (UNC path or http/https address); null when not set.</param>
+/// <param name="DmsPaths">The DMS locations (each a UNC path or http/https address), in the order the person gave; at most 10, empty when none is set.</param>
+/// <param name="DfsPaths">The DFS locations, same rules as <paramref name="DmsPaths"/>.</param>
 public sealed record MatterResponse(
     [property: Required] int MatterId,
     [property: Required] int ClientId,
@@ -138,12 +138,12 @@ public sealed record MatterResponse(
     [property: Required] DateTime CreatedAtUtc,
     DateTime? ModifiedAtUtc,
     [property: Required] IReadOnlyList<MatterListRef> MatterTypes,
+    [property: Required] IReadOnlyList<string> DmsPaths,
+    [property: Required] IReadOnlyList<string> DfsPaths,
     int? OnHoldTaskCount = null,
     int? AtRiskTaskCount = null,
     [property: Required] MatterAiAllowed AiAllowed = MatterAiAllowed.No,
     MatterListRef? CurrentState = null,
-    string? DmsPath = null,
-    string? DfsPath = null,
     MatterListRef? MatterCategory = null);
 
 /// <summary>A chosen item of a matter pick list (Matter Type, Current State, Team Title) as lists and headers show it.</summary>
@@ -275,13 +275,16 @@ public sealed class CreateMatterRequest
     [Range(1, int.MaxValue)]
     public int? CurrentStateId { get; init; }
 
-    /// <summary>Optional DMS path: a UNC path (<c>\\server\share\...</c>) or an http/https address; trimmed, max 1000; blank means none. 400 <c>INVALID_PATH</c> otherwise (drive letters are refused).</summary>
-    [StringLength(1000)]
-    public string? DmsPath { get; init; }
+    /// <summary>
+    /// Optional DMS paths (up to 10, in the order to keep): each a UNC path (<c>\\server\share\...</c>) or an http/https address, trimmed, max 1000; blank entries are skipped, the same path twice
+    /// (ignoring letter case) is refused. 400 <c>INVALID_PATH</c> otherwise (drive letters are refused; the error key is <c>dmsPaths[n]</c>, n counting from 0), 400 <c>TOO_MANY_PATHS</c> over 10.
+    /// </summary>
+    [MaxLength(100)]
+    public string[]? DmsPaths { get; init; }
 
-    /// <summary>Optional DFS path, same rules as <see cref="DmsPath"/>.</summary>
-    [StringLength(1000)]
-    public string? DfsPath { get; init; }
+    /// <summary>Optional DFS paths, same rules as <see cref="DmsPaths"/> (error key <c>dfsPaths[n]</c>).</summary>
+    [MaxLength(100)]
+    public string[]? DfsPaths { get; init; }
 
     /// <summary>Custom-field values keyed by field key, validated against the published custom-field form (hidden values are dropped). Null means none.</summary>
     public Dictionary<string, JsonElement>? FormValues { get; init; }
@@ -325,13 +328,13 @@ public sealed class UpdateMatterRequest
     [Range(1, int.MaxValue)]
     public int? CurrentStateId { get; init; }
 
-    /// <summary>The DMS path: the full value (blank or null clears it); a UNC path or an http/https address, trimmed, max 1000 (400 <c>INVALID_PATH</c>). An unchanged stored value is always accepted.</summary>
-    [StringLength(1000)]
-    public string? DmsPath { get; init; }
+    /// <summary>The DMS paths: the full list, in the order to keep (null or an empty list clears them); the rules of the create request. An unchanged stored path is always accepted.</summary>
+    [MaxLength(100)]
+    public string[]? DmsPaths { get; init; }
 
-    /// <summary>The DFS path: the full value, same rules as <see cref="DmsPath"/>.</summary>
-    [StringLength(1000)]
-    public string? DfsPath { get; init; }
+    /// <summary>The DFS paths: the full list, same rules as <see cref="DmsPaths"/>.</summary>
+    [MaxLength(100)]
+    public string[]? DfsPaths { get; init; }
 
     /// <summary>
     /// A patch over the stored custom-field values keyed by field key: a JSON <c>null</c> clears a value, omitted keys stay as they are.

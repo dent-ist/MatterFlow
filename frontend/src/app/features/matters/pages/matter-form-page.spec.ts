@@ -153,8 +153,8 @@ describe('MatterFormPage: New and Edit Matter as full pages (epic #1368, #1371, 
       'Matter Types',
       'Matter Category',
       'Current State',
-      'DMS Path',
-      'DFS Path',
+      'DMS Paths',
+      'DFS Paths',
     ]);
   });
 
@@ -294,6 +294,142 @@ describe('MatterFormPage: New and Edit Matter as full pages (epic #1368, #1371, 
     type('#matter-name', 'Typed');
     await settle(fixture);
     expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
+  });
+
+  describe('several DMS and DFS paths (#1391)', () => {
+    const inputs = (kind: 'dms' | 'dfs') =>
+      Array.from(el().querySelectorAll<HTMLInputElement>(`[id^="matter-${kind}-path-"]`)).filter(
+        (i) => i.tagName === 'INPUT',
+      );
+    const click = async (selector: string, index = 0) => {
+      el().querySelectorAll<HTMLButtonElement>(selector)[index].click();
+      await settle(fixture);
+    };
+
+    it('starts each kind with one empty line, a text button Add Path and no Remove button on the empty line', async () => {
+      await open();
+      expect(inputs('dms')).toHaveLength(1);
+      expect(inputs('dfs')).toHaveLength(1);
+      expect(el().querySelectorAll('[data-add-path]')).toHaveLength(2);
+      expect(el().querySelectorAll('[data-add-path]')[0].textContent!.trim()).toBe('Add Path');
+      expect(el().querySelectorAll('[data-remove-path]')).toHaveLength(0);
+    });
+
+    it('creates with the typed paths in order, trimmed, leaving out the empty lines', async () => {
+      await open();
+      await pickClient();
+      type('#matter-number', '12', true);
+      type('#matter-name', 'Paths');
+      type('#matter-dms-path-0', ' \\\\fs01\\dms\\one ');
+      await click('[data-add-path]');
+      await click('[data-add-path]');
+      expect(inputs('dms')).toHaveLength(3);
+      expect(document.activeElement).toBe(inputs('dms')[2]);
+      type('#matter-dms-path-2', 'https://dms.example.com/three');
+      type('#matter-dfs-path-0', 'https://dfs.example.com/a');
+      await settle(fixture);
+      buttonByLabel(el(), 'Create Matter')!.click();
+      await settle(fixture);
+      expect(matters.createMatter).toHaveBeenCalledWith(
+        expect.objectContaining({
+          dmsPaths: ['\\\\fs01\\dms\\one', 'https://dms.example.com/three'],
+          dfsPaths: ['https://dfs.example.com/a'],
+        }),
+      );
+    });
+
+    it('removes a line without moving the typing of the next one and keeps one empty line when the last is removed', async () => {
+      await open();
+      type('#matter-dms-path-0', 'https://a.example/1');
+      await click('[data-add-path]');
+      type('#matter-dms-path-1', 'https://a.example/2');
+      await settle(fixture);
+      await click('[data-remove-path]', 0);
+      expect(inputs('dms').map((i) => i.value)).toEqual(['https://a.example/2']);
+      await click('[data-remove-path]', 0);
+      expect(inputs('dms').map((i) => i.value)).toEqual(['']);
+      expect(el().querySelectorAll('[data-remove-path]')).toHaveLength(0);
+    });
+
+    it('stops at ten lines of a kind', async () => {
+      await open();
+      for (let i = 0; i < 9; i++) await click('[data-add-path]');
+      expect(inputs('dms')).toHaveLength(10);
+      expect((el().querySelectorAll('[data-add-path]')[0] as HTMLButtonElement).disabled).toBe(
+        true,
+      );
+      expect((el().querySelectorAll('[data-add-path]')[1] as HTMLButtonElement).disabled).toBe(
+        false,
+      );
+    });
+
+    it('checks a line when it is left and says so under that line only; Save lists each distinct problem once', async () => {
+      await open();
+      await click('[data-add-path]');
+      type('#matter-dms-path-0', 'C:\\Matters\\1', true);
+      type('#matter-dms-path-1', 'https://ok.example/x', true);
+      await settle(fixture);
+      const errors = el().querySelectorAll('[data-dms-paths] [data-path-error]');
+      expect(errors).toHaveLength(1);
+      expect(errors[0].textContent).toContain('Drive-letter paths such as C:\\ are not accepted.');
+      type('#matter-dfs-path-0', 'HTTPS://ok.example/X');
+      await click('[data-add-path]', 1);
+      type('#matter-dfs-path-1', 'https://ok.example/x');
+      await submit();
+      expect(el().querySelector('[data-summary]')!.textContent).toContain(
+        'This path is already in the list.',
+      );
+      expect(matters.createMatter).not.toHaveBeenCalled();
+      expect(el().querySelectorAll('[data-dfs-paths] [data-path-error]')).toHaveLength(1);
+    });
+
+    it('puts a server message under the line it is about', async () => {
+      await open();
+      matters.createMatter.mockReturnValue(
+        apiError(400, {
+          status: 400,
+          code: 'INVALID_PATH',
+          errors: { 'dmsPaths[1]': [{ code: 'PATH_FORMAT', message: 'x' }] },
+        }),
+      );
+      await pickClient();
+      type('#matter-number', '12', true);
+      type('#matter-name', 'Paths');
+      await click('[data-add-path]');
+      type('#matter-dms-path-0', 'https://ok.example/x');
+      type('#matter-dms-path-1', 'https://ok.example/y');
+      await settle(fixture);
+      await submit();
+      const lines = el().querySelectorAll('[data-dms-paths] [data-path-line]');
+      expect(lines[0].querySelector('[data-path-error]')).toBeNull();
+      expect(lines[1].querySelector('[data-path-error]')?.textContent).toContain(
+        'Enter a network path',
+      );
+    });
+
+    it('edit: shows every stored path, sends all of them again and is clean until a path changes', async () => {
+      await open(
+        { matterId: '7' },
+        aMatter({
+          dmsPaths: ['\\\\fs01\\a', 'https://dms.example/b'],
+          dfsPaths: ['https://dfs.example/c'],
+        }),
+      );
+      expect(inputs('dms').map((i) => i.value)).toEqual(['\\\\fs01\\a', 'https://dms.example/b']);
+      expect(inputs('dfs').map((i) => i.value)).toEqual(['https://dfs.example/c']);
+      expect(fixture.componentInstance.hasUnsavedChanges()).toBe(false);
+      await click('[data-remove-path]', 0);
+      expect(fixture.componentInstance.hasUnsavedChanges()).toBe(true);
+      buttonByLabel(el(), 'Save Changes')!.click();
+      await settle(fixture);
+      expect(matters.updateMatter).toHaveBeenCalledWith(
+        7,
+        expect.objectContaining({
+          dmsPaths: ['https://dms.example/b'],
+          dfsPaths: ['https://dfs.example/c'],
+        }),
+      );
+    });
   });
 
   describe('edit (#1381)', () => {

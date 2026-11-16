@@ -30,6 +30,8 @@ const KNOWN_FIELDS: Readonly<Record<string, string>> = {
   // Acronyms keep their capitals (UI spec 5).
   dmspath: 'DMS Path',
   dfspath: 'DFS Path',
+  dmspaths: 'DMS Paths',
+  dfspaths: 'DFS Paths',
 };
 
 /** Audit object types whose raw name means nothing to a reader. */
@@ -62,6 +64,7 @@ const EVENT_TYPES: Readonly<Record<string, string>> = {
   FORM_RETIRED: 'Form retired',
   MATTER_SENSITIVITY_CHANGED: 'Matter sensitivity changed',
   MATTER_TYPE_CHANGED: 'Matter Types changed',
+  MATTER_PATHS_CHANGED: 'Matter Paths changed',
   MATTER_CATEGORY_CHANGED: 'Matter Category changed',
   MATTER_STATE_CHANGED: 'Current State changed',
   MATTER_TEAM_MEMBER_ADDED: 'Team member added',

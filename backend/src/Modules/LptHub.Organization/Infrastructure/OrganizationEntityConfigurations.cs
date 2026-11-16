@@ -27,8 +27,6 @@ internal sealed class MatterConfiguration : IEntityTypeConfiguration<Matter>
             .IsUnicode(false)
             .IsFixedLength()
             .HasComputedColumnSql("CONVERT(CHAR(11), [ClientNumber] + '-' + [MatterNumber])", stored: true);
-        b.Property(x => x.DmsPath).HasMaxLength(1000);
-        b.Property(x => x.DfsPath).HasMaxLength(1000);
         b.HasIndex(x => new { x.ClientId, x.MatterNumber }).IsUnique().HasDatabaseName("UQ_Matter_ClientMatterNumber");
         b.HasIndex(x => x.MatterRef).IsUnique().HasDatabaseName("UQ_Matter_Ref");
     }
@@ -41,6 +39,20 @@ internal sealed class MatterMatterTypeConfiguration : IEntityTypeConfiguration<M
         b.ToTable("MatterMatterType");
         b.HasKey(x => new { x.MatterId, x.MatterTypeId }).HasName("PK_MatterMatterType");
         b.HasIndex(x => new { x.MatterTypeId, x.MatterId }).HasDatabaseName("IX_MatterMatterType_MatterType");
+    }
+}
+
+internal sealed class MatterPathConfiguration : IEntityTypeConfiguration<MatterPath>
+{
+    public void Configure(EntityTypeBuilder<MatterPath> b)
+    {
+        b.ToTable("MatterPath");
+        b.HasKey(x => x.Id).HasName("PK_MatterPath");
+        b.Property(x => x.Id).HasColumnName("MatterPathId");
+        b.Property(x => x.Kind).HasMaxLength(3).IsUnicode(false).IsFixedLength().IsRequired();
+        b.Property(x => x.Position).HasColumnType("tinyint");
+        b.Property(x => x.Path).HasMaxLength(1000).IsRequired();
+        b.HasIndex(x => new { x.MatterId, x.Kind, x.Position }).IsUnique().HasDatabaseName("UQ_MatterPath_MatterKindPosition");
     }
 }
 

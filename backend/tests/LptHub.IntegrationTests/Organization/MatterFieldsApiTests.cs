@@ -119,17 +119,18 @@ public sealed class MatterFieldsApiTests(SqlServerFixture sql) : IAsyncLifetime
         var matter = await MatterAsync();
         matter.GetProperty("matterTypes").GetArrayLength().ShouldBe(0);
         matter.GetProperty("currentState").ValueKind.ShouldBe(JsonValueKind.Null);
-        matter.GetProperty("dmsPath").ValueKind.ShouldBe(JsonValueKind.Null);
+        matter.GetProperty("dmsPaths").GetArrayLength().ShouldBe(0);
+        matter.GetProperty("dfsPaths").GetArrayLength().ShouldBe(0);
 
         var type = await ItemIdAsync("matter-types", (Names(await OkAsync(await Admin.GetAsync("/api/v1/matter-types")))[0]));
         var startup = await ItemIdAsync("current-states", "Startup");
         var discovery = await ItemIdAsync("current-states", "Start of Discovery");
-        var saved = await OkAsync(await UpdateAsync(matter, new { matterTypeIds = new[] { type }, currentStateId = startup, dmsPath = @"  \\fs01\dms\1234\0056  ", dfsPath = "https://dfs.example.com/m/1" }));
+        var saved = await OkAsync(await UpdateAsync(matter, new { matterTypeIds = new[] { type }, currentStateId = startup, dmsPaths = new[] { @"  \\fs01\dms\1234\0056  " }, dfsPaths = new[] { "https://dfs.example.com/m/1" } }));
         saved.GetProperty("currentState").GetProperty("name").GetString().ShouldBe("Startup");
-        saved.GetProperty("dmsPath").GetString().ShouldBe(@"\\fs01\dms\1234\0056");
-        saved.GetProperty("dfsPath").GetString().ShouldBe("https://dfs.example.com/m/1");
+        Strings(saved, "dmsPaths").ShouldBe([@"\\fs01\dms\1234\0056"]);
+        Strings(saved, "dfsPaths").ShouldBe(["https://dfs.example.com/m/1"]);
 
-        var changed = await OkAsync(await UpdateAsync(saved, new { matterTypeIds = new[] { type }, currentStateId = discovery, dmsPath = @"\\fs01\dms\1234\0056", dfsPath = "https://dfs.example.com/m/1" }));
+        var changed = await OkAsync(await UpdateAsync(saved, new { matterTypeIds = new[] { type }, currentStateId = discovery, dmsPaths = new[] { @"\\fs01\dms\1234\0056" }, dfsPaths = new[] { "https://dfs.example.com/m/1" } }));
         changed.GetProperty("currentState").GetProperty("name").GetString().ShouldBe("Start of Discovery");
 
         var states = await MatterEventsAsync(_w.MatterId, "MATTER_STATE_CHANGED");
@@ -141,12 +142,66 @@ public sealed class MatterFieldsApiTests(SqlServerFixture sql) : IAsyncLifetime
         var cleared = await OkAsync(await UpdateAsync(changed, new { }));
         cleared.GetProperty("matterTypes").GetArrayLength().ShouldBe(0);
         cleared.GetProperty("currentState").ValueKind.ShouldBe(JsonValueKind.Null);
-        cleared.GetProperty("dmsPath").ValueKind.ShouldBe(JsonValueKind.Null);
+        cleared.GetProperty("dmsPaths").GetArrayLength().ShouldBe(0);
         (await MatterEventsAsync(_w.MatterId, "MATTER_STATE_CHANGED")).Select(e => e.GetProperty("summary").GetString()).ShouldContain("Current State cleared (was Start of Discovery).");
 
-        // Path edits are field changes in the audit log.
-        var page = await OkAsync(await Admin.GetAsync($"/api/v1/audit/events?objectType=Matter&objectId={_w.MatterId}&pageSize=100"));
-        page.GetProperty("items").EnumerateArray().Any(e => e.GetProperty("fieldKey").GetString() == "DmsPath").ShouldBeTrue();
+        // Path edits have their own events: set once, unchanged on the second save (no event), cleared on the third.
+        (await MatterEventsAsync(_w.MatterId, "MATTER_PATHS_CHANGED")).Select(e => e.GetProperty("summary").GetString()).ShouldBe(
+            [@"DMS Paths cleared (was \\fs01\dms\1234\0056).", "DFS Paths cleared (was https://dfs.example.com/m/1).", @"DMS Paths set to \\fs01\dms\1234\0056.", "DFS Paths set to https://dfs.example.com/m/1."],
+            ignoreOrder: true);
+    }
+
+    private static string[] Strings(JsonElement e, string name) => [.. e.GetProperty(name).EnumerateArray().Select(i => i.GetString()!)];
+
+    [Fact]
+    public async Task A_matter_carries_several_DMS_and_DFS_paths_in_the_order_given_saved_as_full_lists_and_audited_per_kind()
+    {
+        var matter = await MatterAsync();
+        var saved = await OkAsync(await UpdateAsync(matter, new
+        {
+            dmsPaths = new[] { @"\\fs01\dms\one", "", "  https://dms.example.com/two  ", @"\\fs01\dms\three" },
+            dfsPaths = new[] { "https://dfs.example.com/a", @"\\fs02\dfs\b" },
+        }));
+        Strings(saved, "dmsPaths").ShouldBe([@"\\fs01\dms\one", "https://dms.example.com/two", @"\\fs01\dms\three"]);
+        Strings(saved, "dfsPaths").ShouldBe(["https://dfs.example.com/a", @"\\fs02\dfs\b"]);
+
+        // The saved order is kept; moving, dropping and adding one is one event per kind that changed (the DFS list is the same, so it has no second event).
+        var reordered = await OkAsync(await UpdateAsync(saved, new
+        {
+            dmsPaths = new[] { @"\\fs01\dms\three", @"\\fs01\dms\one", "https://dms.example.com/four" },
+            dfsPaths = new[] { "https://dfs.example.com/a", @"\\fs02\dfs\b" },
+        }));
+        Strings(reordered, "dmsPaths").ShouldBe([@"\\fs01\dms\three", @"\\fs01\dms\one", "https://dms.example.com/four"]);
+        (await MatterEventsAsync(_w.MatterId, "MATTER_PATHS_CHANGED")).Length.ShouldBe(3);
+        Strings(await MatterAsync(), "dfsPaths").Length.ShouldBe(2);
+
+        // The list endpoint carries them too, and a save that leaves them out clears them (full values).
+        var cleared = await OkAsync(await UpdateAsync(reordered, new { }));
+        Strings(cleared, "dmsPaths").ShouldBeEmpty();
+        Strings(cleared, "dfsPaths").ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task Path_lists_refuse_more_than_ten_a_repeat_and_a_bad_entry_with_the_place_of_each_problem()
+    {
+        var matter = await MatterAsync();
+        var ten = Enumerable.Range(1, 10).Select(i => $"https://dms.example.com/{i}").ToArray();
+        Strings(await OkAsync(await UpdateAsync(matter, new { dmsPaths = ten })), "dmsPaths").Length.ShouldBe(10);
+
+        var tooMany = await ProblemAsync(await UpdateAsync(await MatterAsync(), new { dfsPaths = ten.Append("https://dms.example.com/11").ToArray() }), HttpStatusCode.BadRequest, "INVALID_PATH");
+        tooMany.GetProperty("errors").GetProperty("dfsPaths")[0].GetProperty("code").GetString().ShouldBe("TOO_MANY_PATHS");
+
+        var current = await MatterAsync();
+        var dup = await ProblemAsync(await UpdateAsync(current, new { dmsPaths = new[] { "https://a.example.com/x", "HTTPS://A.example.com/X" } }), HttpStatusCode.BadRequest, "INVALID_PATH");
+        dup.GetProperty("errors").GetProperty("dmsPaths[1]")[0].GetProperty("code").GetString().ShouldBe("PATH_DUPLICATE");
+
+        // Both lists are checked together and every bad row is named by its place (counting from 0, blank rows included).
+        var bad = await ProblemAsync(await UpdateAsync(current, new { dmsPaths = new[] { "https://ok.example.com", @"C:\x", "" , "ftp://h/x" }, dfsPaths = new[] { "https://user:pw@host/x" } }), HttpStatusCode.BadRequest, "INVALID_PATH");
+        var errors = bad.GetProperty("errors");
+        errors.GetProperty("dmsPaths[1]")[0].GetProperty("code").GetString().ShouldBe("PATH_DRIVE_LETTER");
+        errors.GetProperty("dmsPaths[3]")[0].GetProperty("code").GetString().ShouldBe("PATH_FORMAT");
+        errors.GetProperty("dfsPaths[0]")[0].GetProperty("code").GetString().ShouldBe("PATH_CREDENTIALS");
+        Strings(await MatterAsync(), "dmsPaths").Length.ShouldBe(10); // nothing was saved
     }
 
     [Fact]
@@ -256,11 +311,11 @@ public sealed class MatterFieldsApiTests(SqlServerFixture sql) : IAsyncLifetime
     public async Task Bad_paths_and_unknown_or_inactive_choices_are_refused_with_stable_codes()
     {
         var matter = await MatterAsync();
-        var drive = await ProblemAsync(await UpdateAsync(matter, new { dmsPath = @"C:\Matters\1" }), HttpStatusCode.BadRequest, "INVALID_PATH");
-        drive.GetProperty("errors").GetProperty("dmsPath")[0].GetProperty("code").GetString().ShouldBe("PATH_DRIVE_LETTER");
-        await ProblemAsync(await UpdateAsync(matter, new { dfsPath = "https://user:pw@host/x" }), HttpStatusCode.BadRequest, "INVALID_PATH");
-        await ProblemAsync(await UpdateAsync(matter, new { dfsPath = "ftp://host/x" }), HttpStatusCode.BadRequest, "INVALID_PATH");
-        (await UpdateAsync(matter, new { dmsPath = new string('a', 1001) })).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        var drive = await ProblemAsync(await UpdateAsync(matter, new { dmsPaths = new[] { @"C:\Matters\1" } }), HttpStatusCode.BadRequest, "INVALID_PATH");
+        drive.GetProperty("errors").GetProperty("dmsPaths[0]")[0].GetProperty("code").GetString().ShouldBe("PATH_DRIVE_LETTER");
+        await ProblemAsync(await UpdateAsync(matter, new { dfsPaths = new[] { "https://user:pw@host/x" } }), HttpStatusCode.BadRequest, "INVALID_PATH");
+        await ProblemAsync(await UpdateAsync(matter, new { dfsPaths = new[] { "ftp://host/x" } }), HttpStatusCode.BadRequest, "INVALID_PATH");
+        (await UpdateAsync(matter, new { dmsPaths = new[] { new string('a', 1001) } })).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         (await UpdateAsync(matter, new { matterTypeIds = new[] { 9999 } })).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
 
         var manager = await _h.UserWithAsync(@"KE\mlists2", "MatterList.Manage");
@@ -277,14 +332,16 @@ public sealed class MatterFieldsApiTests(SqlServerFixture sql) : IAsyncLifetime
         var clientId = (await OkAsync(await Admin.GetAsync($"/api/v1/matters/{_w.MatterId}"))).GetProperty("clientId").GetInt32();
         var state = await ItemIdAsync("current-states", "Review");
         var created = await OkAsync(
-            await Admin.PostAsJsonAsync("/api/v1/matters", new { clientId, matterNumber = "777", name = "Fields matter", currentStateId = state, dmsPath = "https://dms.example.com/777" }),
+            await Admin.PostAsJsonAsync("/api/v1/matters", new { clientId, matterNumber = "777", name = "Fields matter", currentStateId = state, dmsPaths = new[] { "https://dms.example.com/777", "https://dms.example.com/777b" } }),
             HttpStatusCode.Created);
         created.GetProperty("currentState").GetProperty("name").GetString().ShouldBe("Review");
         created.GetProperty("matterTypes").GetArrayLength().ShouldBe(0);
         (await MatterEventsAsync(created.GetProperty("matterId").GetInt32(), "MATTER_STATE_CHANGED")).Length.ShouldBe(1);
+        Strings(created, "dmsPaths").ShouldBe(["https://dms.example.com/777", "https://dms.example.com/777b"]);
+        (await MatterEventsAsync(created.GetProperty("matterId").GetInt32(), "MATTER_PATHS_CHANGED")).Length.ShouldBe(1);
 
         await ProblemAsync(
-            await Admin.PostAsJsonAsync("/api/v1/matters", new { clientId, matterNumber = "778", name = "Bad path", dfsPath = @"D:\x" }),
+            await Admin.PostAsJsonAsync("/api/v1/matters", new { clientId, matterNumber = "778", name = "Bad path", dfsPaths = new[] { @"D:\x" } }),
             HttpStatusCode.BadRequest,
             "INVALID_PATH");
     }

@@ -30,7 +30,7 @@ import { IntPipe } from '../../../shared/ui/number-format';
  *   Details: ONE card (the shared `mf-details-card`, D-44f) that fits its content, sits at the top and scrolls inside itself when it is taller than the room; its Edit button is in the page header.
  *     The fields are grouped under quiet sub-headings (D-11a, `mfDetailsGroup`) in two columns of groups:
  *       Matter (Client, CM Number, Matter Name) and Classification (Matter Types as chips, Matter Category, Current State) at the left;
- *       Management (Status, Sensitive only when sensitive, Primary PM, Secondary PM, AI Allowed) and Paths (DMS and DFS, each with Copy right beside the value) at the right;
+ *       Management (Status, Sensitive only when sensitive, Primary PM, Secondary PM, AI Allowed) and Paths (every DMS and DFS path on its own line, each with Copy right beside the value) at the right;
  *     then the custom fields (no heading), and Created and Last Updated as one quiet muted line under the card's scrolling body (it never scrolls away).
  *   An unset Matter Category is muted "Not set" with the text button "Set Category" for a person who may edit the matter.
  *
@@ -420,11 +420,25 @@ import { IntPipe } from '../../../shared/ui/number-format';
               </div>
             </section>
             <section mfDetailsGroup heading="Paths">
-              <div mfDetailField label="DMS Path" wide data-dms-path>
-                <mf-matter-path-value label="DMS Path" [value]="matter().dmsPath" />
+              <div mfDetailField label="DMS Paths" wide data-dms-path>
+                @for (path of matter().dmsPaths; track $index) {
+                  <mf-matter-path-value
+                    [label]="pathLabel('DMS', $index, matter().dmsPaths.length)"
+                    [value]="path"
+                  />
+                } @empty {
+                  <mf-matter-path-value label="DMS Paths" [value]="null" />
+                }
               </div>
-              <div mfDetailField label="DFS Path" wide data-dfs-path>
-                <mf-matter-path-value label="DFS Path" [value]="matter().dfsPath" />
+              <div mfDetailField label="DFS Paths" wide data-dfs-path>
+                @for (path of matter().dfsPaths; track $index) {
+                  <mf-matter-path-value
+                    [label]="pathLabel('DFS', $index, matter().dfsPaths.length)"
+                    [value]="path"
+                  />
+                } @empty {
+                  <mf-matter-path-value label="DFS Paths" [value]="null" />
+                }
               </div>
             </section>
           </div>
@@ -530,6 +544,11 @@ export class MatterSummary {
   /** A person's name: the display name, or the account without its domain. */
   protected person(name: string): string {
     return shortAccountName(name);
+  }
+
+  /** The Copy button's name of one path: "DMS Path" when there is one, "DMS Path 2" when there are several. */
+  protected pathLabel(kind: 'DMS' | 'DFS', index: number, count: number): string {
+    return count > 1 ? `${kind} Path ${index + 1}` : `${kind} Path`;
   }
 
   protected initials(name: string): string {

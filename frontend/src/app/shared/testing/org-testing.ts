@@ -61,6 +61,8 @@ export function aMatter(overrides: Partial<MatterResponse> = {}): MatterResponse
     createdAtUtc: '2026-10-01T12:00:00Z',
     modifiedAtUtc: undefined,
     matterTypes: [],
+    dmsPaths: [],
+    dfsPaths: [],
     aiAllowed: MatterAiAllowed.No,
     ...overrides,
   };

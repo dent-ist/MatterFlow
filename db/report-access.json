@@ -120,6 +120,11 @@
       "reason": "Business data that reports may read (the Matter Types of a matter)."
     },
     {
+      "name": "MatterPath",
+      "access": "allow",
+      "reason": "Business data that reports may read (the DMS and DFS paths of a matter)."
+    },
+    {
       "name": "MatterTeamMember",
       "access": "deny",
       "reason": "Which people (a PersonId of the People list) are on a matter's team and their title there; shown through the application's matter visibility rule only, not report data."

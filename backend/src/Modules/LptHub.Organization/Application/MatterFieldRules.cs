@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using LptHub.Organization.Domain;
 using LptHub.SharedKernel.Results;
 
 namespace LptHub.Organization.Application;
@@ -16,6 +17,10 @@ internal static partial class MatterFieldRules
     public const string PathDriveLetter = "PATH_DRIVE_LETTER";
     public const string PathCredentials = "PATH_CREDENTIALS";
     public const string PathFormat = "PATH_FORMAT";
+    public const string PathDuplicate = "PATH_DUPLICATE";
+    public const string TooManyPaths = "TOO_MANY_PATHS";
+
+    public const string DuplicateMessage = "This path is already in the list.";
 
     // The messages are the ones of the UI spec (docs/ux/matter-fields/ui-spec.md section 3.3), so the screen and the API say the same.
     public const string DriveLetterMessage = @"Drive-letter paths such as C:\ are not accepted. Use a network path (\\server\share\...) or a web address (https://...).";
@@ -60,6 +65,54 @@ internal static partial class MatterFieldRules
         }
 
         return PathError(field, PathFormat, FormatMessage);
+    }
+
+    /// <summary>
+    /// Cleans the list of one kind (epic #1389, issue #1391). Blank entries are skipped; every other entry is cleaned like <see cref="CleanPath"/>, except a path the matter already
+    /// has (exact text), which is kept as it is. The same path twice (ignoring letter case) and more than <see cref="MatterPathKinds.MaxPerKind"/> paths are refused. The errors of every
+    /// bad entry come back together, keyed <c>field[n]</c> with n the entry's place in the request (from 0); too many paths is keyed <c>field</c>.
+    /// </summary>
+    public static Result<string[]> CleanPaths(IReadOnlyList<string?>? values, string field, IReadOnlyCollection<string> current)
+    {
+        var errors = new Dictionary<string, IReadOnlyList<FieldError>>();
+        var kept = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        for (var i = 0; i < (values?.Count ?? 0); i++)
+        {
+            var text = values![i]?.Trim();
+            if (string.IsNullOrEmpty(text))
+                continue;
+
+            var key = $"{field}[{i}]";
+            if (!current.Contains(text, StringComparer.Ordinal))
+            {
+                var clean = CleanPath(text, key);
+                if (clean.IsFailure)
+                {
+                    errors[key] = clean.Error!.FieldErrors![key];
+                    continue;
+                }
+            }
+
+            if (!seen.Add(text))
+            {
+                errors[key] = [new FieldError(PathDuplicate, DuplicateMessage)];
+                continue;
+            }
+
+            kept.Add(text);
+        }
+
+        if (kept.Count > MatterPathKinds.MaxPerKind && errors.Count == 0)
+        {
+            var message = $"Use at most {MatterPathKinds.MaxPerKind} paths of one kind.";
+            errors[field] = [new FieldError(TooManyPaths, message)];
+        }
+
+        if (errors.Count > 0)
+            return new Error(ErrorType.Validation, ErrorCodes.InvalidPath, errors.Values.First()[0].Message, errors);
+
+        return kept.ToArray();
     }
 
     /// <summary>Server: letters, digits, '.', '-', '_'. Share and folders: any character except <c>\ / : * ? " &lt; &gt; |</c> (spaces allowed). No empty part, one optional trailing backslash.</summary>
