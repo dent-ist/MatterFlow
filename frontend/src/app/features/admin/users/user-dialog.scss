@@ -1,4 +1,4 @@
-/* The summary under the header: the status chips and facts, then the actions (View their tasks, Deactivate). The title and the account are the drawer's header (mf-slide-panel). */
+/* The summary under the header: the status chips and facts, then the actions (View their tasks, Deactivate). The title and the account are the dialog's header (mf-form-dialog). */
 .ud-head {
   display: grid;
   gap: var(--mf-s2);
@@ -42,26 +42,43 @@
   color: var(--mf-danger);
 }
 
-/* The panel body scrolls inside the drawer (mf-slide-panel); the footer (Cancel, Save changes) stays in view. */
+/* The body scrolls inside the dialog (mf-form-dialog); the footer (Cancel, Save Changes) stays in view. */
 .ud-body {
   min-width: 0;
 }
 
-/* The footer buttons are items of the panel's footer row: Cancel at the left, Save changes at the right. */
-.ud-foot-slot {
-  display: contents;
+/* The deactivation question in the footer (D-31a, D-34): the sentence at the left, the buttons at the right. */
+.ud-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mf-s2);
+}
+
+.ud-foot-text {
+  flex: 1 1 18rem;
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.ud-foot-buttons {
+  display: flex;
+  align-items: center;
+  gap: var(--mf-s2);
 }
 
 .ud-sec {
   padding: var(--mf-s3) 0;
   border-top: 1px solid var(--mf-border);
 
-  h3 {
+  h2 {
     margin: 0 0 var(--mf-s2);
     font-size: var(--mf-fs-lg);
   }
 
-  h4 {
+  h3 {
     margin: var(--mf-s3) 0 var(--mf-s1);
     font-size: var(--mf-fs-md);
   }
@@ -217,24 +234,7 @@ fieldset {
   color: var(--mf-danger);
 }
 
-/* A phone folds the sections: the heading is a button (44 px target) with a chevron. */
-.ud-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  min-height: 2.75rem;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: inherit;
-  font: inherit;
-  font-weight: 600;
-  text-align: left;
-  cursor: pointer;
-
-  &:focus-visible {
-    outline: 2px solid var(--mf-focus);
-    outline-offset: 2px;
-  }
+/* The start of the dialog takes the focus when it opens (tabindex -1): no ring, it is not a control. */
+.ud-head:focus {
+  outline: none;
 }

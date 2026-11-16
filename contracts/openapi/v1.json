@@ -6392,6 +6392,24 @@
               "minLength": 0,
               "type": "string"
             }
+          },
+          {
+            "name": "firstName",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "minLength": 0,
+              "type": "string"
+            }
+          },
+          {
+            "name": "lastName",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "minLength": 0,
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -42496,6 +42514,14 @@
               "integer"
             ],
             "format": "int32"
+          },
+          "firstName": {
+            "type": "string",
+            "default": ""
+          },
+          "lastName": {
+            "type": "string",
+            "default": ""
           }
         }
       },

@@ -363,7 +363,7 @@ ESLint is not run on `e2e/` (its angular-eslint rules target the app); Prettier 
 | `users-us1-bugs` | badges not cut, focus and Esc of the drawer, the deactivation dialog, open tasks and View their tasks, axe at both desktop sizes |
 | `users-us2-status` | the status segments and header chrome |
 | `users-us3-grid` | the grid contract (44 px rows, columns, availability rule, sort, rows per page, row menu) |
-| `users-us4-drawer` | the drawer: address, focus, Access, Pods, Availability, Profile, deactivation, grant and Undo, read-only variants, conflicts, axe |
+| `users-us4-dialog` | the user dialog (was the drawer): address, focus, Access, Pods, Availability, Profile, deactivation, grant and Undo, read-only variants, conflicts, axe |
 | `users-us6-pods`, `users-us6-editors` | the Pods list; role editor (select all, Changed, description) and the pod record page |
 | `users-us7-keyboard`, `users-us7-flows` | skip link and Tab stops; the six keyboard-only flows and axe with overlays |
 | `users-us7-matrix` | the permission matrix of the Users area (`fixes/us7-keyboard/permission-matrix.md`) |

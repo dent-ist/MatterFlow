@@ -64,6 +64,15 @@ const noUser = () => fail(404, 'NOT_FOUND', 'The user does not exist.');
 const noRole = () => fail(404, 'NOT_FOUND', 'The role does not exist.');
 const conflict = () => fail(409, 'CONCURRENCY_CONFLICT', 'This user was changed by someone else.');
 const lastAdmin = () => fail(409, 'LAST_ADMIN', 'At least one active System Admin is required.');
+/** The person record's split of a display name: the last word is the last name, the rest the first name (the server's `PersonNameSplitter`). */
+function nameParts(displayName: string): { first: string; last: string } {
+  const name = displayName.trim();
+  const space = name.lastIndexOf(' ');
+  return space < 0
+    ? { first: name, last: '' }
+    : { first: name.slice(0, space).trimEnd(), last: name.slice(space + 1) };
+}
+
 const dupName = () => fail(409, 'DUPLICATE_NAME', 'A role with this name already exists.');
 const group = (code: string): string => code.split('.')[0];
 const view = (...groups: string[]): string[] =>
@@ -166,6 +175,8 @@ export class InMemoryIdentityAdminApi extends IdentityAdminApi {
           !t || (v ?? '').toLowerCase().includes(t.trim().toLowerCase());
         return (
           has(u.displayName, q.name) &&
+          has(nameParts(u.displayName).first, q.firstName) &&
+          has(nameParts(u.displayName).last, q.lastName) &&
           has(u.windowsAccount, q.account) &&
           has(u.email, q.email) &&
           (!q.availability || this.summary(u).availability?.state === q.availability) &&
@@ -192,6 +203,16 @@ export class InMemoryIdentityAdminApi extends IdentityAdminApi {
     switch (q.sort) {
       case 'name':
         return sign * a.displayName.localeCompare(b.displayName) || a.userId - b.userId;
+      case 'firstName':
+        return (
+          sign * nameParts(a.displayName).first.localeCompare(nameParts(b.displayName).first) ||
+          a.userId - b.userId
+        );
+      case 'lastName':
+        return (
+          sign * nameParts(a.displayName).last.localeCompare(nameParts(b.displayName).last) ||
+          a.userId - b.userId
+        );
       case 'firstSeen':
         return sign * a.registeredAtUtc.localeCompare(b.registeredAtUtc) || a.userId - b.userId;
       case 'lastSeen': {
@@ -400,6 +421,8 @@ export class InMemoryIdentityAdminApi extends IdentityAdminApi {
     return {
       userId: u.userId,
       displayName: u.displayName,
+      firstName: nameParts(u.displayName).first,
+      lastName: nameParts(u.displayName).last,
       email: u.email,
       windowsAccount: u.windowsAccount,
       isActive: u.isActive,

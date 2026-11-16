@@ -42,7 +42,7 @@ export class HttpIdentityAdminApi extends IdentityAdminApi {
   }
 
   listUsers(q: UserListQuery): Observable<PagedResultOfUserSummaryDto> {
-    const { status, search, name, account, email, roleIds, availability } = q;
+    const { status, search, name, account, email, roleIds, availability, firstName, lastName } = q;
     return this.withUsers((c) =>
       c.listUsers(
         status === 'all' ? undefined : status,
@@ -58,6 +58,8 @@ export class HttpIdentityAdminApi extends IdentityAdminApi {
         q.pageSize,
         q.sort,
         q.dir,
+        firstName,
+        lastName,
       ),
     );
   }

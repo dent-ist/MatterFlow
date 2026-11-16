@@ -191,7 +191,7 @@ test.describe('#453: permission matrix of the Users area', () => {
       if (v.drawer !== undefined && v.drawer !== null) {
         await page.goto(`/admin/users?status=all&account=e2e-${TAG}subject&user=${subjectId}`);
         await settle(page);
-        const heading = page.locator('[data-panel-heading]');
+        const heading = page.locator('[data-panel-title]');
         await expect(heading).toBeVisible();
         const hasSave = (await page.getByRole('button', { name: 'Save Changes' }).count()) > 0;
         if (hasSave !== v.drawer.edit)
@@ -201,7 +201,7 @@ test.describe('#453: permission matrix of the Users area', () => {
         const hasAvailability = (await page.locator('[data-edit-availability]').count()) > 0;
         if (hasAvailability !== v.drawer.edit)
           problems.push(`drawer: Edit availability ${hasAvailability}`);
-        const hasPods = (await page.locator('.mf-user-drawer [data-pods-trigger]').count()) > 0;
+        const hasPods = (await page.locator('.mf-formdlg [data-pods-trigger]').count()) > 0;
         if (hasPods !== v.drawer.pods) problems.push(`drawer: pods control ${hasPods}`);
         if ((await page.locator('[data-readonly-reason]').count()) > 0 === v.drawer.edit) {
           problems.push('drawer: the read-only reason does not match the permissions');
@@ -214,18 +214,18 @@ test.describe('#453: permission matrix of the Users area', () => {
           await expect(page.getByRole('dialog', { name: /^Availability of / })).toBeHidden();
         }
         if (hasPods) {
-          await page.locator('.mf-user-drawer [data-pods-trigger]').click();
+          await page.locator('.mf-formdlg [data-pods-trigger]').click();
           await expect(page.locator('[data-pods-popover]')).toBeVisible();
           await page.keyboard.press('Escape');
         }
         if (hasDeactivate) {
           await page.locator('[data-deactivate]').click();
-          const dialog = page.getByRole('dialog', { name: /^Deactivate / });
+          const dialog = page.locator('[data-deactivate-foot]');
           await expect(dialog).toBeVisible();
-          await dialog.getByRole('button', { name: 'Cancel' }).click();
+          await dialog.getByRole('button', { name: 'Keep User' }).click();
           await expect(dialog).toBeHidden();
         }
-        // Esc is the drawer's once every dialog above it has left.
+        // Esc is the user dialog's once the question and the other dialogs have left.
         await expect(page.locator('.p-dialog-mask')).toHaveCount(1);
         await page.keyboard.press('Escape');
         await expect(heading).toHaveCount(0);
@@ -234,7 +234,7 @@ test.describe('#453: permission matrix of the Users area', () => {
         // No Users tab: the address of a drawer lands on the first tab, without the drawer.
         await page.goto(`/admin/users?user=${subjectId}`);
         await settle(page);
-        if ((await page.locator('[data-panel-heading]').count()) > 0)
+        if ((await page.locator('[data-panel-title]').count()) > 0)
           problems.push('drawer shown without the Users tab');
       }
 

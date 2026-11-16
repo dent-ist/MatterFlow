@@ -87,6 +87,33 @@ public sealed class AdminColumnFilterTests(SqlServerFixture sql) : IAsyncLifetim
     }
 
     [Fact]
+    public async Task Users_list_has_the_first_and_last_name_of_the_person_record_and_filters_and_sorts_by_them()
+    {
+        await ProvisionAsync(@"KE\first1");
+        await ProvisionAsync(@"KE\first2");
+        await ProvisionAsync(@"KE\first3");
+        await SetProfileAsync(@"KE\first1", "Mary Ann Zeta", null); // the last word is the last name, the rest the first name
+        await SetProfileAsync(@"KE\first2", "Bob Alpha", null);
+        await SetProfileAsync(@"KE\first3", "Cher", null); // one word: no last name
+
+        var page = await OkAsync(await As().GetAsync("/api/v1/users?status=all&account=first&sort=firstName"));
+        var rows = page.GetProperty("items").EnumerateArray()
+            .Select(i => (First: i.GetProperty("firstName").GetString(), Last: i.GetProperty("lastName").GetString(), Account: i.GetProperty("windowsAccount").GetString()))
+            .ToList();
+        rows.ShouldBe([("Bob", "Alpha", @"KE\first2"), ("Cher", "", @"KE\first3"), ("Mary Ann", "Zeta", @"KE\first1")]);
+
+        Task<string[]> Accounts(string query) => Names($"/api/v1/users?status=all&account=first&{query}", "windowsAccount");
+
+        (await Accounts("firstName=MARY")).ShouldBe([@"KE\first1"]); // case-insensitive, a fragment
+        (await Accounts("firstName=zeta")).ShouldBeEmpty(); // the first name filter does not search the last name
+        (await Accounts("lastName=alp")).ShouldBe([@"KE\first2"]);
+        (await Accounts("firstName=b&lastName=alpha")).ShouldBe([@"KE\first2"]); // combined with AND
+        (await Accounts("sort=lastName&dir=desc")).ShouldBe([@"KE\first1", @"KE\first2", @"KE\first3"]);
+        (await Accounts("sort=lastName")).ShouldBe([@"KE\first3", @"KE\first2", @"KE\first1"]); // no last name sorts first
+        (await Accounts("sort=firstName&dir=desc")).ShouldBe([@"KE\first1", @"KE\first3", @"KE\first2"]);
+    }
+
+    [Fact]
     public async Task Users_filter_by_any_of_several_roles()
     {
         var alice = await ProvisionAsync(@"KE\alice");

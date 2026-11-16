@@ -35,13 +35,16 @@ export interface PodChoice {
 export type UserStatusFilter = 'all' | 'pending' | 'active' | 'inactive';
 
 /** The sort keys of the users list (#436). */
-export type UserSortKey = 'name' | 'firstSeen' | 'lastSeen';
+export type UserSortKey = 'name' | 'firstName' | 'lastName' | 'firstSeen' | 'lastSeen';
 
 export interface UserListQuery {
   status?: UserStatusFilter;
   search?: string;
   /** Column filters (fragments of that column only). */
   name?: string;
+  /** Fragment of the first or last name of the linked person record. */
+  firstName?: string;
+  lastName?: string;
   account?: string;
   email?: string;
   /** People holding any of these roles. */
@@ -53,7 +56,7 @@ export interface UserListQuery {
   registeredTo?: string;
   page?: number;
   pageSize?: number;
-  /** `name`, `firstSeen` or `lastSeen` (people who never signed in are last); omitted keeps the queue order (waiting people first). */
+  /** `firstName`, `lastName`, `firstSeen` or `lastSeen` (`name` sorts by display name) (people who never signed in are last); omitted keeps the queue order (waiting people first). */
   sort?: UserSortKey;
   /** Direction of `sort`; ascending by default. */
   dir?: 'asc' | 'desc';

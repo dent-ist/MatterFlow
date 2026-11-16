@@ -20,7 +20,7 @@ const grid = (page: Page, name: string) =>
   page.getByRole('region', { name: `${name}, scrollable` });
 const chips = (page: Page) => page.getByRole('list', { name: 'Active filters' });
 
-/** An optional column of the Users list (Windows Account, Email, First Seen) is shown from the Columns button; its filter then joins the filter row. */
+/** An optional column of the Users list (Account, Email, First Seen) is shown from the Columns button; its filter then joins the filter row. */
 async function showColumn(page: Page, name: string): Promise<void> {
   await page.getByRole('button', { name: 'Columns', exact: true }).click();
   await page.getByLabel(name, { exact: true }).check();
@@ -33,7 +33,7 @@ async function openRow(page: Page): Promise<void> {
 
 test.describe('Column filters on the administration lists', () => {
   test.describe('Users', () => {
-    test('the row is open by default; Name, Windows account, Roles and Availability filter on the server, and the Status is the segments', async ({
+    test('the row is open by default; First Name, Last Name, Account, Roles and Availability filter on the server, and the Status is the segments', async ({
       page,
       seed,
     }) => {
@@ -59,8 +59,8 @@ test.describe('Column filters on the administration lists', () => {
       await expect(rows.first()).toBeVisible();
 
       await page.goto(`/admin/users?status=all&account=${token}`);
-      // The Windows account is not a column of the grid (#432): the address applies it and it shows as a chip.
-      await expect(chips(page)).toContainText('Windows Account');
+      // Account is an optional column of the grid (#1390): the address applies it and it shows as a chip until the column is switched on.
+      await expect(chips(page)).toContainText('Account');
       await expect(rows).toHaveCount(3);
 
       // The waiting person is Pending access.
@@ -95,7 +95,7 @@ test.describe('Column filters on the administration lists', () => {
       await expect(rows.first()).toContainText(shownName(away.username));
       await expect(page.locator('[data-filter-live]')).toHaveText(/1 user/);
 
-      // Name and Email narrow it further, with no match the headers and the row stay.
+      // First Name, Last Name and Email narrow it further, with no match the headers and the row stay.
       await select(page, 'Availability').selectOption('');
       // Email is an optional column (the Columns button, no "Other Filters" button any more): show it, then its filter is in the filter row.
       await showColumn(page, 'Email');
@@ -105,7 +105,8 @@ test.describe('Column filters on the administration lists', () => {
         'No users match these filters',
       );
       await expect(grid(page, 'Users list').locator('thead th').first()).toBeVisible();
-      await expect(text(page, 'Name')).toBeVisible();
+      await expect(text(page, 'First Name')).toBeVisible();
+      await expect(text(page, 'Last Name')).toBeVisible();
       await grid(page, 'Users list').getByRole('button', { name: 'Clear Filters' }).click();
       await expect(page).not.toHaveURL(/email=|account=/);
     });
@@ -468,7 +469,7 @@ test.describe('Column filters on the administration lists', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
 
     const screens = [
-      ['/admin/users?status=all', 'Users list', 'Name'],
+      ['/admin/users?status=all', 'Users list', 'First Name'],
       ['/admin/pods', 'Pods list', 'Name'],
       ['/admin/task-types', 'Task types list', 'Name'],
       ['/admin/workflows', 'Workflows list', 'Name'],

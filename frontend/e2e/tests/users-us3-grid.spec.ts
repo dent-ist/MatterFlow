@@ -5,13 +5,14 @@ import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { Persona } from '../support/personas';
 import { labelledDropdown } from '../support/dropdown';
+import { expectFocusInUserDialog, nameParts, userDialog } from '../support/users-grid';
 
 /**
  * Users epic #422, WP-US3: the Users grid on the record-list contract (#432) and the one action column (#433).
- *  - six columns (Name over the Windows account, Roles, Pods, Availability, Status, one action column), rows exactly 44 px with a 130-character
- *    name, a 90-character role and two pods, no sideways scroll of the page or the table from 1366 px, the optional columns leave in the kit
- *    order (Pods below 1280 px, Roles below 1100 px), no "Scroll sideways" hint;
- *  - the name is the one control of the Name cell and opens the panel; focus returns to it; the accessible names carry the account;
+ *  - eight columns since #1390 (First Name, Last Name, Roles, Pods, Availability, Last Seen, Status, one action column; Account, Email and First Seen are
+ *    optional), rows exactly 44 px with
+ *    a 130-character name, a 90-character role and two pods, no sideways scroll of the page or the table from 1366 px, no "Scroll sideways" hint;
+ *  - the first name is the one control of the First Name cell and opens the dialog; focus returns to it; the accessible names carry the account;
  *  - Status is a badge only when the person is not simply Active; Email and First seen are filters in "Other Filters" only;
  *  - one Tab stop for the name and one for the action (Grant access on a pending row, the row menu on every other); the menu offers Open,
  *    Edit availability and Activate / Deactivate with User.Manage and only Open without it; arrows, Esc and focus return.
@@ -124,7 +125,8 @@ test.describe('#432 the grid', () => {
       // LC-09: every column stays; when they are wider than the frame, the frame scrolls (the page does not).
       expect(await noSideScroll(page)).toBe(true);
       expect(await headers(page)).toEqual([
-        'Name',
+        'First Name',
+        'Last Name',
         'Roles',
         'Pods',
         'Availability',
@@ -135,19 +137,25 @@ test.describe('#432 the grid', () => {
     });
   }
 
-  test('the 130-character name is clamped to two lines with the whole name as the tooltip; the 90-character role is one clipped line', async ({
+  test('the 130-character name is cut to one line in its cells with the whole first or last name as the tooltip; the 90-character role is one clipped line', async ({
     page,
   }) => {
     await openList(page, 1366, 768);
+    const display = pendingLong.displayName!;
+    const { first, last } = nameParts(display);
     const name = nameButton(page, pendingLong.userId);
-    await expect(name).toHaveAttribute('title', pendingLong.displayName!);
-    const cell = page.locator(`tr[data-record-id="${pendingLong.userId}"] button[data-open]`);
-    const lines = await cell.evaluate((el) => {
+    await expect(name).toHaveAttribute('title', first);
+    const lastCell = page.locator(
+      `tr[data-record-id="${pendingLong.userId}"] [data-users-last-name]`,
+    );
+    await expect(lastCell).toHaveAttribute('title', last);
+    // The whole 130-character name is one line in its cell (the row stays 44 px, D-44m): the text is cut with an ellipsis.
+    const lines = await lastCell.locator('.pg-clip').evaluate((el) => {
       const style = getComputedStyle(el);
       const line = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.5;
       return Math.round(el.getBoundingClientRect().height / line);
     });
-    expect(lines).toBeLessThanOrEqual(2);
+    expect(lines).toBe(1);
     const role = page.locator(`tr[data-record-id="${busy.userId}"] td.us-roles`);
     await expect(role).toHaveAttribute('title', new RegExp(longRoleName.slice(0, 40)));
   });
@@ -161,7 +169,8 @@ test.describe('#432 the grid', () => {
       await openList(page, width, height);
       const shown = await headers(page);
       expect(shown).toEqual([
-        'Name',
+        'First Name',
+        'Last Name',
         'Roles',
         'Pods',
         'Availability',
@@ -215,14 +224,14 @@ test.describe('#432 the grid', () => {
     await expect(page.locator('[data-filter-chips]')).toContainText('Email');
   });
 
-  test('the name opens the panel, Esc closes it and focus is back on the name', async ({
+  test('the first name opens the dialog, Esc closes it and focus is back on the name', async ({
     page,
   }) => {
     await openList(page, 1366, 768);
     const name = nameButton(page, busy.userId);
     await name.focus();
     await page.keyboard.press('Enter');
-    await expect(page.locator('[data-panel-heading]')).toBeFocused();
+    await expectFocusInUserDialog(page);
     await expect(page.locator('[data-panel]')).toContainText('Email');
     await page.keyboard.press('Escape');
     await expect(page.locator('[data-panel]')).toHaveCount(0);
@@ -235,8 +244,8 @@ test.describe('#432 the grid', () => {
     await openList(page, 1366, 768);
     const a = nameButton(page, twinA.userId);
     const b = nameButton(page, twinB.userId);
-    await expect(a).toHaveText(SAME);
-    await expect(b).toHaveText(SAME);
+    await expect(a).toHaveText('Sam Same');
+    await expect(b).toHaveText('Sam Same');
     const nameA = await a.getAttribute('aria-label');
     const nameB = await b.getAttribute('aria-label');
     expect(nameA).toBe(`Open ${SAME} (${twinA.username})`);
@@ -362,21 +371,21 @@ test.describe('#433 one action per row', () => {
 
     await menuButton(page, busy.userId).click();
     await page.getByRole('menuitem', { name: 'Deactivate' }).click();
-    // The drawer opens with the question on screen (focus on Cancel); Cancel keeps the person active.
-    const question = page.getByRole('dialog', { name: /^Deactivate / });
-    await expect(question.getByRole('button', { name: 'Cancel' })).toBeFocused();
-    await question.getByRole('button', { name: 'Cancel' }).click();
+    // The dialog opens with the question in its footer (focus on Keep User); Keep User keeps the person active.
+    const question = page.locator('[data-deactivate-foot]');
+    await expect(question.getByRole('button', { name: 'Keep User' })).toBeFocused();
+    await question.getByRole('button', { name: 'Keep User' }).click();
     await expect(question).toBeHidden();
-    await expect(page.locator('[data-panel-heading]')).toBeVisible();
-    // Esc with a change asks first; Leave closes the drawer.
+    await expect(page.locator('[data-panel]')).toBeVisible();
+    // Esc with a change asks first; Discard Changes closes the dialog.
     await page.locator('[data-name]').fill('Changed Name');
     await page.keyboard.press('Escape');
-    await page
-      .getByRole('dialog', { name: 'Unsaved Changes' })
+    await userDialog(page)
+      .locator('[data-panel-guard]')
       .getByRole('button', { name: 'Discard Changes' })
       .click();
     await expect(page.locator('[data-panel]')).toHaveCount(0);
-    // Focus goes back to the menu button that opened the drawer (after the question's dialog has left).
+    // Focus goes back to the menu button that opened the dialog.
     await expect(menuButton(page, busy.userId)).toBeFocused();
 
     // Activate needs no question: the menu item activates the person at once (a person of its own: the others of this file stay as they are).
@@ -395,15 +404,16 @@ test.describe('#433 one action per row', () => {
     await expect(page.locator('[data-panel]')).toHaveCount(0);
   });
 
-  test('#437 Name and Last seen sort from their headers: aria-sort, the address, focus, reload and Back', async ({
+  test('#437 First Name, Last Name and Last seen sort from their headers: aria-sort, the address, focus, reload and Back', async ({
     page,
   }) => {
     await openList(page, 1920, 1080);
-    const name = page.getByRole('columnheader', { name: 'Name' });
+    const name = page.getByRole('columnheader', { name: 'First Name' });
+    const lastName = page.getByRole('columnheader', { name: 'Last Name' });
     const lastSeen = page.getByRole('columnheader', { name: 'Last Seen' });
     await expect(name).toHaveAttribute('aria-sort', 'none');
     await name.getByRole('button').click();
-    await expect(page).toHaveURL(/sort=name(&|$)/);
+    await expect(page).toHaveURL(/sort=firstName(&|$)/);
     await expect(name).toHaveAttribute('aria-sort', 'ascending');
     await expect(name.getByRole('button')).toBeFocused();
     const names = async () =>
@@ -411,14 +421,18 @@ test.describe('#433 one action per row', () => {
         t.trim(),
       );
     // The server's collation orders the names; the twins with the same name keep their id order in both directions, so leave them out.
-    const distinct = (list: string[]) => list.filter((n) => !n.startsWith('Sam Same'));
+    const distinct = (list: string[]) => list.filter((n) => n !== 'Sam Same');
     // The list reloads after the press: wait until the first name is the one the server puts first.
     await expect.poll(async () => (await names())[0]).not.toMatch(/pend/);
     const asc = distinct(await names());
     await name.getByRole('button').click();
-    await expect(page).toHaveURL(/sort=-name/);
+    await expect(page).toHaveURL(/sort=-firstName/);
     await expect(name).toHaveAttribute('aria-sort', 'descending');
     await expect.poll(async () => distinct(await names())).toEqual([...asc].reverse());
+    await lastName.getByRole('button').click();
+    await expect(page).toHaveURL(/sort=lastName/);
+    await expect(lastName).toHaveAttribute('aria-sort', 'ascending');
+    await expect(name).toHaveAttribute('aria-sort', 'none');
     await lastSeen.getByRole('button').click();
     await expect(page).toHaveURL(/sort=lastSeen/);
     await expect(lastSeen).toHaveAttribute('aria-sort', 'ascending');
@@ -430,10 +444,10 @@ test.describe('#433 one action per row', () => {
       'ascending',
     );
     await page.goBack();
-    await expect(page).toHaveURL(/sort=-name/);
-    await expect(page.getByRole('columnheader', { name: 'Name' })).toHaveAttribute(
+    await expect(page).toHaveURL(/sort=lastName/);
+    await expect(page.getByRole('columnheader', { name: 'Last Name' })).toHaveAttribute(
       'aria-sort',
-      'descending',
+      'ascending',
     );
   });
 
@@ -461,7 +475,7 @@ test.describe('#433 one action per row', () => {
     await menuButton(page, busy.userId).click();
     await expect(page.getByRole('menuitem')).toHaveText(['Open']);
     await page.getByRole('menuitem', { name: 'Open' }).click();
-    await expect(page.locator('[data-panel-heading]')).toBeFocused();
+    await expectFocusInUserDialog(page);
     await expect(page.getByRole('button', { name: 'Save Changes' })).toHaveCount(0);
     await page.keyboard.press('Escape');
     await expect(menuButton(page, busy.userId)).toBeFocused();

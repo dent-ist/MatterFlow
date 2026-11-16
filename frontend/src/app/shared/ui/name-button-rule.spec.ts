@@ -10,14 +10,14 @@ const APP = join(process.cwd(), 'src', 'app');
 const read = (file: string): string => readFileSync(join(APP, file), 'utf8');
 
 describe('name button over a second line (D-44m, #1285)', () => {
-  it('the Users grid cell takes no vertical padding and clamps the name to one line over the account line', () => {
+  it('the Users grid has no second line under the first name since #1390: its name button is one line in a cell with no vertical padding', () => {
     const css = read('features/admin/users/users-page.scss');
     expect(css).toMatch(/td\.us-name\s*\{[^}]*padding-block:\s*0\s*;/);
     expect(css).toMatch(/\.us-name\s+\.mf-btn--name\s*\{[^}]*-webkit-line-clamp:\s*1\s*;/);
-    // the account line is the second line of that cell
-    expect(read('features/admin/users/users-page.html')).toMatch(
-      /class="us-name"[\s\S]*?mf-btn--name[\s\S]*?class="us-account/,
-    );
+    // the account is its own (optional) column now, not a line in the name cell
+    const html = read('features/admin/users/users-page.html');
+    expect(html).toMatch(/class="us-name"[\s\S]*?mf-btn--name/);
+    expect(html).not.toContain('us-account');
   });
 
   it('the Productions and Specs grids clamp the name to one line when the cell has a small line under it', () => {

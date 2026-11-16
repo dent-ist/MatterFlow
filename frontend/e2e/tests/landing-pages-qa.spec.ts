@@ -5,7 +5,7 @@ import { expect, test } from '../support/fixtures';
 import { delayApi, failApi } from '../support/personas';
 import { atEverySize, shot } from '../support/screens';
 import { toasts } from '../support/toasts';
-import { userName, userRow } from '../support/users-grid';
+import { nameFilter, userName, userRow } from '../support/users-grid';
 
 /**
  * Landing pages QA on a real stack (epic #1330, #1335): the starter roles land where the owner decided, several roles use the first role by name,
@@ -106,7 +106,7 @@ test.describe('Landing pages QA (#1335)', () => {
     await review(page, 'roles-list-starter-defaults');
   });
 
-  test('several roles: the first role by name decides, in the Users drawer, the card and where "/" leads', async ({
+  test('several roles: the first role by name decides, in the Users dialog, the card and where "/" leads', async ({
     personas,
     seed,
     asUser,
@@ -141,13 +141,13 @@ test.describe('Landing pages QA (#1335)', () => {
     await expect(tmPage.locator('[data-landing-result]')).toHaveText(
       'Your role has no fixed landing page. You start on My Matters, chosen automatically.',
     );
-    await page.goto(`/admin/users?status=all&name=${encodeURIComponent(`LQ Dm ${tag}`)}`);
+    await page.goto(`/admin/users?status=all&${nameFilter(`LQ Dm ${tag}`)}`);
     await userName(userRow(page, dm.userId, dm.username)).click();
     await expect(page.locator('[data-landing-source]')).toHaveText(
       'Landing page comes from Director.',
     );
     await page.keyboard.press('Escape');
-    await page.goto(`/admin/users?status=all&name=${encodeURIComponent(`LQ Tm ${tag}`)}`);
+    await page.goto(`/admin/users?status=all&${nameFilter(`LQ Tm ${tag}`)}`);
     await userName(userRow(page, tm.userId, tm.username)).click();
     await expect(page.locator('[data-landing-source]')).toHaveText(
       'Landing page comes from Data Technician.',

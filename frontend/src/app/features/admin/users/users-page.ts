@@ -66,7 +66,7 @@ import { StripDef, stripActiveKey, stripChips, stripPick } from '../../../shared
 import { AdminTabCounts } from '../admin-tabs';
 import { AdminShellFilters } from '../task-types/shell-filters';
 import { PodsChange, UserPodsCell } from './user-pods-cell';
-import { UserDrawer, UserDrawerIntent } from './user-drawer';
+import { UserDialog, UserDialogIntent } from './user-dialog';
 import { availabilityShown } from './user-availability';
 import { podsText } from './user-pods-draft';
 import { NumericDatePipe } from '../../../shared/ui/numeric-date';
@@ -78,11 +78,12 @@ type StatusOption = UserStatusFilter;
 const STATUS_VALUES: readonly StatusOption[] = ['pending', 'active', 'inactive', 'all'];
 
 /** The columns the server can sort by (#436); anything else in the address is ignored. */
-const SORT_FIELDS: readonly UserSortKey[] = ['name', 'firstSeen', 'lastSeen'];
+const SORT_FIELDS: readonly UserSortKey[] = ['firstName', 'lastName', 'firstSeen', 'lastSeen'];
 
 /** Bone widths of a skeleton row, per column key. */
 const BONES: Record<string, string> = {
-  name: '12rem',
+  firstName: '8rem',
+  lastName: '9rem',
   account: '6rem',
   email: '10rem',
   roles: '7rem',
@@ -122,8 +123,8 @@ const AVAILABILITY_OPTIONS = [
 ] as const;
 
 /**
- * S12 Admin: Users tab of the Users page. Inline column filters (Name, Windows account, First seen, Email, Roles, Availability, Status),
- * paging and the user detail panel with role assignment. Everything lives in the address (`name`, `account`, `registeredFrom`,
+ * S12 Admin: Users tab of the Users page. Inline column filters (First Name, Last Name, Account, First seen, Email, Roles, Availability, Status),
+ * paging and the user dialog with role assignment. Everything lives in the address (`firstName`, `lastName`, `account`, `registeredFrom`,
  * `registeredTo`, `email`, `roleId`, `availability`, `status`, `page`) and is worked out by the server; without `status` the list
  * opens on Pending access when someone is waiting and on Active otherwise (shown in the Status cell, not counted as a filter).
  */
@@ -133,7 +134,7 @@ const AVAILABILITY_OPTIONS = [
     NumericDatePipe,
     NgTemplateOutlet,
     MfDateLongPipe,
-    UserDrawer,
+    UserDialog,
     RecordGrid,
     RecordCell,
     RecordColumns,
@@ -189,15 +190,25 @@ export class UsersPage implements OnInit {
   protected readonly phone = phoneCards();
   private readonly zone = inject(USER_TIME_ZONE);
   /**
-   * The columns of the grid (the shared record grid, #1241; Administration lists, #1197): Name is the spring, the others have a fixed width so the headings
-   * do not move while the list loads, is empty or has rows. Windows Account, Email and First Seen are optional (the Columns button): their filters are
-   * columns too, so the list needs no "Other Filters" button.
+   * The columns of the grid (the shared record grid, #1241; Administration lists, #1197): First Name and Last Name come from the person record of the user
+   * (#1390; the Last Name is the spring), the others have a fixed width so the headings do not move while the list loads, is empty or has rows. Account (the
+   * login account, it was the second line under the name), Email and First Seen are optional (the Columns button): their filters are columns too, so the list
+   * needs no "Other Filters" button. There is no room for a third name-like column by default: the default columns, with the widest Availability chip
+   * ("Out of Office until 10/25/2027", about 234 px) in the list, add up to about 1062 px and fit the 1098 px of the visible frame at 1366.
    */
   protected readonly gridDefs = signal<readonly RecordGridColumn[]>([
-    { key: 'name', label: 'Name', locked: true, sort: 'name', minWidth: '200px' },
+    {
+      key: 'firstName',
+      label: 'First Name',
+      locked: true,
+      sort: 'firstName',
+      width: '7rem',
+      minWidth: '6rem',
+    },
+    { key: 'lastName', label: 'Last Name', locked: true, sort: 'lastName', minWidth: '120px' },
     {
       key: 'account',
-      label: 'Windows Account',
+      label: 'Account',
       defaultHidden: true,
       extra: true,
       width: '9rem',
@@ -212,8 +223,8 @@ export class UsersPage implements OnInit {
       minWidth: '12rem',
     },
     { key: 'roles', label: 'Roles', width: '9rem', minWidth: '9rem' },
-    { key: 'pods', label: 'Pods', width: '15rem', minWidth: '15rem' },
-    { key: 'availability', label: 'Availability', width: '10rem', minWidth: '10rem' },
+    { key: 'pods', label: 'Pods', width: '10rem', minWidth: '10rem' },
+    { key: 'availability', label: 'Availability', width: '8rem', minWidth: '8rem' },
     {
       key: 'registered',
       label: 'First Seen',
@@ -274,8 +285,9 @@ export class UsersPage implements OnInit {
     sheetBelow: 640,
     visibleColumns: this.columns,
     defs: computed((): FilterDef[] => [
-      { key: 'name', label: 'Name', column: 'name', type: 'text' },
-      { key: 'account', label: 'Windows Account', column: 'account', type: 'text' },
+      { key: 'firstName', label: 'First Name', column: 'firstName', type: 'text' },
+      { key: 'lastName', label: 'Last Name', column: 'lastName', type: 'text' },
+      { key: 'account', label: 'Account', column: 'account', type: 'text' },
       {
         key: 'registered',
         label: 'First Seen',
@@ -350,23 +362,24 @@ export class UsersPage implements OnInit {
   protected readonly loadError = signal(false);
   protected readonly roles = signal<RoleSummaryDto[]>([]);
 
-  // The user drawer: the person in the address (`?user=<id>`), so Back closes it and Back from "View their tasks" reopens it.
+  // The user dialog: the person in the address (`?user=<id>`), so Back closes it and Back from "View their tasks" reopens it.
   protected readonly userId = computed(() => {
     const id = Number(this.filters.params().get('user'));
     return Number.isInteger(id) && id > 0 ? id : null;
   });
-  /** The row of the person in the drawer (availability and pods are read from it). */
+  /** The row of the person in the dialog (availability and pods are read from it). */
   protected readonly selectedRow = computed(
     () => this.users().find((u) => u.userId === this.userId()) ?? null,
   );
-  /** What the row menu asked for ("Deactivate" opens the drawer with the question on screen); cleared when the drawer closes. */
-  protected readonly intent = signal<UserDrawerIntent>(null);
-  private readonly drawer = viewChild(UserDrawer);
+  /** What the row menu asked for ("Deactivate" opens the dialog with the question on screen); cleared when the dialog closes. */
+  protected readonly intent = signal<UserDialogIntent>(null);
+  private readonly dialog = viewChild(UserDialog);
 
   protected readonly pageSize = computed(() => parsePageSize(this.filters.params().get('size')));
   protected readonly pageSizes = PAGE_SIZES;
   protected readonly sortOptions: readonly SortOption[] = [
-    { value: 'name', label: 'Name' },
+    { value: 'firstName', label: 'First Name' },
+    { value: 'lastName', label: 'Last Name' },
     { value: 'lastSeen', label: 'Last Seen' },
     { value: 'firstSeen', label: 'First Seen' },
   ];
@@ -449,10 +462,25 @@ export class UsersPage implements OnInit {
     this.filters.clear(['q']);
   }
 
-  /** "Edit availability" in the drawer: the same dialog as the row menu, for the person in the drawer. */
+  /**
+   * "Edit Availability" in the user dialog: the user dialog steps aside, and once it has left the screen the availability dialog opens (one dialog at a
+   * time, D-31); it comes back when the availability dialog closes.
+   */
   protected editAvailabilityOf(): void {
     const row = this.selectedRow();
-    if (row) this.editAvailability(row);
+    if (!row) return;
+    this.dialogAside.set(true);
+    this.afterDialogGone(() => this.editAvailability(row));
+  }
+
+  /** True while the user dialog has stepped aside for the availability dialog. */
+  protected readonly dialogAside = signal(false);
+
+  /** The availability dialog opened or closed; when it closes the user dialog comes back. */
+  protected onAvailabilityVisible(visible: boolean): void {
+    this.availabilityDialogOpen.set(visible);
+    // The user dialog comes back once the availability dialog has left the screen (two dialogs never overlap, not even while one fades out).
+    if (!visible) this.afterDialogGone(() => this.dialogAside.set(false));
   }
 
   protected editAvailability(user: UserSummaryDto): void {
@@ -483,10 +511,10 @@ export class UsersPage implements OnInit {
   }
 
   /**
-   * Opens the drawer for a person: `?user=<id>` goes into the address (a history entry, so Back closes it). Focus is put on the control that
-   * opened it first (the name, Grant access or the row menu's button), so the drawer's focus handling returns to it.
+   * Opens the dialog for a person: `?user=<id>` goes into the address (a history entry, so Back closes it). Focus is put on the control that
+   * opened it first (the name, Grant access or the row menu's button), so the dialog's focus handling returns to it.
    */
-  protected open(user: UserSummaryDto, intent: UserDrawerIntent = null): void {
+  protected open(user: UserSummaryDto, intent: UserDialogIntent = null): void {
     this.rememberOpener(user.userId);
     this.openerEl?.focus({ preventScroll: true });
     this.intent.set(intent);
@@ -494,10 +522,10 @@ export class UsersPage implements OnInit {
     this.navigate({ user: user.userId });
   }
 
-  /** The control that opened the drawer (the name, Grant access or the row menu's button). */
+  /** The control that opened the dialog (the name, Grant access or the row menu's button). */
   private openerEl: HTMLElement | null = null;
 
-  /** True when this page added the history entry of the open drawer: closing then steps back, so Back and Forward stay honest. */
+  /** True when this page added the history entry of the open dialog: closing then steps back, so Back and Forward stay honest. */
   private pushedUser = false;
 
   /** Remembers where focus was (a control of the row or card, or the row menu's button after a menu item); else the row's own menu button or name. */
@@ -530,7 +558,12 @@ export class UsersPage implements OnInit {
     return shortAccountName(user.displayName);
   }
 
-  /** The account without the domain ("kekim"): a grid never shows "KE\\kekim" (D-62); the drawer shows the full account. */
+  /** The first name of the person record; a user without one (no display name yet) shows the name worked out as before, so the row always has a name to open. */
+  protected firstNameOf(user: UserSummaryDto): string {
+    return shortAccountName(user.firstName) || this.nameOf(user);
+  }
+
+  /** The account without the domain ("kekim"): a grid never shows "KE\\kekim" (D-62); the dialog shows the full account. */
   protected accountShort(user: UserSummaryDto): string {
     return shortAccountName(user.windowsAccount);
   }
@@ -632,11 +665,11 @@ export class UsersPage implements OnInit {
     target.focus();
   }
 
-  /** The drawer asked to close (X, Esc, Cancel, the mask), after its unsaved-changes question: the person leaves the address. */
-  protected closeDrawer(): void {
+  /** The dialog asked to close (X, Esc, Cancel, the mask), after its unsaved-changes question: the person leaves the address. */
+  protected closeDialog(): void {
     this.intent.set(null);
-    // Dialogs hand focus back to whatever had it when they opened (the Leave question: a box inside the drawer, now gone): once they are all
-    // gone, focus goes to the control that opened the drawer, or its row.
+    // Dialogs hand focus back to whatever had it when they opened (the Leave question: a box inside the dialog, now gone): once they are all
+    // gone, focus goes to the control that opened the dialog, or its row.
     const opener = this.openerEl;
     const id = this.userId();
     this.afterDialogGone(() => {
@@ -644,7 +677,7 @@ export class UsersPage implements OnInit {
       else if (id !== null) this.focusRowOf(id);
     });
     if (this.pushedUser) {
-      // This page pushed the entry for the drawer: step back over it, so there is no second entry for the same list.
+      // This page pushed the entry for the dialog: step back over it, so there is no second entry for the same list.
       this.pushedUser = false;
       this.location.back();
       // Nothing to step back to (the history was cut, a test double): the address is rewritten instead.
@@ -656,7 +689,7 @@ export class UsersPage implements OnInit {
     }
   }
 
-  /** The drawer saved something about a person: the list and the segment counts follow; a first grant of access also closes the drawer. */
+  /** The dialog saved something about a person: the list and the segment counts follow; a first grant of access also closes the dialog. */
   protected async onChanged(change: { userId: number; granted: boolean }): Promise<void> {
     if (!change.granted) {
       await this.reload();
@@ -666,19 +699,19 @@ export class UsersPage implements OnInit {
     const rows = this.users();
     const at = rows.findIndex((u) => u.userId === change.userId);
     const nextId = (rows[at + 1] ?? rows[at - 1])?.userId ?? null;
-    this.closeDrawer();
+    this.closeDialog();
     await this.reload();
     if (this.users().some((u) => u.userId === change.userId)) return; // still listed (All, Active): the opener keeps focus
     this.afterDialogGone(() => this.focusRowOf(nextId));
   }
 
-  /** The drawer's pods block: loads the pods to offer, like the grid cell. */
-  protected onDrawerPods(change: PodsChange): void {
+  /** The dialog's pods block: loads the pods to offer, like the grid cell. */
+  protected onDialogPods(change: PodsChange): void {
     const row = this.selectedRow();
     if (row) void this.applyPods(row, change);
   }
 
-  /** Runs `fn` once no dialog mask is on the page (the drawer's leave animation and the focus restore are over). */
+  /** Runs `fn` once no dialog mask is on the page (the dialog's leave animation and the focus restore are over). */
   private afterDialogGone(fn: () => void): void {
     const done = (): void => {
       watcher.disconnect();
@@ -842,7 +875,8 @@ export class UsersPage implements OnInit {
     return firstValueFrom(
       this.api.listUsers({
         status: this.tab(),
-        name: f.text('name'),
+        firstName: f.text('firstName'),
+        lastName: f.text('lastName'),
         account: f.text('account'),
         email: f.text('email'),
         roleIds: f.list('roleId').map(Number),

@@ -3,7 +3,7 @@ import { Api, Json } from '../support/api';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { uid } from '../support/seed';
-import { openEditAvailability } from '../support/users-grid';
+import { nameFilter, openEditAvailability } from '../support/users-grid';
 
 /**
  * UX / QA review round 5 (issue #74, epic #68): the profile availability screen, the Swimlane and Users tabs at 1024 and 768, and the
@@ -36,7 +36,7 @@ test.describe('Review round 5: profile availability, Swimlane and Users', () => 
     seed,
   }) => {
     const person = await seed.user(['Data Technician'], 'r5scroll');
-    const query = `/admin/users?status=all&name=${encodeURIComponent(person.username.split('\\')[1])}`;
+    const query = `/admin/users?status=all&${nameFilter(person.username.split('\\')[1])}`;
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(query);
     await expect(page.locator(`tbody tr`)).toHaveCount(1);
@@ -71,9 +71,7 @@ test.describe('Review round 5: profile availability, Swimlane and Users', () => 
   }) => {
     const person = await seed.user(['Data Technician'], 'r5dialog');
     await page.setViewportSize({ width: 1366, height: 768 });
-    await page.goto(
-      `/admin/users?status=all&name=${encodeURIComponent(person.username.split('\\')[1])}`,
-    );
+    await page.goto(`/admin/users?status=all&${nameFilter(person.username.split('\\')[1])}`);
     await openEditAvailability(page.locator('tbody tr').first());
     // The Cancel and Save Changes bar is the footer of the shared form dialog.
     const dialog = page.getByRole('dialog');

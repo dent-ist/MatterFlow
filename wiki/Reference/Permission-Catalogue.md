@@ -96,7 +96,7 @@ How to read it:
 | `Pod.Manage` | Create, edit and deactivate pods | Director, Pod Lead | `PodService`, `PodsController` | `admin.routes`, `audit-links`, `nav-items` and 4 more |
 | `Pod.ManageMembers` | Manage pod membership | Director, Pod Lead | `PodsController` | `admin.routes`, `in-memory-identity-admin-api`, `nav-items` and 5 more |
 | `User.View` | View the user list and access queue | Director | `CalendarAccess`, `PodService`, `RolesController`, `UsersController` | `admin.routes`, `app-shell`, `audit-links` and 6 more |
-| `User.Manage` | Activate or disable users and assign roles (also reads the list of holiday calendars, for the calendar picker of the user drawer, #1362) | none (System Admin only) | `AvailabilityControllers`, `HolidayControllers`, `UsersController` | `admin.routes`, `nav-items`, `pods-page` and 3 more |
+| `User.Manage` | Activate or disable users and assign roles (also reads the list of holiday calendars, for the calendar picker of the user dialog, #1362) | none (System Admin only) | `AvailabilityControllers`, `HolidayControllers`, `UsersController` | `admin.routes`, `nav-items`, `pods-page` and 3 more |
 | `User.ManageAvailability` | Create, edit and delete Out of office entries of other people (a Pod Lead: members of their own pods) | Director, Pod Lead | `AvailabilityControllers`, `CalendarAccess`, `DashboardCalendarController` | `calendar-tab` |
 
 ## People

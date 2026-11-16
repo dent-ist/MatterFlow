@@ -27,12 +27,9 @@ import {
 import { NotificationService } from '../../../core/notify/notification.service';
 import { UndoService } from '../../../core/notify/undo.service';
 import { USER_TIME_ZONE } from '../../../core/time/clock';
-import { LeaveConfirmService } from '../../../shared/guards/unsaved-changes.guard';
 import { AvailabilityChip } from '../../../shared/availability/availability-chip';
 import { Badge } from '../../../shared/ui/badge';
-import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
-import { SlidePanel } from '../../../shared/ui/slide-panel';
-import { phoneCards } from '../../../shared/ui/record-card-list';
+import { FormDialog } from '../../../shared/ui/form-dialog';
 import { impactLine } from '../shared/dialog-copy';
 import { availabilityShown } from './user-availability';
 import { permissionsOfRoles, summarizePermissions } from './user-access';
@@ -43,17 +40,17 @@ import { IntPipe } from '../../../shared/ui/number-format';
 import { shortAccountName } from '../../../shared/ui/person-name';
 
 /**
- * Where the drawer starts: nothing special, with the deactivation question already on screen (the row menu's Deactivate), or with the
+ * Where the dialog starts: nothing special, with the deactivation question already on screen (the row menu's Deactivate), or with the
  * person activated at once (the row menu's Activate: no question is needed).
  */
-export type UserDrawerIntent = 'deactivate' | 'activate' | null;
+export type UserDialogIntent = 'deactivate' | 'activate' | null;
 
 /** The Task Queue address behind "View their tasks": that person's open tasks (the same statuses the count uses). */
 export function openTasksQuery(userId: number): Record<string, string | string[]> {
   return { assignee: String(userId), status: ['NEW', 'IN_PROGRESS', 'ON_HOLD'] };
 }
 
-/** What the drawer tells the person who cannot change everything. Null when they can change it all. */
+/** What the dialog tells the person who cannot change everything. Null when they can change it all. */
 export function readOnlyReason(canManage: boolean, canEditPods: boolean): string | null {
   if (canManage) return null;
   return canEditPods
@@ -62,48 +59,43 @@ export function readOnlyReason(canManage: boolean, canEditPods: boolean): string
 }
 
 /**
- * The user drawer (#438 to #443, U3): one modal side drawer replaces the inline panel. It is `?user=<id>` in the address (the page owns that,
- * so Back closes it and Back from "View their tasks" reopens it). It is the shared drawer (`mf-slide-panel`, 520 px, D-33): header = name (two lines at
- * most) and the Windows account; the first lines of the body are the status, availability where it informs, last seen, open tasks and the
- * Deactivate / Activate control. Body, in order: Access (roles with description and permission count, the
- * grouped permissions after the save, a System Admin warning), Pods, Availability, Profile. Footer: Cancel and Save changes, always in view.
+ * The user dialog (epic #1389, issue #1390; before it was the user drawer of #438 to #443): the record of one person in a large (768 px) centred
+ * `mf-form-dialog` (D-31, D-32), not a side panel. It is `?user=<id>` in the address (the page owns that, so Back closes it and Back from "View their
+ * tasks" reopens it). Header: the name and, under it, the Windows account; the first lines of the body are the status, availability where it informs,
+ * last seen, open tasks and the Deactivate / Activate control. Body, in order, in one scroll: Access (roles with description and permission count,
+ * the grouped permissions after the save, a System Admin warning), Pods, Availability, Profile. Footer: Cancel and Save Changes.
  *
- * Save semantics are the ones the panel had and the muted lines say so: Save changes writes roles and profile; pods and availability save
- * on their own, at once (with Undo for pods); Deactivate asks first in a confirm dialog that states the open tasks. Without `User.Manage`
- * everything is read only (with the reason), except pods for `Pod.ManageMembers`. Focus goes to the heading when it opens and back to the
- * control that opened it when it closes (`mfDialogFocus`); Esc, the X and Cancel close it, asking first while there are unsaved edits.
+ * Save semantics are the ones the drawer had and the muted lines say so: Save Changes writes roles and profile; pods and availability save on their
+ * own, at once (with Undo for pods). Deactivate asks first, in the footer (D-31a: no dialog opens another dialog), and states the open tasks. Without
+ * `User.Manage` everything is read only (with the reason), except pods for `Pod.ManageMembers`; the footer then has just Close. Esc, the X, the scrim and
+ * Cancel close it, asking first while there are unsaved edits (the shared "You have unsaved changes. Discard them?" in the footer).
  */
 @Component({
-  selector: 'mf-user-drawer',
+  selector: 'mf-user-dialog',
   imports: [
     IntPipe,
     NumericDatePipe,
-    SlidePanel,
+    FormDialog,
     Button,
     RouterLink,
     Badge,
     TagChip,
     AvailabilityChip,
     UserPodsCell,
-    ConfirmDialog,
     UserCalendarField,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  templateUrl: './user-drawer.html',
-  styleUrl: './user-drawer.scss',
+  templateUrl: './user-dialog.html',
+  styleUrl: './user-dialog.scss',
 })
-export class UserDrawer {
+export class UserDialog {
   private readonly api = inject(IdentityAdminApi);
   private readonly notify = inject(NotificationService);
   private readonly undo = inject(UndoService);
-  private readonly leave = inject(LeaveConfirmService);
   private readonly zone = inject(USER_TIME_ZONE);
   private readonly router = inject(Router);
-  /** Below 640 px the drawer is the whole window and its sections fold: Access is open, the others a tap away. */
-  protected readonly phone = phoneCards();
-  private readonly openSections = signal<ReadonlySet<string>>(new Set(['access']));
 
-  /** The person to show; null keeps the drawer closed. */
+  /** The person to show; null keeps the dialog closed. */
   readonly userId = input<number | null>(null);
   /** The person's row of the list (availability, pods): the list reloads after a save, so these stay current. */
   readonly summary = input<UserSummaryDto | null>(null);
@@ -114,9 +106,14 @@ export class UserDrawer {
   readonly podChoices = input<readonly PodChoice[] | null>(null);
   readonly podChoicesFailed = input(false);
   readonly podsBusy = input(false);
-  readonly intent = input<UserDrawerIntent>(null);
+  readonly intent = input<UserDialogIntent>(null);
+  /**
+   * Another dialog is open for this person (Edit Availability): this one steps aside and comes back when that one closes, because a dialog never
+   * opens on top of another (D-31); what was typed stays. Focus goes back to the button that asked.
+   */
+  readonly suspended = input(false);
 
-  /** The drawer wants to close (X, Esc, Cancel, mask), after the unsaved-changes question: the page removes `?user` from the address. */
+  /** The dialog wants to close (X, Esc, Cancel, mask), after the unsaved-changes question: the page removes `?user` from the address. */
   readonly closed = output<void>();
   /** A save changed the person: the list and its counts reload. `granted` is true when a pending person just received their first role. */
   readonly changed = output<{ userId: number; granted: boolean }>();
@@ -125,6 +122,14 @@ export class UserDrawer {
   readonly podsOpened = output<void>();
 
   protected readonly open = computed(() => this.userId() !== null);
+  /** True once the person has been read (or the read failed) after the dialog was asked for: it opens with its content, so focus can start in it. */
+  private readonly opened = signal(false);
+  /** The dialog was aside for another one and is back: it starts on the button that asked. */
+  private readonly cameBack = signal(false);
+  protected readonly focusTarget = computed(() =>
+    this.cameBack() ? 'ud-edit-availability' : 'ud-start',
+  );
+  protected readonly shown = computed(() => this.open() && this.opened() && !this.suspended());
   protected readonly detail = signal<UserDetailDto | null>(null);
   protected readonly loadState = signal<'loading' | 'ready' | 'error'>('loading');
   protected readonly draftRoleIds = signal<number[]>([]);
@@ -228,28 +233,6 @@ export class UserDrawer {
   protected readonly previewLoading = signal(false);
 
   constructor() {
-    // On a phone the on-screen keyboard shrinks the visual viewport, not the layout one: the drawer follows the visual viewport, so the
-    // footer (Save changes) stays above the keyboard (#446). The page's CSS reads --ud-vh and --ud-top.
-    const vv = typeof window === 'undefined' ? null : window.visualViewport;
-    if (vv) {
-      const apply = (): void => {
-        const root = document.documentElement.style;
-        root.setProperty('--ud-vh', `${vv.height}px`);
-        root.setProperty('--ud-top', `${vv.offsetTop}px`);
-      };
-      const clear = (): void => {
-        document.documentElement.style.removeProperty('--ud-vh');
-        document.documentElement.style.removeProperty('--ud-top');
-      };
-      vv.addEventListener('resize', apply);
-      vv.addEventListener('scroll', apply);
-      effect(() => (this.open() ? untracked(apply) : untracked(clear)));
-      inject(DestroyRef).onDestroy(() => {
-        vv.removeEventListener('resize', apply);
-        vv.removeEventListener('scroll', apply);
-        clear();
-      });
-    }
     // A new person (or none): load the detail; the drafts start from it.
     effect(() => {
       const id = this.userId();
@@ -260,6 +243,38 @@ export class UserDrawer {
       const ids = this.draftRoleIds();
       const changed = this.rolesChanged();
       if (changed) untracked(() => void this.readRoles(ids));
+    });
+    // Esc while the deactivation question is in the footer closes the question, not the dialog (heard first, before the dialog's own Esc).
+    const onEsc = (e: KeyboardEvent): void => {
+      if (e.key !== 'Escape' || !this.deactivateOpen()) return;
+      e.stopPropagation();
+      this.deactivateOpen.set(false);
+    };
+    document.addEventListener('keydown', onEsc, true);
+    inject(DestroyRef).onDestroy(() => document.removeEventListener('keydown', onEsc, true));
+    // The deactivation question replaces the footer: focus goes to its safe choice, Keep User; when it closes (Keep User, Esc, or the person is now
+    // deactivated) focus goes back to the control that asked, which is Activate once the person is deactivated.
+    let questionWasOpen = false;
+    effect(() => {
+      const open = this.deactivateOpen();
+      if (open) {
+        setTimeout(() =>
+          document.querySelector<HTMLElement>('.mf-formdlg [data-deactivate-keep] button')?.focus(),
+        );
+      } else if (questionWasOpen && this.open()) {
+        setTimeout(() =>
+          document
+            .querySelector<HTMLElement>(
+              '.mf-formdlg [data-deactivate], .mf-formdlg [data-activate]',
+            )
+            ?.focus(),
+        );
+      }
+      questionWasOpen = open;
+    });
+    // While this dialog is aside for another one, the next time it opens focus goes back to the button that asked (Edit Availability).
+    effect(() => {
+      if (this.suspended() && this.open()) this.cameBack.set(true);
     });
     // The row menu's Deactivate / Activate: once the person is loaded, the question is on screen / the person is activated.
     effect(() => {
@@ -285,6 +300,8 @@ export class UserDrawer {
     this.requestId++;
     this.intentDone = false;
     this.detail.set(null);
+    this.opened.set(false);
+    this.cameBack.set(false);
     this.panelError.set('');
     this.deactivateOpen.set(false);
     this.draftRoleIds.set([]);
@@ -304,9 +321,11 @@ export class UserDrawer {
       if (request !== this.requestId) return;
       this.show(user);
       this.loadState.set('ready');
+      this.opened.set(true);
     } catch {
       if (request !== this.requestId) return;
       this.loadState.set('error');
+      this.opened.set(true);
     }
   }
 
@@ -350,20 +369,6 @@ export class UserDrawer {
     this.detail.set(user);
   }
 
-  /** Desktop and tablet show every section; a phone shows the open ones. */
-  protected expanded(key: string): boolean {
-    return !this.phone() || this.openSections().has(key);
-  }
-
-  protected toggleSection(key: string): void {
-    this.openSections.update((set) => {
-      const next = new Set(set);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-  }
-
   protected toggleRole(roleId: number, checked: boolean): void {
     const ids = new Set(this.draftRoleIds());
     if (checked) ids.add(roleId);
@@ -373,16 +378,9 @@ export class UserDrawer {
 
   // ---- closing
 
-  /** X, Esc, the mask and Cancel: asks first when there are unsaved edits (the same question as leaving the Roles tab). */
-  protected async requestClose(): Promise<void> {
-    if (this.saving() || this.deactivateBusy()) return;
-    if (this.dirty() && !(await this.leave.ask())) return;
+  /** The dialog closed itself (X, Esc, scrim, Cancel, Close), after its own unsaved-changes question: the page removes `?user` from the address. */
+  protected onCancelled(): void {
     this.closed.emit();
-  }
-
-  /** Every open drawer starts with focus on its heading, whether or not the person has loaded yet. */
-  protected focusHeading(): void {
-    document.querySelector<HTMLElement>('.mf-user-drawer [data-panel-heading]')?.focus();
   }
 
   // ---- save (roles and profile)
@@ -454,7 +452,7 @@ export class UserDrawer {
 
   // ---- status
 
-  /** "View their tasks" in the question: leaves for the Task Queue (Back returns to this drawer, it is in the address). */
+  /** "View their tasks" in the question: leaves for the Task Queue (Back returns to this dialog, it is in the address). */
   protected viewTasks(): void {
     this.deactivateOpen.set(false);
     void this.router.navigate(['/tasks'], { queryParams: this.tasksQuery() });
@@ -478,7 +476,7 @@ export class UserDrawer {
       this.notify.success('User deactivated', user.displayName);
       this.changed.emit({ userId: user.userId, granted: false });
     } catch (err) {
-      // Closing the question first: the reason is read in the drawer, where the Deactivate control is (and nothing toasts twice).
+      // Closing the question first: the reason is read in the dialog, where the Deactivate control is (and nothing toasts twice).
       this.deactivateOpen.set(false);
       await this.handleError(err, user.userId);
     } finally {
@@ -517,7 +515,7 @@ export class UserDrawer {
         this.show(await firstValueFrom(this.api.getUser(userId)));
         this.changed.emit({ userId, granted: false });
       } catch {
-        /* keep the stale drawer; the message tells the administrator to retry */
+        /* keep the stale dialog; the message tells the administrator to retry */
       }
     } else {
       this.panelError.set(err.message);

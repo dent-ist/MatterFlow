@@ -71,26 +71,22 @@ test.describe('Users final verification', () => {
         expect(await page.locator('table').count(), 'no table on a phone').toBe(0);
       }
 
-      // The panel.
+      // The user dialog.
       await first.click();
       const panel = page.getByRole('dialog').first();
       await expect(panel).toBeVisible();
-      expect(await pageSideScroll(page), 'panel sideways scroll').toBeLessThanOrEqual(0);
-      await axeClean(page, `axe, user panel open, ${size.name}`);
+      expect(await pageSideScroll(page), 'dialog sideways scroll').toBeLessThanOrEqual(0);
+      await axeClean(page, `axe, user dialog open, ${size.name}`);
       await shot(page, `panel-${size.name}`);
 
-      // The availability dialog on top of it.
-      // On a phone the sections other than Access are folded: a tap on its heading opens it.
-      const fold = panel.locator('[data-section-toggle="availability"]');
-      if ((await fold.count()) > 0 && (await fold.getAttribute('aria-expanded')) === 'false') {
-        await fold.click();
-      }
+      // The availability dialog replaces it (one dialog at a time, D-31) and the user dialog comes back when it closes.
       await panel.getByRole('button', { name: /^Edit availability/ }).click();
-      await expect(page.getByRole('dialog').last()).toBeVisible();
+      await expect(page.getByRole('dialog', { name: /^Availability of / })).toBeVisible();
       await axeClean(page, `axe, availability dialog open, ${size.name}`);
-      await page.keyboard.press('Escape'); // closes only the dialog (users-us4)
+      await page.keyboard.press('Escape'); // closes only the availability dialog (users-us4)
+      await expect(page.getByRole('dialog', { name: /^Availability of / })).toHaveCount(0);
       await expect(page.getByRole('dialog')).toHaveCount(1);
-      await page.getByRole('button', { name: 'Close user details' }).click();
+      await page.locator('[data-panel-close]').click();
       await expect(page.getByRole('dialog')).toHaveCount(0);
 
       // Roles and Pods tabs.
@@ -159,20 +155,20 @@ test.describe('Users final verification', () => {
     expect(
       pageStops,
       'the page itself: filters, tabs, grid header and one stop on the row, far fewer than the 33 of the review',
-    ).toBeLessThanOrEqual(18); // was 13; measured 18 on the standardised page (more toolbar controls); the guarded budget is "far fewer than the 33 of the review"
+    ).toBeLessThanOrEqual(20); // was 13, then 18 on the standardised page (more toolbar controls), 20 since #1390 (the Last Name heading and its filter are two more stops); the guarded budget is "far fewer than the 33 of the review"
 
-    // U3: the Roles of "Grant Access" are in the first screen of the panel at 1366x768.
+    // U3: the Roles of "Grant Access" are in the first screen of the dialog at 1366x768.
     await page.locator('button[data-open]').first().click();
     const panel = page.getByRole('dialog').first();
     await expect(panel).toBeVisible();
     const access = panel.locator('[data-section="access"]');
     await expect(access).toBeVisible();
     const top = (await access.boundingBox())!.y;
-    after['Roles section top in the panel at 1366x768 (px, window 768)'] = Math.round(top);
+    after['Roles section top in the dialog at 1366x768 (px, window 768)'] = Math.round(top);
     expect(top, 'the Roles start above the fold').toBeLessThan(768);
     await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog')).toHaveCount(0);
-    after['Esc closes the panel'] = true;
+    after['Esc closes the dialog'] = true;
 
     if (OUT) {
       fs.mkdirSync(OUT, { recursive: true });
@@ -181,8 +177,8 @@ test.describe('Users final verification', () => {
         'row heights on the first page, smallest (px)': 51,
         'row heights on the first page, largest (px)': 204,
         'Tab stops before the first row at 1366 (whole page, shell included)': 33,
-        'Roles section top in the panel at 1366x768 (px, window 768)': 'below the fold',
-        'Esc closes the panel': false,
+        'Roles section top in the dialog at 1366x768 (px, window 768)': 'below the fold',
+        'Esc closes the dialog': false,
         'sideways-scroll hint on a phone': true,
       };
       fs.writeFileSync(
@@ -249,7 +245,7 @@ test.describe('Users final verification', () => {
       await page.getByRole('button', { name: 'Retry' }).click();
       await expect(rows(page).first()).toBeVisible();
 
-      await page.goto('/admin/users?status=all&name=zz-nobody-has-this-name');
+      await page.goto('/admin/users?status=all&firstName=zz-nobody-has-this-name');
       await expect(page.locator('[data-empty="filtered"]')).toContainText(
         'No users match these filters',
       );

@@ -168,7 +168,9 @@ test.describe('column filters work lists screenshots', () => {
 
     // Users: the Availability select shows "Out of Office" in full.
     await page.goto(`/admin/users?status=all&account=${token}`);
-    await page.goto(`/admin/users?status=all&availability=OUT_OF_OFFICE&name=shot-away-${token}`);
+    await page.goto(
+      `/admin/users?status=all&availability=OUT_OF_OFFICE&firstName=shot-away-${token}`,
+    );
     await expect(page.locator('tbody tr').first()).toBeVisible();
     await shot(page, 'admin-users-availability-select');
   });

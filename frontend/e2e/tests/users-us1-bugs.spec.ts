@@ -5,15 +5,15 @@ import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { TaskQueuePage } from '../pages/queues.pages';
 import { Persona } from '../support/personas';
-import { userName, userRow } from '../support/users-grid';
+import { expectFocusInUserDialog, userDialog, userName, userRow } from '../support/users-grid';
 import { TaskApi } from '../support/tasks';
 
 /**
  * Users epic #422, WP-US1 first release (#423 BUG-1/BUG-5, #424 BUG-2, #425 BUG-3): the fixes started as interim code on the inline panel; the
- * user drawer (#438, #441) replaced that code and these tests stayed, now against the drawer.
+ * user drawer (#438, #441) replaced that code and these tests stayed; since epic #1389 (issue #1390) they run against the centred user dialog.
  *  - no status badge is cut at 1366 and 1920 (the "Scroll sideways" hint is gone with the nine-column grid, #432);
- *  - opening a user moves focus to the drawer heading, Esc and Cancel close it and focus returns to the row button, Esc with unsaved edits asks;
- *  - Deactivate asks in a dialog that is on screen with focus on Cancel (BUG-3), and the dialog states the open tasks (BUG-4).
+ *  - opening a user moves focus into the dialog, Esc and Cancel close it and focus returns to the row button, Esc with unsaved edits asks;
+ *  - Deactivate asks in the footer of the dialog, on screen, with focus on Keep User (BUG-3), and the question states the open tasks (BUG-4).
  * Screenshots for docs/ux/users-review/fixes/us1-bugs/ are written when E2E_SCREENSHOTS is set to the output folder.
  */
 const SIZES = [
@@ -51,7 +51,7 @@ async function openList(page: Page, width = 1366, height = 768, extra = ''): Pro
   for (const userId of ACCOUNT.keys()) await expect(rowOf(page, userId)).toBeVisible();
 }
 
-/** The name of the person: the one control of the Name cell (#432); it opens the panel. */
+/** The first name of the person: the one control of the First Name cell (#432, #1390); it opens the dialog. */
 const rowOf = (page: Page, userId: number) => userRow(page, userId, ACCOUNT.get(userId)!);
 const rowButton = (page: Page, userId: number) => userName(rowOf(page, userId));
 const grantButton = (page: Page, userId: number) =>
@@ -121,16 +121,15 @@ test.describe('BUG-1 / BUG-5: status badges and the scroll hint', () => {
 });
 
 test.describe('BUG-2: focus and Esc', () => {
-  test('keyboard only: open moves focus to the heading, Esc closes and focus is back on the row button', async ({
+  test('keyboard only: open moves focus into the dialog, Esc closes and focus is back on the row button', async ({
     page,
   }) => {
     await openList(page);
     const button = rowButton(page, active.userId);
     await button.focus();
     await page.keyboard.press('Enter');
-    const heading = page.locator('[data-panel-heading]');
-    await expect(heading).toBeFocused();
-    await expect(page.locator('.mf-user-drawer')).toHaveAttribute('aria-labelledby', /.+/);
+    await expectFocusInUserDialog(page);
+    await expect(userDialog(page)).toHaveAttribute('aria-labelledby', /.+/);
 
     await page.keyboard.press('Escape');
     await expect(page.locator('[data-panel]')).toHaveCount(0);
@@ -143,13 +142,16 @@ test.describe('BUG-2: focus and Esc', () => {
     await expect(grant).toHaveText('Grant Access');
     await grant.focus();
     await page.keyboard.press('Enter');
-    await expect(page.locator('[data-panel-heading]')).toBeFocused();
-    await page.getByRole('button', { name: 'Close user details' }).click();
+    await expectFocusInUserDialog(page);
+    await userDialog(page)
+      .locator('[data-panel-cancel]')
+      .getByRole('button', { name: 'Cancel' })
+      .click();
     await expect(page.locator('[data-panel]')).toHaveCount(0);
     await expect(grant).toBeFocused();
   });
 
-  test('Esc with unsaved edits asks first; Stay keeps the panel, Leave closes it', async ({
+  test('Esc with unsaved edits asks first in the footer; Keep Editing keeps the dialog, Discard Changes closes it', async ({
     page,
   }) => {
     await openList(page);
@@ -157,30 +159,34 @@ test.describe('BUG-2: focus and Esc', () => {
     const name = page.locator('[data-name]');
     await name.fill('Someone Else Entirely');
     await page.keyboard.press('Escape');
-    const dialog = page.getByRole('dialog', { name: 'Unsaved Changes' });
-    await expect(dialog).toBeVisible();
-    await dialog.getByRole('button', { name: 'Keep Editing' }).click();
-    await expect(dialog).toBeHidden();
+    const ask = userDialog(page).locator('[data-panel-guard]');
+    await expect(ask).toBeVisible();
+    await ask.getByRole('button', { name: 'Keep Editing' }).click();
+    await expect(ask).toBeHidden();
     await expect(page.locator('[data-panel]')).toBeVisible();
     await expect(name).toHaveValue('Someone Else Entirely');
 
     await page.keyboard.press('Escape');
-    await dialog.getByRole('button', { name: 'Discard Changes' }).click();
+    await ask.getByRole('button', { name: 'Discard Changes' }).click();
     await expect(page.locator('[data-panel]')).toHaveCount(0);
     await expect(rowButton(page, active.userId)).toBeFocused();
   });
 
-  test('Esc inside the availability dialog closes only the dialog', async ({ page }) => {
+  test('Esc inside the availability dialog closes only that dialog and brings the user dialog back', async ({
+    page,
+  }) => {
     await openList(page);
     await rowButton(page, active.userId).click();
     await expect(page.locator('[data-panel]')).toBeVisible();
-    // The drawer moves the focus to its heading once it has opened; a click before that is followed by it, and the dialog would hand the focus back
-    // to a control the drawer has since taken it from.
-    await expect(page.locator('[data-panel-heading]')).toBeFocused();
+    // The dialog moves the focus into itself once it has opened; a click before that is followed by it, and the availability dialog would hand the
+    // focus back to a control the user dialog has since taken it from.
+    await expectFocusInUserDialog(page);
     const edit = page.locator('[data-edit-availability]');
     await edit.click();
     const dialog = page.getByRole('dialog', { name: /^Availability of / });
     await expect(dialog).toBeVisible();
+    // One dialog at a time (D-31): the user dialog steps aside and comes back, with what was typed, when the availability dialog closes.
+    await expect(page.locator('[data-panel]')).toHaveCount(0);
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();
     await expect(page.locator('[data-panel]')).toBeVisible();
@@ -199,14 +205,17 @@ test.describe('BUG-2: focus and Esc', () => {
     await expect(button).toHaveAttribute('aria-label', /^Open /);
     await button.focus();
     await page.keyboard.press('Enter');
-    await expect(page.locator('[data-panel-heading]')).toBeFocused();
+    await expectFocusInUserDialog(page);
     await expect(page.getByRole('button', { name: 'Save Changes' })).toHaveCount(0);
     await page.keyboard.press('Escape');
     await expect(page.locator('[data-panel]')).toHaveCount(0);
     await expect(button).toBeFocused();
   });
 
-  test('a Task.View-only person gets the 403 page, not the panel', async ({ personas, asUser }) => {
+  test('a Task.View-only person gets the 403 page, not the dialog', async ({
+    personas,
+    asUser,
+  }) => {
     const p = await personas.named('taskViewOnly');
     const page = await asUser(p.username);
     await page.goto(listUrl());
@@ -216,18 +225,19 @@ test.describe('BUG-2: focus and Esc', () => {
 });
 
 test.describe('BUG-3: the deactivation question', () => {
-  test('Deactivate puts the question on screen in a dialog with focus on Cancel; Cancel changes nothing', async ({
+  test('Deactivate puts the question on screen in the footer of the dialog with focus on Keep User; Keep User changes nothing', async ({
     page,
   }) => {
     await openList(page, 1366, 768);
     await rowButton(page, active.userId).click();
+    await expectFocusInUserDialog(page);
     await expect(page.getByRole('button', { name: 'Save Changes' })).toBeVisible();
 
     const deactivate = page.getByRole('button', { name: /^Deactivate / });
     await deactivate.click();
-    const dialog = page.getByRole('dialog', { name: /^Deactivate / });
+    const dialog = page.locator('[data-deactivate-foot]');
     await expect(dialog).toBeVisible();
-    await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeFocused();
+    await expect(dialog.getByRole('button', { name: 'Keep User' })).toBeFocused();
     await expect(
       dialog.getByRole('button', { name: 'Deactivate User', exact: true }),
     ).toBeVisible();
@@ -251,7 +261,7 @@ test.describe('BUG-3: the deactivation question', () => {
     await rowButton(page, victim.userId).click();
     await page.getByRole('button', { name: /^Deactivate / }).click();
     await page
-      .getByRole('dialog', { name: /^Deactivate / })
+      .locator('[data-deactivate-foot]')
       .getByRole('button', { name: 'Deactivate User', exact: true })
       .click();
     await expect(page.locator(`tr[data-record-id="${victim.userId}"] [data-status]`)).toContainText(
@@ -260,19 +270,19 @@ test.describe('BUG-3: the deactivation question', () => {
     await expect(page.locator('[data-activate]')).toBeVisible();
   });
 
-  test('keyboard: Tab reaches Deactivate, Enter asks, Tab moves to Deactivate in the dialog, Enter does it', async ({
+  test('keyboard: Tab reaches Deactivate, Enter asks, Tab moves to Deactivate User in the footer, Enter does it', async ({
     page,
     personas,
   }) => {
     const victim = await personas.create({ label: `us1x-kbd`, roles: ['Data Technician'] });
     await page.goto(`/admin/users?status=all&account=e2e-us1x-kbd`);
     await rowButton(page, victim.userId).click();
-    // The drawer takes the focus to its heading when it has opened: a focus() before that is overtaken by it.
-    await expect(page.locator('[data-panel-heading]')).toBeFocused();
+    // The dialog takes the focus when it has opened: a focus() before that is overtaken by it.
+    await expectFocusInUserDialog(page);
     await page.getByRole('button', { name: /^Deactivate / }).focus();
     await page.keyboard.press('Enter');
-    const dialog = page.getByRole('dialog', { name: /^Deactivate / });
-    await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeFocused();
+    const dialog = page.locator('[data-deactivate-foot]');
+    await expect(dialog.getByRole('button', { name: 'Keep User' })).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(
       dialog.getByRole('button', { name: 'Deactivate User', exact: true }),
@@ -284,7 +294,7 @@ test.describe('BUG-3: the deactivation question', () => {
 });
 
 test.describe('BUG-4: open tasks and "View their tasks" (#427)', () => {
-  test('a person with open tasks: count in the panel, the sentence, and the link opens their open tasks in the Task Queue', async ({
+  test('a person with open tasks: count in the dialog, the sentence, and the link opens their open tasks in the Task Queue', async ({
     page,
     admin,
     seed,
@@ -309,16 +319,15 @@ test.describe('BUG-4: open tasks and "View their tasks" (#427)', () => {
     await rowButton(page, worker.userId).click();
     await expect(page.locator('[data-open-tasks]')).toHaveText('Open tasks: 2');
     await page.getByRole('button', { name: /^Deactivate / }).click();
-    const dialog = page.getByRole('dialog', { name: /^Deactivate / });
+    const dialog = page.locator('[data-deactivate-foot]');
     await expect(dialog).toContainText(
       'This user has 2 open tasks. They stay assigned until you reassign them one by one.',
     );
-    // The question offers the trip as its main button, reachable by keyboard.
-    const trip = dialog.getByRole('button', { name: 'View their tasks' });
+    // The question offers the trip as a button before the two choices, reachable by keyboard.
+    const trip = dialog.getByRole('button', { name: 'View Their Tasks' });
     await expect(trip).toBeVisible();
-    await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeFocused();
-    await page.keyboard.press('Tab');
-    await page.keyboard.press('Tab');
+    await expect(dialog.getByRole('button', { name: 'Keep User' })).toBeFocused();
+    await page.keyboard.press('Shift+Tab');
     await expect(trip).toBeFocused();
     await page.keyboard.press('Enter');
 
@@ -334,7 +343,7 @@ test.describe('BUG-4: open tasks and "View their tasks" (#427)', () => {
     await rowButton(page, active.userId).click();
     await expect(page.locator('[data-open-tasks]')).toHaveText('No open tasks');
     await page.getByRole('button', { name: /^Deactivate / }).click();
-    await expect(page.getByRole('dialog', { name: /^Deactivate / })).toContainText(
+    await expect(page.locator('[data-deactivate-foot]')).toContainText(
       'No open tasks are assigned to them.',
     );
     await expect(page.getByRole('link', { name: 'View their tasks' })).toHaveCount(0);
@@ -352,10 +361,10 @@ test.describe('BUG-4: open tasks and "View their tasks" (#427)', () => {
     const page = await asUser(manager.username);
     await page.goto(listUrl());
     await rowButton(page, active.userId).click();
-    await expect(page.locator('[data-panel-heading]')).toBeFocused();
+    await expectFocusInUserDialog(page);
     await expect(page.locator('[data-open-tasks]')).toHaveCount(0);
     await page.getByRole('button', { name: /^Deactivate / }).click();
-    await expect(page.getByRole('dialog', { name: /^Deactivate / })).toContainText(
+    await expect(page.locator('[data-deactivate-foot]')).toContainText(
       'Their assigned tasks stay assigned until you reassign them one by one.',
     );
     await expect(page.getByRole('link', { name: 'View their tasks' })).toHaveCount(0);
@@ -365,20 +374,20 @@ test.describe('BUG-4: open tasks and "View their tasks" (#427)', () => {
 
 test.describe('axe and layout at both desktop sizes', () => {
   for (const { width, height } of SIZES) {
-    test(`list, drawer and the deactivation question at ${width}x${height}`, async ({ page }) => {
+    test(`list, dialog and the deactivation question at ${width}x${height}`, async ({ page }) => {
       expect(axeAvailable(), 'axe-core is required (set E2E_AXE_PATH)').toBe(true);
       await openList(page, width, height);
       expect(await axeClean(page)).toEqual([]);
       expect(await noSideScroll(page)).toBe(true);
 
       await rowButton(page, active.userId).click();
-      await expect(page.locator('[data-panel-heading]')).toBeFocused();
+      await expectFocusInUserDialog(page);
       expect(await axeClean(page)).toEqual([]);
       expect(await noSideScroll(page)).toBe(true);
 
       await page.getByRole('button', { name: /^Deactivate / }).click();
       await expect(
-        page.getByRole('dialog', { name: /^Deactivate / }).getByRole('button', { name: 'Cancel' }),
+        page.locator('[data-deactivate-foot]').getByRole('button', { name: 'Keep User' }),
       ).toBeFocused();
       expect(await axeClean(page)).toEqual([]);
       expect(await noSideScroll(page)).toBe(true);
@@ -398,11 +407,11 @@ test.describe('us1-bugs screenshots', () => {
       await openList(page, width, height);
       await shot('users-status-all');
       await rowButton(page, active.userId).click();
-      await expect(page.locator('[data-panel-heading]')).toBeFocused();
-      await shot('user-panel-focus');
+      await expectFocusInUserDialog(page);
+      await shot('user-dialog-focus');
       await page.getByRole('button', { name: /^Deactivate / }).click();
       await expect(
-        page.getByRole('dialog', { name: /^Deactivate / }).getByRole('button', { name: 'Cancel' }),
+        page.locator('[data-deactivate-foot]').getByRole('button', { name: 'Keep User' }),
       ).toBeFocused();
       await shot('user-deactivate-confirm');
     });
