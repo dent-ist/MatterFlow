@@ -160,7 +160,7 @@ const EMAIL_SHAPE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
             <span class="mf-field__help" data-type-help>{{
               type() === 'EXTERNAL'
                 ? 'External: works outside the firm. Add their company.'
-                : 'Internal: works at the firm. A MatterFlow login is managed on the Users page.'
+                : 'Internal: works at the firm. An LPT Hub login is managed on the Users page.'
             }}</span>
           </div>
           <mf-text-field
