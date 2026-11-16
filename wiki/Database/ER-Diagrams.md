@@ -778,6 +778,36 @@ erDiagram
   AppUser |o--o{ VendorContact : "CreatedBy, ModifiedBy"
 :::
 
+## Integrations
+
+Tables: `EntraConnection`, `Integration`.
+
+`EntraConnection` is one row (id 1): the Entra ID Tenant ID, Client ID and the encrypted client secret. `Integration` is one row per external API (Matter Lookup, Ethical Wall, Other). They do not reference each other: every integration uses the one connection and asks for its own scope. Both only point at users (who set the secret, who ran the last test, the standard stamps). Neither is readable by the report login.
+
+::: mermaid
+erDiagram
+  EntraConnection {
+    int EntraConnectionId PK
+    nvarchar_100 TenantId
+    nvarchar_100 ClientId
+    nvarchar_4000 ClientSecretProtected
+    date SecretExpiresOn
+    int SecretUpdatedByUserId FK
+    int LastTestByUserId FK
+  }
+  Integration {
+    int IntegrationId PK
+    nvarchar_100 Name
+    varchar_20 TypeCode
+    nvarchar_500 BaseUrl
+    nvarchar_300 Scope
+    bit IsEnabled
+    int LastTestByUserId FK
+  }
+  AppUser ||--o{ EntraConnection : "CreatedBy, ModifiedBy, SecretUpdatedBy, LastTestBy"
+  AppUser ||--o{ Integration : "CreatedBy, ModifiedBy, LastTestBy"
+:::
+
 ## Availability and Calendar
 
 Tables: `UserAvailability`, `UserWorkHour`, `UserAbsence`, `HolidayCalendar`, `Holiday`.

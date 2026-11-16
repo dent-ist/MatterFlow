@@ -2,7 +2,7 @@
 
 [[_TOC_]]
 
-**What this page is for.** Every permission code of the application, what it allows, which starter roles hold it by default and where it is enforced. The source of truth is `contracts/permissions.json` (76 permissions in 15 groups); this page is built from it, from `backend/src/Modules/LptHub.Identity/Seeding/StarterRoles.cs` and from a search of the backend and frontend source for each code.
+**What this page is for.** Every permission code of the application, what it allows, which starter roles hold it by default and where it is enforced. The source of truth is `contracts/permissions.json` (77 permissions in 15 groups); this page is built from it, from `backend/src/Modules/LptHub.Identity/Seeding/StarterRoles.cs` and from a search of the backend and frontend source for each code.
 
 How to read it:
 
@@ -160,6 +160,7 @@ The server asks for the stacked rights, not only the one named: linking and unli
 | Code | Meaning | Default roles | Backend | Frontend |
 |---|---|---|---|---|
 | `Settings.Manage` | Change application settings (name and icon, holiday calendars, calendar coverage thresholds); every holiday write and read, the list of calendars is also open to `User.Manage` | none (System Admin only) | `HolidayControllers`, `PrioritiesController` | `admin.routes`, `nav-items` |
+| `Integrations.Manage` | See and change the Microsoft Entra ID connection and the integrations (Administration > Settings > Integrations), including the write-only client secret; the whole Integrations API | none (System Admin only) | `EntraConnectionController`, `IntegrationsController` | `settings-page`, `integrations-tab`, `lookup-button` |
 
 ## Oversight
 
@@ -169,10 +170,12 @@ The server asks for the stacked rights, not only the one named: linking and unli
 
 ## Notes on special permissions
 
+- `Integrations.Manage` is separate from `Settings.Manage` (owner decision, #1395): someone who can open Settings but lacks it does not see the Integrations tab, the API answers 403 and a direct link shows "You don't have access to Integrations.". The Lookup button on New Client and New Matter (`GET /matter-lookup/status`, `POST /matter-lookup/search`) needs `Client.Create` or `Matter.Create`, not this permission; an administrator additionally sees an Open Integrations link there.
+
 - `Matter.BeManager` is a marker: it lets a person be named Primary or Secondary project manager of a matter (and shows My Matters together with `Matter.View` and `Task.View`). The Director holds it since issue #976 (script 66 for existing databases), so a Director opens My Matters and can be named as a project manager (the Director's landing page is the Dashboard, set on the role, not My Matters); on My Matters a Director who manages no matter sees "You do not manage any matter yet.". `Matter.AssignManagers` lets a person change a matter's managers and use the All scope and manager picker in My Matters.
 - `Matter.ViewSensitive` lets a person see all Sensitive matters (effective only when `Features:SensitiveMatterAccess` is on).
 - `Dashboard.View` opens the Dashboard; every tab needs its own `Dashboard.View<Tab>` permission as well (a Dashboard with no tab permission is hidden). `Dashboard.ViewAbsenceReasons` only shows the absence type in the Calendar.
-- `Settings.Manage` and the three Reports permissions are granted to no starter role; only the System Admin holds them until an administrator grants them.
+- `Settings.Manage`, `Integrations.Manage` and the three Reports permissions are granted to no starter role; only the System Admin holds them until an administrator grants them.
 - `Task.View` also unlocks several personal pages (My Work, Profile, Notifications) and the notification endpoints.
 - `Report.Run` has no frontend use at this commit: the people-facing run page does not exist yet ([Reports Module](../Architecture/Reports-Module.md)).
 

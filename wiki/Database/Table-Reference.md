@@ -30,8 +30,10 @@ Totals (counted by `tools/db/schema-fingerprint.sql` on a database built from th
 | [FormFieldOption](#formfieldoption) | Forms and custom fields | Configuration | 6 | 1 |
 | [FormValueSet](#formvalueset) | Forms and custom fields | Configuration | 11 | 4 |
 | [FormVersion](#formversion) | Forms and custom fields | Configuration | 13 | 5 |
+| [EntraConnection](#entraconnection) | Integrations | Integrations | 15 | 4 |
 | [Holiday](#holiday) | Availability and Calendar | Identity | 22 | 3 |
 | [HolidayCalendar](#holidaycalendar) | Availability and Calendar | Identity | 12 | 2 |
+| [Integration](#integration) | Integrations | Integrations | 15 | 3 |
 | [Matter](#matter) | Clients, Matters and Projects | Organization | 20 | 8 |
 | [MatterCategory](#mattercategory) | Clients, Matters and Projects | Configuration | 8 | 2 |
 | [MatterEvent](#matterevent) | Clients, Matters and Projects | Organization | 12 | 3 |
@@ -1071,6 +1073,41 @@ Junction: suggested tags of a note template.
 - **Foreign keys (2):**
   - `FK_NoteTemplateTag_Tag`: `NoteTagId` to `NoteTag(NoteTagId)`
   - `FK_NoteTemplateTag_Template`: `NoteTemplateId` to `NoteTemplate(NoteTemplateId)` (delete: cascade)
+
+## Area: Integrations
+
+### EntraConnection
+
+The ONE Microsoft Entra ID connection of LPT Hub (epic #1389, issue #1395): Tenant ID, Client ID and the client secret. Exactly one row (`EntraConnectionId = 1`, seeded empty by script 80). The secret is stored encrypted with ASP.NET Core Data Protection (`ClientSecretProtected`, base64 text) and is write-only: no API returns it and no log or audit entry contains it. The key ring is NOT in the database (`DataProtection:KeysPath`). The last test result (when, who, outcome code, token lifetime) is stored so the page shows it after a reload; a change of Tenant ID, Client ID or secret clears it.
+
+- **Module:** Integrations. **Area:** Integrations.
+- **Scripts:** created by script 80.
+- **Report login (`lpt_report_reader`):** deny (holds the encrypted secret).
+- **Primary key:** `PK_EntraConnection` (EntraConnectionId), int, default 1.
+- **Columns (15; `?` = nullable):** `EntraConnectionId int`, `TenantId nvarchar(100)?`, `ClientId nvarchar(100)?`, `ClientSecretProtected nvarchar(4000)?`, `SecretExpiresOn date?`, `SecretUpdatedAtUtc datetime2(7)?`, `SecretUpdatedByUserId int?`, `LastTestAtUtc datetime2(7)?`, `LastTestByUserId int?`, `LastTestOutcome varchar(30)?`, `LastTestTokenSeconds int?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
+- **Foreign keys (4):**
+  - `FK_EntraConnection_CreatedBy`: `CreatedByUserId` to `AppUser(UserId)`
+  - `FK_EntraConnection_LastTestBy`: `LastTestByUserId` to `AppUser(UserId)`
+  - `FK_EntraConnection_ModifiedBy`: `ModifiedByUserId` to `AppUser(UserId)`
+  - `FK_EntraConnection_SecretUpdatedBy`: `SecretUpdatedByUserId` to `AppUser(UserId)`
+- **Check constraints (2):** `CK_EntraConnection_Single` (the id is 1), `CK_EntraConnection_Outcome`.
+- **Rights:** `lpt_app` may read and update the row; INSERT, DELETE and ALTER are denied.
+
+### Integration
+
+One external API LPT Hub calls with the shared Entra ID connection and its own scope (Matter Lookup, Ethical Wall or Other; epic #1389, issue #1395). The Matter Lookup and Ethical Wall rows are seeded by script 80 (enabled, no Base URL or Scope: Not Set Up). At most one of each fixed type; any number of Other. The Base URL must be https. Changes are audited by named events (`INTEGRATION_CREATED`, `_UPDATED`, `_DELETED`, `_ENABLED`, `_DISABLED`).
+
+- **Module:** Integrations. **Area:** Integrations.
+- **Scripts:** created by script 80.
+- **Report login (`lpt_report_reader`):** deny.
+- **Primary key:** `PK_Integration` (IntegrationId), int identity.
+- **Columns (15; `?` = nullable):** `IntegrationId int`, `Name nvarchar(100)`, `TypeCode varchar(20)`, `BaseUrl nvarchar(500)?`, `Scope nvarchar(300)?`, `IsEnabled bit`, `LastTestAtUtc datetime2(7)?`, `LastTestByUserId int?`, `LastTestOutcome varchar(30)?`, `LastTestTokenSeconds int?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
+- **Foreign keys (3):**
+  - `FK_Integration_CreatedBy`: `CreatedByUserId` to `AppUser(UserId)`
+  - `FK_Integration_LastTestBy`: `LastTestByUserId` to `AppUser(UserId)`
+  - `FK_Integration_ModifiedBy`: `ModifiedByUserId` to `AppUser(UserId)`
+- **Indexes and unique constraints (2):** `UQ_Integration_FixedType` (TypeCode) - unique, filtered `TypeCode <> 'OTHER'`; `UQ_Integration_Name` (Name) - unique (any case).
+- **Check constraints (5):** `CK_Integration_Name`, `CK_Integration_Type`, `CK_Integration_BaseUrl` (starts with `https://`), `CK_Integration_Scope` (3 to 300 characters), `CK_Integration_Outcome`.
 
 ## Area: Vendors
 

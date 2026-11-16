@@ -24,6 +24,7 @@
 | 17 Matter detail: Productions, Notes, AI switch | Operations notes for epic #1001 | [Module Guide](../Backend/Module-Guide.md) |
 | 18 Landing pages | Set a role's landing page, personal choice, "I land on the wrong page" | [Authentication and Authorization](../Architecture/Authentication-and-Authorization.md) |
 | 19 Upgrading a machine that ran MatterFlow | Remove the old container and volume, `git pull`, `npm run db:reset`, `npm start`, `npm run seed:demo`; the list of renamed names <!-- rename-allow: names the old product on purpose --> | [Repository Map](../Getting-Started/Repository-Map.md) |
+| 20 Integrations: Entra ID connection and key folder | Where the client secret is encrypted, the key folder step, expiry, restore, Matter Lookup, simulator | [Configuration Reference](Configuration-Reference.md), [Set up an Entra ID integration](../How-To/Set-up-an-Entra-ID-Integration.md) |
 
 Other operational documents: `docs/frontend-bundle.md` (bundle size), `docs/qa/performance-round-1.md` and `docs/qa/sensitive-matters-performance.md` (performance), `tools/perf/README.md` (load test tools), `docs/qa/risk-register.md`, `docs/qa/security-review-1.md` and `security-review-2.md` (with resolutions).
 

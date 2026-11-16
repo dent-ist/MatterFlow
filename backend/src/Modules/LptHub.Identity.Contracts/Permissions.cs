@@ -331,6 +331,13 @@ public static class Permissions
         public const string Manage = "Settings.Manage";
     }
 
+    /// <summary>Integrations permission (epic #1389, issue #1395).</summary>
+    public static class Integrations
+    {
+        /// <summary>See and change the Microsoft Entra ID connection and the integrations (Administration > Settings > Integrations), including the write-only client secret. System Admin only by default.</summary>
+        public const string Manage = "Integrations.Manage";
+    }
+
     /// <summary>Audit permissions.</summary>
     public static class Audit
     {
@@ -416,6 +423,7 @@ public static class Permissions
         Report.Assign,
         Report.Run,
         Settings.Manage,
+        Integrations.Manage,
         Audit.View,
     ];
 }

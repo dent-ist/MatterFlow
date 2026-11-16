@@ -3,6 +3,7 @@ using LptHub.Assets;
 using LptHub.Audit;
 using LptHub.Configuration;
 using LptHub.Identity;
+using LptHub.Integrations;
 using LptHub.Notes;
 using LptHub.Notifications;
 using LptHub.Organization;
@@ -29,5 +30,6 @@ public static class ModuleAssemblies
         typeof(ProductionsModule).Assembly,
         typeof(NotesModule).Assembly,
         typeof(VendorsModule).Assembly,
+        typeof(IntegrationsModule).Assembly,
     ];
 }

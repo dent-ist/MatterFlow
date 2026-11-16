@@ -8,6 +8,7 @@ using LptHub.Configuration.Application.Lookups;
 using LptHub.Data;
 using LptHub.Identity;
 using LptHub.Identity.Seeding;
+using LptHub.Integrations;
 using LptHub.Intake;
 using LptHub.Notes;
 using LptHub.Notifications;
@@ -48,6 +49,7 @@ public static class ModuleComposition
         services.AddProductionsModule();
         services.AddNotesModule();
         services.AddVendorsModule();
+        services.AddIntegrationsModule(configuration, environment);
         services.AddStarterConfigurationSeeding();
         return services;
     }

@@ -89,6 +89,23 @@ Source: `backend/src/LptHub.Api/Http/ApiRateLimiting.cs`.
 
 Defaults from `ReportsOptions`: `DefaultTimeoutSeconds` 60, `MaxTimeoutSeconds` 300, `DefaultMaxRows` 50,000, `MaxRowsCeiling` 200,000, `GlobalConcurrency` 4, `RunsPerUserPerHour` 30, `PreviewRows` 20, `PreviewTimeoutSeconds` 15, `ChoiceQueryTimeoutSeconds` 10, `ChoiceQueryMaxRows` 1,000, `LockTimeoutMilliseconds` 5,000, `ResultIdleMinutes` 15, `ResultMaxMinutes` 60, `ResultMemoryBudgetMegabytes` 512 (file `backend/src/Modules/LptHub.Reports/Application/ReportsOptions.cs`).
 
+## Integrations and the key folder (`Integrations:*`, `DataProtection:*`)
+
+| Key | Default | Meaning |
+|---|---|---|
+| `DataProtection:KeysPath` | none | Folder of the Data Protection key ring that encrypts the Entra ID client secret. Required in Production to store a secret (nothing is saved without it). Outside the site folder and the database; the app pool identity needs Modify; back it up with the server ([Runbook](Runbook.md) section 20). Development and Test do not need it. |
+| `DataProtection:ProtectWithDpapi` | `true` | On Windows the key files are also encrypted with the machine's DPAPI. |
+| `Integrations:AuthorityHost` | `https://login.microsoftonline.com` | The token address is `{host}/{tenant}/oauth2/v2.0/token`. A sovereign cloud uses another host. |
+| `Integrations:ConnectionTestScope` | `https://graph.microsoft.com/.default` | The scope the Entra ID connection test asks for (it only proves that the credentials are accepted). |
+| `Integrations:TokenTimeoutSeconds` / `ApiTimeoutSeconds` | 15 / 10 | Waiting time before Entra ID or an API counts as "not reachable". |
+| `Integrations:RefreshBeforeExpirySeconds` | 300 | A cached token is replaced this long before it expires. |
+| `Integrations:MatterLookup:ClientPath` / `MatterPath` | `clients/{clientNumber}` / `matters/{clientNumber}/{matterNumber}` | The PROVISIONAL requests of the Matter Lookup API (relative to its Base URL). Change when IT sets the real API up. |
+| `Integrations:MatterLookup:ClientNumberField`, `ClientNameField`, `MatterNumberField`, `MatterNameField` | `clientNumber`, `clientName`, `matterNumber`, `matterName` | The provisional response field names. |
+| `Integrations:MatterLookup:PadNumbersInRequest` | `true` | Send numbers padded to five digits. |
+| `Integrations:Simulator:Enabled` | `false` | Development and Test only: built-in stand-in for Entra ID and the APIs (ignored elsewhere). |
+
+Source: `IntegrationsOptions.cs`, `IntegrationsModule.cs`.
+
 ## Frontend configuration
 
 The Angular app reads `frontend/src/environments/*` (`environment.authProvider`: `stub` for the in-memory stub, otherwise the real API) and `proxy.conf.json` (dev proxy). The `api` configuration of `angular.json` serves with the proxy to port 5080.

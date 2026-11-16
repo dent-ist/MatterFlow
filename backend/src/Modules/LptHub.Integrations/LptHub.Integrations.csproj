@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\LptHub.SharedKernel\LptHub.SharedKernel.csproj" />
+    <ProjectReference Include="..\LptHub.Integrations.Contracts\LptHub.Integrations.Contracts.csproj" />
+    <ProjectReference Include="..\LptHub.Identity.Contracts\LptHub.Identity.Contracts.csproj" />
+    <ProjectReference Include="..\LptHub.Audit.Contracts\LptHub.Audit.Contracts.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="LptHub.UnitTests" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+    <PackageReference Include="Microsoft.Data.SqlClient" />
+  </ItemGroup>
+</Project>

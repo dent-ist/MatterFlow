@@ -157,6 +157,17 @@ Conventions common to all modules:
 - **Frontend:** `features/notes`, Notes tab of the matter detail, Administration > Lists > Note Tags.
 - **Tests:** `IntegrationTests/Security/MatterContentApiTests`, `UnitTests/Notes`.
 
+## Integrations
+
+- **Purpose:** the ONE Microsoft Entra ID app registration (Tenant ID, Client ID, write-only client secret) and one row per external API (Matter Lookup, Ethical Wall, Other) with its Base URL and scope (epic #1389, issue #1395). Other modules ask for tokens through `IIntegrationTokenProvider` (`Integrations.Contracts`); nothing here is persisted except the encrypted secret.
+- **Tables:** `EntraConnection` (one row), `Integration`.
+- **Controllers:** `/admin/entra-connection`, `/admin/integrations` (`Integrations.Manage`), `/matter-lookup/status` and `/matter-lookup/search` (`Client.Create` or `Matter.Create`) in `IntegrationControllers.cs`.
+- **Key services:** `EntraConnectionService`, `IntegrationService`, `IntegrationTester` (Test Connection: four steps), `EntraTokenClient` (OAuth2 client credentials, maps Entra's refusal to a plain outcome), `TokenCache` (in memory, refreshed 5 minutes before expiry), `IntegrationTokenProvider`, `DataProtectionSecretProtector` (key ring in `DataProtection:KeysPath`, not the database), `MatterLookupService` with the one adapter `IMatterLookupClient` / `ProvisionalMatterLookupClient` (the assumed API contract lives only there and in `Integrations:MatterLookup:*`), `SimulatedEndpointsHandler` (Development and Test only).
+- **Permissions:** `Integrations.Manage`.
+- **Audit:** `INTEGRATION_CREATED/UPDATED/DELETED/ENABLED/DISABLED`, `ENTRA_CONNECTION_CHANGED`, `ENTRA_SECRET_REPLACED` (never the secret).
+- **Frontend:** `features/admin/settings/integrations/` (the tab and its two dialogs), `shared/lookup/` (the Lookup button and note), `mf-status-chip` kind `integration`.
+- **Tests:** `UnitTests/Integrations`, `IntegrationTests/Integrations/IntegrationsApiTests`, `SchemaTests/IntegrationsSchemaTests`, e2e `admin-integrations`.
+
 ## Loading an entity for writing under the Sensitive matter rule
 
 Rule of thumb: **a visibility filter decides who may touch a row; it must never be the query that loads the row you are going to change.** Issue #1304: with the Sensitive matter rule on, a caller who is not "see all" got a 200 from an update but nothing was saved. The filters (`WhereMatterVisible` and its relatives on `IMatterVisibility`, `AssetAccess.OfVisibleMatters`, `NoteAccess.Visible`, `ProductionAccess.Visible`) restrict the rows with a subquery over the access rows. EF applies `AsNoTracking` to the whole statement, so if that subquery (or any part of the composed query) is no-tracking, the entity comes back untracked and `SaveChanges` has nothing to save, without any error.

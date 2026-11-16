@@ -72,6 +72,8 @@
 | Settings: Branding | Configuration | `AppSetting` | `/admin/settings/branding`, `/branding` | `/admin/settings`; `admin/settings/` | `Settings.Manage` | `Settings/`; e2e `app-settings` |
 | Settings: Dashboard | Configuration | `AppSetting` | `/admin/settings/dashboard` | `admin/settings/dashboard-settings.ts` | `Settings.Manage` | |
 | Settings: Holidays | Identity, Configuration | `HolidayCalendar`, `Holiday`, `AppSetting` | `/admin/holiday-calendars`, `/admin/settings/holidays`, `/admin/settings/calendar`, `/users/{id}/holiday-calendar` | `admin/holidays/` | `Settings.Manage` (the list of calendars is also open to `User.Manage`, #1362; user calendar: `User.Manage`) | e2e `admin-holidays` |
+| Settings: Integrations | Integrations | `EntraConnection`, `Integration` | `/admin/entra-connection[/secret\|/test]`, `/admin/integrations[/{id}\|/enable\|/disable\|/test]` | `admin/settings/integrations/` (tab of `/admin/settings?tab=integrations`) | `Integrations.Manage` | `IntegrationsApiTests`, `IntegrationsSchemaTests`; e2e `admin-integrations` |
+| Lookup button (New Client, New Matter) | Integrations | `Integration` | `/matter-lookup/status`, `/matter-lookup/search` | `shared/lookup/`; `clients/pages/client-form-page.ts`; `matters/ui/matter-form.ts` | `Client.Create` or `Matter.Create` | `IntegrationsApiTests`; e2e `admin-integrations` |
 
 ## Cross-cutting features
 
