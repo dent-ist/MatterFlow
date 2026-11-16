@@ -150,6 +150,10 @@ test.describe('Assets keyboard audit (WP-AS6)', () => {
       'true',
     );
     await page.keyboard.press('ArrowLeft');
+    await expect(page.getByRole('tab', { name: /^Linked Tasks/ })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
     await page.keyboard.press('ArrowLeft');
     await expect(page.getByRole('tab', { name: 'Details' })).toHaveAttribute(
       'aria-selected',
