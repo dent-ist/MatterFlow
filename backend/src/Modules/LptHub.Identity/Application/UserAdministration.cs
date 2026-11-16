@@ -29,25 +29,29 @@ public static class UserListStatuses
 public static class UserSortKeys
 {
     public const string Name = "name";
+    public const string FirstName = "firstName";
+    public const string LastName = "lastName";
     public const string FirstSeen = "firstSeen";
     public const string LastSeen = "lastSeen";
 
     /// <summary>The key as written above (the address is case-insensitive), or null when it is not one of them.</summary>
     public static string? Canonical(string? value) =>
-        new[] { Name, FirstSeen, LastSeen }.FirstOrDefault(k => string.Equals(k, value, StringComparison.OrdinalIgnoreCase));
+        new[] { Name, FirstName, LastName, FirstSeen, LastSeen }.FirstOrDefault(k => string.Equals(k, value, StringComparison.OrdinalIgnoreCase));
 }
 
 /// <summary>Filters of the users list. The column filters combine with AND; <see cref="Search"/> is the older any-column search.</summary>
 /// <param name="Status"><c>all</c>, <c>pending</c> (active, no access yet), <c>active</c> (active with access; pending people are not in it) or <c>inactive</c> (null = all).</param>
 /// <param name="Search">Display name, e-mail or Windows account fragment.</param>
 /// <param name="Name">Fragment of the display name only.</param>
+/// <param name="FirstName">Fragment of the first name of the linked person only.</param>
+/// <param name="LastName">Fragment of the last name of the linked person only.</param>
 /// <param name="Account">Fragment of a Windows account only.</param>
 /// <param name="Email">Fragment of the e-mail only.</param>
 /// <param name="RoleIds">Only people holding any of these roles.</param>
 /// <param name="Availability"><c>AVAILABLE</c>, <c>OUT_OF_OFFICE</c> or <c>OFF_HOURS</c>, evaluated now.</param>
 /// <param name="RegisteredFrom">First day (viewer's zone) of the first-seen date.</param>
 /// <param name="RegisteredTo">Last day (viewer's zone, inclusive) of the first-seen date.</param>
-/// <param name="Sort"><c>name</c>, <c>firstSeen</c> or <c>lastSeen</c>; null keeps the queue order (waiting people first, then active, then inactive, then name).</param>
+/// <param name="Sort"><c>name</c>, <c>firstName</c>, <c>lastName</c>, <c>firstSeen</c> or <c>lastSeen</c>; null keeps the queue order (waiting people first, then active, then inactive, then name).</param>
 /// <param name="Descending">Sort direction for <paramref name="Sort"/>; people with no last-seen time stay last in either direction.</param>
 public sealed record UserListFilter(
     string? Status = null,
@@ -60,7 +64,9 @@ public sealed record UserListFilter(
     DateOnly? RegisteredFrom = null,
     DateOnly? RegisteredTo = null,
     string? Sort = null,
-    bool Descending = false);
+    bool Descending = false,
+    string? FirstName = null,
+    string? LastName = null);
 
 /// <summary>
 /// Users queue and role assignment (architecture 6; baseline 6.4). Every change is audited, invalidates the effective-permission
@@ -114,6 +120,10 @@ public sealed class UserAdministration(
         // Column filters (each box searches its own column, parameterised Contains; % and _ are literal).
         if (filter.Name?.Trim() is { Length: > 0 } name)
             query = query.Where(u => u.DisplayName.Contains(name));
+        if (filter.FirstName?.Trim() is { Length: > 0 } firstName)
+            query = query.Where(u => db.Set<Person>().Any(p => p.UserId == u.Id && p.FirstName.Contains(firstName)));
+        if (filter.LastName?.Trim() is { Length: > 0 } lastName)
+            query = query.Where(u => db.Set<Person>().Any(p => p.UserId == u.Id && p.LastName.Contains(lastName)));
         if (filter.Account?.Trim() is { Length: > 0 } account)
             query = query.Where(u => u.Identities.Any(i => i.Username.Contains(account)));
         if (filter.Email?.Trim() is { Length: > 0 } email)
@@ -144,6 +154,12 @@ public sealed class UserAdministration(
             UserSortKeys.Name => filter.Descending
                 ? source.OrderByDescending(u => u.DisplayName).ThenBy(u => u.Id)
                 : source.OrderBy(u => u.DisplayName).ThenBy(u => u.Id),
+            UserSortKeys.FirstName => filter.Descending
+                ? source.OrderByDescending(u => db.Set<Person>().Where(p => p.UserId == u.Id).Select(p => p.FirstName).FirstOrDefault()).ThenBy(u => u.Id)
+                : source.OrderBy(u => db.Set<Person>().Where(p => p.UserId == u.Id).Select(p => p.FirstName).FirstOrDefault()).ThenBy(u => u.Id),
+            UserSortKeys.LastName => filter.Descending
+                ? source.OrderByDescending(u => db.Set<Person>().Where(p => p.UserId == u.Id).Select(p => p.LastName).FirstOrDefault()).ThenBy(u => u.Id)
+                : source.OrderBy(u => db.Set<Person>().Where(p => p.UserId == u.Id).Select(p => p.LastName).FirstOrDefault()).ThenBy(u => u.Id),
             UserSortKeys.FirstSeen => filter.Descending
                 ? source.OrderByDescending(u => u.CreatedAtUtc).ThenBy(u => u.Id)
                 : source.OrderBy(u => u.CreatedAtUtc).ThenBy(u => u.Id),
@@ -190,6 +206,8 @@ public sealed class UserAdministration(
             {
                 User = u,
                 Account = u.Identities.OrderBy(i => i.Id).Select(i => i.Username).FirstOrDefault(),
+                FirstName = db.Set<Person>().Where(p => p.UserId == u.Id).Select(p => p.FirstName).FirstOrDefault(),
+                LastName = db.Set<Person>().Where(p => p.UserId == u.Id).Select(p => p.LastName).FirstOrDefault(),
                 LastLogin = u.Identities.Max(i => i.LastLoginAt),
                 HasAccess = u.Roles.Any(ur => ur.Role.IsActive && (ur.Role.IsSystemAdmin || ur.Role.Permissions.Any(rp => rp.Permission.IsActive))),
                 IsAdmin = u.Roles.Any(r => r.Role.IsSystemAdmin && r.Role.IsActive),
@@ -214,7 +232,7 @@ public sealed class UserAdministration(
         var items = rows
             .Select(r => ToSummary(r.User, r.Account, r.LastLogin, !r.HasAccess, r.IsAdmin, r.Roles, podsByUser[r.User.Id].ToArray())
                 with
-            { Availability = UserAvailabilitySummary.From(states[r.User.Id]), OpenTaskCount = openTasks is null ? null : openTasks.GetValueOrDefault(r.User.Id) })
+            { FirstName = r.FirstName ?? string.Empty, LastName = r.LastName ?? string.Empty, Availability = UserAvailabilitySummary.From(states[r.User.Id]), OpenTaskCount = openTasks is null ? null : openTasks.GetValueOrDefault(r.User.Id) })
             .ToList();
         return new PagedResult<UserSummaryDto>(items, total, page.Page, page.PageSize);
     }

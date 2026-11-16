@@ -4,7 +4,7 @@ using LptHub.Identity.Pods;
 
 namespace LptHub.Identity.Application;
 
-/// <summary>One row of the users list. <c>Pods</c> are all of the person's Pods (inactive ones too), by name, with the primary one flagged.</summary>
+/// <summary>One row of the users list. <c>FirstName</c> and <c>LastName</c> come from the linked person record (empty when the user has none, or has a one-word name for the last name). <c>Pods</c> are all of the person's Pods (inactive ones too), by name, with the primary one flagged.</summary>
 public sealed record UserSummaryDto(
     [property: Required] int UserId,
     [property: Required] string DisplayName,
@@ -19,7 +19,9 @@ public sealed record UserSummaryDto(
     DateTime? LastLoginAtUtc,
     [property: Required] UserPodDto[] Pods,
     UserAvailabilitySummary? Availability = null,
-    int? OpenTaskCount = null);
+    int? OpenTaskCount = null,
+    string FirstName = "",
+    string LastName = "");
 
 /// <summary>A user with the data of the detail drawer. Pod membership belongs to the Organization module and is added by that ticket.</summary>
 public sealed record UserDetailDto(

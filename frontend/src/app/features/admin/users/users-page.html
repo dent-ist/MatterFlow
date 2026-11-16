@@ -62,6 +62,8 @@
           [filters]="filters"
           [emptyText]="tab() === 'pending' ? 'No one is waiting for access.' : 'No users found.'"
           [actions]="true"
+          [rowClickable]="true"
+          (rowClick)="open($event)"
           [rowClass]="rowClass"
           [bones]="bones"
           [sort]="sortExpr()"
@@ -79,29 +81,28 @@
               [columns]="columns()"
             ></tr>
           }
-          <ng-template mfCell="name" let-u>
+          <ng-template mfCell="firstName" let-u>
             <td class="us-name" data-users-name>
               <button
                 type="button"
                 class="mf-btn mf-btn--text mf-btn--name"
                 data-open
                 data-row-open
-                [attr.title]="nameOf(u)"
+                [attr.title]="firstNameOf(u)"
                 [attr.aria-label]="'Open ' + nameWithAccount(u)"
                 (click)="open(u)"
               >
-                {{ nameOf(u) }}
+                {{ firstNameOf(u) }}
               </button>
-              <span class="us-account pg-clip" [attr.title]="accountLine(u)" data-account>
-                <span class="pg-mono">{{ accountShort(u) }}</span>
-                @if (u.isSeededAdmin) {
-                  <span> &middot; Seeded</span>
-                }
-              </span>
+            </td>
+          </ng-template>
+          <ng-template mfCell="lastName" let-u>
+            <td data-users-last-name [attr.title]="u.lastName">
+              <span class="pg-clip">{{ u.lastName }}</span>
             </td>
           </ng-template>
           <ng-template mfCell="account" let-u>
-            <td class="pg-mono" [attr.title]="u.windowsAccount">
+            <td class="pg-mono" data-account [attr.title]="accountLine(u)">
               <span class="pg-clip">{{ accountShort(u) }}</span>
             </td>
           </ng-template>
@@ -222,7 +223,7 @@
   (saved)="reload()"
 />
 
-<mf-user-drawer
+<mf-user-dialog
   [userId]="userId()"
   [summary]="selectedRow()"
   [roles]="roles()"
@@ -232,9 +233,9 @@
   [podChoicesFailed]="podChoicesFailed()"
   [podsBusy]="userId() !== null && podsBusy().has(userId()!)"
   [intent]="intent()"
-  (closed)="closeDrawer()"
+  (closed)="closeDialog()"
   (changed)="onChanged($event)"
   (editAvailability)="editAvailabilityOf()"
-  (podsChange)="onDrawerPods($event)"
+  (podsChange)="onDialogPods($event)"
   (podsOpened)="loadPodChoices()"
 />

@@ -10060,9 +10060,11 @@ export interface IUsersClient {
      * @param pageSize (optional) 
      * @param sort (optional) 
      * @param dir (optional) 
+     * @param firstName (optional) 
+     * @param lastName (optional) 
      * @return OK
      */
-    listUsers(status?: string | undefined, search?: string | undefined, name?: string | undefined, account?: string | undefined, email?: string | undefined, roleId?: number[] | undefined, availability?: string | undefined, registeredFrom?: string | undefined, registeredTo?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined, dir?: string | undefined): Observable<PagedResultOfUserSummaryDto>;
+    listUsers(status?: string | undefined, search?: string | undefined, name?: string | undefined, account?: string | undefined, email?: string | undefined, roleId?: number[] | undefined, availability?: string | undefined, registeredFrom?: string | undefined, registeredTo?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined, dir?: string | undefined, firstName?: string | undefined, lastName?: string | undefined): Observable<PagedResultOfUserSummaryDto>;
     /**
      * @return OK
      */
@@ -10112,9 +10114,11 @@ export class UsersClient implements IUsersClient {
      * @param pageSize (optional) 
      * @param sort (optional) 
      * @param dir (optional) 
+     * @param firstName (optional) 
+     * @param lastName (optional) 
      * @return OK
      */
-    listUsers(status?: string | undefined, search?: string | undefined, name?: string | undefined, account?: string | undefined, email?: string | undefined, roleId?: number[] | undefined, availability?: string | undefined, registeredFrom?: string | undefined, registeredTo?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined, dir?: string | undefined): Observable<PagedResultOfUserSummaryDto> {
+    listUsers(status?: string | undefined, search?: string | undefined, name?: string | undefined, account?: string | undefined, email?: string | undefined, roleId?: number[] | undefined, availability?: string | undefined, registeredFrom?: string | undefined, registeredTo?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined, dir?: string | undefined, firstName?: string | undefined, lastName?: string | undefined): Observable<PagedResultOfUserSummaryDto> {
         let url_ = this.baseUrl + "/api/v1/users?";
         if (status === null)
             throw new globalThis.Error("The parameter 'status' cannot be null.");
@@ -10168,6 +10172,14 @@ export class UsersClient implements IUsersClient {
             throw new globalThis.Error("The parameter 'dir' cannot be null.");
         else if (dir !== undefined)
             url_ += "dir=" + encodeURIComponent("" + dir) + "&";
+        if (firstName === null)
+            throw new globalThis.Error("The parameter 'firstName' cannot be null.");
+        else if (firstName !== undefined)
+            url_ += "firstName=" + encodeURIComponent("" + firstName) + "&";
+        if (lastName === null)
+            throw new globalThis.Error("The parameter 'lastName' cannot be null.");
+        else if (lastName !== undefined)
+            url_ += "lastName=" + encodeURIComponent("" + lastName) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {
@@ -35119,6 +35131,8 @@ export interface UserSummaryDto {
     pods: UserPodDto[];
     availability?: UserAvailabilitySummary | undefined;
     openTaskCount?: number | undefined;
+    firstName?: string;
+    lastName?: string;
 
     [key: string]: any;
 }

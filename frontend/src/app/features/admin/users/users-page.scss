@@ -29,14 +29,14 @@
 
 /* The Pods cell is one line (the primary pod and "+n", see mf-user-pods-cell [oneLine]): the row stays 44 px; #435 refines the popover. */
 .us-pods {
-  max-width: 15rem;
+  max-width: 11rem;
 }
 
 .us-name {
   max-width: 0;
 }
 
-/* The name over the account line must fit the 44 px row (D-42, D-44m): no vertical padding, and the name is one line here because the account line is the second line. The full name stays in the title attribute. */
+/* The first name is the name button: one line, the row stays 44 px (D-42, D-44m). The full name stays in the title attribute. */
 td.us-name {
   padding-block: 0;
 }
@@ -46,14 +46,8 @@ td.us-name {
   line-clamp: 1;
 }
 
-/* The account under the name: 13 px mono muted (#1197). */
-.us-account {
-  color: var(--mf-text-muted);
-  font-size: var(--mf-fs-sm);
-}
-
 .us-roles {
-  max-width: 9rem;
+  max-width: 8rem;
 }
 
 .us-muted-text {
@@ -65,7 +59,7 @@ td.us-name {
   font-size: var(--mf-fs-sm);
 }
 
-/* Fixed-header page: the list scrolls inside its own box (the user drawer is a dialog and takes no room). */
+/* Fixed-header page: the list scrolls inside its own box (the user dialog is centred and takes no room). */
 @media (max-width: 960px) {
   .mf-layout {
     flex-direction: column;
