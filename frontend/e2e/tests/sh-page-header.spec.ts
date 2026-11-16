@@ -212,8 +212,7 @@ test.describe('Page-header contract (#600)', () => {
             .getBoundingClientRect();
           return { top: header.top - main.top, left: header.left };
         });
-      // A record page that is a fixed page (the Client): the Matter page is one scrolling page since #1396 and takes the shell's 24 px padding (D-03a).
-      await page.goto(`/clients/${client.clientId}`);
+      await page.goto(`/matters/${matter.matterId}`);
       const record = { ...(await geometry(page, /./)), ...(await top()) };
       await page.goto('/tasks/new');
       const create = { ...(await geometry(page, 'Create Task')), ...(await top()) };

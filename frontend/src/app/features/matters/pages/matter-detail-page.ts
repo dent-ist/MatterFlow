@@ -136,6 +136,10 @@ type Tab = MatterTabKey;
       margin-bottom: var(--mf-s3);
     }
     /* The one page (#1396, D-03a): the page scrolls; the sections are 12 px apart under the sticky jump strip. */
+    /* The page scrolls inside the shell's 24 px padding; the title sits where every record page puts it (12 px below the top bar). */
+    .mp {
+      margin-top: calc(-1 * (var(--mf-s5) - var(--mf-s3)));
+    }
     .mp__sections {
       display: flex;
       flex-direction: column;
