@@ -2,6 +2,7 @@ import { TagChip } from '../../../shared/ui/tag-chip';
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   computed,
   effect,
   inject,
@@ -106,6 +107,11 @@ export class UserDialog {
   readonly podChoicesFailed = input(false);
   readonly podsBusy = input(false);
   readonly intent = input<UserDialogIntent>(null);
+  /**
+   * Another dialog is open for this person (Edit Availability): this one steps aside and comes back when that one closes, because a dialog never
+   * opens on top of another (D-31); what was typed stays. Focus goes back to the button that asked.
+   */
+  readonly suspended = input(false);
 
   /** The dialog wants to close (X, Esc, Cancel, mask), after the unsaved-changes question: the page removes `?user` from the address. */
   readonly closed = output<void>();
@@ -116,6 +122,14 @@ export class UserDialog {
   readonly podsOpened = output<void>();
 
   protected readonly open = computed(() => this.userId() !== null);
+  /** True once the person has been read (or the read failed) after the dialog was asked for: it opens with its content, so focus can start in it. */
+  private readonly opened = signal(false);
+  /** The dialog was aside for another one and is back: it starts on the button that asked. */
+  private readonly cameBack = signal(false);
+  protected readonly focusTarget = computed(() =>
+    this.cameBack() ? 'ud-edit-availability' : 'ud-start',
+  );
+  protected readonly shown = computed(() => this.open() && this.opened() && !this.suspended());
   protected readonly detail = signal<UserDetailDto | null>(null);
   protected readonly loadState = signal<'loading' | 'ready' | 'error'>('loading');
   protected readonly draftRoleIds = signal<number[]>([]);
@@ -230,12 +244,37 @@ export class UserDialog {
       const changed = this.rolesChanged();
       if (changed) untracked(() => void this.readRoles(ids));
     });
-    // The deactivation question replaces the footer: focus goes to its safe choice, Keep User.
+    // Esc while the deactivation question is in the footer closes the question, not the dialog (heard first, before the dialog's own Esc).
+    const onEsc = (e: KeyboardEvent): void => {
+      if (e.key !== 'Escape' || !this.deactivateOpen()) return;
+      e.stopPropagation();
+      this.deactivateOpen.set(false);
+    };
+    document.addEventListener('keydown', onEsc, true);
+    inject(DestroyRef).onDestroy(() => document.removeEventListener('keydown', onEsc, true));
+    // The deactivation question replaces the footer: focus goes to its safe choice, Keep User; when it closes (Keep User, Esc, or the person is now
+    // deactivated) focus goes back to the control that asked, which is Activate once the person is deactivated.
+    let questionWasOpen = false;
     effect(() => {
-      if (this.deactivateOpen())
+      const open = this.deactivateOpen();
+      if (open) {
         setTimeout(() =>
           document.querySelector<HTMLElement>('.mf-formdlg [data-deactivate-keep] button')?.focus(),
         );
+      } else if (questionWasOpen && this.open()) {
+        setTimeout(() =>
+          document
+            .querySelector<HTMLElement>(
+              '.mf-formdlg [data-deactivate], .mf-formdlg [data-activate]',
+            )
+            ?.focus(),
+        );
+      }
+      questionWasOpen = open;
+    });
+    // While this dialog is aside for another one, the next time it opens focus goes back to the button that asked (Edit Availability).
+    effect(() => {
+      if (this.suspended() && this.open()) this.cameBack.set(true);
     });
     // The row menu's Deactivate / Activate: once the person is loaded, the question is on screen / the person is activated.
     effect(() => {
@@ -261,6 +300,8 @@ export class UserDialog {
     this.requestId++;
     this.intentDone = false;
     this.detail.set(null);
+    this.opened.set(false);
+    this.cameBack.set(false);
     this.panelError.set('');
     this.deactivateOpen.set(false);
     this.draftRoleIds.set([]);
@@ -280,9 +321,11 @@ export class UserDialog {
       if (request !== this.requestId) return;
       this.show(user);
       this.loadState.set('ready');
+      this.opened.set(true);
     } catch {
       if (request !== this.requestId) return;
       this.loadState.set('error');
+      this.opened.set(true);
     }
   }
 

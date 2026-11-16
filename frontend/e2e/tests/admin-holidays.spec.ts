@@ -2,7 +2,7 @@ import { expect, test } from '../support/fixtures';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { asDropdown, labelledDropdown } from '../support/dropdown';
 import { ci, shownName } from '../support/text';
-import { userName, userRow } from '../support/users-grid';
+import { nameFilter, userName, userRow } from '../support/users-grid';
 
 /**
  * Administration > Settings > Holidays and the coverage thresholds (epic #1074, CAL-06, issue #1080): a "US Holiday" calendar with Thanksgiving (4th Thursday of November,
@@ -133,8 +133,8 @@ test.describe('Settings > Holidays', () => {
         yearly: true,
         weekendRule: 'NONE',
       });
-      await page.goto(`/admin/users?status=active&name=${encodeURIComponent(display)}`);
-      // The person opens from the name button of the row (the row itself is not a button), and the drawer holds the calendar field.
+      await page.goto(`/admin/users?status=active&${nameFilter(display)}`);
+      // The person opens from the name button of the row (the row itself is not a button), and the dialog holds the calendar field.
       await userName(userRow(page, userId, shownName(username))).click();
       const field = page.locator('[data-user-calendar-select]');
       await expect(field).toBeVisible();

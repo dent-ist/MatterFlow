@@ -7,15 +7,15 @@ import { Persona } from '../support/personas';
 import { userName, userRow } from '../support/users-grid';
 
 /**
- * Users epic #422, WP-US4: the user drawer (#438 shell, #439 Access, #440 Pods / Availability / Profile, #441 deactivation dialog, #442 grant
- * toast with Undo, #443 read-only variants, #444 last System Admin and concurrent edits).
- *  - one modal side drawer, `?user=<id>` in the address (a deep link opens it, Back closes it, Back from "View their tasks" reopens it);
- *  - Roles are in view at 1366x768, the grid keeps its width, the footer stays, focus is trapped, Esc closes (asking when dirty), focus goes back;
+ * Users epic #422, WP-US4, moved from the side drawer to a centre dialog in epic #1389 (issue #1390): the user dialog (#438 shell, #439 Access, #440 Pods /
+ * Availability / Profile, #441 deactivation question, #442 grant toast with Undo, #443 read-only variants, #444 last System Admin and concurrent edits).
+ *  - one large (768 px) centred dialog, `?user=<id>` in the address (a deep link opens it, Back closes it, Back from "View their tasks" reopens it);
+ *  - Roles are in view at 1366x768, the grid stays where it is, the footer stays, focus is trapped, Esc closes (asking when dirty), focus goes back;
  *  - Access first (role description and permission count, grouped permissions after the save, System Admin warning), then Pods, Availability, Profile;
- *  - Deactivate is a confirm dialog with the open-task count, focus on Cancel, a toast, no duplicate toast for the last System Admin;
- *  - a first grant of access closes the drawer, offers Undo and keeps focus in the grid;
+ *  - Deactivate asks in the footer of the dialog (no second dialog) with the open-task count, focus on Keep User, a toast, no duplicate toast for the last System Admin;
+ *  - a first grant of access closes the dialog, offers Undo and keeps focus in the grid;
  *  - User.View only is read only with the reason; Pod.ManageMembers can change pods and nothing else.
- * axe is required here: a missing axe-core fails the file instead of skipping it. Screenshots for docs/ux/users-review/fixes/us4-drawer/ are
+ * axe is required here: a missing axe-core fails the file instead of skipping it. Screenshots (older ones in docs/ux/users-review/fixes/us4-drawer/) are
  * written when E2E_SCREENSHOTS is set to the output folder.
  */
 const SIZES = [
@@ -57,7 +57,9 @@ test.beforeAll(async ({ personas, seed, admin }) => {
 const listUrl = (extra = '') => `/admin/users?status=all&account=e2e-${TAG}${extra}`;
 const rowOf = (page: Page, userId: number) => userRow(page, userId, ACCOUNT.get(userId)!);
 const nameOf = (page: Page, userId: number) => userName(rowOf(page, userId));
-const drawer = (page: Page) => page.locator('.mf-user-drawer');
+/** The user dialog (the Availability dialog above it is another `.mf-formdlg`). */
+const dialogOf = (page: Page) =>
+  page.locator('.mf-formdlg').filter({ has: page.locator('[data-panel]') });
 
 async function openList(page: Page, width = 1366, height = 768, extra = ''): Promise<void> {
   await page.setViewportSize({ width, height });
@@ -65,10 +67,10 @@ async function openList(page: Page, width = 1366, height = 768, extra = ''): Pro
   await expect(page.locator(width < 640 ? 'li.rc' : 'tr[data-record-id]')).toHaveCount(4);
 }
 
-async function openDrawer(page: Page, userId: number): Promise<void> {
+async function openDialog(page: Page, userId: number): Promise<void> {
   await nameOf(page, userId).click();
-  await expect(page.locator('[data-panel-heading]')).toBeFocused();
   await expect(page.locator('[data-panel] [data-section="access"]')).toBeVisible();
+  await expect(dialogOf(page).locator(':focus')).toHaveCount(1);
 }
 
 const noSideScroll = (page: Page) =>
@@ -88,27 +90,31 @@ async function axeClean(page: Page) {
     .filter((v) => v.nodes.length > 0);
 }
 
-test.describe('#438 the drawer shell', () => {
-  test('opens from the name over a grid that keeps its width; Roles are in view at 1366x768; the footer stays', async ({
+test.describe('#438 the dialog shell', () => {
+  test('opens from the name over a grid that keeps its width; it is 768 px and centred; Roles are in view at 1366x768; the footer stays', async ({
     page,
   }) => {
     await openList(page);
     const before = await page.locator('mf-grid-frame .scroll').boundingBox();
-    await openDrawer(page, worker.userId);
+    await openDialog(page, worker.userId);
     await expect(page).toHaveURL(new RegExp(`user=${worker.userId}`));
-    // The grid behind the mask is as wide as before: the drawer takes no room from it.
+    // The grid behind the mask is as wide as before: the dialog takes no room from it.
     const after = await page.locator('mf-grid-frame .scroll').boundingBox();
     expect(Math.round(after!.width)).toBe(Math.round(before!.width));
-    // The drawer is 520 px from 1024 up.
-    const box = await drawer(page).boundingBox();
-    expect(Math.round(box!.width)).toBe(520);
-    // The first role is on screen without scrolling the drawer, and so are Save changes and Cancel.
+    // The large dialog is 768 px (D-32) and centred in the window (it is not a panel at the right edge).
+    const box = await dialogOf(page).boundingBox();
+    expect(Math.round(box!.width)).toBe(768);
+    const viewport = page.viewportSize()!;
+    expect(Math.abs(box!.x + box!.width / 2 - viewport.width / 2)).toBeLessThanOrEqual(2);
+    expect(box!.y).toBeGreaterThan(0);
+    expect(box!.y + box!.height).toBeLessThan(viewport.height);
+    // The first role is on screen without scrolling the dialog, and so are Save Changes and Cancel.
     const role = page.locator('[data-panel] [data-role]').first();
     const roleBox = await role.boundingBox();
     expect(roleBox!.y + roleBox!.height).toBeLessThanOrEqual(768);
     await expect(page.getByRole('button', { name: 'Save Changes' })).toBeInViewport();
     await expect(page.getByRole('button', { name: 'Cancel' })).toBeInViewport();
-    // The content scrolls inside the drawer, never the page.
+    // The content scrolls inside the dialog, never the page.
     expect(await noSideScroll(page)).toBe(true);
     expect(
       await page.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight + 1),
@@ -119,19 +125,19 @@ test.describe('#438 the drawer shell', () => {
     page,
   }) => {
     await openList(page);
-    await openDrawer(page, worker.userId);
-    await expect(drawer(page)).toHaveAttribute('aria-modal', 'true');
-    const labelled = await drawer(page).getAttribute('aria-labelledby');
-    await expect(page.locator(`#${labelled}`)).toHaveAttribute('data-panel-heading', '');
+    await openDialog(page, worker.userId);
+    await expect(dialogOf(page)).toHaveAttribute('aria-modal', 'true');
+    const labelled = await dialogOf(page).getAttribute('aria-labelledby');
+    await expect(page.locator(`#${labelled}`)).toHaveAttribute('data-panel-title', '');
     for (let i = 0; i < 40; i++) {
       await page.keyboard.press('Tab');
-      expect(await page.evaluate(() => !!document.activeElement?.closest('.mf-user-drawer'))).toBe(
+      expect(await page.evaluate(() => !!document.activeElement?.closest('.mf-formdlg'))).toBe(
         true,
       );
     }
     for (let i = 0; i < 40; i++) {
       await page.keyboard.press('Shift+Tab');
-      expect(await page.evaluate(() => !!document.activeElement?.closest('.mf-user-drawer'))).toBe(
+      expect(await page.evaluate(() => !!document.activeElement?.closest('.mf-formdlg'))).toBe(
         true,
       );
     }
@@ -144,9 +150,9 @@ test.describe('#438 the drawer shell', () => {
     const button = nameOf(page, worker.userId);
     await button.focus();
     await page.keyboard.press('Enter');
-    await expect(page.locator('[data-panel-heading]')).toBeFocused();
+    await expect(dialogOf(page).locator(':focus')).toHaveCount(1);
     await page.keyboard.press('Escape');
-    await expect(drawer(page)).toHaveCount(0);
+    await expect(dialogOf(page)).toHaveCount(0);
     await expect(page).not.toHaveURL(/user=/);
     await expect(button).toBeFocused();
   });
@@ -156,66 +162,70 @@ test.describe('#438 the drawer shell', () => {
     await page.goto(listUrl());
     await expect(page.locator('tr[data-record-id]')).toHaveCount(4);
     await nameOf(page, worker.userId).click();
-    await expect(drawer(page)).toBeVisible();
+    await expect(dialogOf(page)).toBeVisible();
     await page.goBack();
-    await expect(drawer(page)).toHaveCount(0);
+    await expect(dialogOf(page)).toHaveCount(0);
     await expect(page).not.toHaveURL(/user=/);
     await page.goForward();
-    await expect(drawer(page)).toBeVisible();
+    await expect(dialogOf(page)).toBeVisible();
     // A reload keeps it: the person is in the address.
     await page.reload();
-    await expect(page.locator('[data-panel-heading]')).toContainText(
+    await expect(page.locator('[data-panel-title]')).toContainText(
       (worker.displayName ?? worker.username).replace(/^.*\\/, ''),
     );
     // Closing after a reload leaves the address without the person.
     await page.keyboard.press('Escape');
-    await expect(drawer(page)).toHaveCount(0);
+    await expect(dialogOf(page)).toHaveCount(0);
     await expect(page).not.toHaveURL(/user=/);
-    // A person that does not exist shows the error, not a blank drawer.
+    // A person that does not exist shows the error, not a blank dialog.
     await page.goto(listUrl('&user=99999999'));
     await expect(page.locator('[data-panel-error]')).toContainText("Couldn't load this user");
     await expect(page.getByRole('button', { name: 'Retry' })).toBeVisible();
   });
 
-  test('Esc with unsaved edits asks first: Stay keeps the drawer, Leave closes it and focus is back on the name', async ({
+  test('Esc with unsaved edits asks first in the footer: Keep Editing keeps the dialog, Discard Changes closes it and focus is back on the name', async ({
     page,
   }) => {
     await openList(page);
-    await openDrawer(page, worker.userId);
+    await openDialog(page, worker.userId);
     const name = page.locator('[data-name]');
     await name.fill('Someone Else Entirely');
     await page.keyboard.press('Escape');
-    const dialog = page.getByRole('dialog', { name: 'Unsaved Changes' });
-    await expect(dialog).toBeVisible();
-    await dialog.getByRole('button', { name: 'Keep Editing' }).click();
-    await expect(dialog).toBeHidden();
+    const ask = dialogOf(page).locator('[data-panel-guard]');
+    await expect(ask).toContainText('You have unsaved changes. Discard them?');
+    await ask.getByRole('button', { name: 'Keep Editing' }).click();
+    await expect(ask).toBeHidden();
+    await expect(dialogOf(page)).toBeVisible();
     await expect(name).toHaveValue('Someone Else Entirely');
     await page.keyboard.press('Escape');
-    await dialog.getByRole('button', { name: 'Discard Changes' }).click();
-    await expect(drawer(page)).toHaveCount(0);
+    await dialogOf(page)
+      .locator('[data-panel-guard]')
+      .getByRole('button', { name: 'Discard Changes' })
+      .click();
+    await expect(dialogOf(page)).toHaveCount(0);
     await expect(nameOf(page, worker.userId)).toBeFocused();
   });
 
-  test('the header names the person, status, last seen and open tasks; the name is clamped to two lines', async ({
+  test('the header names the person and the account; the first lines name the status, last seen and open tasks', async ({
     page,
   }) => {
     await openList(page);
-    await openDrawer(page, worker.userId);
-    const head = page.locator('[data-drawer-head]');
-    await expect(head.locator('[data-drawer-status]')).toContainText('Active');
+    await openDialog(page, worker.userId);
+    const head = page.locator('[data-dialog-head]');
+    await expect(head.locator('[data-dialog-status]')).toContainText('Active');
     await expect(head.locator('[data-open-tasks]')).toHaveText('Open tasks: 2');
-    const clamp = await page
-      .locator('[data-panel-heading]')
-      .evaluate((h) => getComputedStyle(h).getPropertyValue('-webkit-line-clamp'));
-    expect(clamp).toBe('2');
+    // Title = the name, subtitle = the Windows account (D-31).
+    await expect(page.locator('[data-panel-title]')).toContainText(worker.username);
     // Pending: its own badge, no Deactivate offered for a person who cannot sign in yet? (they can be deactivated), Activate not shown.
     await page.keyboard.press('Escape');
-    await openDrawer(page, pending.userId);
-    await expect(head.locator('[data-drawer-status]')).toContainText('Pending Access');
+    await expect(dialogOf(page)).toHaveCount(0);
+    await openDialog(page, pending.userId);
+    await expect(head.locator('[data-dialog-status]')).toContainText('Pending Access');
     await page.keyboard.press('Escape');
+    await expect(dialogOf(page)).toHaveCount(0);
     // Inactive: Activate instead of Deactivate.
-    await openDrawer(page, gone.userId);
-    await expect(head.locator('[data-drawer-status]')).toContainText('Inactive');
+    await openDialog(page, gone.userId);
+    await expect(head.locator('[data-dialog-status]')).toContainText('Inactive');
     await expect(page.getByRole('button', { name: /^Activate / })).toBeVisible();
     await expect(page.getByRole('button', { name: /^Deactivate / })).toHaveCount(0);
   });
@@ -226,10 +236,10 @@ test.describe('#439 Access', () => {
     page,
   }) => {
     await openList(page);
-    await openDrawer(page, worker.userId);
+    await openDialog(page, worker.userId);
     const director = page.locator('[data-role]').first().locator('xpath=ancestor::label');
     await expect(director.locator('.ud-role-meta')).toContainText(/\d+ permissions?/);
-    const saved = page.locator('[data-permissions] h4');
+    const saved = page.locator('[data-permissions] h3');
     await expect(saved).toContainText('Effective permissions (');
     const chips = page.locator('[data-permission-group]');
     expect(await chips.count()).toBeGreaterThan(1);
@@ -253,7 +263,7 @@ test.describe('#439 Access', () => {
 
   test('keyboard order: the roles, then the permission summary, then Pods', async ({ page }) => {
     await openList(page);
-    await openDrawer(page, worker.userId);
+    await openDialog(page, worker.userId);
     const names: string[] = [];
     // One press per control on the page and a few more (a used database has hundreds of roles, one checkbox each).
     const budget = await page.evaluate(
@@ -280,9 +290,9 @@ test.describe('#439 Access', () => {
 });
 
 test.describe('#440 Pods, Availability and Profile', () => {
-  test('Pods are changed in the drawer and saved at once, with Undo', async ({ page }) => {
+  test('Pods are changed in the dialog and saved at once, with Undo', async ({ page }) => {
     await openList(page);
-    await openDrawer(page, worker.userId);
+    await openDialog(page, worker.userId);
     const pods = page.locator('[data-section="pods"]');
     await expect(pods).toContainText(podName);
     await pods.locator('[data-pods-trigger]').click();
@@ -310,7 +320,7 @@ test.describe('#440 Pods, Availability and Profile', () => {
     page,
   }) => {
     await openList(page);
-    await openDrawer(page, away.userId);
+    await openDialog(page, away.userId);
     await expect(page.locator('[data-availability-sentence]')).toContainText(
       'Out of Office until 10/25/2027',
     );
@@ -320,7 +330,7 @@ test.describe('#440 Pods, Availability and Profile', () => {
     await expect(dialog).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();
-    await expect(drawer(page)).toBeVisible();
+    await expect(dialogOf(page)).toBeVisible();
     await expect(edit).toBeFocused();
   });
 
@@ -335,64 +345,71 @@ test.describe('#440 Pods, Availability and Profile', () => {
     await nameOf(page, p.userId).click();
     await expect(page.locator('.ud-dl')).toContainText(p.username);
     await expect(page.locator('[data-first-seen]')).toHaveText(/^\d{2}\/\d{2}/);
-    await page.locator('[data-name]').fill('Renamed Drawer Person');
+    await page.locator('[data-name]').fill('Renamed Dialog Person');
     await page.locator('[data-email]').fill('renamed@firm.test');
     await page.getByRole('button', { name: 'Save Changes' }).click();
-    await expect(page.locator('[data-panel-heading]')).toContainText('Renamed Drawer Person');
-    await expect(page.getByRole('button', { name: 'Save Changes' })).toBeDisabled();
+    await expect(page.locator('[data-panel-title]')).toContainText('Renamed Dialog Person');
+    await expect(page.locator('[data-panel-primary]')).toHaveAttribute('aria-disabled', 'true');
   });
 });
 
 test.describe('#441 deactivation', () => {
-  test('Deactivate asks in a dialog that states the open tasks; focus is on Cancel; the result is a toast and the counts follow', async ({
+  test('Deactivate asks in the footer of the dialog (no second dialog) and states the open tasks; focus is on Keep User; the result is a toast and the counts follow', async ({
     page,
   }) => {
     await openList(page);
-    await openDrawer(page, worker.userId);
+    await openDialog(page, worker.userId);
     const deactivate = page.getByRole('button', { name: /^Deactivate / });
     await deactivate.click();
-    const dialog = page.getByRole('dialog', { name: /^Deactivate / });
-    await expect(dialog).toContainText(
+    const ask = page.locator('[data-deactivate-foot]');
+    await expect(ask).toContainText(
       'This user has 2 open tasks. They stay assigned until you reassign them one by one.',
     );
-    await expect(dialog.getByRole('button', { name: 'View their tasks' })).toBeVisible();
-    await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeFocused();
-    // Cancel changes nothing and focus returns to the control that asked.
+    await expect(page.locator('.mf-formdlg')).toHaveCount(1);
+    await expect(ask.locator('[data-deactivate-extra]')).toBeVisible();
+    await expect(ask.getByRole('button', { name: 'Keep User' })).toBeFocused();
+    // Keep User changes nothing and the control that asked is still there.
     await page.keyboard.press('Enter');
-    await expect(dialog).toBeHidden();
-    await expect(deactivate).toBeFocused();
+    await expect(ask).toBeHidden();
+    await expect(deactivate).toBeVisible();
+    // Esc closes the question first, not the dialog.
+    await deactivate.click();
+    await expect(ask).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(ask).toBeHidden();
+    await expect(dialogOf(page)).toBeVisible();
 
     const inactiveBefore = await page.locator('[data-strip-item="inactive"]').textContent();
     await deactivate.click();
-    await dialog.getByRole('button', { name: 'Deactivate User', exact: true }).click();
-    await expect(dialog).toBeHidden();
-    await expect(page.locator('[data-drawer-status]')).toContainText('Inactive');
+    await ask.getByRole('button', { name: 'Deactivate User', exact: true }).click();
+    await expect(ask).toBeHidden();
+    await expect(page.locator('[data-dialog-status]')).toContainText('Inactive');
     await expect(page.getByRole('button', { name: /^Activate / })).toBeVisible();
     await expect(page.locator('[data-strip-item="inactive"]')).not.toHaveText(inactiveBefore ?? '');
     await expect(page.getByText('User deactivated')).toBeVisible();
     // Activate needs no question.
     await page.getByRole('button', { name: /^Activate / }).click();
-    await expect(page.locator('[data-drawer-status]')).toContainText('Active');
+    await expect(page.locator('[data-dialog-status]')).toContainText('Active');
   });
 
-  test('"View their tasks" leaves for the Task Queue and Back returns to the open drawer', async ({
+  test('"View their tasks" leaves for the Task Queue and Back returns to the open dialog', async ({
     page,
   }) => {
     await openList(page);
-    await openDrawer(page, worker.userId);
+    await openDialog(page, worker.userId);
     await page.getByRole('link', { name: 'View their tasks' }).click();
     await expect(page).toHaveURL(/\/tasks\?.*assignee=/);
     await expect(page.locator('[data-task]')).toHaveCount(2);
     await page.goBack();
-    await expect(page.locator('[data-panel-heading]')).toBeVisible();
+    await expect(page.locator('[data-panel-title]')).toBeVisible();
     await expect(page).toHaveURL(new RegExp(`user=${worker.userId}`));
   });
 
-  test('the last System Admin message is shown in the drawer once, without a toast', async ({
+  test('the last System Admin message is shown in the dialog once, without a toast', async ({
     page,
   }) => {
     await openList(page);
-    await openDrawer(page, worker.userId);
+    await openDialog(page, worker.userId);
     await page.route('**/api/v1/users/*/status', (route) =>
       route.fulfill({
         status: 409,
@@ -407,7 +424,7 @@ test.describe('#441 deactivation', () => {
     );
     await page.getByRole('button', { name: /^Deactivate / }).click();
     await page
-      .getByRole('dialog', { name: /^Deactivate / })
+      .locator('[data-deactivate-foot]')
       .getByRole('button', { name: 'Deactivate User', exact: true })
       .click();
     await expect(page.locator('[data-panel-error]')).toHaveText(
@@ -416,12 +433,12 @@ test.describe('#441 deactivation', () => {
     await expect(
       page.locator('.mf-toast, p-toast, [data-toast]').filter({ hasText: 'At least one active' }),
     ).toHaveCount(0);
-    await expect(page.locator('[data-drawer-status]')).toContainText('Active');
+    await expect(page.locator('[data-dialog-status]')).toContainText('Active');
   });
 });
 
 test.describe('#442 a first grant of access', () => {
-  test('shows a toast with Undo, closes the drawer and keeps focus in the grid; Undo puts the person back to Pending', async ({
+  test('shows a toast with Undo, closes the dialog and keeps focus in the grid; Undo puts the person back to Pending', async ({
     page,
     personas,
   }) => {
@@ -434,10 +451,10 @@ test.describe('#442 a first grant of access', () => {
     await expect(page.locator('tr[data-record-id]')).toHaveCount(2);
     const grant = rowOf(page, first.userId).locator('button[data-grant]');
     await grant.click();
-    await expect(page.locator('[data-panel-heading]')).toBeFocused();
+    await expect(page.locator('[data-panel] [data-section="access"]')).toBeVisible();
     await page.getByRole('checkbox', { name: /^Data Technician/ }).check();
     await page.getByRole('button', { name: 'Save Changes' }).click();
-    await expect(drawer(page)).toHaveCount(0);
+    await expect(dialogOf(page)).toHaveCount(0);
     const toast = page.getByRole('status').filter({ hasText: 'now has access (Data Technician)' });
     await expect(toast).toBeVisible();
     // The person left the Pending segment; focus is on a row that is still there.
@@ -460,16 +477,18 @@ test.describe('#443 read-only variants and #444 conflicts', () => {
     await page.goto(listUrl());
     await expect(page.locator('tr[data-record-id]')).toHaveCount(4);
     await expect(page.locator('[data-grant]')).toHaveCount(0);
-    await openDrawer(page, pending.userId);
+    await openDialog(page, pending.userId);
     await expect(page.locator('[data-readonly-reason]')).toContainText(
       'you can see this person but not change them',
     );
     for (const sel of ['[data-deactivate]', '[data-activate]', '[data-edit-availability]']) {
       await expect(page.locator(sel)).toHaveCount(0);
     }
-    await expect(drawer(page).locator('[data-pods-trigger]')).toHaveCount(0);
+    await expect(dialogOf(page).locator('[data-pods-trigger]')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Save Changes' })).toHaveCount(0);
-    await expect(drawer(page).getByRole('button', { name: 'Close', exact: true })).toBeVisible();
+    await expect(
+      page.locator('[data-panel-cancel]').getByRole('button', { name: 'Close' }),
+    ).toBeVisible();
     await expect(page.locator('[data-role]').first()).toBeDisabled();
     await expect(page.locator('[data-name]')).toBeDisabled();
     expect(await axeClean(page)).toEqual([]);
@@ -486,12 +505,12 @@ test.describe('#443 read-only variants and #444 conflicts', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/admin/users?status=all&account=${subject.username}`);
     await nameOf(page, subject.userId).click();
-    await expect(page.locator('[data-panel-heading]')).toBeFocused();
+    await expect(page.locator('[data-panel] [data-section="access"]')).toBeVisible();
     await expect(page.locator('[data-readonly-reason]')).toContainText('except pods');
-    await expect(drawer(page).locator('[data-pods-trigger]')).toBeVisible();
+    await expect(dialogOf(page).locator('[data-pods-trigger]')).toBeVisible();
     await expect(page.locator('[data-deactivate]')).toHaveCount(0);
     await expect(page.locator('[data-role]').first()).toBeDisabled();
-    await drawer(page).locator('[data-pods-trigger]').click();
+    await dialogOf(page).locator('[data-pods-trigger]').click();
     await page.getByRole('checkbox', { name: new RegExp(otherPodName) }).check();
     // The first pod of a person with no pods is the primary one already (no "Make Primary" button then).
     const makePrimary = page.getByRole('button', { name: `Make ${otherPodName} the primary pod` });
@@ -510,8 +529,8 @@ test.describe('#443 read-only variants and #444 conflicts', () => {
     await page.setViewportSize({ width: 1366, height: 768 });
     await page.goto(`/admin/users?status=all&account=${p.username}`);
     await nameOf(page, p.userId).click();
-    await expect(page.locator('[data-panel-heading]')).toBeFocused();
-    // Another administrator renames the person after this drawer loaded.
+    await expect(page.locator('[data-panel] [data-section="access"]')).toBeVisible();
+    // Another administrator renames the person after this dialog loaded.
     const detail = await admin.get(`/api/v1/users/${p.userId}`);
     await admin.put(`/api/v1/users/${p.userId}`, {
       displayName: 'Changed Elsewhere',
@@ -523,30 +542,29 @@ test.describe('#443 read-only variants and #444 conflicts', () => {
     await expect(page.locator('[data-panel-error]')).toContainText(
       'This user was changed by someone else. The latest values are shown.',
     );
-    await expect(page.locator('[data-panel-heading]')).toContainText('Changed Elsewhere');
+    await expect(page.locator('[data-panel-title]')).toContainText('Changed Elsewhere');
   });
 });
 
-test.describe('axe and layout at both desktop sizes with the drawer open', () => {
+test.describe('axe and layout at both desktop sizes with the dialog open', () => {
   for (const { width, height } of SIZES) {
-    test(`drawer, deactivation dialog and availability dialog at ${width}x${height}`, async ({
+    test(`dialog, deactivation question and availability dialog at ${width}x${height}`, async ({
       page,
     }) => {
       await openList(page, width, height);
       expect(await axeClean(page)).toEqual([]);
-      await openDrawer(page, worker.userId);
+      await openDialog(page, worker.userId);
       expect(await axeClean(page)).toEqual([]);
       expect(await noSideScroll(page)).toBe(true);
       // The footer stays in view whatever the window.
       await expect(page.getByRole('button', { name: 'Save Changes' })).toBeInViewport();
       await page.getByRole('button', { name: /^Deactivate / }).click();
-      const dialog = page.getByRole('dialog', { name: /^Deactivate / });
-      await expect(dialog).toBeVisible();
+      const ask = page.locator('[data-deactivate-foot]');
+      await expect(ask).toBeVisible();
       expect(await axeClean(page)).toEqual([]);
       expect(await noSideScroll(page)).toBe(true);
       await page.keyboard.press('Escape');
-      await expect(dialog).toBeHidden();
-      if (width < 640) await page.locator('[data-section-toggle="availability"]').click();
+      await expect(ask).toBeHidden();
       await page.locator('[data-edit-availability]').click();
       await expect(page.getByRole('dialog').last()).toBeVisible();
       expect(await axeClean(page)).toEqual([]);
@@ -555,7 +573,7 @@ test.describe('axe and layout at both desktop sizes with the drawer open', () =>
   }
 });
 
-test.describe('us4-drawer screenshots', () => {
+test.describe('us4-dialog screenshots', () => {
   test.skip(!OUT, 'set E2E_SCREENSHOTS to the output folder');
   for (const { width, height } of SIZES) {
     test(`capture ${width}x${height}`, async ({ page }) => {
@@ -565,20 +583,20 @@ test.describe('us4-drawer screenshots', () => {
         await page.screenshot({ path: path.join(OUT!, `${name}-${width}x${height}.png`) });
       };
       await openList(page, width, height);
-      await openDrawer(page, worker.userId);
-      await shot('user-drawer');
+      await openDialog(page, worker.userId);
+      await shot('user-dialog');
       await page.getByRole('checkbox', { name: /^System Admin/ }).check();
-      await shot('user-drawer-sysadmin-preview');
+      await shot('user-dialog-sysadmin-preview');
       await page.getByRole('checkbox', { name: /^System Admin/ }).uncheck();
       await page.getByRole('button', { name: /^Deactivate / }).click();
-      await shot('user-deactivate-dialog');
+      await shot('user-deactivate-question');
       await page.keyboard.press('Escape');
-      await expect(page.getByRole('dialog', { name: /^Deactivate / })).toBeHidden();
+      await expect(page.locator('[data-deactivate-foot]')).toBeHidden();
       await expect(page.locator('.p-dialog-mask')).toHaveCount(1);
       await page.keyboard.press('Escape');
-      await expect(drawer(page)).toHaveCount(0);
-      await openDrawer(page, pending.userId);
-      await shot('user-drawer-pending');
+      await expect(dialogOf(page)).toHaveCount(0);
+      await openDialog(page, pending.userId);
+      await shot('user-dialog-pending');
     });
   }
 });

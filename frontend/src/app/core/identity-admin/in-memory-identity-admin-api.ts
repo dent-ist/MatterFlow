@@ -64,10 +64,13 @@ const noUser = () => fail(404, 'NOT_FOUND', 'The user does not exist.');
 const noRole = () => fail(404, 'NOT_FOUND', 'The role does not exist.');
 const conflict = () => fail(409, 'CONCURRENCY_CONFLICT', 'This user was changed by someone else.');
 const lastAdmin = () => fail(409, 'LAST_ADMIN', 'At least one active System Admin is required.');
-/** The person record's split of a display name: the first word is the first name, the rest the last name (the server's `PersonNameSplitter`, simplified). */
+/** The person record's split of a display name: the last word is the last name, the rest the first name (the server's `PersonNameSplitter`). */
 function nameParts(displayName: string): { first: string; last: string } {
-  const [first = '', ...rest] = displayName.trim().split(/\s+/);
-  return { first, last: rest.join(' ') };
+  const name = displayName.trim();
+  const space = name.lastIndexOf(' ');
+  return space < 0
+    ? { first: name, last: '' }
+    : { first: name.slice(0, space).trimEnd(), last: name.slice(space + 1) };
 }
 
 const dupName = () => fail(409, 'DUPLICATE_NAME', 'A role with this name already exists.');

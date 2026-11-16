@@ -454,10 +454,24 @@ export class UsersPage implements OnInit {
     this.filters.clear(['q']);
   }
 
-  /** "Edit availability" in the dialog: the same dialog as the row menu, for the person in the dialog. */
+  /**
+   * "Edit Availability" in the user dialog: the user dialog steps aside, and once it has left the screen the availability dialog opens (one dialog at a
+   * time, D-31); it comes back when the availability dialog closes.
+   */
   protected editAvailabilityOf(): void {
     const row = this.selectedRow();
-    if (row) this.editAvailability(row);
+    if (!row) return;
+    this.dialogAside.set(true);
+    this.afterDialogGone(() => this.editAvailability(row));
+  }
+
+  /** True while the user dialog has stepped aside for the availability dialog. */
+  protected readonly dialogAside = signal(false);
+
+  /** The availability dialog opened or closed; when it closes the user dialog comes back. */
+  protected onAvailabilityVisible(visible: boolean): void {
+    this.availabilityDialogOpen.set(visible);
+    if (!visible) this.dialogAside.set(false);
   }
 
   protected editAvailability(user: UserSummaryDto): void {
@@ -537,7 +551,7 @@ export class UsersPage implements OnInit {
 
   /** The first name of the person record; a user without one (no display name yet) shows the name worked out as before, so the row always has a name to open. */
   protected firstNameOf(user: UserSummaryDto): string {
-    return user.firstName || this.nameOf(user);
+    return shortAccountName(user.firstName) || this.nameOf(user);
   }
 
   /** The account without the domain ("kekim"): a grid never shows "KE\\kekim" (D-62); the dialog shows the full account. */

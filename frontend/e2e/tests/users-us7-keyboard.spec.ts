@@ -74,7 +74,7 @@ test.describe('#452 Skip to table', () => {
 
   test('lands on the empty message when nobody is listed', async ({ page }) => {
     await page.setViewportSize({ width: 1366, height: 768 });
-    await page.goto(listUrl('&name=nobody-like-this-at-all'));
+    await page.goto(listUrl('&firstName=nobody-like-this-at-all'));
     await expect(page.locator('td[data-empty="filtered"]')).toBeVisible();
     await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
     await page.keyboard.press('Tab');

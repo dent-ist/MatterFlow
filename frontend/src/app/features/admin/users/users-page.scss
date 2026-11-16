@@ -32,8 +32,9 @@
   max-width: 11rem;
 }
 
-.us-name {
-  max-width: 0;
+.us-name,
+.us-clip {
+  max-width: 0; /* the text is cut with an ellipsis inside the column; a long name never widens the grid */
 }
 
 /* The first name is the name button: one line, the row stays 44 px (D-42, D-44m). The full name stays in the title attribute. */

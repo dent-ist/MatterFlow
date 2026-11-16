@@ -233,3 +233,8 @@ fieldset {
   padding: var(--mf-s3) 0;
   color: var(--mf-danger);
 }
+
+/* The start of the dialog takes the focus when it opens (tabindex -1): no ring, it is not a control. */
+.ud-head:focus {
+  outline: none;
+}

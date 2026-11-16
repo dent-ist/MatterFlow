@@ -1,4 +1,4 @@
-import { Locator, Page } from '@playwright/test';
+import { Locator, Page, expect } from '@playwright/test';
 
 /**
  * The Users grid (#432, #433): the name of a person is the one control of the Name cell and the last column is one action (Grant access for a
@@ -32,4 +32,37 @@ export function userRow(page: Page, userId: number, account: string): Locator {
 /** The name button that opens a person: the table's `button[data-open]`, the card's `button[data-card-name]`. */
 export function userName(row: Locator): Locator {
   return row.locator('button[data-open], button[data-card-name]');
+}
+
+/**
+ * The user dialog (epic #1389, issue #1390; it was the right slide panel `.mf-user-drawer`): the large centred form dialog that holds `[data-panel]`. The
+ * Availability dialog is another `.mf-formdlg`; it never shows together with this one (this one steps aside while it is open, D-31).
+ */
+export function userDialog(page: Page): Locator {
+  return page.locator('.mf-formdlg').filter({ has: page.locator('[data-panel]') });
+}
+
+/**
+ * Focus is somewhere inside the open user dialog. The shared dialog puts it on the first field, or on its close button while the person is still
+ * loading, so the exact control is not part of the contract.
+ */
+export async function expectFocusInUserDialog(page: Page): Promise<void> {
+  await expect(userDialog(page).locator(':focus')).toHaveCount(1);
+}
+
+/**
+ * The address filters that find a person by display name: the Users grid has First Name and Last Name filters (issue #1390), no Name filter any more.
+ * The display name is split the way the person record splits it: the last word is the last name, everything before it the first name.
+ */
+export function nameParts(displayName: string): { first: string; last: string } {
+  const name = displayName.trim();
+  const space = name.lastIndexOf(' ');
+  return space < 0
+    ? { first: name, last: '' }
+    : { first: name.slice(0, space).trimEnd(), last: name.slice(space + 1) };
+}
+
+export function nameFilter(displayName: string): string {
+  const { first, last } = nameParts(displayName);
+  return `firstName=${encodeURIComponent(first)}${last ? `&lastName=${encodeURIComponent(last)}` : ''}`;
 }

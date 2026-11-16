@@ -255,13 +255,13 @@ test.describe('Role Setup: Landing Page (#1333)', () => {
     );
   });
 
-  test('the Users drawer says which role decides the landing page', async ({ personas, page }) => {
+  test('the Users dialog says which role decides the landing page', async ({ personas, page }) => {
     const p = await personas.create({ ...PERSONAS.director, label: 'lpdrawer' });
     await page.goto('/admin/users?status=all');
     await userName(userRow(page, p.userId, p.username)).click();
     await expect(page.locator('[data-landing-source]')).toHaveText(
       'Landing page comes from Director.',
     );
-    await review(page, 'users-drawer-landing-line', '[data-landing-source]');
+    await review(page, 'users-dialog-landing-line', '[data-landing-source]');
   });
 });

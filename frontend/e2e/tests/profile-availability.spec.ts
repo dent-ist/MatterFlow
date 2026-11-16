@@ -6,7 +6,7 @@ import { TaskDetailPage } from '../pages/task-detail.page';
 import { Api } from '../support/api';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
-import { openEditAvailability } from '../support/users-grid';
+import { nameFilter, openEditAvailability } from '../support/users-grid';
 import { dropdownById } from '../support/dropdown';
 
 /**
@@ -224,7 +224,7 @@ test.describe('My profile: accessibility (axe wcag2a, wcag2aa, wcag21aa)', () =>
       await me.keyboard.press('Escape');
 
       await page.setViewportSize({ width: size.width, height: size.height });
-      await page.goto(`/admin/users?status=active&name=${encodeURIComponent(name)}`);
+      await page.goto(`/admin/users?status=active&${nameFilter(name)}`);
       const row = page.locator(`tr[data-record-id="${userId}"]`);
       // An ordinary person says "Available" in plain text; outside the work hours the server reports Off Hours, which is a chip (#434).
       await expect(row.locator('[data-availability-cell]')).toHaveText(

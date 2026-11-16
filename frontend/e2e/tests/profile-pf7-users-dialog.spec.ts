@@ -2,7 +2,7 @@ import { dropdownById } from '../support/dropdown';
 import { expect, test } from '../support/fixtures';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { SIZES, noHorizontalScroll, shot } from '../support/screens';
-import { openEditAvailability, userRow } from '../support/users-grid';
+import { nameFilter, openEditAvailability, userRow } from '../support/users-grid';
 
 /**
  * My profile epic #520, WP-PF7: #589 (regression). Administration > Users "Edit Availability" shares `mf-availability-form` with My profile:
@@ -19,7 +19,7 @@ test.describe('pf7-users-dialog: Edit availability with the shared form (#589)',
     const name = (await admin.get(`/api/v1/users/${userId}`)).displayName as string;
     for (const size of SIZES) {
       await page.setViewportSize(size);
-      await page.goto(`/admin/users?status=active&name=${encodeURIComponent(name)}`);
+      await page.goto(`/admin/users?status=active&${nameFilter(name)}`);
       await openEditAvailability(userRow(page, userId, username));
       const dialog = page.getByRole('dialog', { name: `Availability of ${name}` });
       await expect(dialog.locator('[data-day-toggles] [data-key]')).toHaveCount(7);
@@ -44,7 +44,7 @@ test.describe('pf7-users-dialog: Edit availability with the shared form (#589)',
     }
 
     await page.setViewportSize({ width: 1366, height: 768 });
-    await page.goto(`/admin/users?status=active&name=${encodeURIComponent(name)}`);
+    await page.goto(`/admin/users?status=active&${nameFilter(name)}`);
     await openEditAvailability(userRow(page, userId, username));
     const dialog = page.getByRole('dialog', { name: `Availability of ${name}` });
     await dialog.getByLabel('Start time', { exact: true }).fill('08:00');
@@ -67,7 +67,7 @@ test.describe('pf7-users-dialog: Edit availability with the shared form (#589)',
   }) => {
     const { userId, username } = await seed.user(['Data Technician'], 'pf7conf');
     const name = (await admin.get(`/api/v1/users/${userId}`)).displayName as string;
-    await page.goto(`/admin/users?status=active&name=${encodeURIComponent(name)}`);
+    await page.goto(`/admin/users?status=active&${nameFilter(name)}`);
     await openEditAvailability(userRow(page, userId, username));
     const dialog = page.getByRole('dialog', { name: `Availability of ${name}` });
     await expect(dialog.locator('[data-day-toggles] [data-key]').first()).toBeVisible();

@@ -95,12 +95,12 @@
             </td>
           </ng-template>
           <ng-template mfCell="lastName" let-u>
-            <td data-users-last-name [attr.title]="u.lastName">
+            <td class="us-clip" data-users-last-name [attr.title]="u.lastName">
               <span class="pg-clip">{{ u.lastName }}</span>
             </td>
           </ng-template>
           <ng-template mfCell="account" let-u>
-            <td class="pg-mono" data-account [attr.title]="accountLine(u)">
+            <td class="us-clip pg-mono" data-account [attr.title]="accountLine(u)">
               <span class="pg-clip">{{ accountShort(u) }}</span>
             </td>
           </ng-template>
@@ -215,7 +215,8 @@
 </div>
 
 <mf-availability-dialog
-  [(visible)]="availabilityDialogOpen"
+  [visible]="availabilityDialogOpen()"
+  (visibleChange)="onAvailabilityVisible($event)"
   [userId]="availabilityEdit()?.userId ?? null"
   [displayName]="availabilityEdit()?.displayName ?? ''"
   (saved)="reload()"
@@ -231,6 +232,7 @@
   [podChoicesFailed]="podChoicesFailed()"
   [podsBusy]="userId() !== null && podsBusy().has(userId()!)"
   [intent]="intent()"
+  [suspended]="dialogAside()"
   (closed)="closeDialog()"
   (changed)="onChanged($event)"
   (editAvailability)="editAvailabilityOf()"

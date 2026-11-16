@@ -108,10 +108,10 @@ test.describe('#429 status segments', () => {
   test('Pending access is tinted only while somebody waits; the waiting person is listed under it and not under Active', async ({
     page,
   }) => {
-    await page.goto(`/admin/users?status=pending&name=${TAG}`);
+    await page.goto(`/admin/users?status=pending&firstName=${TAG}`);
     await expect(page.locator(`tr[data-record-id="${waiting.userId}"]`)).toBeVisible();
     await expect(segment(page, 'pending')).toHaveClass(/tinted/);
-    await page.goto(`/admin/users?status=active&name=${TAG}`);
+    await page.goto(`/admin/users?status=active&firstName=${TAG}`);
     await expect(page.locator(`tr[data-record-id="${waiting.userId}"]`)).toHaveCount(0);
     await expect(page.locator(`tr[data-record-id="${working.userId}"]`)).toBeVisible(); // its name has the tag too, and it has access
   });
@@ -147,7 +147,7 @@ test.describe('#429 status segments', () => {
 
   test('the counts refresh after access is granted', async ({ page, personas, seed }) => {
     const person = await personas.create({ label: `${TAG}grant`, displayName: `${TAG} Grant` });
-    await page.goto(`/admin/users?status=pending&name=${TAG}%20Grant`);
+    await page.goto(`/admin/users?status=pending&firstName=${TAG}&lastName=Grant`);
     await expect(page.locator(`tr[data-record-id="${person.userId}"]`)).toBeVisible();
     const text = async () => (await segment(page, 'pending').textContent())!.replace(/\D+/g, '');
     const before = Number(await text());
@@ -201,11 +201,11 @@ test.describe('#431 header Filters', () => {
     }) => {
       test.skip(!axeAvailable(), 'axe-core is not available');
       await page.setViewportSize({ width, height });
-      await page.goto(`/admin/users?status=all&account=e2e-${TAG}&name=e2e`);
+      await page.goto(`/admin/users?status=all&account=e2e-${TAG}&firstName=e2e`);
       const header = page.locator('mf-page-header');
       const toggle = header.locator('[data-filters-toggle]');
       await expect(toggle).toBeVisible();
-      await expect(header.locator('[data-filter-count]')).toHaveText('(2)'); // Name and Windows account; the segment is not a filter
+      await expect(header.locator('[data-filter-count]')).toHaveText('(2)'); // First Name and Account; the segment is not a filter
       await expect(page.locator('mf-users-page [data-filters-toggle]')).toHaveCount(0);
 
       // Exactly one Clear filters on the page, wherever the row is (header while the row is open, the bar while it is closed or a sheet).

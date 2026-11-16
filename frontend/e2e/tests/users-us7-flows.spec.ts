@@ -4,7 +4,7 @@ import { Locator, Page } from '@playwright/test';
 import { axeAvailable, axeViolations } from '../support/axe';
 import { expect, test } from '../support/fixtures';
 import { Persona } from '../support/personas';
-import { userName, userRow } from '../support/users-grid';
+import { expectFocusInUserDialog, userDialog, userName, userRow } from '../support/users-grid';
 
 /**
  * Users epic #422, WP-US7 #454: the keyboard-only flows of the rebuilt Users area, with the focus asserted at every step (open, return) and axe
@@ -139,15 +139,15 @@ test.describe('#454 the six keyboard flows', () => {
     const stops = await tabTo(page, grant);
     evidence['grantAccess'] = { tabStopsFromSkipTargetToAction: stops };
     await page.keyboard.press('Enter');
-    await expect(page.locator('[data-panel-heading]')).toBeFocused();
+    await expectFocusInUserDialog(page);
     const role = page.getByRole('checkbox', { name: /^Data Technician/ });
     await tabTo(page, role);
     await page.keyboard.press('Space');
     await expect(role).toBeChecked();
     await tabTo(page, page.getByRole('button', { name: 'Save Changes' }));
     await page.keyboard.press('Enter');
-    // The drawer closed, the person left the Pending segment, and focus is on the list (not on body).
-    await expect(page.locator('.mf-user-drawer')).toHaveCount(0);
+    // The dialog closed, the person left the Pending segment, and focus is on the list (not on body).
+    await expect(userDialog(page)).toHaveCount(0);
     await expect.poll(() => onBody(page)).toBe(false);
     // The toast with Undo is a button in the tab order.
     const undo = page.getByRole('button', { name: /Undo/ });
@@ -157,7 +157,7 @@ test.describe('#454 the six keyboard flows', () => {
     await expect(page.locator('tr[data-record-id]')).toHaveCount(1);
   });
 
-  test('2. deactivate: Deactivate, the question (focus on Cancel), Deactivate; focus stays inside the drawer', async ({
+  test('2. deactivate: Deactivate, the question in the footer (focus on Keep User), Deactivate User; focus stays inside the dialog', async ({
     page,
     personas,
   }) => {
@@ -167,23 +167,23 @@ test.describe('#454 the six keyboard flows', () => {
     await expect(page.locator('tr[data-record-id]')).toHaveCount(1);
     await viaSkipLink(page);
     await page.keyboard.press('Enter'); // the name of the first row
-    await expect(page.locator('[data-panel-heading]')).toBeFocused();
+    await expectFocusInUserDialog(page);
     const deactivate = page.getByRole('button', { name: /^Deactivate / });
     await tabTo(page, deactivate);
     await page.keyboard.press('Enter');
-    const dialog = page.getByRole('dialog', { name: /^Deactivate / });
-    await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeFocused();
+    const dialog = page.locator('[data-deactivate-foot]');
+    await expect(dialog.getByRole('button', { name: 'Keep User' })).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(
       dialog.getByRole('button', { name: 'Deactivate User', exact: true }),
     ).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(dialog).toBeHidden();
-    await expect(page.locator('[data-drawer-status]')).toContainText('Inactive');
+    await expect(page.locator('[data-dialog-status]')).toContainText('Inactive');
     await expect.poll(() => onBody(page)).toBe(false);
-    // Esc closes the drawer and focus is back on the name.
+    // Esc closes the dialog and focus is back on the name.
     await page.keyboard.press('Escape');
-    await expect(page.locator('.mf-user-drawer')).toHaveCount(0);
+    await expect(userDialog(page)).toHaveCount(0);
     await expect(userName(rowOf(page, victim.userId, victim.username))).toBeFocused();
   });
 
@@ -195,7 +195,7 @@ test.describe('#454 the six keyboard flows', () => {
     await expect(page.locator('tr[data-record-id]')).toHaveCount(1);
     await userName(rowOf(page, worker.userId, worker.username)).focus();
     await page.keyboard.press('Enter');
-    await expect(page.locator('[data-panel-heading]')).toBeFocused();
+    await expectFocusInUserDialog(page);
     const edit = page.locator('[data-edit-availability]');
     await tabTo(page, edit);
     await page.keyboard.press('Enter');
@@ -204,10 +204,11 @@ test.describe('#454 the six keyboard flows', () => {
     await expect.poll(() => dialog.evaluate((d) => d.contains(document.activeElement))).toBe(true);
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();
-    await expect(page.locator('.mf-user-drawer')).toBeVisible();
+    // The user dialog stepped aside while the availability dialog was open (D-31) and is back.
+    await expect(userDialog(page)).toBeVisible();
     await expect(edit).toBeFocused();
     await page.keyboard.press('Escape');
-    await expect(page.locator('.mf-user-drawer')).toHaveCount(0);
+    await expect(userDialog(page)).toHaveCount(0);
   });
 
   test('4. edit pods: the pods button opens the popover, arrows walk it, Esc returns focus to the button', async ({
@@ -218,8 +219,8 @@ test.describe('#454 the six keyboard flows', () => {
     await expect(page.locator('tr[data-record-id]')).toHaveCount(1);
     await userName(rowOf(page, worker.userId, worker.username)).focus();
     await page.keyboard.press('Enter');
-    await expect(page.locator('[data-panel-heading]')).toBeFocused();
-    const trigger = page.locator('.mf-user-drawer [data-pods-trigger]');
+    await expectFocusInUserDialog(page);
+    const trigger = userDialog(page).locator('[data-pods-trigger]');
     await tabTo(page, trigger);
     await page.keyboard.press('Enter');
     const search = page.locator('[data-pods-search]');
@@ -229,10 +230,10 @@ test.describe('#454 the six keyboard flows', () => {
     await page.keyboard.press('Escape');
     await expect(page.locator('[data-pods-popover]')).toHaveCount(0);
     await expect(trigger).toBeFocused();
-    // The drawer is still open: Esc again closes it.
-    await expect(page.locator('.mf-user-drawer')).toBeVisible();
+    // The dialog is still open: Esc again closes it.
+    await expect(userDialog(page)).toBeVisible();
     await page.keyboard.press('Escape');
-    await expect(page.locator('.mf-user-drawer')).toHaveCount(0);
+    await expect(userDialog(page)).toHaveCount(0);
   });
 
   test('5. edit a role: the list, the editor, a permission, the Changed chip, Save; no pointer', async ({
@@ -293,20 +294,20 @@ test.describe('#454 the six keyboard flows', () => {
 
 test.describe('#454 axe with every overlay open, and no nested scroller', () => {
   for (const { width, height } of SIZES) {
-    test(`drawer, popover, dialogs, role editor and pod page at ${width}x${height}`, async ({
+    test(`dialog, popover, availability dialog, deactivation question, role editor and pod page at ${width}x${height}`, async ({
       page,
     }) => {
       await page.setViewportSize({ width, height });
       await page.goto(`/admin/users?status=all&account=${worker.username}`);
       await expect(page.locator(width < 640 ? 'li.rc' : 'tr[data-record-id]')).toHaveCount(1);
       await userName(rowOf(page, worker.userId, worker.username)).click();
-      await expect(page.locator('[data-panel-heading]')).toBeFocused();
+      await expectFocusInUserDialog(page);
       expect(await axeClean(page)).toEqual([]);
-      // No scroller inside the drawer besides its own body.
+      // No scroller inside the dialog besides its own body.
       const nested = await page.evaluate(() => {
         const body = document.querySelector('.ud-body');
-        return Array.from(document.querySelectorAll<HTMLElement>('.mf-user-drawer *'))
-          .filter((el) => el !== body && !el.matches('.sp__body'))
+        return Array.from(document.querySelectorAll<HTMLElement>('.mf-formdlg *'))
+          .filter((el) => el !== body && !el.matches('.fd__body'))
           .filter((el) => {
             const s = getComputedStyle(el);
             return /(auto|scroll)/.test(s.overflowY) && el.scrollHeight > el.clientHeight + 1;
@@ -315,21 +316,19 @@ test.describe('#454 axe with every overlay open, and no nested scroller', () => 
       });
       expect(nested).toEqual([]);
       // The pods popover.
-      const trigger = page.locator('.mf-user-drawer [data-pods-trigger]');
-      if (width < 640) await page.locator('[data-section-toggle="pods"]').click();
+      const trigger = userDialog(page).locator('[data-pods-trigger]');
       await trigger.click();
       await expect(page.locator('[data-pods-popover]')).toBeVisible();
       expect(await axeClean(page)).toEqual([]);
       await page.keyboard.press('Escape');
       // The availability dialog.
-      if (width < 640) await page.locator('[data-section-toggle="availability"]').click();
       await page.locator('[data-edit-availability]').click();
       await expect(page.getByRole('dialog', { name: /^Availability of / })).toBeVisible();
       expect(await axeClean(page)).toEqual([]);
       await page.keyboard.press('Escape');
       // The Deactivate question.
       await page.getByRole('button', { name: /^Deactivate / }).click();
-      await expect(page.getByRole('dialog', { name: /^Deactivate / })).toBeVisible();
+      await expect(page.locator('[data-deactivate-foot]')).toBeVisible();
       expect(await axeClean(page)).toEqual([]);
       await page.keyboard.press('Escape');
       await page.keyboard.press('Escape');

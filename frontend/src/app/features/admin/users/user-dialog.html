@@ -9,14 +9,22 @@
   [busy]="saving()"
   [dirty]="dirty()"
   [footerReplaced]="deactivateOpen()"
-  [visible]="open()"
+  [focusId]="focusTarget()"
+  [visible]="shown()"
   (cancelled)="onCancelled()"
   (submitted)="save()"
 >
   @if (open()) {
     <div class="ud-body" data-panel [attr.data-user]="userId()">
       @if (detail(); as u) {
-        <div class="ud-head" data-dialog-head>
+        <div
+          id="ud-start"
+          class="ud-head"
+          tabindex="-1"
+          role="group"
+          aria-label="Status and actions"
+          data-dialog-head
+        >
           <div class="ud-facts">
             @if (u.isPending) {
               <mf-badge data-dialog-status tone="warning" icon="pi-user-plus"
@@ -197,6 +205,7 @@
                   <button
                     type="button"
                     class="mf-btn"
+                    id="ud-edit-availability"
                     data-edit-availability
                     [attr.aria-label]="'Edit availability of ' + u.displayName"
                     (click)="editAvailability.emit()"
@@ -264,12 +273,7 @@
     </div>
   }
   @if (deactivateOpen()) {
-    <div
-      mfFooterReplace
-      class="ud-foot"
-      data-deactivate-foot
-      (keydown.escape)="$event.stopPropagation(); deactivateOpen.set(false)"
-    >
+    <div mfFooterReplace class="ud-foot" data-deactivate-foot>
       <p class="ud-foot-text" role="alert" data-deactivate-text>
         <strong>Deactivate {{ name() }}?</strong> {{ name() }} can no longer sign in.
         {{ deactivateText() }}

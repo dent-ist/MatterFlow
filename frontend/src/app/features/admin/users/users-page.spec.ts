@@ -641,7 +641,20 @@ describe('UsersPage', () => {
     expect(segmentText('inactive')).toContain('2');
   });
 
-  it('Cancel in the question changes nothing', async () => {
+  it('Esc closes the deactivation question first and leaves the dialog open', async () => {
+    await create('User.View', 'User.Manage');
+    await chooseStatus('active');
+    await openRow(2);
+    q('[data-deactivate]').click();
+    await settle();
+    expect(document.querySelector('[data-deactivate-foot]')).not.toBeNull();
+    await pressEsc();
+    expect(document.querySelector('[data-deactivate-foot]')).toBeNull();
+    expect(document.querySelector('[data-panel]')).not.toBeNull();
+    expect(api.users.find((u) => u.userId === 2)!.isActive).toBe(true);
+  });
+
+  it('Keep User in the question changes nothing', async () => {
     await create('User.View', 'User.Manage');
     await chooseStatus('active');
     await openRow(2);
@@ -940,8 +953,14 @@ describe('UsersPage', () => {
       expect(q('[data-availability-sentence]').textContent).toContain('Conference');
       q('[data-edit-availability]').click();
       await settle();
-      // The availability dialog is drawn in the page body, above the user dialog.
-      expect(document.querySelectorAll('.mf-formdlg').length).toBe(2);
+      // The user dialog steps aside, then the availability dialog opens (a dialog never opens on top of another, D-31).
+      for (let i = 0; i < 25 && !document.body.textContent!.includes('Availability of'); i++) {
+        await new Promise((r) => setTimeout(r, 100));
+        await settle();
+      }
+      expect(document.body.textContent).toContain('Availability of');
+      expect(document.querySelectorAll('.mf-formdlg').length).toBe(1);
+      expect(document.querySelector('[data-panel]')).toBeNull();
     });
 
     it('says in muted lines which parts save at once and which with Save changes', async () => {
