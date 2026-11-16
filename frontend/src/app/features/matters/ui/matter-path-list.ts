@@ -45,7 +45,7 @@ import { Tip } from '../../../shared/ui/tip';
       gap: var(--mf-s2);
     }
     .mpl__field {
-      flex: 1 1 auto;
+      flex: 1 1 0;
       min-width: 0;
     }
     .mpl__foot {

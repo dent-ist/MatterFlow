@@ -196,7 +196,7 @@ public sealed class MatterFieldsApiTests(SqlServerFixture sql) : IAsyncLifetime
         dup.GetProperty("errors").GetProperty("dmsPaths[1]")[0].GetProperty("code").GetString().ShouldBe("PATH_DUPLICATE");
 
         // Both lists are checked together and every bad row is named by its place (counting from 0, blank rows included).
-        var bad = await ProblemAsync(await UpdateAsync(current, new { dmsPaths = new[] { "https://ok.example.com", @"C:\x", "" , "ftp://h/x" }, dfsPaths = new[] { "https://user:pw@host/x" } }), HttpStatusCode.BadRequest, "INVALID_PATH");
+        var bad = await ProblemAsync(await UpdateAsync(current, new { dmsPaths = new[] { "https://ok.example.com", @"C:\x", "", "ftp://h/x" }, dfsPaths = new[] { "https://user:pw@host/x" } }), HttpStatusCode.BadRequest, "INVALID_PATH");
         var errors = bad.GetProperty("errors");
         errors.GetProperty("dmsPaths[1]")[0].GetProperty("code").GetString().ShouldBe("PATH_DRIVE_LETTER");
         errors.GetProperty("dmsPaths[3]")[0].GetProperty("code").GetString().ShouldBe("PATH_FORMAT");
