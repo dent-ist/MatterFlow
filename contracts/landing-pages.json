@@ -30,7 +30,7 @@
         "TaskType.Manage", "Workflow.Manage",
         "Priority.Manage", "StatusLabel.Manage", "OnHoldReason.Manage",
         "AssetType.Manage", "CustomField.Manage", "MatterList.Manage",
-        "Report.Manage", "Audit.View", "Settings.Manage"
+        "Report.Manage", "Audit.View", "Settings.Manage", "Vendor.Manage"
       ],
       "dashboardTab": false
     }
