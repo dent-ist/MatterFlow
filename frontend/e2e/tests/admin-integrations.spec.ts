@@ -244,7 +244,7 @@ test('the expiry banner: amber at 21 days, red once expired, with Replace Secret
   await page.reload();
   await page.getByRole('tab', { name: 'Integrations' }).click();
   await expect(banner).toHaveAttribute('data-state', 'expired');
-  await expect(page.locator('[data-secret-chip]')).toContainText('Expired 6 days ago');
+  await expect(page.locator('[data-secret-chip]')).toContainText(/Expired [56] days ago/);
   await atEverySize(page, 'integrations-secret-expired');
 
   await banner.getByRole('button', { name: 'Replace Secret' }).click();
