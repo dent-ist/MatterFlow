@@ -1,7 +1,7 @@
 import { Page } from '@playwright/test';
 import { Api, Json } from '../support/api';
 import { axeAvailable, axeViolations } from '../support/axe';
-import { asDropdown } from '../support/dropdown';
+import { asDropdown, filterDropdown } from '../support/dropdown';
 import { expect, test } from '../support/fixtures';
 import { showMatterColumns } from '../support/matter-columns';
 import { Persona } from '../support/personas';
@@ -477,7 +477,7 @@ test.describe('Task Types screen: Access (#1402)', () => {
       await axeClean(page, `Audit Logs at ${size.width}x${size.height}`);
       await shot(page, '09-audit-events');
     }
-    const events = asDropdown(page.getByRole('button', { name: /^Event Type:/ }));
+    const events = filterDropdown(page, 'Event Type');
     const texts = await events.optionTexts();
     expect(texts).toContain('Task type access changed');
     expect(texts).toContain('Task type restricted');
