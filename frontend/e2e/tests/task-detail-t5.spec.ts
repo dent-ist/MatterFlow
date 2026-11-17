@@ -232,8 +232,10 @@ test.describe('Task T5: the tab strip replaces the section nav (#308, #347)', ()
     await expect(page.locator('[data-section="comments"]')).toBeVisible();
     await page.keyboard.press('ArrowRight');
     await expect(tab(page, 'Workflow')).toBeFocused();
+    await expect(tab(page, 'Workflow')).toHaveAttribute('aria-selected', 'true');
     await page.keyboard.press('ArrowLeft');
     await expect(tab(page, 'Comments')).toBeFocused();
+    await expect(tab(page, 'Comments')).toHaveAttribute('aria-selected', 'true');
     await page.keyboard.press('Home');
     await expect(tab(page, 'Workflow')).toBeFocused();
     await expect(page.locator('[data-section="workflow"]')).toBeVisible();
