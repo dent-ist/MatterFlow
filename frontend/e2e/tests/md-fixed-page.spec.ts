@@ -8,7 +8,7 @@ const SIZES = [
   { width: 1366, height: 768 },
   { width: 1920, height: 1080 },
 ] as const;
-const TABS = [undefined, 'tasks', 'projects', 'assets', 'activities'] as const;
+const TABS = [undefined, 'tasks', 'projects', 'assets'] as const;
 
 test.describe('Matter detail: the page does not scroll', () => {
   test('the page content ends inside the window on every tab and size', async ({ page, seed }) => {

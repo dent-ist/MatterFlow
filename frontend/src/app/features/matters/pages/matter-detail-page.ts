@@ -41,8 +41,10 @@ import { restoreTabFocus } from '../../../shared/ui/row-nav';
 import { MfTab, Tabs } from '../../../shared/ui/tabs';
 import { MatterHeader } from '../ui/matter-header';
 import {
+  MATTER_ACTIVITIES_PERMISSION,
   MATTER_SECTION_TEXT,
   MatterTabKey,
+  isActivitiesParam,
   matterTabFromParam,
   visibleMatterTabs,
 } from '../ui/matter-tabs';
@@ -52,7 +54,7 @@ import { MatterTasksSection } from '../ui/matter-tasks-section';
 import { MatterNotesSection } from '../ui/matter-notes-section';
 import { ProjectPanel } from '../../projects/ui/project-panel';
 import { ProjectTasksPanel } from '../../projects/ui/project-tasks-panel';
-import { MatterActivities } from '../ui/matter-activities';
+import { MatterActivitiesDialog } from '../ui/matter-activities-dialog';
 import { MatterSummary } from '../ui/matter-summary';
 import { MatterEventPanel } from '../ui/matter-event-panel';
 import { AddCommentDialog } from '../../../shared/matter-actions/add-comment-dialog';
@@ -71,11 +73,12 @@ type Tab = MatterTabKey;
 
 /**
  * Matter detail (UX S06; ONE continuous page since #1396, epic #1389): reference with copy button, the inactive banners, activation with the open-task rule, then the Summary
- * (the details and the Team and Vendors side column) and one compact card for each of Tasks, Projects, Assets, Productions, Notes and Activities, in that order (D-03a to D-03e).
+ * (the details and the Team and Vendors side column) and one compact card for each of Tasks, Projects, Assets, Productions and Notes, in that order (D-03a to D-03e).
  * A sticky jump strip (`mf-jump-strip`, a nav of links) replaces the tab strip: it highlights the section in view, a click scrolls there smoothly and moves focus to the heading, the
  * address does not change. A section the viewer may not see is not drawn and has no link. The sections load when they come within 300 px of the window; a jump loads only its target.
- * Every section card ends with "Open Full View": `?tab=tasks|projects|assets|productions|notes|activities` opens that tab's page as it was (the full view, with its tab strip, the
- * Summary tab leading back to the one page); `?tab=summary`, no `tab` and unknown values show the one page, `details` means Summary and `activity` Activities.
+ * Every section card ends with "Open Full View": `?tab=tasks|projects|assets|productions|notes` opens that tab's page as it was (the full view, with its tab strip, the
+ * Summary tab leading back to the one page); `?tab=summary`, no `tab` and unknown values show the one page, `details` means Summary. Activities is an entry of the More Actions menu that opens a dialog (#1404);
+ * `?tab=activities` and the old `?tab=activity` show the one page with that dialog open (closing it removes the parameter).
  */
 @Component({
   selector: 'mf-matter-detail-page',
@@ -87,7 +90,7 @@ type Tab = MatterTabKey;
     MatterHeader,
     ProjectPanel,
     ProjectTasksPanel,
-    MatterActivities,
+    MatterActivitiesDialog,
     RecordState,
     RecordSkeleton,
     Button,
@@ -238,6 +241,15 @@ type Tab = MatterTabKey;
                 [project]="projectEdited()"
                 [(visible)]="projectPanelOpen"
                 (saved)="projectSaved()"
+              />
+            }
+
+            @if (canSeeActivities() && activitiesUsed()) {
+              <mf-matter-activities-dialog
+                [matterId]="m.matterId"
+                [matterRef]="m.matterRef"
+                [visible]="activitiesOpen()"
+                (visibleChange)="setActivitiesOpen($event)"
               />
             }
 
@@ -501,29 +513,6 @@ type Tab = MatterTabKey;
                     />
                   </mf-section-card>
                 }
-
-                @if (sectionOn('activities')) {
-                  <mf-section-card
-                    key="activities"
-                    heading="Activities"
-                    icon="pi-history"
-                    [hint]="text('activities').hint"
-                    [noun]="text('activities').noun"
-                    [shown]="shown('activities')"
-                    [total]="totalOf('activities')"
-                    [more]="moreOf('activities')"
-                    [state]="cardState('activities')"
-                    [fullView]="['/matters', m.matterId]"
-                    [fullViewParams]="{ tab: 'activities' }"
-                  >
-                    <mf-matter-activities
-                      [compact]="true"
-                      [hold]="!isActive('activities')"
-                      [matterId]="m.matterId"
-                      (stats)="setStats('activities', $event)"
-                    />
-                  </mf-section-card>
-                }
               </div>
               <ng-container [ngTemplateOutlet]="overlays" />
             </div>
@@ -579,9 +568,6 @@ type Tab = MatterTabKey;
                       (changed)="refreshTabCounts()"
                     />
                   }
-                  @case ('activities') {
-                    <mf-matter-activities [matterId]="m.matterId" data-activities-tab />
-                  }
                   @case ('assets') {
                     @if (canSeeAssets()) {
                       <mf-matter-assets
@@ -622,7 +608,7 @@ type Tab = MatterTabKey;
 })
 export class MatterDetailPage {
   readonly matterId = input.required<string>();
-  /** `?tab=`: absent, `summary`, `details` and an unknown or forbidden value show the one page; `tasks`, `projects`, `assets`, `productions`, `notes`, `activities` (and the old `activity`) open that section's full view. */
+  /** `?tab=`: absent, `summary`, `details` and an unknown or forbidden value show the one page; `tasks`, `projects`, `assets`, `productions`, `notes` open that section's full view; `activities` and the old `activity` show the one page with the Activities dialog open. */
   readonly tab = input<string>();
   /** The Assets full view's list state (its filters `name`, `typeId`, `extref` are read from the address by the tab itself). */
   readonly status = input<string>();
@@ -773,6 +759,11 @@ export class MatterDetailPage {
   protected readonly busy = signal(false);
   protected readonly canLinkClient = computed(() => this.auth.canLink('client'));
   protected readonly canSeeAssets = computed(() => this.auth.has('Asset.View'));
+  /** The Activities entry of More Actions and its dialog (#1404): Audit.View, as the Activities tab and section needed. */
+  protected readonly canSeeActivities = computed(() => this.auth.has(MATTER_ACTIVITIES_PERMISSION));
+  protected readonly activitiesOpen = signal(false);
+  /** The dialog exists from the first use on (a closed dialog is no markup on the page). */
+  protected readonly activitiesUsed = signal(false);
   /** Deactivation is disabled with a visible reason while Tasks are open (UX 5.7). */
   protected readonly deactivateBlocked = computed(() => {
     const m = this.matter();
@@ -855,6 +846,15 @@ export class MatterDetailPage {
         run: () => this.select('tasks'),
       });
     }
+    // Activities (#1404): after the entries that act on the tasks, before the set-apart Set Inactive; Audit.View, the permission the Activities section needed.
+    if (this.canSeeActivities()) {
+      list.push({
+        id: 'activities',
+        label: 'Activities',
+        icon: 'pi-history',
+        run: () => this.openActivities(),
+      });
+    }
     if (this.auth.has('Matter.SetActive')) {
       list.push({
         id: 'toggle-active',
@@ -901,6 +901,12 @@ export class MatterDetailPage {
       });
     });
     inject(DestroyRef).onDestroy(() => this.stopWatching());
+    // A `?tab=activities` or `?tab=activity` link (an old tab address, a bookmark) shows the page with the Activities dialog open; without Audit.View it is just the page.
+    effect(() => {
+      if (this.state() !== 'ready' || !isActivitiesParam(this.tab()) || !this.canSeeActivities())
+        return;
+      untracked(() => this.openActivities());
+    });
     effect(() => {
       void this.matter()?.matterId;
       untracked(() => this.refreshTabCounts());
@@ -927,6 +933,25 @@ export class MatterDetailPage {
 
   protected isActive(key: string): boolean {
     return this.activated().has(key);
+  }
+
+  protected openActivities(): void {
+    this.activitiesUsed.set(true);
+    this.activitiesOpen.set(true);
+  }
+
+  /**
+   * The dialog opened or closed. Closing a dialog that a `?tab=activities` (or the old `?tab=activity`) link opened removes the parameter and keeps the page: the address is replaced, so Back
+   * leaves the matter and does not come back to the link (#1404).
+   */
+  protected setActivitiesOpen(open: boolean): void {
+    this.activitiesOpen.set(open);
+    if (open || !isActivitiesParam(this.tab())) return;
+    void this.router.navigate([], {
+      queryParams: { tab: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
   protected setStats(key: string, stats: SectionStats): void {
@@ -967,9 +992,7 @@ export class MatterDetailPage {
 
   /** The sections that load their rows when they come near the window (Projects arrive with the matter). */
   private lazyKeys(): string[] {
-    return ['tasks', 'assets', 'productions', 'notes', 'activities'].filter((k) =>
-      this.sectionOn(k),
-    );
+    return ['tasks', 'assets', 'productions', 'notes'].filter((k) => this.sectionOn(k));
   }
 
   private startWatching(): void {

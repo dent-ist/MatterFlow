@@ -49,7 +49,6 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
         assets: /^\s*Assets \(0\)\s*$/,
         productions: /^\s*Productions/,
         notes: /^\s*Notes/,
-        activities: /^\s*Activities\s*$/,
       }),
     );
     await expect(page.getByRole('tab')).toHaveCount(0);
@@ -143,7 +142,7 @@ test.describe('Matter and Client detail pages: Details is the first tab', () => 
     await page.keyboard.press('ArrowRight');
     await expect(tab(page, 'Assets')).toBeFocused();
     await page.keyboard.press('End');
-    await expect(tab(page, 'Activities')).toBeFocused();
+    await expect(tab(page, /^Notes/)).toBeFocused();
     await page.keyboard.press('ArrowRight'); // wraps round to the first tab, Summary: the one page
     await expect(page.locator('[data-matter-one-page]')).toBeVisible();
     await expect(page).not.toHaveURL(/tab=/);

@@ -665,7 +665,7 @@ test.describe('#284: tabs, menus, dialogs and drawers by keyboard', () => {
         await expect(dialog).toHaveCount(0);
         await expect(trigger).toBeFocused();
 
-        // The Matter page has no Activity drawer any more: its Activity is the Activities tab (MD-01), whose keys the Home and End test above covers.
+        // The Matter page has no Activity drawer any more: its Activities is an entry of More Actions that opens a dialog (#1404), covered by matter-activities-menu.spec.ts.
         if (r.kind === 'matter') return;
 
         // The Activity drawer: a button on a desktop header, an overflow entry on a phone.

@@ -237,6 +237,11 @@ export class FormDialog {
    * and the discard question stay above it.
    */
   readonly footerReplaced = input(false);
+  /**
+   * A click on the scrim closes the dialog (a read-only view such as the Matter's Activities, #1404). Off by default: PrimeNG's own scrim handling is off for this dialog (`closable` is false),
+   * and a form that does not track `dirty` would lose its text to a stray click.
+   */
+  readonly dismissOnScrim = input(false);
   /** The id of the field that takes focus on opening, when it is not the first one (Edit Person: the title of a system user, not the locked name). */
   readonly focusId = input('');
 
@@ -287,19 +292,19 @@ export class FormDialog {
     this.close();
   }
 
-  /** A click on the scrim while there are unsaved changes asks as well. */
+  /** A click on the scrim while there are unsaved changes asks; without them it closes the dialog when `dismissOnScrim` is set. */
   @HostListener('document:click', ['$event'])
   protected onDocClick(e: Event): void {
     const t = e.target;
     if (
-      this.visible() &&
-      this.dirty() &&
-      t instanceof HTMLElement &&
-      t.classList.contains('p-dialog-mask') &&
-      t.querySelector('.mf-formdlg')
-    ) {
-      this.guard.set(true);
-    }
+      !this.visible() ||
+      !(t instanceof HTMLElement) ||
+      !t.classList.contains('p-dialog-mask') ||
+      !t.querySelector('.mf-formdlg')
+    )
+      return;
+    if (this.dirty()) this.guard.set(true);
+    else if (this.dismissOnScrim()) this.close();
   }
 
   /** Focus goes to the first field (a text field, or the button of a dropdown), or to the close button when the dialog has none. */

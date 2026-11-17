@@ -102,19 +102,11 @@ test.describe('One-page Matter (#1396)', () => {
       const names = (await page.locator('[data-jump-strip] a').allTextContents()).map((t) =>
         t.replace(/\s*\(.*\)\s*$/, '').trim(),
       );
-      expect(names).toEqual([
-        'Summary',
-        'Tasks',
-        'Projects',
-        'Assets',
-        'Productions',
-        'Notes',
-        'Activities',
-      ]);
+      expect(names).toEqual(['Summary', 'Tasks', 'Projects', 'Assets', 'Productions', 'Notes']);
       await expect(page.locator('[data-jump-strip] [role=tab]')).toHaveCount(0);
       await expect(link(page, 'summary')).toHaveAttribute('aria-current', 'location');
       await expect(page.locator('[data-summary-details]')).toBeVisible();
-      for (const key of ['tasks', 'projects', 'assets', 'productions', 'notes', 'activities']) {
+      for (const key of ['tasks', 'projects', 'assets', 'productions', 'notes']) {
         await expect(card(page, key).locator('h2')).toBeAttached();
         await expect(page.locator(`#section-${key}`)).toHaveAttribute(
           'aria-labelledby',
@@ -158,14 +150,15 @@ test.describe('One-page Matter (#1396)', () => {
     ]);
 
     // A jump to the last section loads that section only.
-    await link(page, 'activities').click();
-    await expect(page.locator('#section-activities-h')).toBeFocused();
-    await expect(rows(page, 'activities').first()).toBeVisible();
-    expect(seen['activities']).toBeGreaterThan(0);
-    // The sections the scroll passed (Assets, Productions) were not loaded. Notes sits directly above Activities and is in the window when the page ends, so it may load.
+    await link(page, 'notes').click();
+    await expect(page.locator('#section-notes-h')).toBeFocused();
+    await expect(rows(page, 'notes').first()).toBeVisible();
+    expect(seen['notes']).toBeGreaterThan(0);
+    // The section the scroll passed (Assets) was not loaded. Productions sits directly above Notes and is within 300 px of the window when the page ends, so it may load.
+    // Activities is no section any more (#1404): the page never asks for it.
     expect(seen['assets']).toBe(0);
-    expect(seen['productions']).toBe(0);
-    await expect(link(page, 'activities')).toHaveAttribute('aria-current', 'location');
+    expect(seen['activities']).toBe(0);
+    // Which link is highlighted at the very end of the page is the scroll spy's business (the page may be too short to bring Notes to the top), not asserted here.
     // The address is untouched (no hash, no tab).
     expect(new URL(page.url()).search).toBe('');
     expect(new URL(page.url()).hash).toBe('');
@@ -270,7 +263,6 @@ test.describe('One-page Matter (#1396)', () => {
       ['assets', 'mf-matter-assets'],
       ['productions', '[data-productions-tab]'],
       ['notes', '[data-notes-tab]'],
-      ['activities', '[data-activities-tab]'],
     ] as const) {
       await page.goto(`/matters/${w.full.matterId}?tab=${tab}`);
       await expect(page.getByRole('tab', { name: new RegExp(`^${tab}`, 'i') })).toHaveAttribute(
@@ -284,10 +276,8 @@ test.describe('One-page Matter (#1396)', () => {
     await page.goto(`/matters/${w.full.matterId}?tab=details`);
     await ready(page);
     await page.goto(`/matters/${w.full.matterId}?tab=activity`);
-    await expect(page.getByRole('tab', { name: /^Activities/ })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
+    await ready(page);
+    await expect(page.getByRole('dialog', { name: /Activities/ })).toBeVisible();
   });
 
   test('an empty section says so and keeps its action; an error stays in its section and Retry reloads it', async ({
@@ -345,7 +335,7 @@ test.describe('One-page Matter (#1396)', () => {
     expect(page.url()).not.toContain('compose');
   });
 
-  test('a viewer without Asset and Audit rights has no Assets or Activities section and no link to them', async ({
+  test('a viewer without Asset and Audit rights has no Assets section, no link to it and no Activities entry in More Actions', async ({
     personas,
     asUser,
   }) => {
@@ -370,6 +360,13 @@ test.describe('One-page Matter (#1396)', () => {
     expect(names).toEqual(['Summary', 'Tasks', 'Projects', 'Productions', 'Notes']);
     await expect(page.locator('#section-assets, #section-activities')).toHaveCount(0);
     await expect(page.getByText(/don't have access/i)).toHaveCount(0);
+    await page.locator('[data-overflow][aria-label="More actions"]').click();
+    await expect(page.getByRole('menuitem', { name: 'Activities' })).toHaveCount(0);
+    await page.keyboard.press('Escape');
+    // The old Activities links are just the one page for this viewer.
+    await page.goto(`/matters/${w.full.matterId}?tab=activities`);
+    await ready(page);
+    await expect(page.getByRole('dialog')).toHaveCount(0);
     // A link to a section it may not see shows the one page.
     await page.goto(`/matters/${w.full.matterId}?tab=assets`);
     await ready(page);
@@ -383,7 +380,7 @@ test.describe('One-page Matter (#1396)', () => {
       await page.setViewportSize({ width, height });
       await page.goto(`/matters/${w.full.matterId}`);
       await ready(page);
-      for (const key of ['tasks', 'projects', 'assets', 'productions', 'notes', 'activities']) {
+      for (const key of ['tasks', 'projects', 'assets', 'productions', 'notes']) {
         await link(page, key).click();
         await expect(card(page, key).locator('[data-section-note]')).not.toHaveText(
           /load when you scroll|Loading/,

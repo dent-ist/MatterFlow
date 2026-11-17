@@ -60,11 +60,11 @@ interface World {
 
 const projectsUrl = (m: Json) => `/matters/${m.matterId}?tab=projects`;
 const assetsUrl = (m: Json) => `/matters/${m.matterId}?tab=assets`;
-/** The tab texts without the tabs of the later features (Productions, Notes) and Activities, which this spec does not cover. */
+/** The tab texts without the tabs of the later features (Productions, Notes), which this spec does not cover. */
 const tabTexts = async (page: Page) =>
   (await page.getByRole('tab').allTextContents())
     .map((t) => t.replace(/\s+/g, ' ').trim())
-    .filter((t) => !/^(Productions|Notes|Activities)/.test(t));
+    .filter((t) => !/^(Productions|Notes)/.test(t));
 const ready = (page: Page) =>
   expect(page.locator('[data-matter-header] h1, [data-record-header] h1').first()).toBeVisible();
 /** The Projects tab is the shared record grid (#1269): its table, its record rows and the Archived group button. */

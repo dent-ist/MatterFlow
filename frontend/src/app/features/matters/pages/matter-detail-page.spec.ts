@@ -57,11 +57,15 @@ describe('MatterDetailPage', () => {
   let fixture: ComponentFixture<MatterDetailPage>;
   let query: ReturnType<typeof fakeQuery>;
   let navigateByUrl: ReturnType<typeof vi.fn>;
+  let searchAudit: ReturnType<typeof vi.fn>;
   let writeText: ReturnType<typeof vi.fn>;
   const el = (): HTMLElement => fixture.nativeElement;
 
   async function create(permissions: Permission[], matter = aMatter()): Promise<void> {
     localStorage.clear();
+    searchAudit = vi
+      .fn()
+      .mockReturnValue(ok({ items: [], nextCursor: null, pageSize: 50, timeZone: 'UTC' }));
     query = fakeQuery();
     matters = {
       getMatter: vi.fn().mockReturnValue(ok(matter)),
@@ -191,9 +195,7 @@ describe('MatterDetailPage', () => {
         {
           provide: AuditSearchClient,
           useValue: {
-            searchAuditEvents: vi
-              .fn()
-              .mockReturnValue(ok({ items: [], nextCursor: null, pageSize: 50, timeZone: 'UTC' })),
+            searchAuditEvents: searchAudit,
           },
         },
         {
@@ -221,6 +223,9 @@ describe('MatterDetailPage', () => {
     el().querySelector<HTMLElement>(`[role=menuitem][data-action=${action}]`)!.click();
     await settle(fixture);
   }
+
+  const menuActions = (): (string | null)[] =>
+    Array.from(el().querySelectorAll('[role=menuitem]')).map((b) => b.getAttribute('data-action'));
 
   const tab = (label: string): HTMLElement =>
     Array.from(el().querySelectorAll<HTMLElement>('[role=tab]')).find((t) =>
@@ -304,7 +309,7 @@ describe('MatterDetailPage', () => {
     expect(navigateByUrl).not.toHaveBeenCalled();
   });
 
-  it('is one page with a jump strip of seven links in the tab order, Summary first; a section is a labelled region; the full views keep the tab strip (#1396)', async () => {
+  it('is one page with a jump strip of six links in the tab order, Summary first; a section is a labelled region; the full views keep the tab strip (#1396)', async () => {
     await create([
       'Matter.View',
       'Task.View',
@@ -323,17 +328,9 @@ describe('MatterDetailPage', () => {
       Array.from(el().querySelectorAll('[data-jump-strip] a')).map((t) =>
         t.textContent!.trim().replace(/\s*\(.*\)$/, ''),
       ),
-    ).toEqual(['Summary', 'Tasks', 'Projects', 'Assets', 'Productions', 'Notes', 'Activities']);
-    expect(el().querySelectorAll('[data-jump-strip] a .pi').length).toBe(7);
-    for (const key of [
-      'summary',
-      'tasks',
-      'projects',
-      'assets',
-      'productions',
-      'notes',
-      'activities',
-    ]) {
+    ).toEqual(['Summary', 'Tasks', 'Projects', 'Assets', 'Productions', 'Notes']);
+    expect(el().querySelectorAll('[data-jump-strip] a .pi').length).toBe(6);
+    for (const key of ['summary', 'tasks', 'projects', 'assets', 'productions', 'notes']) {
       const region = el().querySelector(`#section-${key}`)!;
       expect(region.getAttribute('aria-labelledby')).toBe(`section-${key}-h`);
       expect(el().querySelector(`#section-${key}-h`)!.tagName).toBe('H2');
@@ -341,7 +338,8 @@ describe('MatterDetailPage', () => {
     // Every other ?tab= value opens that section's full view with the tab strip (MD-11, MD-13).
     await openTab('productions');
     expect(el().querySelector('[data-matter-one-page]')).toBeNull();
-    expect(el().querySelectorAll('[role=tab]').length).toBe(7);
+    expect(el().querySelectorAll('[role=tab]').length).toBe(6);
+    expect(tab('Activities')).toBeUndefined();
     expect(el().querySelector('[data-productions-tab]')).not.toBeNull();
     await openTab('notes');
     expect(el().querySelector('[data-notes-tab]')).not.toBeNull();
@@ -356,7 +354,7 @@ describe('MatterDetailPage', () => {
         t.textContent!.trim().replace(/\s*\(.*\)$/, ''),
       ),
     ).toEqual(['Summary', 'Tasks']);
-    for (const key of ['projects', 'assets', 'productions', 'notes', 'activities']) {
+    for (const key of ['projects', 'assets', 'productions', 'notes']) {
       expect(el().querySelector(`#section-${key}`)).toBeNull();
     }
     expect(el().querySelector('[data-no-access]')).toBeNull();
@@ -567,8 +565,8 @@ describe('MatterDetailPage', () => {
     );
     expect(summary.querySelector('[data-client-value] a')?.getAttribute('href')).toBe('/clients/1');
     expect(summary.textContent).not.toMatch(/Custom fields/i);
-    // Activities is a section now, no longer a drawer button.
-    expect(el().querySelector('[data-jump-strip]')!.textContent).toMatch(/Activities/);
+    // Activities is neither a section nor a header button: it is an entry of More Actions (#1404).
+    expect(el().querySelector('[data-jump-strip]')!.textContent).not.toMatch(/Activities/);
     expect(el().querySelector('[data-page-actions]')!.textContent).not.toContain('Activity');
   });
 
@@ -726,21 +724,62 @@ describe('MatterDetailPage', () => {
     expect(el().querySelector('[data-client-value]')!.textContent).toContain('Acme Corp');
   });
 
-  it('shows Activities as a section for Audit.View and maps the old ?tab=activity link to its full view', async () => {
-    await create(['Matter.View', 'Audit.View']);
-    expect(document.body.querySelector('.mf-drawer')).toBeNull();
-    expect(el().querySelector('[data-jump=activities]')).not.toBeNull();
-    expect(el().querySelector('#section-activities')).not.toBeNull();
-    await openTab('activity');
-    expect(tab('Activities').getAttribute('aria-selected')).toBe('true');
-    expect(el().querySelector('mf-matter-activities')).not.toBeNull();
+  it('offers Activities in More Actions only with Audit.View, between Open Task List and Set Inactive, and opens it as a dialog (#1404)', async () => {
+    await create(['Matter.View', 'Task.View', 'Matter.SetActive']);
+    await openOverflow(fixture);
+    expect(menuActions()).toEqual(['open-tasks', 'toggle-active']);
 
     TestBed.resetTestingModule();
-    await create(['Matter.View']);
+    await create(['Matter.View', 'Task.View', 'Matter.SetActive', 'Audit.View']);
     expect(el().querySelector('[data-jump=activities]')).toBeNull();
     expect(el().querySelector('#section-activities')).toBeNull();
+    expect(document.body.querySelector('[data-matter-activities-dialog]')).toBeNull();
+    await openOverflow(fixture);
+    expect(menuActions()).toEqual(['open-tasks', 'activities', 'toggle-active']);
+    const item = el().querySelector<HTMLElement>('[data-action=activities]')!;
+    expect(item.textContent).toContain('Activities');
+    expect(item.querySelector('.pi-history')).not.toBeNull();
+    expect(searchAudit).not.toHaveBeenCalled(); // nothing is asked before the dialog opens
+    item.click();
+    await settle(fixture);
+    const dialog = document.body.querySelector('.mf-formdlg')!;
+    expect(dialog.querySelector('[data-panel-title]')!.textContent).toContain('Activities');
+    expect(dialog.querySelector('.mf-dlg__sub')!.textContent).toContain('00343-00012');
+    expect(dialog.querySelector('mf-matter-activities')).not.toBeNull();
+    expect(dialog.querySelector('[data-panel-primary]')).toBeNull();
+    expect(searchAudit).toHaveBeenCalledTimes(1);
+    expect(navigateByUrl).not.toHaveBeenCalled();
+    (dialog.querySelector('[data-panel-cancel] button') as HTMLElement).click();
+    await settle(fixture);
+    expect(document.body.querySelector('[data-matter-activities-dialog]')).toBeNull();
+  });
+
+  it('opens the Activities dialog over the one page for ?tab=activities and the old ?tab=activity, and removes the parameter when it closes (#1404)', async () => {
+    await create(['Matter.View', 'Audit.View']);
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    expect(document.body.querySelector('[data-matter-activities-dialog]')).toBeNull();
+    await openTab('activity');
+    expect(el().querySelector('[data-matter-one-page]')).not.toBeNull();
+    expect(document.body.querySelector('[data-matter-activities-dialog]')).not.toBeNull();
+    (document.body.querySelector('[data-panel-cancel] button') as HTMLElement).click();
+    await settle(fixture);
+    expect(navigate).toHaveBeenCalledWith([], {
+      queryParams: { tab: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+    expect(document.body.querySelector('[data-matter-activities-dialog]')).toBeNull();
+
+    navigate.mockClear();
+    await openTab('activities');
+    expect(document.body.querySelector('[data-matter-activities-dialog]')).not.toBeNull();
+
+    // No Audit.View: the link is just the one page.
+    TestBed.resetTestingModule();
+    await create(['Matter.View']);
     await openTab('activities');
     expect(el().querySelector('[data-matter-one-page]')).not.toBeNull();
+    expect(document.body.querySelector('[data-matter-activities-dialog]')).toBeNull();
   });
 
   it('lists the matter tasks in the Tasks tab (open by default, All on request); Create task is in the header and "New Task" in the tab toolbar (LC-02)', async () => {
@@ -936,7 +975,7 @@ describe('MatterDetailPage', () => {
       Array.from(el().querySelectorAll('[role=menuitem]')).map((b) =>
         b.getAttribute('data-action'),
       ),
-    ).toEqual(['toggle-active']);
+    ).toEqual(['activities', 'toggle-active']);
   });
 
   it('shows the Projects tab action in its empty state', async () => {

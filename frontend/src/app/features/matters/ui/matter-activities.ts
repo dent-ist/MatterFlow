@@ -5,7 +5,6 @@ import {
   effect,
   inject,
   input,
-  output,
   signal,
   untracked,
 } from '@angular/core';
@@ -28,11 +27,10 @@ import { friendlyText } from '../../../shared/ui/audit-format';
 import { auditObjectLink, auditObjectText } from '../../admin/audit/audit-links';
 import { numericInstant, readableInstant } from '../../../shared/ui/numeric-date';
 import { IntPipe } from '../../../shared/ui/number-format';
-import { SECTION_ROWS, type SectionStats } from '../../../shared/ui/section-card';
 import { shortAccountName } from '../../../shared/ui/person-name';
 
 /**
- * The Kind dropdown of the Activities tab: a word for the audit object types that belong together. The choice is sent to the server as the object type filter, so paging
+ * The Kind dropdown of the Activities dialog: a word for the audit object types that belong together. The choice is sent to the server as the object type filter, so paging
  * stays right. Production, Spec and Note events come from the Productions and Notes modules (object types Production, ProductionSpec and Note).
  */
 export const ACTIVITY_KINDS: readonly { value: string; label: string; types: string }[] = [
@@ -54,10 +52,10 @@ export const ACTIVITY_KINDS: readonly { value: string; label: string; types: str
 const seenKey = (matterId: number) => `mf.matter-activity-seen.${matterId}`;
 
 /**
- * The Activities tab of a Matter (MD-07, #1008; owner decision AQ.7): everything the audit trail holds for the matter (the matter itself, its tasks, comments, assets,
+ * The activity list of a Matter (MD-07, #1008; owner decision AQ.7; a tab, then a section, now the body of the Activities dialog opened from More Actions, #1404): everything the audit trail holds for the matter (the matter itself, its tasks, comments, assets,
  * projects, productions, specs and notes) in the My Matters grid style: When, Who and one What cell that ends with the object as a link when it has a page, newest first,
  * a Kind dropdown and a banner "N new since your last visit" (the last visit is remembered in this browser only). A record the viewer may not see keeps the server's
- * label "Restricted record". Needs `Audit.View` (the tab is not offered without it).
+ * label "Restricted record". Needs `Audit.View` (the menu entry is not offered without it).
  */
 @Component({
   selector: 'mf-matter-activities',
@@ -82,6 +80,10 @@ const seenKey = (matterId: number) => `mf.matter-activity-seen.${matterId}`;
       width: 100%;
       max-width: 0;
     }
+    /* The grid table keeps 60 rem as its minimum on a page; inside the 734 px of the Activities dialog it takes the width of its frame, the three columns fit (as in the Vendor dialog's Matters tab). */
+    :host ::ng-deep table.tt {
+      min-width: 0;
+    }
     .ma__obj {
       margin-left: var(--mf-s1);
     }
@@ -95,24 +97,21 @@ const seenKey = (matterId: number) => `mf.matter-activity-seen.${matterId}`;
     }
   `,
   template: `
-    <!-- The tab's control row, like every Matter tab (LC-08, theme guide 11.2): the Kind dropdown, then Columns. -->
-    @if (!compact()) {
-      <h2 class="mf-sr-only">Activities</h2>
-      <mf-list-toolbar [filters]="filters">
-        <mf-dropdown
-          mfView
-          buttonId="ma-kind"
-          label="Kind"
-          prefix="Kind:"
-          [items]="kindItems"
-          [value]="kind()"
-          (valueChange)="setKind($event)"
-          neutralValue=""
-        />
-        <mf-record-columns mfColumns [grid]="grid" />
-      </mf-list-toolbar>
-    }
-    @if (!compact() && newCount() > 0) {
+    <!-- The control row, like every Matter list (LC-08, theme guide 11.2): the Kind dropdown, then Columns. -->
+    <mf-list-toolbar [filters]="filters">
+      <mf-dropdown
+        mfView
+        buttonId="ma-kind"
+        label="Kind"
+        prefix="Kind:"
+        [items]="kindItems"
+        [value]="kind()"
+        (valueChange)="setKind($event)"
+        neutralValue=""
+      />
+      <mf-record-columns mfColumns [grid]="grid" />
+    </mf-list-toolbar>
+    @if (newCount() > 0) {
       <p class="ma__banner" role="status" data-new-banner>
         {{ newCount() | mfInt }} new since your last visit
       </p>
@@ -123,7 +122,6 @@ const seenKey = (matterId: number) => `mf.matter-activity-seen.${matterId}`;
       noun="activities"
       emptyText="No activity yet."
       [grid]="grid"
-      [compact]="compact()"
       [skeletonRows]="10"
       [rows]="items()"
       [rowKey]="eventKey"
@@ -168,7 +166,7 @@ const seenKey = (matterId: number) => `mf.matter-activity-seen.${matterId}`;
         </td>
       </ng-template>
       <div mfGridFoot>
-        @if (!compact() && nextCursor() !== null) {
+        @if (nextCursor() !== null) {
           <button type="button" class="mf-btn" data-show-more (click)="fetch(false)">
             Show More
           </button>
@@ -184,13 +182,8 @@ export class MatterActivities {
   }
 
   readonly matterId = input.required<number>();
-  /** The compact section of the one-page Matter (#1396): no toolbar or banner, the latest 10 events, no "Show More"; the visit is not remembered (the full view does that). */
-  readonly compact = input(false);
-  /** True: nothing is asked yet (a section that is not near the window); turning it off loads. */
-  readonly hold = input(false);
-  readonly stats = output<SectionStats>();
 
-  /** The tab has no search or column filters, so the toolbar only carries the Kind dropdown and Columns. */
+  /** The list has no search or column filters, so the toolbar only carries the Kind dropdown and Columns. */
   protected readonly filters = new ListFilters({
     screen: 'matter-activities',
     noun: 'activities',
@@ -227,19 +220,10 @@ export class MatterActivities {
   constructor() {
     effect(() => {
       const id = this.matterId();
-      if (this.hold()) return;
       untracked(() => {
         this.seenBefore = this.readSeen(id);
-        void this.fetch(true).then(() => {
-          if (!this.compact()) this.rememberVisit(id);
-        });
+        void this.fetch(true).then(() => this.rememberVisit(id));
       });
-    });
-    effect(() => {
-      const state = this.state();
-      const shown = this.items().length;
-      const more = this.nextCursor() !== null;
-      untracked(() => this.stats.emit({ state, shown, total: null, more }));
     });
   }
 
@@ -310,7 +294,7 @@ export class MatterActivities {
           undefined,
           undefined,
           first ? undefined : (this.nextCursor() ?? undefined),
-          this.compact() ? SECTION_ROWS : 50,
+          50,
           this.matterId(),
         ),
       );
