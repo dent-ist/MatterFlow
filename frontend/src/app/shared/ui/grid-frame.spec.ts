@@ -101,14 +101,11 @@ describe('GridFrame header bands', () => {
 
 /** A grid inside a card (a Matter section, D-03a/c) has nothing to scroll up and down: it must pass the wheel and the keys on to the page. */
 describe('GridFrame inline', () => {
-  it('does not stop the scroll chain and is no empty Tab stop', () => {
+  it('is no empty Tab stop (the scroll chain is checked in e2e/tests/matter-scroll.spec.ts)', () => {
     const fixture = TestBed.createComponent(InlineHost);
     fixture.detectChanges();
     document.body.appendChild(fixture.nativeElement);
     const scroll = fixture.nativeElement.querySelector('.scroll') as HTMLElement;
-    const style = getComputedStyle(scroll);
-    expect(style.overscrollBehaviorY).toBe('auto');
-    expect(style.overscrollBehaviorX).toBe('auto');
     expect(scroll.hasAttribute('tabindex')).toBe(false);
   });
 });
