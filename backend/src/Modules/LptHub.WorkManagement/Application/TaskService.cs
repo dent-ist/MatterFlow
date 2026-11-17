@@ -268,6 +268,11 @@ public sealed class TaskService
         var type = await _taskTypes.GetAsync(request.TaskTypeId, ct);
         if (type is null)
             return Error.Validation("taskTypeId", "NOT_FOUND", "Select a task type.");
+        // Task Type access rule (epic #1397, issue #1401): a type the caller may not see is "not found" (the text of a missing type); one they may see but not change is read-only for creating too.
+        if (!await _access.IsTypeVisibleAsync(type.Id, ct))
+            return Error.Validation("taskTypeId", "NOT_FOUND", "Select a task type.");
+        if (!await _access.CanEditTypeAsync(type.Id, ct))
+            return Error.Validation("taskTypeId", ErrorCodes.TaskTypeReadOnly, "You can see this task type but not create tasks of it.");
         if (!type.IsUsable)
             return Error.Validation("taskTypeId", "NOT_USABLE", $"Task type '{type.Name}' is inactive or not fully configured, so it can't be used for new tasks.");
         if (!type.EligibleWorkflowIds.Contains(request.WorkflowDefinitionId))
@@ -286,7 +291,7 @@ public sealed class TaskService
         if (!await _priorities.IsAssignableAsync(priorityId, ct))
             return Error.Validation("priorityId", "NOT_AVAILABLE", "Select an active priority.");
 
-        var assignees = await ValidateAssigneesAsync(request.AssignedPodId, request.AssignedUserId, current: null, ct);
+        var assignees = await ValidateAssigneesAsync(request.AssignedPodId, request.AssignedUserId, current: null, type.Id, ct);
         if (assignees.IsFailure)
             return Result<Created>.Failure(assignees.Error!);
 
@@ -405,9 +410,11 @@ public sealed class TaskService
 
     private async Task<Result<CommandNotes>> UpdateCoreAsync(long taskId, UpdateTaskRequest request, string? descriptionHtml, TaskDue due, CancellationToken ct)
     {
-        var task = await _tx.LockTaskAsync(taskId, ct);
-        if (task is null)
-            return TaskSupport.NotFound();
+        var locked = await _tx.LockForEditAsync(taskId, ct);
+        if (locked.IsFailure)
+            return locked.Error!;
+
+        var task = locked.Value;
 
         var version = TaskSupport.CheckRowVersion(task.RowVersion, request.RowVersion);
         if (version.IsFailure)
@@ -654,7 +661,7 @@ public sealed class TaskService
         {
             var one = await AssignAsync(item.TaskId, new AssignTaskRequest { RowVersion = item.RowVersion, PodId = item.PodId, UserId = request.UserId }, ct);
             results.Add(one.IsFailure
-                ? new AssignTaskBatchResult(item.TaskId, false, null, one.Error!.Code, one.Error.Message)
+                ? new AssignTaskBatchResult(item.TaskId, false, null, TaskSupport.RowCode(one.Error!), one.Error!.Message)
                 : new AssignTaskBatchResult(item.TaskId, true, one.Value, null, null));
         }
 
@@ -663,9 +670,11 @@ public sealed class TaskService
 
     internal async Task<Result<CommandNotes>> AssignCoreAsync(long taskId, AssignTaskRequest request, CancellationToken ct)
     {
-        var task = await _tx.LockTaskAsync(taskId, ct);
-        if (task is null)
-            return TaskSupport.NotFound();
+        var locked = await _tx.LockForEditAsync(taskId, ct);
+        if (locked.IsFailure)
+            return locked.Error!;
+
+        var task = locked.Value;
 
         var version = TaskSupport.CheckRowVersion(task.RowVersion, request.RowVersion);
         if (version.IsFailure)
@@ -677,7 +686,7 @@ public sealed class TaskService
         if (task.AssignedPodId == request.PodId && task.AssignedUserId == request.UserId)
             return CommandNotes.None;
 
-        var checkedAssignees = await ValidateAssigneesAsync(request.PodId, request.UserId, task, ct);
+        var checkedAssignees = await ValidateAssigneesAsync(request.PodId, request.UserId, task, task.TaskTypeId, ct);
         if (checkedAssignees.IsFailure)
             return Result<CommandNotes>.Failure(checkedAssignees.Error!);
 
@@ -726,9 +735,11 @@ public sealed class TaskService
 
     internal async Task<Result<bool>> SetPriorityCoreAsync(long taskId, SetTaskPriorityRequest request, CancellationToken ct)
     {
-        var task = await _tx.LockTaskAsync(taskId, ct);
-        if (task is null)
-            return TaskSupport.NotFound();
+        var locked = await _tx.LockForEditAsync(taskId, ct);
+        if (locked.IsFailure)
+            return locked.Error!;
+
+        var task = locked.Value;
 
         var version = TaskSupport.CheckRowVersion(task.RowVersion, request.RowVersion);
         if (version.IsFailure)
@@ -769,9 +780,11 @@ public sealed class TaskService
     /// </summary>
     internal async Task<Result<bool>> SetProjectCoreAsync(long taskId, int? projectId, string? oldProjectName, string rowVersion, ProjectSummary? project, CancellationToken ct)
     {
-        var task = await _tx.LockTaskAsync(taskId, ct);
-        if (task is null)
-            return TaskSupport.NotFound();
+        var locked = await _tx.LockForEditAsync(taskId, ct);
+        if (locked.IsFailure)
+            return locked.Error!;
+
+        var task = locked.Value;
 
         var version = TaskSupport.CheckRowVersion(task.RowVersion, rowVersion);
         if (version.IsFailure)
@@ -838,8 +851,8 @@ public sealed class TaskService
 
     private sealed record Assignees(bool? UserInPod);
 
-    /// <summary>A Pod must exist and be active, a user must exist and be active; only changed values are checked. A user outside the Pod is a warning.</summary>
-    private async Task<Result<Assignees>> ValidateAssigneesAsync(int? podId, int? userId, WorkTask? current, CancellationToken ct)
+    /// <summary>A Pod must exist and be active, a user must exist, be active and be allowed for the task's type; only changed values are checked. A user outside the Pod is a warning.</summary>
+    private async Task<Result<Assignees>> ValidateAssigneesAsync(int? podId, int? userId, WorkTask? current, int taskTypeId, CancellationToken ct)
     {
         if (podId is { } pod && pod != current?.AssignedPodId)
         {
@@ -859,6 +872,9 @@ public sealed class TaskService
                 return Error.Validation("userId", "USER_INACTIVE", $"{info.DisplayName} is disabled and can't be assigned work.");
             if (!await _users.CanExecuteWorkAsync(user, ct))
                 return Error.Validation("userId", "USER_CANNOT_EXECUTE", $"{info.DisplayName} can't be assigned work (no permission to work on tasks).");
+            // Task Type access rule (epic #1397, issue #1401): the Can Be Assigned list of the task's type; one rule for create, assign, batch and bulk.
+            if (!await _access.CanBeAssignedAsync(user, taskTypeId, ct))
+                return Error.Validation("userId", TaskSupport.UserCannotAssignTypeCode, $"{info.DisplayName} can't be assigned tasks of this type.");
         }
 
         bool? inPod = null;

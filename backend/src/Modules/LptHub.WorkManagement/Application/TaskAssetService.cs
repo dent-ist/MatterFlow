@@ -26,14 +26,15 @@ public sealed class TaskAssetService(
 {
     public async Task<Result<TaskAssetLinkListResponse>> ListAsync(long taskId, CancellationToken ct)
     {
-        var task = await access.Visible().Where(t => t.Id == taskId).Select(t => new { t.Status }).SingleOrDefaultAsync(ct);
+        var task = await access.Visible().Where(t => t.Id == taskId).Select(t => new { t.Status, t.TaskTypeId }).SingleOrDefaultAsync(ct);
         if (task is null)
             return TaskSupport.NotFound();
 
         var rows = await db.Set<TaskAsset>().AsNoTracking().Where(l => l.TaskId == taskId)
             .OrderByDescending(l => l.CreatedAtUtc).ThenByDescending(l => l.AssetId).ToListAsync(ct);
         var items = await ToResponsesAsync(rows, ct);
-        var canEdit = TaskEditability.IsAllowed(task.Status, TaskOperation.LinkAssets) && permissions.Has(Permissions.Task.Edit) && permissions.Has(Permissions.Asset.Link);
+        var canEdit = TaskEditability.IsAllowed(task.Status, TaskOperation.LinkAssets) && permissions.Has(Permissions.Task.Edit) && permissions.Has(Permissions.Asset.Link)
+            && await tx.EditGateAsync(task.TaskTypeId, ct) is null;
         return new TaskAssetLinkListResponse(items, canEdit);
     }
 
@@ -46,9 +47,11 @@ public sealed class TaskAssetService(
         var done = await tx.RunAsync<int>(
             async token =>
             {
-                var task = await tx.LockTaskAsync(taskId, token);
-                if (task is null)
-                    return TaskSupport.NotFound();
+                var locked = await tx.LockForEditAsync(taskId, token);
+                if (locked.IsFailure)
+                    return locked.Error!;
+
+                var task = locked.Value;
                 if (TaskEditability.Check(task.Status, TaskOperation.LinkAssets) is { } notEditable)
                     return TaskService.NotEditable(task.Status, notEditable);
 
@@ -92,9 +95,11 @@ public sealed class TaskAssetService(
         var done = await tx.RunAsync<int>(
             async token =>
             {
-                var task = await tx.LockTaskAsync(taskId, token);
-                if (task is null)
-                    return TaskSupport.NotFound();
+                var locked = await tx.LockForEditAsync(taskId, token);
+                if (locked.IsFailure)
+                    return locked.Error!;
+
+                var task = locked.Value;
                 if (TaskEditability.Check(task.Status, TaskOperation.LinkAssets) is { } notEditable)
                     return TaskService.NotEditable(task.Status, notEditable);
 
@@ -141,9 +146,11 @@ public sealed class TaskAssetService(
         var done = await tx.RunAsync<bool>(
             async token =>
             {
-                var task = await tx.LockTaskAsync(taskId, token);
-                if (task is null)
-                    return TaskSupport.NotFound();
+                var locked = await tx.LockForEditAsync(taskId, token);
+                if (locked.IsFailure)
+                    return locked.Error!;
+
+                var task = locked.Value;
                 if (TaskEditability.Check(task.Status, TaskOperation.LinkAssets) is { } notEditable)
                     return TaskService.NotEditable(task.Status, notEditable);
 

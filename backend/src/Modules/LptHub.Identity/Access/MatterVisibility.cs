@@ -188,6 +188,77 @@ public sealed class MatterVisibility(
         return query is IAsyncEnumerable<int> ? await query.ToArrayAsync(cancellationToken) : [.. query];
     }
 
+    /// <summary>
+    /// The restricted types with a non-empty Can Edit list that holds none of the viewer's active roles (README section 1.2: <c>TypeEditable</c> fails for them). A viewer without a person holds no role, so every
+    /// type with an Edit list is read-only for them; a type with an empty Edit list is "no extra limit" and is not here.
+    /// </summary>
+    private IQueryable<int> ReadOnlyTypes(Viewer viewer)
+    {
+        var restricted = taskTypes.Types().Where(t => t.IsRestricted);
+        var editRows = taskTypes.Roles().Where(a => a.CanEdit);
+        if (viewer.UserId is not { } user)
+            return restricted.Where(t => editRows.Any(a => a.TaskTypeId == t.TaskTypeId)).Select(t => t.TaskTypeId);
+
+        var userRoles = roles.RoleIdsOf(user);
+        return restricted
+            .Where(t => editRows.Any(a => a.TaskTypeId == t.TaskTypeId) && !editRows.Any(a => a.TaskTypeId == t.TaskTypeId && userRoles.Contains(a.RoleId)))
+            .Select(t => t.TaskTypeId);
+    }
+
+    private static async Task<bool> AnyAsync(IQueryable<int> query, CancellationToken cancellationToken) =>
+        query is IAsyncEnumerable<int> ? await query.AnyAsync(cancellationToken) : query.Any();
+
+    public async Task<bool> CanEditTaskTypeAsync(int taskTypeId, CancellationToken cancellationToken = default)
+    {
+        var viewer = Current;
+        if (!TypeRuleApplies(viewer))
+            return true;
+
+        // Hidden types are "not found" before anything else (the prepared list when this request has one, else one indexed statement).
+        if (HiddenFor(viewer) is { } hidden ? hidden.Contains(taskTypeId) : await AnyAsync(HiddenTypes(viewer).Where(id => id == taskTypeId), cancellationToken))
+            return false;
+
+        return !await AnyAsync(ReadOnlyTypes(viewer).Where(id => id == taskTypeId), cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<int>> NotEditableTaskTypeIdsAsync(CancellationToken cancellationToken = default)
+    {
+        var viewer = Current;
+        if (!TypeRuleApplies(viewer))
+            return [];
+
+        var hidden = await HiddenTaskTypeIdsAsync(cancellationToken);
+        var query = ReadOnlyTypes(viewer);
+        var readOnly = query is IAsyncEnumerable<int> ? await query.ToArrayAsync(cancellationToken) : [.. query];
+        return [.. hidden.Concat(readOnly).Distinct().Order()];
+    }
+
+    public async Task<IQueryable<int>?> AssignableUserIdsAsync(int taskTypeId, CancellationToken cancellationToken = default)
+    {
+        if (!TaskTypeAccessEnabled)
+            return null;
+
+        var restricted = taskTypes.Types().Where(t => t.TaskTypeId == taskTypeId && t.IsRestricted).Select(t => t.TaskTypeId);
+        if (!await AnyAsync(restricted, cancellationToken))
+            return null;
+
+        var rowsQuery = taskTypes.Roles().Where(a => a.TaskTypeId == taskTypeId);
+        var rows = rowsQuery is IAsyncEnumerable<TaskTypeRoleRow> ? await rowsQuery.ToArrayAsync(cancellationToken) : [.. rowsQuery];
+        var assign = rows.Where(r => r.CanAssign).Select(r => r.RoleId).ToArray();
+        var view = rows.Where(r => r.CanView).Select(r => r.RoleId).ToArray();
+        var holders = roles.ActiveUserRoles();
+        // A non-empty Can Be Assigned list is the whole answer (no admin exception); an empty one means "no extra limit": whoever may see the type, the System Admin included.
+        return assign.Length > 0
+            ? holders.Where(r => assign.Contains(r.RoleId)).Select(r => r.UserId)
+            : holders.Where(r => r.IsSystemAdmin || view.Contains(r.RoleId)).Select(r => r.UserId);
+    }
+
+    public async Task<bool> CanBeAssignedAsync(int userId, int taskTypeId, CancellationToken cancellationToken = default)
+    {
+        var allowed = await AssignableUserIdsAsync(taskTypeId, cancellationToken);
+        return allowed is null || await AnyAsync(allowed.Where(id => id == userId), cancellationToken);
+    }
+
     /// <summary>The loaded hidden-type list for this viewer, or null when it was not loaded (another person, a write happened, no filter ran): the subquery form is used then.</summary>
     private int[]? HiddenFor(Viewer viewer) => _hidden is not null && viewer.UserId is { } user && _hiddenFor == user && currentUser.UserId == user ? _hidden : null;
 

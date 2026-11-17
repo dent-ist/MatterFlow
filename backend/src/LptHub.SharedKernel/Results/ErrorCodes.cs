@@ -71,6 +71,12 @@ public static class ErrorCodes
     /// <summary>A role that is named in the access list of a Task Type cannot be deleted (epic #1397); remove it from the Task Types first.</summary>
     public const string RoleUsedByTaskType = "ROLE_USED_BY_TASK_TYPE";
 
+    /// <summary>
+    /// The caller may see a task but not change it: the task's Task Type has a Can Edit list and none of the caller's roles is in it (epic #1397, issue #1401). 403. On create it is the code of the
+    /// <c>taskTypeId</c> field (400). Never returned for a task the caller may not see at all: that is the ordinary 404.
+    /// </summary>
+    public const string TaskTypeReadOnly = "TASK_TYPE_READ_ONLY";
+
     /// <summary>A role id in a Task Type access list does not exist or is deactivated.</summary>
     public const string RoleNotFound = "ROLE_NOT_FOUND";
 

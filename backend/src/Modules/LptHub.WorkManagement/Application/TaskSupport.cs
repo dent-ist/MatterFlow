@@ -36,6 +36,16 @@ internal static class TaskSupport
 
     public static Error NotFound() => Error.NotFound("Task not found.");
 
+    /// <summary>The 403 for a task the caller may see but, by its Task Type's Can Edit list, not change (epic #1397, issue #1401).</summary>
+    public static Error ReadOnly() => Error.Forbidden("You can see this task but not change it.", ErrorCodes.TaskTypeReadOnly);
+
+    /// <summary>The field code of an assignee who is not in the Task Type's Can Be Assigned list (400 on <c>userId</c>, like <c>USER_CANNOT_EXECUTE</c>).</summary>
+    public const string UserCannotAssignTypeCode = "USER_CANNOT_ASSIGN_TYPE";
+
+    /// <summary>The code a per-task result of a batch or bulk change reports: the field code <c>USER_CANNOT_ASSIGN_TYPE</c> when that is the reason (the same task type differs per row), else the error's own code.</summary>
+    public static string RowCode(Error error) =>
+        error.FieldErrors?.Values.Any(list => list.Any(f => f.Code == UserCannotAssignTypeCode)) == true ? UserCannotAssignTypeCode : error.Code;
+
     public static Error Concurrency(byte[]? current = null) =>
         Error.Conflict(
             ErrorCodes.ConcurrencyConflict,

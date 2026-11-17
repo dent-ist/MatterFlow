@@ -133,7 +133,9 @@ public sealed class TaskTypeReadRestTests(SqlServerFixture sql)
             }
 
             // Producer: assigning a task of the restricted type to a person without the role tells them nothing (the assignee is no exception); assigning an open task does.
-            await AssignAsync(u.T3, u.PlainId);
+            // (Since issue #1401 the API refuses that assignment outright: USER_CANNOT_ASSIGN_TYPE; the producer's own recipient check stays as the second line.)
+            var refused = await u.H.Admin.PostAsJsonAsync($"/api/v1/tasks/{u.T3}/assignment", new { rowVersion = RowVersion(await u.H.GetTaskAsync(u.T3)), userId = u.PlainId, podId = (int?)null });
+            refused.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
             (await TotalAsync(u.Plain)).ShouldBe(0);
             await AssignAsync(u.T1, u.PlainId);
             (await TotalAsync(u.Plain)).ShouldBe(1);
@@ -260,8 +262,14 @@ public sealed class TaskTypeReadRestTests(SqlServerFixture sql)
     {
         await WithUniverseAsync(sql, async u =>
         {
-            async Task<long> OverdueAsync(TaskHarness.World world, int assignee) =>
-                TaskId(await u.H.CreateTaskAsync(world, false, new() { ["matterId"] = u.Matter, ["projectId"] = u.Project, ["dueDate"] = "2026-01-05", ["assignedUserId"] = assignee }));
+            // A person without the View role can no longer be given a task of the restricted type (issue #1401), so the "assignee who lost access" is made the way it happens: the task is assigned
+            // in the database after the fact (the stranded work of design 9.5).
+            async Task<long> OverdueAsync(TaskHarness.World world, int assignee)
+            {
+                var id = TaskId(await u.H.CreateTaskAsync(world, false, new() { ["matterId"] = u.Matter, ["projectId"] = u.Project, ["dueDate"] = "2026-01-05" }));
+                await u.H.ExecuteAsync($"UPDATE dbo.Task SET AssignedUserId = {assignee}, StatusCode = 'IN_PROGRESS' WHERE TaskId = {id}");
+                return id;
+            }
 
             var openOverdue = await OverdueAsync(u.OpenWorld, u.OutsiderId);
             var secretOverdue = await OverdueAsync(u.SecretWorld, u.OutsiderId);

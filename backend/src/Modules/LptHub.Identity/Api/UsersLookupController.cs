@@ -6,6 +6,7 @@ using LptHub.Identity.Domain;
 using LptHub.SharedKernel.Availability;
 using LptHub.SharedKernel.Tasks;
 using LptHub.SharedKernel.Time;
+using LptHub.SharedKernel.Visibility;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -41,7 +42,7 @@ public sealed record UserLookupItem(
 [ApiController]
 [Route("api/v1/users/lookup")]
 [Produces("application/json")]
-public class UsersLookupController(DbContext db, IUserAvailabilityReader availability, IAssigneeLoadReader loads, IAssigneeExperienceReader experience, IAssigneeRanker ranker, IClock clock) : ControllerBase
+public class UsersLookupController(DbContext db, IUserAvailabilityReader availability, IAssigneeLoadReader loads, IAssigneeExperienceReader experience, IAssigneeRanker ranker, IClock clock, IMatterVisibility visibility) : ControllerBase
 {
     /// <summary>
     /// Finds active users that hold a role. Plain (default): matches by name, ordered by name. With <paramref name="podId"/>: only that Pod's members,
@@ -51,7 +52,7 @@ public class UsersLookupController(DbContext db, IUserAvailabilityReader availab
     /// <param name="q">Matches the display name.</param>
     /// <param name="limit">Maximum items (default 25, max 50).</param>
     /// <param name="podId">Narrow to the active members of this Pod and rank them (least load, fewest completed Tasks of the type in 3 months, longest since last assigned, name, id).</param>
-    /// <param name="taskTypeId">The Task Type being assigned; the ranking counts the Tasks of this type each person completed in the last 3 months. Without it that step is skipped.</param>
+    /// <param name="taskTypeId">The Task Type being assigned; the ranking counts the Tasks of this type each person completed in the last 3 months. Without it that step is skipped. With the Task Type access rule on (epic #1397) only the people the type's Can Be Assigned list allows are returned (an empty list allows everyone who may see the type; no admin exception), and nobody for a type the caller may not see.</param>
     /// <param name="suggest">Return the ranked Suggested list: out of office people are left out.</param>
     /// <param name="assignable">For assignee pickers: only people who hold <c>Workflow.Execute</c>, and nobody who is out of office (also in a Pod list and in a name search).</param>
     /// <param name="cancellationToken">Request cancellation.</param>
@@ -72,6 +73,16 @@ public class UsersLookupController(DbContext db, IUserAvailabilityReader availab
         var query = db.Set<AppUser>().AsNoTracking().Where(u => u.IsActive && db.Set<UserRole>().Any(r => r.UserId == u.Id));
         if (assignable)
             query = query.WhereHoldsExecute();
+        if (taskTypeId is { } typeId)
+        {
+            // A type the caller may not see answers like a type nobody may be assigned to: an empty list, never an error that tells the two apart.
+            if ((await visibility.HiddenTaskTypeIdsAsync(cancellationToken)).Contains(typeId))
+                return Array.Empty<UserLookupItem>();
+
+            if (await visibility.AssignableUserIdsAsync(typeId, cancellationToken) is { } allowed)
+                query = query.Where(u => allowed.Contains(u.Id));
+        }
+
         if (podId is { } pod)
             query = query.Where(u => db.Set<PodMember>().Any(m => m.PodId == pod && m.UserId == u.Id));
         if (!string.IsNullOrWhiteSpace(q))

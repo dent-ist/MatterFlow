@@ -23,19 +23,21 @@ public class TaskTypesController(TaskTypeService taskTypes, TaskTypeAccessServic
     /// <c>workflowId</c> only the types for which that workflow is eligible (the Workflows tab links to it). Every type carries <c>openTaskCount</c>
     /// (New, In Progress and On Hold Tasks of the type, the Task Queue definition; null without <c>Task.View</c>). <c>sort</c>: <c>name</c> (default),
     /// <c>-name</c>, <c>openTaskCount</c> or <c>-openTaskCount</c> (equal counts keep the name order); the list is not paged.
+    /// Task Type access rule (epic #1397): a type the caller may not see is not listed (no name, no count); a holder of <c>TaskType.Manage</c> gets every type (the admin screen) unless
+    /// <c>visibleOnly</c> is true, which every picker and filter sends. <c>creatableOnly</c> narrows to the types the caller may create tasks of (the Create Task list).
     /// </summary>
     [HttpGet(Name = "ListTaskTypes")]
     [Authorize(Policy = ConfigurationPolicies.TaskTypeRead)]
     [ProducesResponseType<IReadOnlyList<TaskTypeView>>(StatusCodes.Status200OK, "application/json")]
-    public async Task<ActionResult<IReadOnlyList<TaskTypeView>>> List([FromQuery] int? workflowId, [FromQuery] string? sort, CancellationToken cancellationToken) =>
-        Ok((await taskTypes.ListViewsAsync(workflowId, sort, cancellationToken)).OrThrow());
+    public async Task<ActionResult<IReadOnlyList<TaskTypeView>>> List([FromQuery] int? workflowId, [FromQuery] string? sort, [FromQuery] bool visibleOnly = false, [FromQuery] bool creatableOnly = false, CancellationToken cancellationToken = default) =>
+        Ok((await taskTypes.ListViewsAsync(workflowId, sort, visibleOnly, creatableOnly, cancellationToken)).OrThrow());
 
-    /// <summary>One Task Type with its form status, eligible workflows and open Task count (null without <c>Task.View</c>).</summary>
+    /// <summary>One Task Type with its form status, eligible workflows and open Task count (null without <c>Task.View</c>). 404 for a type the caller may not see unless they hold <c>TaskType.Manage</c> (epic #1397).</summary>
     [HttpGet("{id:int}", Name = "GetTaskType")]
     [Authorize(Policy = ConfigurationPolicies.TaskTypeRead)]
     [ProducesResponseType<TaskTypeView>(StatusCodes.Status200OK, "application/json")]
     public async Task<ActionResult<TaskTypeView>> Get(int id, CancellationToken cancellationToken) =>
-        (await taskTypes.GetViewAsync(id, cancellationToken)).OrThrow();
+        (await taskTypes.GetVisibleViewAsync(id, cancellationToken)).OrThrow();
 
     /// <summary>Creates a Task Type together with its (empty, unpublished) request form.</summary>
     [HttpPost(Name = "CreateTaskType")]

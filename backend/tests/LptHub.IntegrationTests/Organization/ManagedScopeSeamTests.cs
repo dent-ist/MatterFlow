@@ -108,6 +108,14 @@ public sealed class ManagedScopeSeamTests(SqlServerFixture sql)
 
         public Task<IReadOnlyList<int>> HiddenTaskTypeIdsAsync(CancellationToken cancellationToken = default) => inner.HiddenTaskTypeIdsAsync(cancellationToken);
 
+        public Task<bool> CanEditTaskTypeAsync(int taskTypeId, CancellationToken cancellationToken = default) => inner.CanEditTaskTypeAsync(taskTypeId, cancellationToken);
+
+        public Task<IReadOnlyList<int>> NotEditableTaskTypeIdsAsync(CancellationToken cancellationToken = default) => inner.NotEditableTaskTypeIdsAsync(cancellationToken);
+
+        public Task<IQueryable<int>?> AssignableUserIdsAsync(int taskTypeId, CancellationToken cancellationToken = default) => inner.AssignableUserIdsAsync(taskTypeId, cancellationToken);
+
+        public Task<bool> CanBeAssignedAsync(int userId, int taskTypeId, CancellationToken cancellationToken = default) => inner.CanBeAssignedAsync(userId, taskTypeId, cancellationToken);
+
         public Task<bool> CanSeeMatterAsync(int matterId, CancellationToken cancellationToken = default) => inner.CanSeeMatterAsync(matterId, cancellationToken);
 
         public Task<bool> CanSeeTaskAsync(long taskId, CancellationToken cancellationToken = default) => inner.CanSeeTaskAsync(taskId, cancellationToken);

@@ -778,7 +778,7 @@ The PM review of the battery found it showed "After hours" in the evening and at
 
 ## AW. Task Type access by role (decided 2026-11-16 by the owner, epic #1397, issues #1398 to #1403; design `docs/ux/task-type-access/README.md`)
 
-**Status (2026-11-17): designed; the data model, admin API, audit events and the switch (issue #1399) and the read-path filtering (#1400) are built; edit and assign rules (#1401), the screen (#1402) and the final guards and go-live proof (#1403) are not.** The open questions were answered by the owner on 2026-11-17 (items 9 to 13).
+**Status (2026-11-17): designed; the data model, admin API, audit events and the switch (issue #1399) and the read-path filtering (#1400) are built; the edit and assign rules, the pickers and task creation (#1401) are built; the screen (#1402) and the final guards and go-live proof (#1403) are not.** The open questions were answered by the owner on 2026-11-17 (items 9 to 13).
 
 1. **Three role lists per Task Type:** Can View, Can Edit, Can Be Assigned. A person qualifies when any of their active app roles is in the list (roles are `dbo.Role`, not the HR Title). Edit and Assign imply View.
 2. **No roles in Can View = open to everyone.** A type is restricted only when Can View has roles (`TaskType.IsRestricted`). Existing types keep working as today.

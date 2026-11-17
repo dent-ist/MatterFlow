@@ -17,6 +17,20 @@ public sealed class TaskAccess(DbContext db, IMatterVisibility visibility)
     /// <summary>Keeps the tasks whose type the caller may see (the Task Type term only, epic #1397), for readers that already know the matter or the assignee rule holds. A no-op while the switch is off.</summary>
     public IQueryable<WorkTask> WhereTypeVisible(IQueryable<WorkTask> tasks) => visibility.WhereTaskTypeVisible(tasks, t => t.TaskTypeId);
 
+    /// <summary>True when the caller may see tasks of this type but not change them (the type has a Can Edit list without any of the caller's roles; epic #1397, issue #1401). False while the switch is off.</summary>
+    public async Task<bool> IsReadOnlyByTypeAsync(int taskTypeId, CancellationToken ct) =>
+        visibility.TaskTypeAccessEnabled && !await visibility.CanEditTaskTypeAsync(taskTypeId, ct);
+
+    /// <summary>True when <paramref name="userId"/> may be assigned tasks of this type (Can Be Assigned list; epic #1397, issue #1401). True while the switch is off.</summary>
+    public Task<bool> CanBeAssignedAsync(int userId, int taskTypeId, CancellationToken ct) => visibility.CanBeAssignedAsync(userId, taskTypeId, ct);
+
+    /// <summary>True when the caller may create tasks of this type: they may see it and change tasks of it. A hidden type and a read-only type are told apart by <see cref="IsTypeVisibleAsync"/>.</summary>
+    public Task<bool> CanEditTypeAsync(int taskTypeId, CancellationToken ct) => visibility.CanEditTaskTypeAsync(taskTypeId, ct);
+
+    /// <summary>True when the caller may see tasks of this type (the type is not hidden from them). True while the switch is off.</summary>
+    public async Task<bool> IsTypeVisibleAsync(int taskTypeId, CancellationToken ct) =>
+        !visibility.TaskTypeAccessEnabled || !(await visibility.HiddenTaskTypeIdsAsync(ct)).Contains(taskTypeId);
+
     /// <summary>True when the task exists and the caller may see it.</summary>
     public Task<bool> CanSeeAsync(long taskId, CancellationToken ct) => visibility.CanSeeTaskAsync(taskId, ct);
 

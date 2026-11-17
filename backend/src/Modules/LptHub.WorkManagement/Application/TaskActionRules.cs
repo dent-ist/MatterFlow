@@ -14,9 +14,27 @@ public static class TaskActionRules
     private static readonly TaskStatusCode[] Targets =
         [TaskStatusCode.InProgress, TaskStatusCode.OnHold, TaskStatusCode.Completed, TaskStatusCode.Cancelled];
 
-    public static TaskAllowedActions Compute(TaskStatusCode status, bool matterActive, Func<string, bool> has)
+    /// <param name="status">The task's status.</param>
+    /// <param name="matterActive">Whether the task's matter is active.</param>
+    /// <param name="has">Whether the caller holds a permission.</param>
+    /// <param name="readOnlyByType">True when the caller may see the task but its Task Type's Can Edit list leaves them out (epic #1397): nothing that changes the task is allowed, and every transition says why.</param>
+    public static TaskAllowedActions Compute(TaskStatusCode status, bool matterActive, Func<string, bool> has, bool readOnlyByType = false)
     {
         ArgumentNullException.ThrowIfNull(has);
+        if (readOnlyByType)
+        {
+            var basis = Compute(status, matterActive, has);
+            return new TaskAllowedActions(
+                false,
+                false,
+                false,
+                false,
+                false,
+                false,
+                [.. basis.Transitions.Select(t => t with { Permitted = false, BlockedReason = ErrorCodes.TaskTypeReadOnly })],
+                ReadOnlyByType: true);
+        }
+
         var transitions = new List<TaskTransitionOption>();
         foreach (var target in Targets)
         {

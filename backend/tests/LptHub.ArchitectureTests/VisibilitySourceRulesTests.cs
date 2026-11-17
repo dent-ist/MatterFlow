@@ -51,7 +51,7 @@ public class VisibilitySourceRulesTests
         ["TaskDirectory.cs"] = "internal ITaskDirectory lookups (R13/R45): integrity checks and audit display",
         ["TaskPresenter.cs"] = "reads through TaskAccess.Visible; afterWrite reads the answer to a command once unrestricted",
         ["TaskService.cs"] = "creates tasks; every read goes through TaskAccess",
-        ["TaskTransactions.cs"] = "LockTaskAsync is gated by CanSeeTaskAsync before the lock",
+        ["TaskTransactions.cs"] = "LockForEditAsync is gated by CanSeeTaskAsync before the lock and by the edit gate after it",
         ["TaskTypeAccessImpactReader.cs"] = "the preview of a Task Type access change (epic #1397, TaskType.Manage only): counts of open tasks of one type over every task on purpose, so the administrator sees the real effect (design section 6, gap 3); returns numbers only, no task data",
         ["ConfigurationTaskCounts.cs"] = "counts over VisibleTasks; the true load of the ranker is read separately on purpose (owner decision Q5)",
         ["CapacityService.cs"] = "Dashboard v4 capacity battery (decision AS item 12): the DELIBERATE aggregate exception. A worker's New and In progress tasks are counted unfiltered, as a bare integer per person, and the last-hour count is one integer; no task, matter, title or id is selected or returned",
@@ -87,7 +87,7 @@ public class VisibilitySourceRulesTests
         ["TaskAssetLinkReader.cs"] = "linked tasks through TaskAccess.Visible; the assignee-asset rule (Prepare, AssetIdsOfTasksAssignedTo) applies WhereTypeVisible",
         ["TaskService.cs"] = "create only (Add); every read goes through TaskAccess",
         ["TaskDirectory.cs"] = "HasOpenAssignedWork and the matter deactivation guard apply WhereTaskTypeVisible; the other lookups are internal and only used by the audit label lookup after VisibleTasks",
-        ["TaskTransactions.cs"] = "LockTaskAsync is gated by CanSeeTaskAsync (type term included) before the lock",
+        ["TaskTransactions.cs"] = "LockForEditAsync is gated by CanSeeTaskAsync (type term included) before the lock, then by the edit gate",
         ["TaskBulkService.cs"] = "the bulk target list goes through TaskAccess.Visible; the row version read follows a write of a visible task",
         ["TaskPresenter.cs"] = "reads through TaskAccess.Visible; afterWrite reads the answer to an authorised command once unrestricted",
         ["SearchService.cs"] = "task hits and counts through WhereTaskFlagVisible with the type column; the type name is joined only for visible tasks",
@@ -172,6 +172,29 @@ public class VisibilitySourceRulesTests
             .Select(Path.GetFileName)
             .ToList();
         offenders.ShouldBeEmpty("AsNoTracking in an access source makes writes through the visibility filter silently save nothing (issue #1304): " + string.Join(", ", offenders));
+    }
+
+    [Fact]
+    public void Every_command_that_changes_a_task_loads_it_through_the_edit_gate()
+    {
+        // Issue #1401 (README 9.2): the Edit rule lives where the task is locked (TaskTransactions.LockForEditAsync) or, for comments, in EditGateAsync after the visible load. There is no load of a
+        // locked task without the gate, no other file takes the row lock, and every transactional command file of the Task module uses one of the two.
+        var workManagement = ProductSources().Where(f => f.Contains("LptHub.WorkManagement", StringComparison.Ordinal)).ToList();
+        workManagement.Where(f => File.ReadAllText(f).Contains("LockTaskAsync", StringComparison.Ordinal)).Select(Path.GetFileName).ShouldBeEmpty("LockTaskAsync (a lock without the edit gate) no longer exists; use LockForEditAsync.");
+
+        var lockers = workManagement.Where(f => new Regex(@"dbo\.Task\s+WITH\s*\(\s*UPDLOCK", RegexOptions.CultureInvariant).IsMatch(File.ReadAllText(f))).Select(Path.GetFileName).ToList();
+        lockers.ShouldBe(["TaskTransactions.cs"], "only TaskTransactions takes the task row lock, so the gate cannot be skipped");
+
+        var commands = workManagement
+            .Where(f => Path.GetDirectoryName(f)!.EndsWith("Application", StringComparison.Ordinal) && new Regex(@"\b_?tx\.RunAsync|\btx\.RunAsync", RegexOptions.CultureInvariant).IsMatch(File.ReadAllText(f)))
+            .Select(Path.GetFileName).Order(StringComparer.Ordinal).ToList();
+        commands.ShouldBe(["TaskAssetService.cs", "TaskBulkService.cs", "TaskCommentService.cs", "TaskLifecycleService.cs", "TaskService.cs", "TaskWorkflowService.cs"],
+            "A new file that runs task commands must be reviewed for the edit gate and added here");
+        var ungated = commands
+            .Where(name => name != "TaskBulkService.cs") // each row of a bulk goes through TaskService.AssignCoreAsync, SetPriorityCoreAsync and SetProjectCoreAsync, which lock for edit
+            .Where(name => !new[] { "LockForEditAsync", "EditGateAsync" }.Any(m => File.ReadAllText(workManagement.Single(f => Path.GetFileName(f) == name)).Contains(m, StringComparison.Ordinal)))
+            .ToList();
+        ungated.ShouldBeEmpty("These command files run task transactions without the edit gate: " + string.Join(", ", ungated));
     }
 
     [Fact]

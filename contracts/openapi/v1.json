@@ -3981,6 +3981,22 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "visibleOnly",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          {
+            "name": "creatableOnly",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
           }
         ],
         "responses": {
@@ -21898,6 +21914,7 @@
               "LAST_ADMIN",
               "ROLE_IN_USE",
               "ROLE_USED_BY_TASK_TYPE",
+              "TASK_TYPE_READ_ONLY",
               "ROLE_NOT_FOUND",
               "DUPLICATE_ROLE",
               "EMAIL_PARSE_FAILED",
@@ -39795,7 +39812,8 @@
           "canComment",
           "canExecuteSteps",
           "canReopenSteps",
-          "transitions"
+          "transitions",
+          "readOnlyByType"
         ],
         "type": "object",
         "properties": {
@@ -39822,6 +39840,10 @@
             "items": {
               "$ref": "#/components/schemas/TaskTransitionOption"
             }
+          },
+          "readOnlyByType": {
+            "type": "boolean",
+            "default": false
           }
         }
       },

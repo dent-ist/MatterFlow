@@ -58,9 +58,11 @@ public sealed class TaskWorkflowService(
 
     private async Task<Result<Done>> RunCoreAsync(long taskId, int stepInstanceId, StepOperation operation, StepInput input, CancellationToken ct)
     {
-        var task = await tx.LockTaskAsync(taskId, ct);
-        if (task is null)
-            return TaskSupport.NotFound();
+        var locked = await tx.LockForEditAsync(taskId, ct);
+        if (locked.IsFailure)
+            return locked.Error!;
+
+        var task = locked.Value;
 
         // A step reopen on a Completed Task is also a Task status change: it needs an active Matter (architecture 8.3 rule 3).
         if (operation == StepOperation.Reopen && task.Status == TaskStatusCode.Completed)

@@ -162,6 +162,36 @@ public class TaskActionRulesTests
     }
 }
 
+public class TaskTypeReadOnlyRulesTests
+{
+    [Fact]
+    public void A_task_the_person_may_see_but_not_edit_by_type_offers_nothing_and_blocks_every_transition_with_the_stable_code()
+    {
+        var actions = TaskActionRules.Compute(TaskStatusCode.InProgress, true, _ => true, readOnlyByType: true);
+
+        actions.ReadOnlyByType.ShouldBeTrue();
+        actions.CanEdit.ShouldBeFalse();
+        actions.CanAssign.ShouldBeFalse();
+        actions.CanSetPriority.ShouldBeFalse();
+        actions.CanComment.ShouldBeFalse();
+        actions.CanExecuteSteps.ShouldBeFalse();
+        actions.CanReopenSteps.ShouldBeFalse();
+        actions.Transitions.ShouldNotBeEmpty();
+        actions.Transitions.ShouldAllBe(t => !t.Permitted && t.BlockedReason == ErrorCodes.TaskTypeReadOnly);
+        TaskActionRules.Compute(TaskStatusCode.InProgress, true, _ => true).ReadOnlyByType.ShouldBeFalse();
+    }
+
+    [Fact]
+    public void A_batch_or_bulk_row_reports_the_assignee_code_and_otherwise_the_error_code()
+    {
+        TaskSupport.RowCode(Error.Validation("userId", TaskSupport.UserCannotAssignTypeCode, "x")).ShouldBe(TaskSupport.UserCannotAssignTypeCode);
+        TaskSupport.RowCode(Error.Validation("userId", "USER_CANNOT_EXECUTE", "x")).ShouldBe(ErrorCodes.ValidationFailed);
+        TaskSupport.ReadOnly().Code.ShouldBe(ErrorCodes.TaskTypeReadOnly);
+        TaskSupport.ReadOnly().Type.ShouldBe(ErrorType.Forbidden);
+        TaskSupport.RowCode(TaskSupport.ReadOnly()).ShouldBe("TASK_TYPE_READ_ONLY");
+    }
+}
+
 public class TaskSupportTests
 {
     [Fact]

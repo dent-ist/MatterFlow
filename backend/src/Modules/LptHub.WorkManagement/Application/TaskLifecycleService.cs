@@ -79,9 +79,11 @@ public sealed class TaskLifecycleService(
         int? onHoldReasonId,
         CancellationToken ct)
     {
-        var task = await tx.LockTaskAsync(taskId, ct);
-        if (task is null)
-            return TaskSupport.NotFound();
+        var locked = await tx.LockForEditAsync(taskId, ct);
+        if (locked.IsFailure)
+            return locked.Error!;
+
+        var task = locked.Value;
 
         var version = TaskSupport.CheckRowVersion(task.RowVersion, rowVersion);
         if (version.IsFailure)

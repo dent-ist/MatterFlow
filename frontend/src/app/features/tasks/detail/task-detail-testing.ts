@@ -92,6 +92,7 @@ export function allowed(overrides: Partial<TaskAllowedActions> = {}): TaskAllowe
     canExecuteSteps: true,
     canReopenSteps: true,
     transitions: [transition('HOLD'), transition('COMPLETE'), transition('CANCEL')],
+    readOnlyByType: false,
     ...overrides,
   };
 }

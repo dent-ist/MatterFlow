@@ -37,6 +37,27 @@ public class TaskTypeVisibilityRuleTests
         new() { TaskTypeId = Other, RoleId = RoleC },
     ];
 
+    // The same lists with all three flags (issue #1401): Secret: Can View A and B, Can Edit A, Can Be Assigned B. Other: Can View C only (an empty Edit and Assign list means no extra limit).
+    private static readonly TaskTypeRoleRow[] AllRoles =
+    [
+        new() { TaskTypeId = Secret, RoleId = RoleA, CanView = true, CanEdit = true },
+        new() { TaskTypeId = Secret, RoleId = RoleB, CanView = true, CanAssign = true },
+        new() { TaskTypeId = Other, RoleId = RoleC, CanView = true },
+    ];
+
+    private const int RoleAdmin = 200;
+
+    // Who holds which active role: user 1 = A, 2 = B, 3 = C, 4 = the System Admin role, 5 = A and B, 6 = no role.
+    private static readonly ActiveUserRoleRow[] Holders =
+    [
+        new() { UserId = 1, RoleId = RoleA },
+        new() { UserId = 2, RoleId = RoleB },
+        new() { UserId = 3, RoleId = RoleC },
+        new() { UserId = 4, RoleId = RoleAdmin, IsSystemAdmin = true },
+        new() { UserId = 5, RoleId = RoleA },
+        new() { UserId = 5, RoleId = RoleB },
+    ];
+
     private static readonly MatterAccessRow Normal = new() { MatterId = 1, IsSensitive = false, PrimaryManagerId = Pm };
     private static readonly MatterAccessRow Sensitive = new() { MatterId = 2, IsSensitive = true, PrimaryManagerId = Pm };
 
@@ -64,8 +85,10 @@ public class TaskTypeVisibilityRuleTests
         var types = Substitute.For<ITaskTypeAccessSource>();
         types.Types().Returns(_ => Types.AsQueryable());
         types.ViewRoles().Returns(_ => ViewRoles.AsQueryable());
+        types.Roles().Returns(_ => AllRoles.AsQueryable());
         var roles = Substitute.For<IActiveRoleSource>();
         roles.RoleIdsOf(Arg.Any<int>()).Returns(_ => myRoles.AsQueryable());
+        roles.ActiveUserRoles().Returns(_ => Holders.AsQueryable());
         return new MatterVisibility(
             user,
             permissions,
@@ -198,5 +221,61 @@ public class TaskTypeVisibilityRuleTests
         withList.ShouldBe([10, 14]);
         withQuery.ShouldBe(withList);
         VisibilityPredicates.TypeNotHidden<TaskAccessRow>(t => t.TaskTypeId, [], new int[0].AsQueryable()).ShouldBeNull();
+    }
+
+    // ---- Edit and Assign (issue #1401, README section 1.2)
+
+    [Fact]
+    public async Task A_person_may_edit_a_restricted_type_when_its_edit_list_is_empty_or_holds_one_of_their_roles()
+    {
+        // Secret has Can Edit = A: B can see it (read-only), A can edit; Other has no Edit list: every viewer edits.
+        (await Port(new Viewer(Me, false), [RoleA]).CanEditTaskTypeAsync(Secret)).ShouldBeTrue();
+        (await Port(new Viewer(Me, false), [RoleB]).CanEditTaskTypeAsync(Secret)).ShouldBeFalse();
+        (await Port(new Viewer(Me, false), [RoleB, RoleA]).CanEditTaskTypeAsync(Secret)).ShouldBeTrue("roles add up");
+        (await Port(new Viewer(Me, false), [RoleC]).CanEditTaskTypeAsync(Other)).ShouldBeTrue("an empty Edit list is no extra limit");
+        (await Port(new Viewer(Me, false), [RoleA]).CanEditTaskTypeAsync(Other)).ShouldBeFalse("a person who may not see the type may not edit it");
+        (await Port(new Viewer(Me, false), []).CanEditTaskTypeAsync(Open)).ShouldBeTrue("an open type has no lists");
+    }
+
+    [Fact]
+    public async Task The_system_admin_edits_everything_a_project_manager_and_a_sensitive_holder_get_nothing_extra_and_the_switch_off_allows_all()
+    {
+        (await Port(new Viewer(Me, true, IsSystemAdmin: true), []).CanEditTaskTypeAsync(Secret)).ShouldBeTrue();
+        (await Port(new Viewer(Pm, true), [], sensitiveRule: true).CanEditTaskTypeAsync(Secret)).ShouldBeFalse();
+        (await Port(new Viewer(Me, false), [], typeRule: false).CanEditTaskTypeAsync(Secret)).ShouldBeTrue();
+        (await Port(Viewer.Nobody, []).CanEditTaskTypeAsync(Secret)).ShouldBeFalse("a job without a person edits open types only");
+    }
+
+    [Fact]
+    public async Task The_not_editable_types_are_the_hidden_ones_and_the_read_only_ones()
+    {
+        (await Port(new Viewer(Me, false), [RoleB]).NotEditableTaskTypeIdsAsync()).ShouldBe([Secret, Other]);
+        (await Port(new Viewer(Me, false), [RoleA, RoleC]).NotEditableTaskTypeIdsAsync()).ShouldBeEmpty();
+        (await Port(new Viewer(Me, false), [RoleC]).NotEditableTaskTypeIdsAsync()).ShouldBe([Secret]);
+        (await Port(new Viewer(Me, false, true), []).NotEditableTaskTypeIdsAsync()).ShouldBeEmpty();
+        (await Port(new Viewer(Me, false), [], typeRule: false).NotEditableTaskTypeIdsAsync()).ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task Only_the_people_the_assign_list_allows_can_be_assigned_with_no_exception_for_the_admin_and_an_empty_list_means_whoever_may_see_the_type()
+    {
+        var port = Port(new Viewer(Me, false), []);
+
+        // Secret has Can Be Assigned = B: user 2 and user 5 (who holds A and B); not the A-only person, not the admin, not the person without a role.
+        (await port.AssignableUserIdsAsync(Secret))!.Distinct().Order().ToArray().ShouldBe([2, 5]);
+        (await port.CanBeAssignedAsync(2, Secret)).ShouldBeTrue();
+        (await port.CanBeAssignedAsync(1, Secret)).ShouldBeFalse();
+        (await port.CanBeAssignedAsync(4, Secret)).ShouldBeFalse("no admin exception for assignment");
+        (await port.CanBeAssignedAsync(6, Secret)).ShouldBeFalse();
+
+        // Other has no Assign list: whoever may see it (role C) and the System Admin, nobody else.
+        (await port.AssignableUserIdsAsync(Other))!.Distinct().Order().ToArray().ShouldBe([3, 4]);
+        (await port.CanBeAssignedAsync(4, Other)).ShouldBeTrue();
+        (await port.CanBeAssignedAsync(1, Other)).ShouldBeFalse();
+
+        // An open type and a switch that is off give no limit at all.
+        (await port.AssignableUserIdsAsync(Open)).ShouldBeNull();
+        (await port.CanBeAssignedAsync(6, Open)).ShouldBeTrue();
+        (await Port(new Viewer(Me, false), [], typeRule: false).AssignableUserIdsAsync(Secret)).ShouldBeNull();
     }
 }

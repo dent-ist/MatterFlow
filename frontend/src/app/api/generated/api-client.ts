@@ -6358,9 +6358,11 @@ export interface ITaskTypesClient {
     /**
      * @param workflowId (optional) 
      * @param sort (optional) 
+     * @param visibleOnly (optional) 
+     * @param creatableOnly (optional) 
      * @return OK
      */
-    listTaskTypes(workflowId?: number | undefined, sort?: string | undefined): Observable<TaskTypeView[]>;
+    listTaskTypes(workflowId?: number | undefined, sort?: string | undefined, visibleOnly?: boolean | undefined, creatableOnly?: boolean | undefined): Observable<TaskTypeView[]>;
     /**
      * @return Created
      */
@@ -6403,9 +6405,11 @@ export class TaskTypesClient implements ITaskTypesClient {
     /**
      * @param workflowId (optional) 
      * @param sort (optional) 
+     * @param visibleOnly (optional) 
+     * @param creatableOnly (optional) 
      * @return OK
      */
-    listTaskTypes(workflowId?: number | undefined, sort?: string | undefined): Observable<TaskTypeView[]> {
+    listTaskTypes(workflowId?: number | undefined, sort?: string | undefined, visibleOnly?: boolean | undefined, creatableOnly?: boolean | undefined): Observable<TaskTypeView[]> {
         let url_ = this.baseUrl + "/api/v1/task-types?";
         if (workflowId === null)
             throw new globalThis.Error("The parameter 'workflowId' cannot be null.");
@@ -6415,6 +6419,14 @@ export class TaskTypesClient implements ITaskTypesClient {
             throw new globalThis.Error("The parameter 'sort' cannot be null.");
         else if (sort !== undefined)
             url_ += "sort=" + encodeURIComponent("" + sort) + "&";
+        if (visibleOnly === null)
+            throw new globalThis.Error("The parameter 'visibleOnly' cannot be null.");
+        else if (visibleOnly !== undefined)
+            url_ += "visibleOnly=" + encodeURIComponent("" + visibleOnly) + "&";
+        if (creatableOnly === null)
+            throw new globalThis.Error("The parameter 'creatableOnly' cannot be null.");
+        else if (creatableOnly !== undefined)
+            url_ += "creatableOnly=" + encodeURIComponent("" + creatableOnly) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {
@@ -35891,6 +35903,7 @@ export interface TaskAllowedActions {
     canExecuteSteps: boolean;
     canReopenSteps: boolean;
     transitions: TaskTransitionOption[];
+    readOnlyByType: boolean;
 
     [key: string]: any;
 }
@@ -37450,6 +37463,7 @@ export enum ApiProblemDetailsCode {
     LAST_ADMIN = "LAST_ADMIN",
     ROLE_IN_USE = "ROLE_IN_USE",
     ROLE_USED_BY_TASK_TYPE = "ROLE_USED_BY_TASK_TYPE",
+    TASK_TYPE_READ_ONLY = "TASK_TYPE_READ_ONLY",
     ROLE_NOT_FOUND = "ROLE_NOT_FOUND",
     DUPLICATE_ROLE = "DUPLICATE_ROLE",
     EMAIL_PARSE_FAILED = "EMAIL_PARSE_FAILED",
