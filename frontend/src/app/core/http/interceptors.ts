@@ -170,6 +170,9 @@ export const MF_HTTP_INTERCEPTORS = [
   connectivityInterceptor,
 ];
 
+/** The sentence for a task the person may see but not change (Task Type Can Edit list, epic #1397): the toast of a refused change, the View only line and the disabled menu. */
+export const TASK_READ_ONLY_TEXT = 'You can see this task but not change it.';
+
 /** Pure mapping from an error to toast copy (UX copy deck 8.5/8.6). `null` = no toast. */
 export function toastFor(err: ApiError): { summary: string; detail?: string } | null {
   if (err.hasFieldErrors) return null; // forms map these back onto controls
@@ -186,6 +189,7 @@ export function toastFor(err: ApiError): { summary: string; detail?: string } | 
     return { summary: "Couldn't complete the request.", detail: reference };
   }
   if (err.status === 401) return null; // one sign-in banner with "Reload page" (S14, #612)
+  if (err.code === 'TASK_TYPE_READ_ONLY') return { summary: TASK_READ_ONLY_TEXT }; // the task's type has a Can Edit list without this person (epic #1397)
   if (err.status === 403) return { summary: "You don't have permission to do that." };
   if (err.status === 404) return { summary: "We couldn't find that." };
   return {

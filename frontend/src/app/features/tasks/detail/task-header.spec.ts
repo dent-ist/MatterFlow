@@ -194,6 +194,29 @@ describe('Task header actions (#298)', () => {
     expect(q(el, '[data-view-only]')).not.toBeNull();
   });
 
+  it('a task the person may see but the type does not let them edit shows the View only line with the type wording and offers no status action (epic #1397)', async () => {
+    const readOnly = aTask({
+      allowedActions: allowed({
+        canEdit: false,
+        canAssign: false,
+        canSetPriority: false,
+        readOnlyByType: true,
+        transitions: [
+          transition('HOLD', { permitted: false, blockedReason: 'TASK_TYPE_READ_ONLY' }),
+          transition('COMPLETE', { permitted: false, blockedReason: 'TASK_TYPE_READ_ONLY' }),
+          transition('CANCEL', { permitted: false, blockedReason: 'TASK_TYPE_READ_ONLY' }),
+        ],
+      }),
+    });
+    // The person holds every task permission: only the task's type makes it read-only.
+    const { fixture, el } = await mountTaskPage(readOnly, PERMS);
+    expect(actionIds(el)).toEqual(['activity']);
+    expect(await overflow(fixture, el)).toEqual(['copy-link']);
+    expect(q(el, '[data-view-only]')?.textContent).toContain(
+      'View only: you can see this task but not change it.',
+    );
+  });
+
   it('a Matter that blocks the action shows it disabled with the reason', async () => {
     const task = aTask({
       allowedActions: allowed({

@@ -7,6 +7,7 @@ import {
   WorkflowsClient,
 } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
+import { SessionReset } from '../../core/session/session-reset';
 import { FilterOption } from '../filters/filter-def';
 
 /** People are read in pages of 100, at most this many pages (500 people); the filter still works for anyone in the address. */
@@ -33,11 +34,35 @@ export class QueueChoices {
   readonly onHoldReasons = signal<readonly FilterOption[]>([]);
 
   private started = false;
+  /** Who and what the choices were read for: a different person, or the same person with other roles, reads them again (Task Type access rule, epic #1397). */
+  private loadedFor = '';
 
-  /** Starts reading the choices (once); safe to call from every work list. */
+  constructor() {
+    // Another person behind the page starts from nothing: the lists below name only what the first person could see.
+    inject(SessionReset).register(() => this.reset());
+  }
+
+  private reset(): void {
+    this.started = false;
+    this.loadedFor = '';
+    this.types.set([]);
+    this.workflows.set([]);
+    this.people.set([]);
+    this.onHoldReasons.set([]);
+  }
+
+  /** The person and the roles the choices belong to: a role change shows in /me (refreshed on focus), so the next list that asks reads the types again. */
+  private cacheKey(): string {
+    const p = this.auth.profile();
+    return p ? `${p.userId}|${p.isSystemAdmin}|${[...p.roles].sort().join(',')}` : '';
+  }
+
+  /** Starts reading the choices (once per person and role set); safe to call from every work list. */
   ensure(): void {
-    if (this.started) return;
+    const key = this.cacheKey();
+    if (this.started && this.loadedFor === key) return;
     this.started = true;
+    this.loadedFor = key;
     void this.loadTypes();
     void this.loadPeople();
     void this.loadWorkflows();
@@ -63,7 +88,8 @@ export class QueueChoices {
   private async loadTypes(): Promise<void> {
     if (!this.auth.has('Task.View')) return;
     try {
-      const types = await firstValueFrom(this.typesApi.listTaskTypes());
+      // Only the types the person may see (a manager of Task Types would otherwise get every type on the admin list).
+      const types = await firstValueFrom(this.typesApi.listTaskTypes(undefined, undefined, true));
       this.types.set(
         types
           .map((t) => ({

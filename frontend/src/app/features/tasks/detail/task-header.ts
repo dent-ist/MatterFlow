@@ -22,6 +22,7 @@ import { Crumb, TitleIcon } from '../../../shared/ui/page-header';
 import { TaskDetailStore } from './task-detail.store';
 import { TaskFacts } from './task-facts';
 import { BusinessNumberPipe, formatBusinessNumber } from '../../../shared/pipes/matter-ref.pipe';
+import { READ_ONLY_TEXT, isHiddenTransition } from '../../../shared/tasks/transition-visibility';
 
 /** Why a status action is shown but cannot be used (the server's `blockedReason`). */
 function blockedText(action: string, reason: string | undefined): string {
@@ -113,7 +114,11 @@ function blockedText(action: string, reason: string | undefined): string {
         @if (store.viewOnly()) {
           <p class="th__view-only" data-view-only>
             <i class="pi pi-eye" aria-hidden="true"></i>
-            View only: you don't have permission to edit tasks.
+            @if (store.readOnlyByType()) {
+              View only: {{ readOnlyText }}
+            } @else {
+              View only: you don't have permission to edit tasks.
+            }
           </p>
         }
       </div>
@@ -140,6 +145,8 @@ function blockedText(action: string, reason: string | undefined): string {
   `,
 })
 export class TaskHeader {
+  protected readonly readOnlyText =
+    READ_ONLY_TEXT.charAt(0).toLowerCase() + READ_ONLY_TEXT.slice(1);
   protected readonly store = inject(TaskDetailStore);
   protected readonly auth = inject(AuthStore);
   private readonly route = inject(ActivatedRoute);
@@ -262,7 +269,7 @@ export class TaskHeader {
   private option(action: string): TaskTransitionOption | null {
     const o = this.store.task()?.allowedActions.transitions.find((x) => x.action === action);
     // A transition the person lacks the permission for is left out; one the Matter blocks is shown disabled with the reason.
-    return o && (o.permitted || o.blockedReason !== 'PERMISSION_DENIED') ? o : null;
+    return o && !isHiddenTransition(o) ? o : null;
   }
 
   /** One status action as a header or overflow entry. */

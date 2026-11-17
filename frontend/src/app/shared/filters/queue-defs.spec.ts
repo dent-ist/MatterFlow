@@ -108,6 +108,17 @@ describe('work list filters on the shared definitions', () => {
 });
 
 describe('work list definitions for the column filters', () => {
+  it('names a task type the person can no longer see "Unavailable", never its old name or a bare number (Task Type access rule, epic #1397)', () => {
+    const types = [{ value: '2', label: 'Review' }];
+    const typeDef = (list: typeof types | undefined) =>
+      queueFilterDefs({ types: list }).find((d) => d.key === 'type')!;
+    expect(typeDef(types).valueLabel!('2')).toBe('Review');
+    expect(typeDef(types).valueLabel!('9')).toBe('Unavailable');
+    // Before the choices have loaded nothing is known yet: not "Unavailable".
+    expect(typeDef([]).valueLabel!('9')).toBe('selected type');
+    expect(typeDef(undefined).valueLabel!('9')).toBe('selected type');
+  });
+
   it('puts every filter on the column of the same name, Title or Ref across Ref and Title', () => {
     const defs = queueFilterDefs();
     const column = (key: string) => defs.find((d) => d.key === key)?.column;

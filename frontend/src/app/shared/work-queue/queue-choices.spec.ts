@@ -7,6 +7,7 @@ import {
   WorkflowsClient,
 } from '../../api/generated/api-client';
 import { AuthStore } from '../../core/auth/auth.store';
+import { SessionReset } from '../../core/session/session-reset';
 import { QueueChoices, mergeOptions } from './queue-choices';
 
 describe('QueueChoices', () => {
@@ -15,11 +16,19 @@ describe('QueueChoices', () => {
   const workflows = { listWorkflows: vi.fn() };
   const reasons = { listOnHoldReasons: vi.fn() };
   let permissions: string[];
+  let roles: string[];
+  let userId: number;
 
   function create() {
     TestBed.configureTestingModule({
       providers: [
-        { provide: AuthStore, useValue: { has: (p: string) => permissions.includes(p) } },
+        {
+          provide: AuthStore,
+          useValue: {
+            has: (p: string) => permissions.includes(p),
+            profile: () => ({ userId, isSystemAdmin: false, roles }),
+          },
+        },
         { provide: TaskTypesClient, useValue: types },
         { provide: UsersClient, useValue: users },
         { provide: WorkflowsClient, useValue: workflows },
@@ -31,6 +40,8 @@ describe('QueueChoices', () => {
   const flush = () => new Promise((r) => setTimeout(r));
 
   beforeEach(() => {
+    roles = ['Reviewer'];
+    userId = 1;
     reasons.listOnHoldReasons
       .mockReset()
       .mockReturnValue(of([{ id: 3, name: 'Waiting for client data', isActive: true }]));
@@ -87,6 +98,39 @@ describe('QueueChoices', () => {
     ]);
     expect(choices.workflows()).toEqual([{ value: '3', label: 'Ordered' }]);
     expect(choices.onHoldReasons()).toEqual([{ value: '3', label: 'Waiting for client data' }]);
+  });
+
+  it('asks for the task types the person may see (a manager of task types would otherwise get every type)', async () => {
+    permissions = ['Task.View'];
+    const choices = create();
+    choices.ensure();
+    await flush();
+    expect(types.listTaskTypes).toHaveBeenCalledWith(undefined, undefined, true);
+  });
+
+  it('reads the types again when the person has other roles, or is another person, and forgets them on a session reset', async () => {
+    permissions = ['Task.View'];
+    const choices = create();
+    choices.ensure();
+    await flush();
+    choices.ensure();
+    expect(types.listTaskTypes).toHaveBeenCalledTimes(1);
+
+    // The same person, a role removed (the next /me answer): the next list reads the types again.
+    roles = [];
+    types.listTaskTypes.mockReturnValue(of([{ id: 2, name: 'Review', isActive: true }]));
+    choices.ensure();
+    await flush();
+    expect(types.listTaskTypes).toHaveBeenCalledTimes(2);
+    expect(choices.types().map((t) => t.label)).toEqual(['Review']);
+
+    // Another person behind the page: nothing of the first person stays.
+    TestBed.inject(SessionReset).run();
+    expect(choices.types()).toEqual([]);
+    userId = 2;
+    choices.ensure();
+    await flush();
+    expect(types.listTaskTypes).toHaveBeenCalledTimes(3);
   });
 
   it('works without the lists when a request fails', async () => {

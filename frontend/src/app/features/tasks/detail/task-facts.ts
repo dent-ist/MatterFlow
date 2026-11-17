@@ -1,3 +1,4 @@
+import { isHiddenTransition } from '../../../shared/tasks/transition-visibility';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -235,9 +236,7 @@ export class TaskFacts {
 
   /** Transitions shown in the menu: not the ones the caller lacks permission for. */
   protected readonly items = computed<TaskTransitionOption[]>(() =>
-    (this.store.task()?.allowedActions.transitions ?? []).filter(
-      (o) => o.permitted || o.blockedReason !== 'PERMISSION_DENIED',
-    ),
+    (this.store.task()?.allowedActions.transitions ?? []).filter((o) => !isHiddenTransition(o)),
   );
 
   // While the Details form is open the chips are plain: a change from here would make the form's version stale.

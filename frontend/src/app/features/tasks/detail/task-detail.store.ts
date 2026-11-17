@@ -94,12 +94,16 @@ export class TaskDetailStore {
   /** Step the user asked to jump to (from the complete dialog); the workflow tab scrolls to it and focuses it. */
   readonly focusStepId = signal<number | null>(null);
 
+  /** True when the server says the person may see this task but not change it: its Task Type has a Can Edit list without any of their roles (epic #1397). */
+  readonly readOnlyByType = computed(() => this.task()?.allowedActions.readOnlyByType === true);
+
   /**
    * True for a user who may look at tasks but change nothing in them (Read-Only Observer): the page says so once and leaves out
    * edit-oriented copy and disabled actions. Commenting alone does not count as editing.
    */
   readonly viewOnly = computed(
     () =>
+      this.readOnlyByType() ||
       !this.auth.hasAny([
         'Task.Edit',
         'Task.Assign',

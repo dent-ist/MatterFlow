@@ -295,6 +295,16 @@ describe('CreateTaskPage', () => {
     expect(field(h, '#ct-title')).toBeNull();
   });
 
+  it('asks the server for the types the person may create tasks of (Can Edit rule, epic #1397): the server decides, the page never filters by role', async () => {
+    await create();
+    expect(TestBed.inject(TaskTypesClient).listTaskTypes).toHaveBeenCalledWith(
+      undefined,
+      undefined,
+      true,
+      true,
+    );
+  });
+
   it('draws each card with the shared task type chip in the type colour: two keys differ, no key falls back to the id (#1224)', async () => {
     const h = await create({
       types: [
