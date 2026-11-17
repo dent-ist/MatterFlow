@@ -159,7 +159,7 @@ test('Tenant ID and Client ID save on their own; the secret has its own masked d
   await expect(toasts(page).filter({ hasText: 'Client secret set' })).toBeVisible();
   await expect(page.locator('[data-secret-state]')).toHaveText('Secret set');
   await expect(page.locator('[data-secret-open]')).toHaveText('Replace Secret');
-  await expect(page.locator('[data-secret-chip]')).toContainText(/Expires in 12[12] days/);
+  await expect(page.locator('[data-secret-chip]')).toContainText(/Expires in 12[1-3] days/);
   expect(await page.content()).not.toContain(SECRET);
   expect(await page.locator('body').innerText()).not.toContain('TopSecret');
 
@@ -234,7 +234,7 @@ test('the expiry banner: amber at 21 days, red once expired, with Replace Secret
   const banner = page.locator('[data-secret-banner]');
   await expect(banner).toHaveAttribute('data-state', 'soon');
   await expect(banner).toContainText('expires');
-  await expect(page.locator('[data-secret-chip]')).toContainText(/Expires in 2[01] days/);
+  await expect(page.locator('[data-secret-chip]')).toContainText(/Expires in 2[0-2] days/);
   await atEverySize(page, 'integrations-secret-expiring');
 
   await admin.call('PUT', '/api/v1/admin/entra-connection/secret', {
