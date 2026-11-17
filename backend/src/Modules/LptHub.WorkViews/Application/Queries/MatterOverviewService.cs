@@ -222,7 +222,7 @@ public sealed class MatterOverviewService(
         if (await activity.FirstIdSinceAsync(since, ct) is not { } firstId)
             return [];
 
-        var scope = new MyMattersScope(db, me, queueClock, db.Set<Matter>().AsNoTracking().Where(m => m.Id == matterId), TaskQueueFilter.RoleBoth, new MyMattersQuery(), all: true);
+        var scope = new MyMattersScope(db, visibility, me, queueClock, db.Set<Matter>().AsNoTracking().Where(m => m.Id == matterId), TaskQueueFilter.RoleBoth, new MyMattersQuery(), all: true);
         var page = await activity.ScopedEvents(scope, firstId, since, until: null).OrderByDescending(e => e.AuditEventId).Take(ActivityCount).ToListAsync(ct);
         return await activity.ToItemsAsync(page, long.MaxValue, me, ct);
     }

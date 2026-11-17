@@ -19,9 +19,10 @@ public sealed class MyMattersScope
     /// <summary>The largest number of matters the All matters scope serves; a bigger set must be narrowed by client or project manager.</summary>
     public const int MaxMatters = 5000;
 
-    internal MyMattersScope(DbContext db, int me, QueueClock clock, IQueryable<Matter> matters, string role, MyMattersQuery query, bool all, bool matterNarrows = true)
+    internal MyMattersScope(DbContext db, IMatterVisibility visibility, int me, QueueClock clock, IQueryable<Matter> matters, string role, MyMattersQuery query, bool all, bool matterNarrows = true)
     {
         Db = db;
+        Visibility = visibility;
         Me = me;
         Clock = clock;
         Matters = matters;
@@ -36,6 +37,9 @@ public sealed class MyMattersScope
     }
 
     public DbContext Db { get; }
+
+    /// <summary>The visibility port: the Task Type term is applied to every task read of the scope (epic #1397).</summary>
+    public IMatterVisibility Visibility { get; }
 
     /// <summary>The caller.</summary>
     public int Me { get; }
@@ -68,7 +72,8 @@ public sealed class MyMattersScope
     public IQueryable<WorkTask> Tasks()
     {
         var ids = Matters.Select(m => m.Id);
-        var tasks = Db.Set<WorkTask>().AsNoTracking().Where(t => ids.Contains(t.MatterId));
+        // The matters are visible by construction; the Task Type rule hides the tasks of a restricted type the caller holds no role for, from the project manager and the assignee alike.
+        var tasks = Visibility.WhereTaskTypeVisible(Db.Set<WorkTask>().AsNoTracking().Where(t => ids.Contains(t.MatterId)), t => t.TaskTypeId);
         if (From is { } from)
             tasks = tasks.Where(t => t.DueDate != null && t.DueDate >= from);
         if (To is { } to)
@@ -216,6 +221,6 @@ public sealed class MyMattersScopeResolver(DbContext db, IClock clock, IUserTime
         if (all && await matters.CountAsync(ct) > MyMattersScope.MaxMatters)
             return Error.Validation("scope", "SCOPE_TOO_LARGE", $"More than {MyMattersScope.MaxMatters} matters match. Choose a client or a project manager first.");
 
-        return new MyMattersScope(db, me, QueueClock.Create(clock.UtcNow, timeZone), matters, role, query, all, matterNarrowsScope);
+        return new MyMattersScope(db, visibility, me, QueueClock.Create(clock.UtcNow, timeZone), matters, role, query, all, matterNarrowsScope);
     }
 }

@@ -30,7 +30,7 @@ These are in `appsettings` and take effect on restart; full list in [Configurati
 | `Dashboard:Capacity:SlotsPerPerson` | 3 | Slots per person in the capacity battery |
 | `Dashboard:Workload:LightMax`, `NormalMax` | 3, 8 | Load levels of the Users tab |
 | `Features:SensitiveMatterAccess` | `false` | Go-live switch of the Sensitive matter rule |
-| `Features:TaskTypeAccess` | `false` | Go-live switch of the Task Type access rule (role lists per Task Type). Off: the lists are stored but nothing is enforced |
+| `Features:TaskTypeAccess` | `false` | Go-live switch of the Task Type access rule (role lists per Task Type). Off: the lists are stored but nothing is enforced. On: tasks of a restricted type are hidden on every read path from people without a Can View role (issue #1400); edit and assign rules follow in #1401 |
 | `Tasks:OnHoldReasonRequired` | `false` | Whether an on-hold reason is required |
 | `Notifications:Scheduler:*` | see reference | Notification scheduler |
 

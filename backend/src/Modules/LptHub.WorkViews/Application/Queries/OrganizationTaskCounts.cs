@@ -38,7 +38,8 @@ public sealed class OrganizationTaskCounts(DbContext db, IClock clock, IUserTime
             return new Dictionary<int, MatterStateCounts>();
 
         var ids = matterIds.Distinct().ToList();
-        var tasks = db.Set<WorkTask>().AsNoTracking().Where(t => ids.Contains(t.MatterId));
+        // The matters are visible, but a task of a restricted type the caller may not see is not counted (Task Type access rule, epic #1397).
+        var tasks = visibility.WhereTaskTypeVisible(db.Set<WorkTask>().AsNoTracking().Where(t => ids.Contains(t.MatterId)), t => t.TaskTypeId);
         var onHold = await tasks.Where(t => t.Status == TaskStatusCode.OnHold)
             .GroupBy(t => t.MatterId).Select(g => new { g.Key, Count = g.Count() }).ToListAsync(cancellationToken);
         var atRisk = await AtRiskRules.Where(tasks, db, Now())
@@ -61,8 +62,9 @@ public sealed class OrganizationTaskCounts(DbContext db, IClock clock, IUserTime
             // The client's tasks the caller may see (the sensitive-matter task rule: the matter's tasks for a visible matter, otherwise only their own),
             // so the strip equals the Task Queue list it links to. The set is one client's tasks, so the id subquery of the port is cheap enough.
             TaskCountScope.Client => visibility.WhereTaskVisible(tasks.Where(t => db.Set<Matter>().Any(m => m.Id == t.MatterId && m.ClientId == key)), t => t.Id),
-            TaskCountScope.Matter => tasks.Where(t => t.MatterId == key),
-            _ => tasks.Where(t => t.ProjectId == key),
+            // A visible matter or project shows its tasks, except those of a restricted Task Type the caller may not see (epic #1397; no exception for the project manager or the assignee).
+            TaskCountScope.Matter => visibility.WhereTaskTypeVisible(tasks.Where(t => t.MatterId == key), t => t.TaskTypeId),
+            _ => visibility.WhereTaskTypeVisible(tasks.Where(t => t.ProjectId == key), t => t.TaskTypeId),
         };
 
         // One statement: conditional aggregates over the record's Tasks.
@@ -82,7 +84,7 @@ public sealed class OrganizationTaskCounts(DbContext db, IClock clock, IUserTime
     {
         var overdue = TaskQueueRules.Overdue(Now());
         // Only matters the caller may see: the answer names each matter, and an assignee of one task on a hidden matter does not get to see its name.
-        var rows = await (from t in db.Set<WorkTask>().AsNoTracking().Where(TaskQueueRules.Open)
+        var rows = await (from t in visibility.WhereTaskTypeVisible(db.Set<WorkTask>().AsNoTracking().Where(TaskQueueRules.Open), t => t.TaskTypeId)
                           join m in visibility.WhereMatterRowVisible(db.Set<Matter>(), m => m.IsSensitive, m => m.PrimaryManagerId, m => m.SecondaryManagerId).AsNoTracking() on t.MatterId equals m.Id
                           where m.ClientId == clientId
                           select new { Task = t, m.Id, m.MatterRef })
@@ -110,11 +112,12 @@ public sealed class OrganizationTaskCounts(DbContext db, IClock clock, IUserTime
                     joined = joined.Where(x => keys.Contains(x.ClientId));
                 return joined.GroupBy(x => x.ClientId, x => x.Task);
             case TaskCountScope.Matter:
+                open = visibility.WhereTaskTypeVisible(open, t => t.TaskTypeId);
                 if (keys is not null)
                     open = open.Where(t => keys.Contains(t.MatterId));
                 return open.GroupBy(t => t.MatterId);
             default:
-                var inProject = open.Where(t => t.ProjectId != null);
+                var inProject = visibility.WhereTaskTypeVisible(open, t => t.TaskTypeId).Where(t => t.ProjectId != null);
                 if (keys is not null)
                     inProject = inProject.Where(t => keys.Contains(t.ProjectId!.Value));
                 return inProject.GroupBy(t => t.ProjectId!.Value);

@@ -11,8 +11,8 @@ namespace LptHub.Notifications.Application;
 /// </summary>
 public sealed class RecipientVisibility(IMatterVisibility visibility)
 {
-    /// <summary>True when the check applies (the switch is on).</summary>
-    public bool Enabled => visibility.Enabled;
+    /// <summary>True when the check applies (the sensitive-matter switch or the Task Type switch is on).</summary>
+    public bool Enabled => visibility.TaskRulesEnabled;
 
     /// <summary>
     /// Of the wanted (recipient, object kind, object id) triples, the ones whose recipient may see the object. One statement per recipient and kind, not per

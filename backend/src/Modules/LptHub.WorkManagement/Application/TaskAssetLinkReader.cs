@@ -47,7 +47,7 @@ internal sealed class TaskAssetLinkReader(
 
         var ids = await (
             from l in db.Set<TaskAsset>().AsNoTracking()
-            join t in db.Set<WorkTask>().AsNoTracking() on l.TaskId equals t.Id
+            join t in access.WhereTypeVisible(db.Set<WorkTask>().AsNoTracking()) on l.TaskId equals t.Id
             where t.AssignedUserId == userId && t.IsMatterSensitive
             select l.AssetId).Distinct().Take(MaxPrepared + 1).ToArrayAsync(cancellationToken);
         if (!_subscribed)
@@ -63,7 +63,7 @@ internal sealed class TaskAssetLinkReader(
 
     public IQueryable<int> AssetIdsOfTasksAssignedTo(int userId) =>
         from l in db.Set<TaskAsset>().AsNoTracking()
-        join t in db.Set<WorkTask>().AsNoTracking() on l.TaskId equals t.Id
+        join t in access.WhereTypeVisible(db.Set<WorkTask>().AsNoTracking()) on l.TaskId equals t.Id
         where t.AssignedUserId == userId
         select l.AssetId;
 

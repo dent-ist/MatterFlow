@@ -1,6 +1,7 @@
 using LptHub.Configuration.Contracts;
 using LptHub.Organization.Contracts;
 using LptHub.SharedKernel.Tasks;
+using LptHub.SharedKernel.Visibility;
 using LptHub.WorkManagement.Contracts;
 using LptHub.WorkManagement.Domain;
 using Microsoft.EntityFrameworkCore;
@@ -8,12 +9,21 @@ using Microsoft.EntityFrameworkCore;
 namespace LptHub.WorkManagement.Application;
 
 /// <summary>Read-only Task lookups for other modules (<see cref="ITaskDirectory"/>).</summary>
-internal sealed class TaskDirectory(DbContext db) : ITaskDirectory, LptHub.Identity.Contracts.IUserWorkSource
+internal sealed class TaskDirectory(DbContext db, IMatterVisibility visibility) : ITaskDirectory, LptHub.Identity.Contracts.IUserWorkSource
 {
-    public Task<bool> HasOpenAssignedWorkAsync(int userId, CancellationToken cancellationToken = default) =>
-        db.Set<WorkTask>().AsNoTracking().AnyAsync(
-            t => t.AssignedUserId == userId && (t.Status == TaskStatusCode.New || t.Status == TaskStatusCode.InProgress || t.Status == TaskStatusCode.OnHold),
-            cancellationToken);
+    /// <summary>
+    /// Whether the person has open assigned work: the landing-page probe. A task of a restricted Task Type the person may not see does not count (epic #1397: "my own tasks" is no exception),
+    /// so a hidden assignment cannot steer the landing page.
+    /// </summary>
+    public async Task<bool> HasOpenAssignedWorkAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        var rows = db.Set<WorkTask>().AsNoTracking().Where(
+            t => t.AssignedUserId == userId && (t.Status == TaskStatusCode.New || t.Status == TaskStatusCode.InProgress || t.Status == TaskStatusCode.OnHold));
+        if (visibility.TaskTypeAccessEnabled)
+            rows = visibility.WhereTaskTypeVisible(rows, t => t.TaskTypeId, await visibility.ForAsync(userId, cancellationToken));
+
+        return await rows.AnyAsync(cancellationToken);
+    }
 
 
     public async Task<TaskSummary?> FindAsync(long taskId, CancellationToken cancellationToken = default) =>
@@ -80,11 +90,19 @@ internal sealed class TaskDirectory(DbContext db) : ITaskDirectory, LptHub.Ident
 /// The real <see cref="IMatterTaskGuard"/>: counts the Matter's Tasks that are NEW, IN_PROGRESS or ON_HOLD. Replaces the Organization module's
 /// default (which reports no open Tasks) so a Matter with open work cannot be deactivated (addendum B).
 /// </summary>
-internal sealed class MatterTaskGuard(DbContext db) : IMatterTaskGuard
+internal sealed class MatterTaskGuard(DbContext db, IMatterVisibility visibility) : IMatterTaskGuard
 {
+    private IQueryable<WorkTask> Open(int matterId) =>
+        db.Set<WorkTask>().AsNoTracking().Where(t => t.MatterId == matterId && (t.Status == TaskStatusCode.New || t.Status == TaskStatusCode.InProgress || t.Status == TaskStatusCode.OnHold));
+
+    /// <summary>The open Tasks of the matter the caller may see (the matter itself is checked by the caller): tasks of a restricted Task Type the caller may not see are left out (epic #1397).</summary>
     public Task<int> CountOpenTasksAsync(int matterId, CancellationToken cancellationToken = default) =>
-        db.Set<WorkTask>().AsNoTracking()
-            .CountAsync(t => t.MatterId == matterId && (t.Status == TaskStatusCode.New || t.Status == TaskStatusCode.InProgress || t.Status == TaskStatusCode.OnHold), cancellationToken);
+        visibility.WhereTaskTypeVisible(Open(matterId), t => t.TaskTypeId).CountAsync(cancellationToken);
+
+    /// <summary>True when the matter has open tasks of a type the caller may not see. Not asked at all while the Task Type switch is off.</summary>
+    public async Task<bool> HasHiddenOpenTasksAsync(int matterId, CancellationToken cancellationToken = default) =>
+        visibility.TaskTypeAccessEnabled
+        && await Open(matterId).CountAsync(cancellationToken) > await CountOpenTasksAsync(matterId, cancellationToken);
 }
 
 /// <summary>Tells the Configuration module which Priorities Tasks reference, so those can only be deactivated, never deleted.</summary>

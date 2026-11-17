@@ -101,7 +101,7 @@ public sealed class AssigneeLoadReader(DbContext db, IMatterVisibility visibilit
         // The true load (what the ranking orders by) and, when the rule is on, the same facts over the tasks the caller may see (what a screen may show).
         // The capacity load (decision AS item 12) is New and In progress only; its true number is a bare integer per person.
         var all = await ReadAsync(db.Set<WorkTask>().AsNoTracking(), ids, cancellationToken);
-        (Dictionary<int, int> Open, Dictionary<int, DateTime?> Last, Dictionary<int, int> Active)? shown = visibility.Enabled ? await ReadAsync(VisibleTasks.Of(db, visibility), ids, cancellationToken) : null;
+        (Dictionary<int, int> Open, Dictionary<int, DateTime?> Last, Dictionary<int, int> Active)? shown = visibility.TaskRulesEnabled ? await ReadAsync(VisibleTasks.Of(db, visibility), ids, cancellationToken) : null;
 
         return all.Last.Keys.Union(all.Open.Keys).Union(all.Active.Keys).ToDictionary(
             id => id,
@@ -144,7 +144,7 @@ public sealed class AssigneeExperienceReader(DbContext db, IMatterVisibility vis
 
         var ids = userIds.Distinct().ToList();
         var all = await CountAsync(db.Set<WorkTask>().AsNoTracking(), ids, taskTypeId, sinceUtc, cancellationToken);
-        var shown = visibility.Enabled ? await CountAsync(VisibleTasks.Of(db, visibility), ids, taskTypeId, sinceUtc, cancellationToken) : null;
+        var shown = visibility.TaskRulesEnabled ? await CountAsync(VisibleTasks.Of(db, visibility), ids, taskTypeId, sinceUtc, cancellationToken) : null;
         return all.ToDictionary(r => r.Key, r => new AssigneeExperience(r.Value, shown is null ? null : shown.GetValueOrDefault(r.Key)));
     }
 

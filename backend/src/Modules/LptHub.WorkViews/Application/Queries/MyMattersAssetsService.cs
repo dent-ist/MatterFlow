@@ -215,6 +215,15 @@ public sealed class MyMattersAssetsService(MyMattersScopeResolver scopes, DbCont
     private IQueryable<Row> Rows(MyMattersScope scope)
     {
         var open = new[] { TaskStatusCode.New, TaskStatusCode.InProgress, TaskStatusCode.OnHold };
+
+        // The link counts cover the tasks the caller may see: a task of a restricted Task Type they hold no role for is not counted (epic #1397; the matter is visible, the task type rule is on top).
+        // Written with captured queryables so that, while the Task Type rule does not apply, the statement is exactly the one of before (no join added to the plain link count).
+        var typed = visibility.TaskTypeRuleApplies;
+        var tasksOfTypesSeen = visibility.WhereTaskTypeVisible(db.Set<WorkTask>(), tk => tk.TaskTypeId);
+        var linkedAssetIds = typed
+            ? from l in db.Set<TaskAsset>() join tk in tasksOfTypesSeen on l.TaskId equals tk.Id select l.AssetId
+            : db.Set<TaskAsset>().Select(l => l.AssetId);
+        var linkedStatuses = from l in db.Set<TaskAsset>() join tk in tasksOfTypesSeen on l.TaskId equals tk.Id select new { l.AssetId, tk.Status };
         return from a in db.Set<Asset>().AsNoTracking()
                join m in scope.Matters on a.MatterId equals m.Id
                join c in db.Set<Client>().AsNoTracking() on m.ClientId equals c.Id
@@ -238,11 +247,8 @@ public sealed class MyMattersAssetsService(MyMattersScopeResolver scopes, DbCont
                    ModifiedAtUtc = a.ModifiedAtUtc,
                    StatusCode = a.DispositionCode,
                    StatusOrder = a.DispositionCode == AssetDisposition.Active ? 0 : a.DispositionCode == AssetDisposition.Inactive ? 1 : a.DispositionCode == AssetDisposition.PendingDisposition ? 2 : 3,
-                   Linked = db.Set<TaskAsset>().Count(l => l.AssetId == a.Id),
-                   OpenLinked = (from l in db.Set<TaskAsset>()
-                                 join tk in db.Set<WorkTask>() on l.TaskId equals tk.Id
-                                 where l.AssetId == a.Id && open.Contains(tk.Status)
-                                 select 1).Count(),
+                   Linked = linkedAssetIds.Count(id => id == a.Id),
+                   OpenLinked = linkedStatuses.Count(x => x.AssetId == a.Id && open.Contains(x.Status)),
                };
     }
 
