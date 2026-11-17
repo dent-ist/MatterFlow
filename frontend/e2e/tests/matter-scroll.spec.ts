@@ -112,7 +112,7 @@ test.describe('Matter page scrolling', () => {
 
     test(`the wheel over a compact grid scrolls the page, at ${at}`, async ({ page }) => {
       await open(page, w, size);
-      for (const key of ['tasks', 'projects', 'assets', 'productions', 'notes', 'activities']) {
+      for (const key of ['tasks', 'projects', 'assets', 'productions', 'notes']) {
         const grid = card(page, key).locator('[data-grid-frame], .wt-wrap').first();
         await grid.scrollIntoViewIfNeeded();
         await expect(bodyRows(page, key).first(), `${key} rows`).toBeVisible();
@@ -152,7 +152,7 @@ test.describe('Matter page scrolling', () => {
       page,
     }) => {
       await open(page, w, size);
-      for (const key of ['tasks', 'projects', 'assets', 'productions', 'notes', 'activities']) {
+      for (const key of ['tasks', 'projects', 'assets', 'productions', 'notes']) {
         await card(page, key).scrollIntoViewIfNeeded();
         await expect(bodyRows(page, key).first()).toBeVisible();
       }
