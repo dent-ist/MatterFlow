@@ -47,7 +47,7 @@ public sealed class TaskTransactions(DbContext db, IMatterVisibility visibility)
     /// </summary>
     public async Task<WorkTask?> LockTaskAsync(long taskId, CancellationToken ct)
     {
-        if (visibility.Enabled && !await visibility.CanSeeTaskAsync(taskId, ct))
+        if (visibility.TaskRulesEnabled && !await visibility.CanSeeTaskAsync(taskId, ct))
             return null;
 
         return await db.Set<WorkTask>()

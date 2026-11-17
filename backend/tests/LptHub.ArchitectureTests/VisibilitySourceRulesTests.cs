@@ -7,6 +7,8 @@ namespace LptHub.ArchitectureTests;
 /// Sensitive-matter epic #788 (SM-16, README 12.3 a, b, d): a read path that touches the matter, task, project or asset tables, or the audit and notification tables, must go
 /// through the visibility rule. These tests list EVERY source file that does so with the reason it is safe; a new file (or a new use of <c>IgnoreQueryFilters</c>) fails the build
 /// until somebody has reviewed it and added it here. The rule's behaviour itself is proven by the persona walk (<c>SensitivePersonaWalkTests</c>).
+/// The Task Type access rule (epic #1397, issue #1400) uses the same guard: every file that reads <c>Set&lt;WorkTask&gt;</c> must also say how the type rule applies to it
+/// (<see cref="TaskTypeRuleReview"/>), and the access sources behind the port never use <c>AsNoTracking</c>.
 /// </summary>
 public class VisibilitySourceRulesTests
 {
@@ -73,6 +75,38 @@ public class VisibilitySourceRulesTests
         ["TaskQueueService.cs"] = "Tasks() is the visible base; detail rows are loaded by the ids of the page",
     };
 
+    /// <summary>
+    /// Task Type access rule (epic #1397, README 12.2 item 4): every file in <see cref="SetAllowList"/> that reads <c>Set&lt;WorkTask&gt;</c> and how the type rule applies to what it reads.
+    /// A new reader of the task table fails the test until somebody decides.
+    /// </summary>
+    private static readonly Dictionary<string, string> TaskTypeRuleReview = new()
+    {
+        ["TaskAccessSource.cs"] = "the unfiltered source behind the port: carries TaskTypeId so every port method can apply the type term",
+        ["TaskAccess.cs"] = "Visible() passes the type column to the port; WhereTypeVisible and CanSeeAssetAsync apply the type term to an assigned task",
+        ["VisibleTasks.cs"] = "the one place WorkViews reads tasks through the port: passes the type column",
+        ["TaskAssetLinkReader.cs"] = "linked tasks through TaskAccess.Visible; the assignee-asset rule (Prepare, AssetIdsOfTasksAssignedTo) applies WhereTypeVisible",
+        ["TaskService.cs"] = "create only (Add); every read goes through TaskAccess",
+        ["TaskDirectory.cs"] = "HasOpenAssignedWork and the matter deactivation guard apply WhereTaskTypeVisible; the other lookups are internal and only used by the audit label lookup after VisibleTasks",
+        ["TaskTransactions.cs"] = "LockTaskAsync is gated by CanSeeTaskAsync (type term included) before the lock",
+        ["TaskBulkService.cs"] = "the bulk target list goes through TaskAccess.Visible; the row version read follows a write of a visible task",
+        ["TaskPresenter.cs"] = "reads through TaskAccess.Visible; afterWrite reads the answer to an authorised command once unrestricted",
+        ["SearchService.cs"] = "task hits and counts through WhereTaskFlagVisible with the type column; the type name is joined only for visible tasks",
+        ["MyMattersScope.cs"] = "Tasks() applies WhereTaskTypeVisible: the one fix point of the eleven My Matters endpoints",
+        ["DashboardService.cs"] = "tasks through VisibleTasks; the Technician's \"mine\" counts apply WhereTaskTypeVisible",
+        ["MyMattersActivityService.cs"] = "names by id of audit events that ScopedEvents already filtered with WhereTaskEventVisible",
+        ["MyMattersFeedService.cs"] = "names by id of items that come from the scope's tasks and the filtered events",
+        ["OrganizationTaskCounts.cs"] = "every scope applies the type term (client: WhereTaskRowVisible with the type column; matter, project, states and top matters: WhereTaskTypeVisible)",
+        ["CalendarService.cs"] = "DELIBERATE exception (owner decision, bare integer per person, as for capacity)",
+        ["CapacityService.cs"] = "DELIBERATE exception (owner decision, bare integer per person); the unassigned number goes through VisibleTasks",
+        ["SwimlaneService.cs"] = "cards are loaded by the ids of the visible set",
+        ["TaskTypeAccessImpactReader.cs"] = "admin preview of an access change: numbers only, over every task of one type on purpose (TaskType.Manage)",
+        ["MyMattersTaskFacts.cs"] = "facts of the few task ids a My Matters call already returned",
+        ["MyMattersAssetsService.cs"] = "Linked and OpenLinked count tasks through WhereTaskTypeVisible; linked task rows through VisibleTasks",
+        ["ConfigurationTaskCounts.cs"] = "counts over VisibleTasks; the true load of the ranker is read separately on purpose (owner decision Q5, bare integer)",
+        ["TaskQueueService.cs"] = "Tasks() is the visible base; the needs-attention strip applies WhereTaskTypeVisible; detail rows are loaded by the ids of the page",
+        ["MyMattersAttentionService.cs"] = "rows loaded by id from the scope's tasks (which carry the type term)",
+    };
+
     /// <summary>Files with raw SQL text that names the matter, task, project, asset, audit or notification table, and why each is safe.</summary>
     private static readonly Dictionary<string, string> RawSqlAllowList = new()
     {
@@ -90,6 +124,7 @@ public class VisibilitySourceRulesTests
         ["ReportAuditSql.cs"] = "Reports are undecided (README section 15, issue #808)",
         ["TaskTransactions.cs"] = "row locks; the task lock is gated by CanSeeTaskAsync",
         ["MyMattersActivityService.cs"] = "audit window read restricted to the scope's visible matters",
+        ["AuditVisibility.cs"] = "facet skip scan: the hidden task types of the Task Type rule are a table variable and an EXISTS on dbo.Task by its primary key (epic #1397)",
         ["UserHistory.cs"] = "first IN_PROGRESS audit time read only as a correlated minimum for tasks that already come from VisibleTasks (never returned, no content columns; #1092)",
     };
 
@@ -101,6 +136,17 @@ public class VisibilitySourceRulesTests
         var unreviewed = found.Where(f => !SetAllowList.ContainsKey(f!)).ToList();
         unreviewed.ShouldBeEmpty("These files read Set<Matter|WorkTask|Project|Asset> directly. Route the read through IMatterVisibility / TaskAccess / AssetAccess, or review it and add it to VisibilitySourceRulesTests with a reason: " + string.Join(", ", unreviewed));
         SetAllowList.Keys.Where(k => !found.Contains(k)).ShouldBeEmpty("Stale allow-list entries (the file no longer reads these sets).");
+    }
+
+    [Fact]
+    public void Every_reader_of_the_task_table_says_how_the_task_type_rule_applies_to_it()
+    {
+        var pattern = new Regex(@"Set<WorkTask>", RegexOptions.CultureInvariant);
+        var found = ProductSources().Where(f => pattern.IsMatch(File.ReadAllText(f))).Select(Path.GetFileName).Distinct().Order(StringComparer.Ordinal).ToList();
+        var unreviewed = found.Where(f => !TaskTypeRuleReview.ContainsKey(f!)).ToList();
+        unreviewed.ShouldBeEmpty("These files read Set<WorkTask> directly. Apply the Task Type rule (IMatterVisibility.WhereTaskTypeVisible / TaskAccess / VisibleTasks) or review the read and add it to TaskTypeRuleReview with a reason: " + string.Join(", ", unreviewed));
+        TaskTypeRuleReview.Keys.Where(k => !found.Contains(k)).ShouldBeEmpty("Stale TaskTypeRuleReview entries (the file no longer reads Set<WorkTask>).");
+        TaskTypeRuleReview.Keys.Where(k => !SetAllowList.ContainsKey(k)).ShouldBeEmpty("Every reviewed file must also be in SetAllowList.");
     }
 
     [Fact]
@@ -118,9 +164,9 @@ public class VisibilitySourceRulesTests
     {
         // Issue #1304: the helpers filter with a subquery over these rows. EF applies AsNoTracking to the WHOLE statement, so one AsNoTracking here makes every entity a caller loads through
         // the filter untracked and SaveChanges silently saves nothing for a caller who is not "see all" while the sensitive-matter rule is on. The rows are a projection (never tracked), so the option buys nothing.
-        var implementers = new Regex(@"class\s+\w+[^{]*:\s*[^{]*\bI(Matter|Task)AccessSource\b", RegexOptions.CultureInvariant);
+        var implementers = new Regex(@"class\s+\w+[^{]*:\s*[^{]*\bI(Matter|Task|TaskType)AccessSource\b", RegexOptions.CultureInvariant);
         var sources = ProductSources().Where(f => implementers.IsMatch(File.ReadAllText(f))).ToList();
-        sources.Select(Path.GetFileName).Order(StringComparer.Ordinal).ShouldBe(["MatterAccessSource.cs", "TaskAccessSource.cs"]);
+        sources.Select(Path.GetFileName).Order(StringComparer.Ordinal).ShouldBe(["MatterAccessSource.cs", "TaskAccessSource.cs", "TaskTypeAccessSource.cs"]);
         var offenders = sources
             .Where(f => File.ReadAllLines(f).Any(line => !line.TrimStart().StartsWith("//", StringComparison.Ordinal) && line.Contains("AsNoTracking", StringComparison.Ordinal)))
             .Select(Path.GetFileName)

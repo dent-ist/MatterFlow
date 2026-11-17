@@ -24,6 +24,10 @@ public sealed class ManagedScopeSeamTests(SqlServerFixture sql)
 
         public bool Enabled => inner.Enabled;
 
+        public bool TaskTypeAccessEnabled => inner.TaskTypeAccessEnabled;
+
+        public bool TaskTypeRuleApplies => inner.TaskTypeRuleApplies;
+
         public Viewer Current => inner.Current;
 
         public Task<string> AccessStampAsync(CancellationToken cancellationToken = default) => inner.AccessStampAsync(cancellationToken);
@@ -66,16 +70,16 @@ public sealed class ManagedScopeSeamTests(SqlServerFixture sql)
             return inner.WhereMatterRowVisibleOr(source, isSensitive, primaryManagerId, secondaryManagerId, alsoVisible, viewer);
         }
 
-        public IQueryable<T> WhereTaskVisibleBy<T>(IQueryable<T> source, Expression<Func<T, int>> matterId, Expression<Func<T, int?>> assignedUserId, Viewer? viewer = null)
+        public IQueryable<T> WhereTaskVisibleBy<T>(IQueryable<T> source, Expression<Func<T, int>> matterId, Expression<Func<T, int?>> assignedUserId, Expression<Func<T, int>> taskTypeId, Viewer? viewer = null)
         {
             Calls++;
-            return inner.WhereTaskVisibleBy(source, matterId, assignedUserId, viewer);
+            return inner.WhereTaskVisibleBy(source, matterId, assignedUserId, taskTypeId, viewer);
         }
 
-        public IQueryable<T> WhereTaskFlagVisible<T>(IQueryable<T> source, Expression<Func<T, int>> matterId, Expression<Func<T, bool>> isMatterSensitive, Expression<Func<T, int?>> assignedUserId, Viewer? viewer = null)
+        public IQueryable<T> WhereTaskFlagVisible<T>(IQueryable<T> source, Expression<Func<T, int>> matterId, Expression<Func<T, bool>> isMatterSensitive, Expression<Func<T, int?>> assignedUserId, Expression<Func<T, int>> taskTypeId, Viewer? viewer = null)
         {
             Calls++;
-            return inner.WhereTaskFlagVisible(source, matterId, isMatterSensitive, assignedUserId, viewer);
+            return inner.WhereTaskFlagVisible(source, matterId, isMatterSensitive, assignedUserId, taskTypeId, viewer);
         }
 
         public IQueryable<T> WhereMatterRowVisible<T>(IQueryable<T> source, Expression<Func<T, bool>> isSensitive, Expression<Func<T, int?>> primaryManagerId, Expression<Func<T, int?>> secondaryManagerId, Viewer? viewer = null)
@@ -84,11 +88,25 @@ public sealed class ManagedScopeSeamTests(SqlServerFixture sql)
             return inner.WhereMatterRowVisible(source, isSensitive, primaryManagerId, secondaryManagerId, viewer);
         }
 
-        public IQueryable<T> WhereTaskRowVisible<T>(IQueryable<T> source, Expression<Func<T, bool>> isSensitive, Expression<Func<T, int?>> primaryManagerId, Expression<Func<T, int?>> secondaryManagerId, Expression<Func<T, int?>> assignedUserId, Viewer? viewer = null)
+        public IQueryable<T> WhereTaskRowVisible<T>(IQueryable<T> source, Expression<Func<T, bool>> isSensitive, Expression<Func<T, int?>> primaryManagerId, Expression<Func<T, int?>> secondaryManagerId, Expression<Func<T, int?>> assignedUserId, Expression<Func<T, int>> taskTypeId, Viewer? viewer = null)
         {
             Calls++;
-            return inner.WhereTaskRowVisible(source, isSensitive, primaryManagerId, secondaryManagerId, assignedUserId, viewer);
+            return inner.WhereTaskRowVisible(source, isSensitive, primaryManagerId, secondaryManagerId, assignedUserId, taskTypeId, viewer);
         }
+
+        public IQueryable<T> WhereTaskTypeVisible<T>(IQueryable<T> source, Expression<Func<T, int>> taskTypeId, Viewer? viewer = null)
+        {
+            Calls++;
+            return inner.WhereTaskTypeVisible(source, taskTypeId, viewer);
+        }
+
+        public IQueryable<T> WhereTaskEventVisible<T>(IQueryable<T> source, Expression<Func<T, long?>> taskId, Viewer? viewer = null)
+        {
+            Calls++;
+            return inner.WhereTaskEventVisible(source, taskId, viewer);
+        }
+
+        public Task<IReadOnlyList<int>> HiddenTaskTypeIdsAsync(CancellationToken cancellationToken = default) => inner.HiddenTaskTypeIdsAsync(cancellationToken);
 
         public Task<bool> CanSeeMatterAsync(int matterId, CancellationToken cancellationToken = default) => inner.CanSeeMatterAsync(matterId, cancellationToken);
 

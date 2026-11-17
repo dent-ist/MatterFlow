@@ -53,7 +53,7 @@ Shipped defaults: `backend/src/LptHub.Api/appsettings.json` has only logging, `A
 |---|---|---|---|
 | `Firm:TimeZoneId` | `America/New_York` | Time zone used when the browser sends no valid `X-Time-Zone` | `UserTimeZoneAccessor` |
 | `Features:SensitiveMatterAccess` | `false` | Go-live switch of the Sensitive matter rule; read once at start | `SensitiveMatterAccessOptions` (SharedKernel) |
-| `Features:TaskTypeAccess` | `false` | Go-live switch of the Task Type access rule (epic #1397); read once at start. Off: the role lists of a Task Type can be edited and are stored, nothing is enforced (the admin API reports `enforced: false`). The filtering itself arrives with issues #1400 and #1401 | `TaskTypeAccessOptions` (SharedKernel) |
+| `Features:TaskTypeAccess` | `false` | Go-live switch of the Task Type access rule (epic #1397); read once at start. Off: the role lists of a Task Type can be edited and are stored, nothing is enforced and no extra statement runs (the admin API reports `enforced: false`). On: every read path hides the tasks of a restricted type from people without a Can View role (issue #1400); the edit and assign rules arrive with issue #1401 | `TaskTypeAccessOptions` (SharedKernel) |
 | `Tasks:OnHoldReasonRequired` | `false` | Require an on-hold reason when putting a task On Hold | `TaskLifecycleService` |
 | `Dashboard:CacheSeconds` | `15` | Per user dashboard cache; `0` off | `DashboardCache.cs` |
 | `Dashboard:Workload:LightMax`, `NormalMax` | `3`, `8` | Load levels of the Users tab | same |

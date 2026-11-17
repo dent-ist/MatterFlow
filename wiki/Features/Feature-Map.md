@@ -82,6 +82,7 @@
 |---|---|
 | Authentication, `/me`, landing page (role default, personal choice, chain) | [Authentication and Authorization](../Architecture/Authentication-and-Authorization.md) |
 | Sensitive matters | [Sensitive Matter Visibility](../Architecture/Sensitive-Matter-Visibility.md); `Matter.IsSensitive`, `Matter.ViewSensitive` |
+| Task Type access by role (hidden tasks on every read path) | [Sensitive Matter Visibility](../Architecture/Sensitive-Matter-Visibility.md) (the Task Type rule), [Add a Task Type or Workflow](../How-To/Add-a-Task-Type-or-Workflow.md); `TaskTypeRoleAccess`, `Features:TaskTypeAccess` |
 | Audit trail | [Notifications Audit and Settings](../Architecture/Notifications-Audit-and-Settings.md) |
 | Saved views and remembered state | `Identity` `UserViewsController` (`/me/views`), `UserView`; `core/views/` |
 | Application name and icon | `Configuration` branding; `core/branding/` |

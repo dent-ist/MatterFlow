@@ -62,7 +62,7 @@ internal sealed class AuditDisplayLookup(
         var taskIds = IdsOf(objects, "Task").Select(id => (long)id).ToList();
         if (taskIds.Count > 0)
         {
-            var seeTasks = visibility.Enabled ? (await visibility.VisibleTasks().Where(t => taskIds.Contains(t.TaskId)).Select(t => t.TaskId).ToListAsync(cancellationToken)).ToHashSet() : null;
+            var seeTasks = visibility.TaskRulesEnabled ? (await visibility.VisibleTasks().Where(t => taskIds.Contains(t.TaskId)).Select(t => t.TaskId).ToListAsync(cancellationToken)).ToHashSet() : null;
             foreach (var t in await tasks.FindManyAsync(taskIds, cancellationToken))
                 labels[new("Task", Text(t.TaskId))] = seeTasks is null || seeTasks.Contains(t.TaskId) ? $"{t.TaskNumber} {t.Title}" : RestrictedLabel;
         }

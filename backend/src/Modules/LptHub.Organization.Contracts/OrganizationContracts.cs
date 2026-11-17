@@ -94,8 +94,14 @@ public interface IProjectDirectory
 /// </summary>
 public interface IMatterTaskGuard
 {
-    /// <summary>Number of the Matter's Tasks that are not Completed or Cancelled (New, In Progress, On Hold).</summary>
+    /// <summary>Number of the Matter's Tasks that are not Completed or Cancelled (New, In Progress, On Hold) and that the caller may see (Task Type access rule, epic #1397: a hidden task is not counted here).</summary>
     Task<int> CountOpenTasksAsync(int matterId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// True when the Matter has open Tasks the caller may not see (a restricted Task Type). The deactivation block stays because of them, but the message names no number and no task
+    /// (design docs/ux/task-type-access/README.md section 6, gap 2). Default: none.
+    /// </summary>
+    Task<bool> HasHiddenOpenTasksAsync(int matterId, CancellationToken cancellationToken = default) => Task.FromResult(false);
 }
 
 /// <summary>Default <see cref="IMatterTaskGuard"/> until the Tasks module exists: no Matter has open Tasks.</summary>

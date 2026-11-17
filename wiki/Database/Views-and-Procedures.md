@@ -28,10 +28,10 @@ The C# rule lives in `SharedKernel/Visibility`. Raw SQL readers (notification sc
 | Function | Returns | Rule |
 |---|---|---|
 | `dbo.fnMatterVisible(@UserId, @SeeAll)` | `MatterId` | Matter is not sensitive, or `@SeeAll`, or the user is Primary or Secondary manager |
-| `dbo.fnTaskVisible(@UserId, @SeeAll)` | `TaskId, MatterId` | The matter is visible, or the task is assigned to the user |
+| `dbo.fnTaskVisible(@UserId, @SeeAll, @IsAdmin)` | `TaskId, MatterId` | (The matter is visible, or the task is assigned to the user) AND the task's type is open, or the user is System Admin (`@IsAdmin`), or the user holds an active role in the type's Can View list (script 82, Task Type access rule) |
 | `dbo.fnAssetVisible(@UserId, @SeeAll)` | `AssetId, MatterId` | The matter is visible, or the asset is linked to a task assigned to the user |
 
-Tip from the script header: for set-wide counts and lists use `LEFT JOIN dbo.fnMatterVisible(@u, @s) v ON v.MatterId = t.MatterId ... WHERE (v.MatterId IS NOT NULL OR t.AssignedUserId = @u)`. The `EXISTS (...) OR ...` form probes the Matter table once per task. `fnTaskVisible` and `fnAssetVisible` are for a single id or a short list. See [Sensitive Matter Visibility](../Architecture/Sensitive-Matter-Visibility.md).
+Tip from the script header: for set-wide counts and lists use `LEFT JOIN dbo.fnMatterVisible(@u, @s) v ON v.MatterId = t.MatterId ... WHERE (v.MatterId IS NOT NULL OR t.AssignedUserId = @u)`. The `EXISTS (...) OR ...` form probes the Matter table once per task. `fnTaskVisible` and `fnAssetVisible` are for a single id or a short list. `fnTaskVisible` takes a third argument, `@IsAdmin` (script 82), because the Task Type rule is lifted only for the System Admin, not for `Matter.ViewSensitive` holders; it does not read the feature switches (the C# callers decide). See [Sensitive Matter Visibility](../Architecture/Sensitive-Matter-Visibility.md).
 
 ## Stored procedures (Reports)
 

@@ -237,7 +237,7 @@ public sealed class ReportLoginRightsTests(SqlServerFixture sql, ITestOutputHelp
         }
 
         foreach (var function in new[] { "fnMatterVisible", "fnTaskVisible", "fnAssetVisible" })
-            await RefusedAsync(reader, $"SELECT * FROM dbo.{function}(1, 1)");
+            await RefusedAsync(reader, function == "fnTaskVisible" ? $"SELECT * FROM dbo.{function}(1, 1, 1)" : $"SELECT * FROM dbo.{function}(1, 1)");
 
         // SQL Server grants a few extended procedures of master to PUBLIC (directory listing, file test, drives, version, registry read, host name), and a
         // database role cannot take that away. The provisioning therefore gives the login a user in master with a DENY EXECUTE (issue #1292, the harness does

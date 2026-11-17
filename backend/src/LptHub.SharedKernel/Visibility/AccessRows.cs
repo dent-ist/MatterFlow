@@ -26,6 +26,33 @@ public sealed class TaskAccessRow
 
     /// <summary>The task's copy of its matter's <c>IsSensitive</c> (script 37), for readers that only need to know whether the matter is sensitive.</summary>
     public bool IsMatterSensitive { get; init; }
+
+    /// <summary>The task's type (immutable after creation). The Task Type access rule (epic #1397) hides the task when this type is restricted and the viewer holds none of its Can View roles.</summary>
+    public int TaskTypeId { get; init; }
+}
+
+/// <summary>The only columns of a Task Type the access rule needs: whether it is restricted (<c>TaskType.IsRestricted</c>).</summary>
+public sealed class TaskTypeAccessRow
+{
+    public int TaskTypeId { get; init; }
+
+    public bool IsRestricted { get; init; }
+}
+
+/// <summary>One role of a Task Type's Can View list (rows of <c>dbo.TaskTypeRoleAccess</c> with <c>CanView = 1</c>).</summary>
+public sealed class TaskTypeViewRoleRow
+{
+    public int TaskTypeId { get; init; }
+
+    public int RoleId { get; init; }
+}
+
+/// <summary>Every Task Type and its Can View roles, unfiltered. Implemented by the Configuration module; consumed only by the visibility port (Task Type access rule, epic #1397).</summary>
+public interface ITaskTypeAccessSource
+{
+    IQueryable<TaskTypeAccessRow> Types();
+
+    IQueryable<TaskTypeViewRoleRow> ViewRoles();
 }
 
 /// <summary>Every matter, unfiltered, as <see cref="MatterAccessRow"/>. Implemented by the Organization module; consumed only by the visibility port.</summary>

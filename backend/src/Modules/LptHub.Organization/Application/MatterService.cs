@@ -715,11 +715,19 @@ public sealed class MatterService(
         if (!request.IsActive)
         {
             var open = await taskGuard.CountOpenTasksAsync(id, ct);
-            if (open > 0)
+            var hiddenOpen = await taskGuard.HasHiddenOpenTasksAsync(id, ct);
+            if (open > 0 || hiddenOpen)
             {
+                // The number is the tasks the caller may see; tasks hidden by the Task Type rule keep the block but are never counted or named (epic #1397).
+                var message = (open, hiddenOpen) switch
+                {
+                    ( > 0, true) => $"This matter has {open} tasks that aren't Completed or Cancelled, and other tasks you can't see. Finish or cancel them first.",
+                    (_, true) => "This matter has tasks you can't see that aren't Completed or Cancelled. Finish or cancel them first.",
+                    _ => $"This matter has {open} tasks that aren't Completed or Cancelled. Finish or cancel them first.",
+                };
                 return Error.Conflict(
                     ErrorCodes.MatterHasOpenTasks,
-                    $"This matter has {open} tasks that aren't Completed or Cancelled. Finish or cancel them first.",
+                    message,
                     new Dictionary<string, object?> { ["openTaskCount"] = open });
             }
         }

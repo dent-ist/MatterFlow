@@ -132,7 +132,8 @@ public sealed class MyMattersActivityService(MyMattersScopeResolver scopes, DbCo
             events = events.Where(e => !e.IsSensitiveScope || managedIds.Contains(e.MatterId!.Value));
         }
 
-        return events;
+        // An event of a task whose Task Type the caller may not see is not shown (epic #1397; no exception for the project manager or the assignee).
+        return visibility.WhereTaskEventVisible(events, e => e.TaskId);
     }
 
     /// <summary>The predicate of a list of <c>kind</c> filter values, ORed.</summary>

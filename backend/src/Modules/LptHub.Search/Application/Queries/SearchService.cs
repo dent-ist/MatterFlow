@@ -336,7 +336,8 @@ public sealed class SearchService(DbContext db, IPermissionChecker permissions, 
             select new TaskMatter { Task = t, Matter = m },
             x => x.Task.MatterId,
             x => x.Task.IsMatterSensitive,
-            x => x.Task.AssignedUserId);
+            x => x.Task.AssignedUserId,
+            x => x.Task.TaskTypeId);
         var rows =
             from x in joined
             let t = x.Task

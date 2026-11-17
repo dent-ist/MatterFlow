@@ -208,6 +208,46 @@ public static class VisibilityPredicates
         return Expression.Lambda<Func<T, bool>>(visible, parameter);
     }
 
+    /// <summary>
+    /// The Task Type term of the access rule (epic #1397, README section 4.2): <c>NOT (task type IN hidden types)</c>. With the viewer's hidden type ids already loaded (<paramref name="hiddenTypeIds"/>,
+    /// a handful of constants, so a sargable <c>NOT IN</c> and no join to the access table) the term is that list; an empty list means "nothing is hidden" and the result is null (no term at all).
+    /// When the ids were not loaded the same rule is written as a subquery (<paramref name="hiddenTypes"/>), slower but identical in result. Returns null when there is nothing to filter.
+    /// </summary>
+    public static Expression<Func<T, bool>>? TypeNotHidden<T>(Expression<Func<T, int>> taskTypeId, IReadOnlyList<int>? hiddenTypeIds, IQueryable<int> hiddenTypes)
+    {
+        ArgumentNullException.ThrowIfNull(taskTypeId);
+        ArgumentNullException.ThrowIfNull(hiddenTypes);
+        if (hiddenTypeIds is not null)
+        {
+            if (hiddenTypeIds.Count == 0)
+                return null;
+
+            var list = Expression.Property(Expression.Constant(new IdList { Ids = [.. hiddenTypeIds] }), nameof(IdList.Ids));
+            var contains = Expression.Call(typeof(Enumerable), nameof(Enumerable.Contains), [typeof(int)], list, taskTypeId.Body);
+            return Expression.Lambda<Func<T, bool>>(Expression.Not(contains), taskTypeId.Parameters);
+        }
+
+        var inQuery = Expression.Call(typeof(Queryable), nameof(Queryable.Contains), [typeof(int)], hiddenTypes.Expression, taskTypeId.Body);
+        return Expression.Lambda<Func<T, bool>>(Expression.Not(inQuery), taskTypeId.Parameters);
+    }
+
+    /// <summary>
+    /// <c>row =&gt; taskId(row) IS NULL OR NOT EXISTS (hidden task with that id)</c>: the rows that point at a task by id (audit events) without carrying its type. <paramref name="hiddenTasks"/> are the
+    /// task rows whose type the viewer may not see; it is a short NOT-IN list on <c>Task</c>, read by the primary key per event.
+    /// </summary>
+    public static Expression<Func<T, bool>> TaskNotHidden<T>(Expression<Func<T, long?>> taskId, IQueryable<TaskAccessRow> hiddenTasks)
+    {
+        ArgumentNullException.ThrowIfNull(taskId);
+        ArgumentNullException.ThrowIfNull(hiddenTasks);
+        var parameter = taskId.Parameters[0];
+        var id = taskId.Body;
+        var task = Expression.Parameter(typeof(TaskAccessRow), "h");
+        var same = Expression.Equal(Expression.Convert(Expression.Property(task, nameof(TaskAccessRow.TaskId)), typeof(long?)), id);
+        var any = Expression.Call(typeof(Queryable), nameof(Queryable.Any), [typeof(TaskAccessRow)], hiddenTasks.Expression, Expression.Quote(Expression.Lambda<Func<TaskAccessRow, bool>>(same, task)));
+        var noTask = Expression.Equal(id, Expression.Constant(null, typeof(long?)));
+        return Expression.Lambda<Func<T, bool>>(Expression.OrElse(noTask, Expression.Not(any)), parameter);
+    }
+
     /// <summary>The predicate <c>row =&gt; ids.Contains(key(row))</c> with <paramref name="ids"/> translated to a subquery.</summary>
     public static Expression<Func<T, bool>> In<T, TKey>(Expression<Func<T, TKey>> key, IQueryable<TKey> ids)
     {

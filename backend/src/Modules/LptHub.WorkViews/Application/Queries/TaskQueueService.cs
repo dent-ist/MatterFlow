@@ -253,7 +253,8 @@ public sealed class TaskQueueService(
     /// <summary>The needs-attention strip: the whole open assigned set (no grid filters), each count from the same predicate the filter uses.</summary>
     private async Task<MyWorkAttention> AttentionAsync(int me, QueueClock queueClock, DateTime? newSince, CancellationToken ct)
     {
-        var open = db.Set<WorkTask>().AsNoTracking().Where(t => t.AssignedUserId == me).Where(TaskQueueRules.Open);
+        // The own-tasks shortcut stays inside the Task Type rule (epic #1397): an assigned task of a restricted type the caller may not see is not counted.
+        var open = visibility.WhereTaskTypeVisible(db.Set<WorkTask>().AsNoTracking().Where(t => t.AssignedUserId == me).Where(TaskQueueRules.Open), t => t.TaskTypeId);
         return new MyWorkAttention(
             await open.Where(TaskQueueRules.Overdue(queueClock)).CountAsync(ct),
             await open.Where(TaskQueueRules.DueToday(queueClock)).CountAsync(ct),
