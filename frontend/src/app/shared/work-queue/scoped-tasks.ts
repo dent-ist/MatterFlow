@@ -782,6 +782,7 @@ export class ScopedTasks {
         taskId: row.taskId,
         taskNumber: row.taskNumber,
         title: row.title,
+        taskTypeId: row.taskTypeId,
       });
     } else {
       next.delete(row.taskId);
@@ -802,6 +803,7 @@ export class ScopedTasks {
           taskId: row.taskId,
           taskNumber: row.taskNumber,
           title: row.title,
+          taskTypeId: row.taskTypeId,
         });
       } else {
         capped = true;

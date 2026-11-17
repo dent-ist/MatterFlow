@@ -106,6 +106,10 @@ export function queueFilterDefs(
       type: 'multiSelect',
       options: list(lookups.types),
       normalize: asId,
+      // A saved or linked filter can carry a type the person may no longer see (Task Type access rule, epic #1397): never its old name, never a bare number.
+      valueLabel: (id: string) =>
+        lookups.types?.find((o) => o.value === id)?.label ??
+        ((lookups.types?.length ?? 0) > 0 ? 'Unavailable' : 'selected type'),
     },
     {
       key: 'workflow',

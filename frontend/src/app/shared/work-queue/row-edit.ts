@@ -40,6 +40,11 @@ import { InlineMenu, MenuOption } from './inline-menu';
 import { InlineStatusFlow } from './inline-status-flow';
 import { stepQueryParams } from './step-link';
 import { shortAccountName } from '../ui/person-name';
+import {
+  READ_ONLY_TEXT,
+  TASK_TYPE_READ_ONLY,
+  isHiddenTransition,
+} from '../tasks/transition-visibility';
 
 const UNASSIGNED = 'none';
 
@@ -294,10 +299,20 @@ export class RowEdit {
     switch (this.field()) {
       case 'status': {
         const server = this.transitions();
+        if (
+          server &&
+          server.length > 0 &&
+          server.every((o) => o.blockedReason === TASK_TYPE_READ_ONLY)
+        ) {
+          // The task's type has a Can Edit list without this person: one disabled line that says so, never a menu of actions that all fail.
+          return [
+            { id: TASK_TYPE_READ_ONLY, label: 'View Only', disabled: true, reason: READ_ONLY_TEXT },
+          ];
+        }
         if (server) {
           return cancelLast(
             server
-              .filter((o) => o.permitted || o.blockedReason !== 'PERMISSION_DENIED')
+              .filter((o) => !isHiddenTransition(o))
               .map((o) => ({
                 id: o.action,
                 icon: STATUS_CHIPS[o.targetStatus]?.icon,

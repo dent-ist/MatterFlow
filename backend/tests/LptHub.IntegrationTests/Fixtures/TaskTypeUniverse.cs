@@ -144,9 +144,13 @@ public sealed class TaskTypeUniverse
     }
 
     /// <summary>Replaces the Can View list of the Secret type (an empty list opens the type again), through the admin API of issue #1399.</summary>
-    public async Task RestrictAsync(int[] canView)
+    public Task RestrictAsync(int[] canView) => RestrictAsync(canView, [], []);
+
+    /// <summary>Replaces the three lists of the Secret type (issue #1401): Can View, Can Edit and Can Be Assigned. An empty Edit or Assign list means no extra limit.</summary>
+    public async Task RestrictAsync(int[] canView, int[] canEdit, int[] canAssign)
     {
         var current = await OkAsync(await H.Admin.GetAsync($"/api/v1/task-types/{SecretTypeId}/access"));
-        await OkAsync(await H.Admin.PutAsJsonAsync($"/api/v1/task-types/{SecretTypeId}/access", new { canView, canEdit = Array.Empty<int>(), canAssign = Array.Empty<int>(), rowVersion = current.GetProperty("rowVersion").GetString() }));
+        await OkAsync(await H.Admin.PutAsJsonAsync($"/api/v1/task-types/{SecretTypeId}/access", new { canView, canEdit, canAssign, rowVersion = current.GetProperty("rowVersion").GetString() }));
+        H.Factory.InvalidateAll();
     }
 }

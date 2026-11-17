@@ -15,4 +15,7 @@ internal sealed class TaskTypeAccessSource(DbContext db) : ITaskTypeAccessSource
 
     public IQueryable<TaskTypeViewRoleRow> ViewRoles() =>
         db.Set<TaskTypeRoleAccess>().Where(a => a.CanView).Select(a => new TaskTypeViewRoleRow { TaskTypeId = a.TaskTypeId, RoleId = a.RoleId });
+
+    public IQueryable<TaskTypeRoleRow> Roles() =>
+        db.Set<TaskTypeRoleAccess>().Select(a => new TaskTypeRoleRow { TaskTypeId = a.TaskTypeId, RoleId = a.RoleId, CanView = a.CanView, CanEdit = a.CanEdit, CanAssign = a.CanAssign });
 }

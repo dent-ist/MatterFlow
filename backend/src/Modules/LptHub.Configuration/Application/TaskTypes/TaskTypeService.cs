@@ -12,6 +12,7 @@ using LptHub.SharedKernel.Identity;
 using LptHub.SharedKernel.Results;
 using LptHub.SharedKernel.Tasks;
 using LptHub.SharedKernel.Time;
+using LptHub.SharedKernel.Visibility;
 using Microsoft.EntityFrameworkCore;
 
 namespace LptHub.Configuration.Application.TaskTypes;
@@ -109,7 +110,8 @@ public sealed class TaskTypeService(
     ICurrentUser currentUser,
     IPermissionChecker permissions,
     IConfigurationTaskCounts taskCounts,
-    TaskTypeAccessService access) : ITaskTypeCatalog
+    TaskTypeAccessService access,
+    IMatterVisibility visibility) : ITaskTypeCatalog
 {
     private const string ObjectType = "TaskType";
 
@@ -137,12 +139,20 @@ public sealed class TaskTypeService(
     /// The list in the requested order. The list is not paged (every Task Type comes back), so the order is applied to the loaded rows. Without
     /// <c>Task.View</c> the counts are null and a count sort falls back to the name order. 400 <c>INVALID</c> for an unknown sort key.
     /// </summary>
-    public async Task<Result<IReadOnlyList<TaskTypeView>>> ListViewsAsync(int? workflowId, string? sort, CancellationToken ct = default)
+    public async Task<Result<IReadOnlyList<TaskTypeView>>> ListViewsAsync(int? workflowId, string? sort, CancellationToken ct = default) =>
+        await ListViewsAsync(workflowId, sort, visibleOnly: false, creatableOnly: false, ct);
+
+    /// <summary>
+    /// The list for the API (epic #1397, issue #1401). Task Type access rule: a person without <c>TaskType.Manage</c> gets only the types they may see (a type they may not see is not listed at all, so a name
+    /// or a zero cannot tell it exists); a manager gets every type (the admin screen, with the <c>access</c> object) unless <paramref name="visibleOnly"/> asks for the picker form. With
+    /// <paramref name="creatableOnly"/> only the types the caller may create tasks of (they may see and change tasks of it): the Create Task list. Nothing is filtered while the switch is off.
+    /// </summary>
+    public async Task<Result<IReadOnlyList<TaskTypeView>>> ListViewsAsync(int? workflowId, string? sort, bool visibleOnly, bool creatableOnly, CancellationToken ct = default)
     {
         if (sort is not null && !SortFields.Contains(sort))
             return Error.Validation("sort", "INVALID", $"sort must be one of: {string.Join(", ", SortFields)}.");
 
-        var rows = await LoadViewsAsync(workflowId, true, ct);
+        var rows = await LoadViewsAsync(workflowId, true, ct, creatableOnly ? ListScope.Creatable : visibleOnly || !permissions.Has(Permissions.TaskType.Manage) ? ListScope.Viewable : ListScope.All);
         // The rows come back by name (the database collation); the LINQ orderings below are stable, so equal counts keep that name order.
         IEnumerable<TaskTypeView> ordered = sort switch
         {
@@ -154,9 +164,24 @@ public sealed class TaskTypeService(
         return Result<IReadOnlyList<TaskTypeView>>.Success([.. ordered]);
     }
 
-    private async Task<IReadOnlyList<TaskTypeView>> LoadViewsAsync(int? workflowId, bool withCounts, CancellationToken ct)
+    private enum ListScope
+    {
+        All,
+        Viewable,
+        Creatable,
+    }
+
+    private async Task<IReadOnlyList<TaskTypeView>> LoadViewsAsync(int? workflowId, bool withCounts, CancellationToken ct, ListScope scope = ListScope.All)
     {
         var query = db.Set<TaskType>().AsNoTracking().Include(t => t.EligibleWorkflows).AsQueryable();
+        if (scope != ListScope.All)
+            query = visibility.WhereTaskTypeVisible(query, t => t.Id);
+        if (scope == ListScope.Creatable && await visibility.NotEditableTaskTypeIdsAsync(ct) is { Count: > 0 } notEditable)
+        {
+            var blocked = notEditable.ToList();
+            query = query.Where(t => !blocked.Contains(t.Id));
+        }
+
         if (workflowId is { } wanted)
         {
             query = query.Where(t => t.EligibleWorkflows.Any(e => e.WorkflowDefinitionId == wanted));
@@ -171,6 +196,17 @@ public sealed class TaskTypeService(
     }
 
     public async Task<Result<TaskTypeView>> GetViewAsync(int id, CancellationToken ct = default) => await GetViewAsync(id, true, ct);
+
+    /// <summary>
+    /// One Task Type for the API: a person without <c>TaskType.Manage</c> gets the same 404 for a type they may not see as for a missing id (Task Type access rule, issue #1401); a manager sees every type.
+    /// </summary>
+    public async Task<Result<TaskTypeView>> GetVisibleViewAsync(int id, CancellationToken ct = default)
+    {
+        if (!permissions.Has(Permissions.TaskType.Manage) && visibility.TaskTypeAccessEnabled && (await visibility.HiddenTaskTypeIdsAsync(ct)).Contains(id))
+            return Error.NotFound("Task type not found.");
+
+        return await GetViewAsync(id, true, ct);
+    }
 
     private async Task<Result<TaskTypeView>> GetViewAsync(int id, bool withCounts, CancellationToken ct)
     {

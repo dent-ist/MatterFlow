@@ -17,6 +17,7 @@ import {
   BulkTasksDialog,
   bulkReason,
   bulkWarning,
+  commonTaskType,
 } from './bulk-tasks-dialog';
 
 const targets: BulkTarget[] = [
@@ -202,5 +203,26 @@ describe('BulkTasksDialog', () => {
     expect(bulkReason(r('CONCURRENCY_CONFLICT'))).toContain('somebody else changed it');
     expect(bulkReason(r('OTHER', 'The server said no'))).toBe('The server said no');
     expect(bulkWarning('USER_NOT_IN_POD')).toContain('not a member');
+  });
+
+  it('words the two refusals of the Task Type access rule (epic #1397) per task', () => {
+    const r = (code: string) => ({ taskId: 1, ok: false, code, message: 'x', warnings: [] });
+    expect(bulkReason(r('TASK_TYPE_READ_ONLY'))).toBe('you can see it but not change it');
+    expect(bulkReason(r('USER_CANNOT_ASSIGN_TYPE'))).toContain(
+      'can’t be assigned tasks of its type',
+    );
+  });
+
+  it('narrows the people list to a type only when every selected task has the same one', () => {
+    const t = (taskId: number, taskTypeId?: number): BulkTarget => ({
+      taskId,
+      taskNumber: 'T',
+      title: '',
+      taskTypeId,
+    });
+    expect(commonTaskType([t(1, 4), t(2, 4)])).toBe(4);
+    expect(commonTaskType([t(1, 4), t(2, 5)])).toBeUndefined();
+    expect(commonTaskType([t(1)])).toBeUndefined();
+    expect(commonTaskType([])).toBeUndefined();
   });
 });

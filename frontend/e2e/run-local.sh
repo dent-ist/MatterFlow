@@ -18,6 +18,8 @@
 #   E2E_SENSITIVE_ACCESS=1   start the API with the go-live switch of the sensitive-matter rule on (Features__SensitiveMatterAccess=true, epic #788).
 #                            It is also turned on by itself when a Playwright argument names a sensitive-*.spec.ts file. Off otherwise, as in
 #                            appsettings.json; the sensitive-* specs skip themselves when the switch is off.
+#   E2E_TASKTYPE_ACCESS=1    start the API with the go-live switch of the Task Type access rule on (Features__TaskTypeAccess=true, epic #1397). It is also
+#                            turned on by itself when a Playwright argument names a tasktype-access-*.spec.ts file; the specs skip themselves when it is off.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -48,6 +50,13 @@ for arg in "$@"; do
   case "$arg" in *sensitive-*) sensitive_access=1 ;; esac
 done
 if [ "$sensitive_access" = "1" ]; then sensitive_switch=true; else sensitive_switch=false; fi
+
+# The go-live switch of the Task Type access rule (epic #1397): on for the tasktype-access-* specs (named in the arguments or by E2E_TASKTYPE_ACCESS=1).
+type_access="${E2E_TASKTYPE_ACCESS:-0}"
+for arg in "$@"; do
+  case "$arg" in *tasktype-access-*) type_access=1 ;; esac
+done
+if [ "$type_access" = "1" ]; then type_switch=true; else type_switch=false; fi
 
 cleanup() {
   status=$?
@@ -82,7 +91,7 @@ for _ in $(seq 1 90); do
 done
 echo "    SQL Server on 127.0.0.1:$sql_port"
 
-echo "==> API on http://127.0.0.1:$api_port (sensitive-matter rule: $sensitive_switch)"
+echo "==> API on http://127.0.0.1:$api_port (sensitive-matter rule: $sensitive_switch, Task Type access rule: $type_switch)"
 conn="Server=127.0.0.1,$sql_port;Database=LptHub;User Id=sa;Password=$sql_password;TrustServerCertificate=True"
 reports_conn="Server=127.0.0.1,$sql_port;Database=LptHub;User Id=lpt_reports;Password=LptHub_Reports1!;TrustServerCertificate=True;Encrypt=True;Application Name=LptHub.Reports;ApplicationIntent=ReadOnly;Connect Timeout=10;Max Pool Size=8"
 (
@@ -100,6 +109,7 @@ reports_conn="Server=127.0.0.1,$sql_port;Database=LptHub;User Id=lpt_reports;Pas
   export Bootstrap__SystemAdmins__0='ke\kekim'
   export Seed__StarterConfiguration__Enabled=true
   export Features__SensitiveMatterAccess="$sensitive_switch"
+  export Features__TaskTypeAccess="$type_switch"
   # The notification scheduler (timer inside the API, epic #753) ticks every minute here instead of every five, so the scheduled-notification
   # specs do not wait five minutes. Production keeps the defaults (first run after 30 s, then every 5 minutes).
   export Notifications__Scheduler__InitialDelaySeconds=2

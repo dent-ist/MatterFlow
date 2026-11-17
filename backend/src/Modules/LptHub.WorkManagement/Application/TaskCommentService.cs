@@ -46,9 +46,12 @@ public sealed class TaskCommentService(
         if (take is < 1 or > MaxPageSize)
             return Error.Validation("take", "RANGE", $"take must be between 1 and {MaxPageSize}.");
 
-        if (!await access.CanSeeAsync(taskId, ct))
+        var typeId = await access.Visible().Where(t => t.Id == taskId).Select(t => (int?)t.TaskTypeId).SingleOrDefaultAsync(ct);
+        if (typeId is null)
             return TaskSupport.NotFound();
 
+        // A person who may see the task but not change it (Task Type Can Edit list) gets no edit or delete flag on any comment, their own included.
+        var readOnly = await tx.EditGateAsync(typeId.Value, ct) is not null;
         var query = db.Set<TaskComment>().AsNoTracking().Where(c => c.TaskId == taskId && !c.IsDeleted);
         var total = await query.CountAsync(ct);
         var ordered = newestFirst
@@ -56,7 +59,7 @@ public sealed class TaskCommentService(
             : query.OrderBy(c => c.CreatedAtUtc).ThenBy(c => c.Id);
         var rows = await ordered.Skip(skip ?? 0).Take(take ?? MaxPageSize).ToListAsync(ct);
         var authors = await users.FindManyAsync([.. rows.Select(r => r.AuthorUserId).Distinct()], ct);
-        return new TaskCommentListResponse([.. rows.Select(r => ToResponse(r, authors))], total);
+        return new TaskCommentListResponse([.. rows.Select(r => ToResponse(r, authors, readOnly))], total);
     }
 
     public async Task<Result<TaskCommentRevisionListResponse>> ListRevisionsAsync(long taskId, long commentId, CancellationToken ct)
@@ -92,6 +95,8 @@ public sealed class TaskCommentService(
                 var task = await access.Visible().SingleOrDefaultAsync(t => t.Id == taskId, token);
                 if (task is null)
                     return TaskSupport.NotFound();
+                if (await tx.EditGateAsync(task.TaskTypeId, token) is { } readOnly)
+                    return readOnly;
 
                 if (await db.Set<TaskComment>().CountAsync(c => c.TaskId == taskId, token) >= MaxCommentsPerTask)
                     return Error.Conflict(CommentLimitCode, $"A task can have at most {MaxCommentsPerTask} comments.");
@@ -125,6 +130,8 @@ public sealed class TaskCommentService(
                 var comment = task is null ? null : await db.Set<TaskComment>().SingleOrDefaultAsync(c => c.Id == commentId && c.TaskId == taskId && !c.IsDeleted, token);
                 if (task is null || comment is null)
                     return CommentNotFound();
+                if (await tx.EditGateAsync(task.TaskTypeId, token) is { } readOnly)
+                    return readOnly;
                 if (comment.AuthorUserId != currentUser.UserId)
                     return Error.Forbidden("You can only edit your own comments.");
                 if (!comment.Purpose.IsDeletable())
@@ -173,6 +180,8 @@ public sealed class TaskCommentService(
                 var comment = task is null ? null : await db.Set<TaskComment>().SingleOrDefaultAsync(c => c.Id == commentId && c.TaskId == taskId && !c.IsDeleted, token);
                 if (task is null || comment is null)
                     return CommentNotFound();
+                if (await tx.EditGateAsync(task.TaskTypeId, token) is { } readOnly)
+                    return readOnly;
                 if (comment.AuthorUserId != currentUser.UserId)
                     return Error.Forbidden("You can only delete your own comments.");
                 if (!comment.Purpose.IsDeletable())
@@ -210,9 +219,9 @@ public sealed class TaskCommentService(
     private Task<TaskComment?> FindVisibleAsync(long taskId, long commentId, CancellationToken ct) =>
         db.Set<TaskComment>().AsNoTracking().SingleOrDefaultAsync(c => c.Id == commentId && c.TaskId == taskId && !c.IsDeleted, ct);
 
-    private TaskCommentResponse ToResponse(TaskComment c, IReadOnlyDictionary<int, UserInfo> authors)
+    private TaskCommentResponse ToResponse(TaskComment c, IReadOnlyDictionary<int, UserInfo> authors, bool readOnly = false)
     {
-        var own = currentUser.UserId == c.AuthorUserId && permissions.Has(Permissions.Task.Comment);
+        var own = !readOnly && currentUser.UserId == c.AuthorUserId && permissions.Has(Permissions.Task.Comment);
         return new TaskCommentResponse(
             c.Id,
             c.TaskId,

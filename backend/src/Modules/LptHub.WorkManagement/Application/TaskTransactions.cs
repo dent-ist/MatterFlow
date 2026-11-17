@@ -42,18 +42,30 @@ public sealed class TaskTransactions(DbContext db, IMatterVisibility visibility)
     }
 
     /// <summary>
-    /// Loads the Task tracked under an update lock (per-Task serialization, architecture 10.2). Null when it does not exist or the caller may not see it
-    /// (sensitive-matter rule, mode T): a hidden Task is "not found" exactly like a missing one, before any other check of the command.
+    /// Loads the Task tracked under an update lock (per-Task serialization, architecture 10.2) for a command that changes it. A Task the caller may not see (sensitive-matter rule, Task Type
+    /// access rule, mode T) is "not found" exactly like a missing one, before any other check; a visible Task whose type the caller may see but not edit is the 403
+    /// <c>TASK_TYPE_READ_ONLY</c> (epic #1397, issue #1401). Every command that changes a Task loads it here, so the edit gate cannot be forgotten on one endpoint; there is no load without the gate.
     /// </summary>
-    public async Task<WorkTask?> LockTaskAsync(long taskId, CancellationToken ct)
+    public async Task<Result<WorkTask>> LockForEditAsync(long taskId, CancellationToken ct)
     {
         if (visibility.TaskRulesEnabled && !await visibility.CanSeeTaskAsync(taskId, ct))
-            return null;
+            return TaskSupport.NotFound();
 
-        return await db.Set<WorkTask>()
+        var task = await db.Set<WorkTask>()
             .FromSql($"SELECT * FROM dbo.Task WITH (UPDLOCK, ROWLOCK) WHERE TaskId = {taskId}")
             .SingleOrDefaultAsync(ct);
+        if (task is null)
+            return TaskSupport.NotFound();
+
+        return await EditGateAsync(task.TaskTypeId, ct) is { } readOnly ? readOnly : task;
     }
+
+    /// <summary>
+    /// The edit gate for a command that already loaded a visible task (comments): null when the caller may change tasks of the type, else the 403 <c>TASK_TYPE_READ_ONLY</c>. A no-op while the
+    /// Task Type switch is off.
+    /// </summary>
+    public async Task<Error?> EditGateAsync(int taskTypeId, CancellationToken ct) =>
+        visibility.TaskTypeAccessEnabled && !await visibility.CanEditTaskTypeAsync(taskTypeId, ct) ? TaskSupport.ReadOnly() : null;
 
     /// <summary>
     /// Takes the Matter row lock shared with Matter deactivation, so a Task cannot be created or reopened while the Matter is being made inactive

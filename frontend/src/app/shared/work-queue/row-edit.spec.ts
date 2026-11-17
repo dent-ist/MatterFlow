@@ -541,6 +541,29 @@ describe('RowEdit', () => {
     expect(emitted[0].status).toBe('IN_PROGRESS');
   });
 
+  it('status: the server says the task type is read-only for this person: one disabled "View Only" line, no action that would fail (epic #1397)', async () => {
+    await create('status', aRow({ status: 'IN_PROGRESS' }), ['Task.ChangeStatus', 'Task.Complete']);
+    const blocked = (action: string, targetStatus: string) => ({
+      action,
+      targetStatus,
+      requiresComment: false,
+      requiredPermission: 'Task.ChangeStatus',
+      permitted: false,
+      blockedReason: 'TASK_TYPE_READ_ONLY',
+    });
+    fixture.componentRef.setInput('transitions', [
+      blocked('HOLD', 'ON_HOLD'),
+      blocked('COMPLETE', 'COMPLETED'),
+    ]);
+    fixture.detectChanges();
+    await open();
+    expect(
+      Array.from(el().querySelectorAll('[data-option]')).map((o) => o.getAttribute('data-option')),
+    ).toEqual(['TASK_TYPE_READ_ONLY']);
+    expect(option('TASK_TYPE_READ_ONLY').getAttribute('aria-disabled')).toBe('true');
+    expect(el().textContent).toContain('You can see this task but not change it.');
+  });
+
   it('shows Reopen disabled with the reason when the matter is inactive', async () => {
     await create('status', aRow({ status: 'CANCELLED', matterIsActive: false }), ['Task.Reopen']);
     await open();

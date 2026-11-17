@@ -102,7 +102,7 @@ public sealed class TaskBulkService(
 
             var done = await tx.RunAsync(token => ChangeOneAsync(id, task.AssignedPodId, Convert.ToBase64String(task.RowVersion), request, token), ct);
             results.Add(done.IsFailure
-                ? new BulkTaskResult(id, false, done.Error!.Code, done.Error.Message, [])
+                ? new BulkTaskResult(id, false, TaskSupport.RowCode(done.Error!), done.Error!.Message, [])
                 : new BulkTaskResult(id, true, null, null, done.Value));
         }
 
@@ -159,7 +159,7 @@ public sealed class TaskBulkService(
 
             var done = await tx.RunAsync(token => tasks.SetProjectCoreAsync(id, request.ProjectId, null, Convert.ToBase64String(task.RowVersion), project, token), ct);
             results.Add(done.IsFailure
-                ? new BulkTaskResult(id, false, done.Error!.Code, done.Error.Message, [])
+                ? new BulkTaskResult(id, false, TaskSupport.RowCode(done.Error!), done.Error!.Message, [])
                 : new BulkTaskResult(id, true, null, null, []));
         }
 

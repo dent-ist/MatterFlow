@@ -47,12 +47,29 @@ public sealed class TaskTypeViewRoleRow
     public int RoleId { get; init; }
 }
 
+/// <summary>One row of <c>dbo.TaskTypeRoleAccess</c> with its three flags (Can View, Can Edit, Can Be Assigned). Edit and Assign imply View, so a row with either flag also has <see cref="CanView"/>.</summary>
+public sealed class TaskTypeRoleRow
+{
+    public int TaskTypeId { get; init; }
+
+    public int RoleId { get; init; }
+
+    public bool CanView { get; init; }
+
+    public bool CanEdit { get; init; }
+
+    public bool CanAssign { get; init; }
+}
+
 /// <summary>Every Task Type and its Can View roles, unfiltered. Implemented by the Configuration module; consumed only by the visibility port (Task Type access rule, epic #1397).</summary>
 public interface ITaskTypeAccessSource
 {
     IQueryable<TaskTypeAccessRow> Types();
 
     IQueryable<TaskTypeViewRoleRow> ViewRoles();
+
+    /// <summary>Every access row with all three flags (the Edit and Assign rules of issue #1401 read these).</summary>
+    IQueryable<TaskTypeRoleRow> Roles();
 }
 
 /// <summary>Every matter, unfiltered, as <see cref="MatterAccessRow"/>. Implemented by the Organization module; consumed only by the visibility port.</summary>

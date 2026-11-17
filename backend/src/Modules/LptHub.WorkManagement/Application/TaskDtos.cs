@@ -109,7 +109,10 @@ public sealed record TaskTransitionOption(
     [property: Required] bool Permitted,
     string? BlockedReason);
 
-/// <summary>What the caller can do next with the Task (permissions combined with the lifecycle rules).</summary>
+/// <summary>
+/// What the caller can do next with the Task (permissions combined with the lifecycle rules). <c>readOnlyByType</c> is true when the caller may see the task but the Can Edit list of its Task Type
+/// leaves them out (epic #1397): every flag above is then false and every transition is blocked with <c>TASK_TYPE_READ_ONLY</c>; the screen shows the task read-only.
+/// </summary>
 public sealed record TaskAllowedActions(
     [property: Required] bool CanEdit,
     [property: Required] bool CanAssign,
@@ -117,7 +120,8 @@ public sealed record TaskAllowedActions(
     [property: Required] bool CanComment,
     [property: Required] bool CanExecuteSteps,
     [property: Required] bool CanReopenSteps,
-    [property: Required] IReadOnlyList<TaskTransitionOption> Transitions);
+    [property: Required] IReadOnlyList<TaskTransitionOption> Transitions,
+    [property: Required] bool ReadOnlyByType = false);
 
 // ---- task
 

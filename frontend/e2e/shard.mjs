@@ -12,7 +12,7 @@
 //   node e2e/shard.mjs --refresh r1.json r2.json ...   rewrite shard-weights.json from Playwright JSON reports (e2e/summary.mjs input)
 //
 // Not in any shard: app-settings.spec.ts (project `branding`, own job, it changes the application name for everybody) and sensitive-*.spec.ts (own
-// job with the go-live switch on; run-local.sh turns that switch on whenever an argument contains `sensitive-`, so these files must never ride along).
+// job with the go-live switch on; run-local.sh turns that switch on whenever an argument contains `sensitive-`, so these files must never ride along) and tasktype-access-*.spec.ts (own job, Task Type access switch on, issue #1401).
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -21,7 +21,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const testsDir = path.join(here, 'tests');
 const weightsFile = path.join(here, 'shard-weights.json');
 
-export const excluded = (f) => f === 'app-settings.spec.ts' || f.startsWith('sensitive-');
+export const excluded = (f) => f === 'app-settings.spec.ts' || f.startsWith('sensitive-') || f.startsWith('tasktype-access-');
 
 export function specFiles() {
   return fs

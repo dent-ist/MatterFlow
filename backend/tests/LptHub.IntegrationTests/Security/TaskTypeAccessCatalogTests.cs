@@ -14,7 +14,7 @@ public sealed class TaskTypeAccessCatalogTests
     {
         var required = TaskTypeAccessCatalog.Required().ToList();
         var unclassified = required.Where(k => !TaskTypeAccessCatalog.All.ContainsKey(k)).Order(StringComparer.Ordinal).ToList();
-        unclassified.ShouldBeEmpty("Classify these endpoints in TaskTypeAccessCatalog (Port, ById, Exception, Deferred or NotTaskData with a reason): " + string.Join("; ", unclassified));
+        unclassified.ShouldBeEmpty("Classify these endpoints in TaskTypeAccessCatalog (Port, ById, Exception or NotTaskData with a reason): " + string.Join("; ", unclassified));
 
         var stale = TaskTypeAccessCatalog.All.Keys.Where(k => !required.Contains(k)).Order(StringComparer.Ordinal).ToList();
         stale.ShouldBeEmpty("These entries are not (or no longer) lists, resources by id or aggregates of SensitiveAccessCatalog: " + string.Join("; ", stale));
@@ -41,7 +41,7 @@ public sealed class TaskTypeAccessCatalogTests
     }
 
     [Fact]
-    public void Only_the_owner_named_gaps_are_exceptions_or_deferred_to_the_pickers()
+    public void Only_the_owner_named_gaps_are_exceptions_and_nothing_is_left_deferred()
     {
         TaskTypeAccessCatalog.All.Where(kv => kv.Value.Handling == TypeHandling.Exception).Select(kv => kv.Key).Order(StringComparer.Ordinal).ToList().ShouldBe(
         [
@@ -52,12 +52,23 @@ public sealed class TaskTypeAccessCatalogTests
             "GET api/v1/dashboard/capacity/people",
             "GET api/v1/reports/{id:int}/lookups/{parameter}",
         ]);
-        TaskTypeAccessCatalog.All.Where(kv => kv.Value.Handling == TypeHandling.Deferred).Select(kv => kv.Key).Order(StringComparer.Ordinal).ToList().ShouldBe(
-        [
-            "GET api/v1/task-types",
-            "GET api/v1/task-types/{id:int}",
-            "GET api/v1/users/lookup",
-        ]);
+        Enum.GetNames<TypeHandling>().ShouldBe(["Port", "ById", "Exception", "NotTaskData"], "the Deferred category is gone: the pickers and the lookup are enforced by issue #1401");
+    }
+
+    [Fact]
+    public void Every_write_endpoint_is_classified_against_the_edit_rule_and_the_catalogue_has_no_stale_write()
+    {
+        var required = TaskTypeAccessCatalog.RequiredWrites().ToList();
+        required.Where(k => !TaskTypeAccessCatalog.Writes.ContainsKey(k)).Order(StringComparer.Ordinal).ToList()
+            .ShouldBeEmpty("Classify these write endpoints in TaskTypeAccessCatalog.Writes (EditGated when they change a task, NotTaskData with a reason otherwise)");
+        TaskTypeAccessCatalog.Writes.Keys.Where(k => !required.Contains(k)).Order(StringComparer.Ordinal).ToList().ShouldBeEmpty("stale write entries");
+        TaskTypeAccessCatalog.Writes.Values.ShouldAllBe(e => e.Reason.Length > 0 && e.Area.Length > 0);
+
+        // Every task write of the sensitive catalogue (a task in the route) must be edit-gated: a route with a task id cannot be waved through as "no task data".
+        SensitiveAccessCatalog.All
+            .Where(kv => kv.Value.Kind == AccessKind.Write && (kv.Value.Id == IdKind.Task || kv.Key.Contains("/tasks", StringComparison.Ordinal)))
+            .Where(kv => TaskTypeAccessCatalog.Writes[kv.Key].Handling != TypeWriteHandling.EditGated)
+            .Select(kv => kv.Key).ToList().ShouldBeEmpty();
     }
 
     [Fact]

@@ -147,6 +147,7 @@ const isTab = (v: unknown): v is TaskPageTab => TABS.includes(v as string);
                     [refresh]="t.rowVersion"
                     [focusRequest]="store.commentFocus()"
                     [active]="current() === 'comments'"
+                    [readOnly]="store.readOnlyByType()"
                     [composerRequest]="store.composerRequest()"
                     (countChange)="commentCount.set($event)"
                   />

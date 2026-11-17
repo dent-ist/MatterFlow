@@ -36,12 +36,20 @@ export interface BulkTarget {
   readonly taskId: number;
   readonly taskNumber: string;
   readonly title: string;
+  /** The task's type: when every selected task has the same one, the people list offers only those the type's Can Be Assigned list allows (Task Type access rule, epic #1397). */
+  readonly taskTypeId?: number;
 }
 
 /** The most tasks one call takes (the API's limit). */
 export const BULK_MAX = 100;
 
 const KEEP_POD = '';
+
+/** The one task type every selected task has (the people list then offers only who that type allows), or undefined for tasks of several types or unknown ones. */
+export function commonTaskType(targets: readonly BulkTarget[]): number | undefined {
+  const types = new Set(targets.map((t) => t.taskTypeId));
+  return types.size === 1 ? [...types][0] : undefined;
+}
 
 /** The reason of a task that was not changed, in plain words. */
 export function bulkReason(r: BulkTaskResult): string {
@@ -54,6 +62,10 @@ export function bulkReason(r: BulkTaskResult): string {
       return 'it is completed or cancelled';
     case 'CONCURRENCY_CONFLICT':
       return 'somebody else changed it meanwhile; reload the list';
+    case 'TASK_TYPE_READ_ONLY':
+      return 'you can see it but not change it';
+    case 'USER_CANNOT_ASSIGN_TYPE':
+      return 'that person can’t be assigned tasks of its type';
     default:
       return r.message || 'it could not be changed';
   }
@@ -260,9 +272,11 @@ export class BulkTasksDialog {
   });
 
   protected readonly searchPeople = async (query: string): Promise<PickerOption[]> => {
+    // One common task type narrows the list to the people the type allows; tasks of several types are checked per task by the server (the result names the ones refused).
+    const type = commonTaskType(this.targets());
     const found = await firstValueFrom(
       this.quiet.run(() =>
-        this.users.lookupUsers(query || undefined, 8, undefined, undefined, undefined, true),
+        this.users.lookupUsers(query || undefined, 8, undefined, type, undefined, true),
       ),
     );
     return found.map((u) => ({

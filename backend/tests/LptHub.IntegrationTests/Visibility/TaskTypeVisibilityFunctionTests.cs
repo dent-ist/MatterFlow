@@ -4,6 +4,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
+using static LptHub.IntegrationTests.Tasks.TaskHarness;
 
 namespace LptHub.IntegrationTests.Visibility;
 
@@ -25,7 +26,9 @@ public sealed class TaskTypeVisibilityFunctionTests(SqlServerFixture sql)
             await u.H.ExecuteAsync($"UPDATE dbo.Matter SET IsSensitive = 1, PrimaryManagerId = {u.PlainId} WHERE MatterId = {sensitiveMatter}");
             await u.H.CreateTaskAsync(u.OpenWorld, false, new() { ["matterId"] = sensitiveMatter, ["assignedUserId"] = u.TechId });
             await u.H.CreateTaskAsync(u.SecretWorld, false, new() { ["matterId"] = sensitiveMatter, ["assignedUserId"] = u.ViewerId });
-            await u.H.CreateTaskAsync(u.SecretWorld, false, new() { ["matterId"] = sensitiveMatter, ["assignedUserId"] = u.PlainId });
+            // A person without the role can no longer be given a task of the restricted type through the API (issue #1401): the stranded assignee is made in the database.
+            var stranded = TaskId(await u.H.CreateTaskAsync(u.SecretWorld, false, new() { ["matterId"] = sensitiveMatter }));
+            await u.H.ExecuteAsync($"UPDATE dbo.Task SET AssignedUserId = {u.PlainId}, StatusCode = 'IN_PROGRESS' WHERE TaskId = {stranded}");
             u.H.Factory.InvalidateAll();
 
             var cs = await u.H.Factory.WithDbAsync(db => Task.FromResult(db.Database.GetConnectionString()!));

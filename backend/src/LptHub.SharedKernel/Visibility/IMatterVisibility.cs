@@ -127,6 +127,29 @@ public interface IMatterVisibility
     Task<IReadOnlyList<int>> HiddenTaskTypeIdsAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// True when the caller may change tasks of this type and create tasks of it (Task Type access rule, issue #1401, README section 1.2): the switch is off, the caller is the System Admin, the
+    /// type is open, or the caller may view it and the type's Can Edit list is empty or holds one of the caller's active roles. False for a type the caller may not see. Reads the database
+    /// (a role change is effective on the next request); single-record gate for commands.
+    /// </summary>
+    Task<bool> CanEditTaskTypeAsync(int taskTypeId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The restricted task types the caller may NOT edit (neither hidden nor editable: a non-empty Can Edit list that holds none of the caller's active roles, plus every hidden type): empty while the
+    /// rule is off or for the System Admin. The Create Task type list is "viewable and not in here".
+    /// </summary>
+    Task<IReadOnlyList<int>> NotEditableTaskTypeIdsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The people who may be assigned tasks of this type (<c>TypeAssignable</c>, README section 1.2) as a query of user ids, or null when everybody may (the switch is off, the type is open). On a
+    /// restricted type: the holders of a role in Can Be Assigned; when that list is empty, the people who may see the type (the System Admin among them: no admin exception for a non-empty list).
+    /// The other assignee checks (active, holds <c>Workflow.Execute</c>) stay with the caller.
+    /// </summary>
+    Task<IQueryable<int>?> AssignableUserIdsAsync(int taskTypeId, CancellationToken cancellationToken = default);
+
+    /// <summary>True when <paramref name="userId"/> may be assigned tasks of this type (see <see cref="AssignableUserIdsAsync"/>).</summary>
+    Task<bool> CanBeAssignedAsync(int userId, int taskTypeId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// A short key that changes whenever what the caller may see changes (a matter marked or un-marked, a manager added or removed, a sensitive-matter task assigned to or away
     /// from the caller, the see-all permission, the set of hidden task types): <c>off</c> while both rules are off, <c>all</c> for a see-all caller who is not subject to the type rule. Part of every cache key that holds viewer-dependent numbers
     /// (README section 10). One indexed statement, shared with the request's preparation (<see cref="PreparesViewerAttribute"/>).

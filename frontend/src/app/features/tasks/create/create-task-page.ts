@@ -582,7 +582,8 @@ export class CreateTaskPage implements HasUnsavedChanges {
     this.state.set('loading');
     try {
       const [types, workflows, pods] = await Promise.all([
-        firstValueFrom(this.typesApi.listTaskTypes()),
+        // Only the types the person may create tasks of (Can Edit; the server decides, epic #1397).
+        firstValueFrom(this.typesApi.listTaskTypes(undefined, undefined, true, true)),
         firstValueFrom(this.workflowsApi.listPublishedWorkflows()),
         this.canListPods()
           ? firstValueFrom(this.podsApi.listPods(undefined, undefined, true, 1, 100, 'name')).catch(

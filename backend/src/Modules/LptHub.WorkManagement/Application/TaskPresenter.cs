@@ -124,7 +124,7 @@ public sealed class TaskPresenter(
             formVersionNo,
             formValues,
             workflow.Value,
-            TaskActionRules.Compute(t.Status, matterActive, permissions.Has),
+            TaskActionRules.Compute(t.Status, matterActive, permissions.Has, await access.IsReadOnlyByTypeAsync(t.TaskTypeId, ct)),
             await StatusReasonAsync(t, ct),
             TaskSupport.Encode(t.RowVersion),
             notes.Warnings,

@@ -385,6 +385,15 @@ describe('toastFor', () => {
     expect(toastFor(make(403, { code: 'ACCOUNT_DISABLED' }))).toBeNull();
   });
 
+  it('says in one sentence that a task the person may see cannot be changed, for the 403 of the Task Type edit rule (epic #1397)', () => {
+    expect(toastFor(make(403, { code: 'TASK_TYPE_READ_ONLY', detail: 'x' }))).toEqual({
+      summary: 'You can see this task but not change it.',
+    });
+    expect(toastFor(make(403, { code: 'PERMISSION_DENIED' }))).toEqual({
+      summary: "You don't have permission to do that.",
+    });
+  });
+
   it('suppresses the expected refusal of deleting a used priority or link role (#537)', () => {
     expect(toastFor(make(409, { code: 'IN_USE', detail: 'Tasks use this priority.' }))).toBeNull();
   });

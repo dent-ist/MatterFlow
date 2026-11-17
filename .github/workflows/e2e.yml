@@ -95,6 +95,10 @@ jobs:
           - name: sensitive-matter specs
             id: sensitive
             args: '--project=chromium sensitive-'
+          # The Task Type access specs need their go-live switch on (epic #1397, issue #1401): run-local.sh starts that stack when the arguments name `tasktype-access-`.
+          - name: task type access specs
+            id: tasktype-access
+            args: '--project=chromium tasktype-access-'
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-dotnet

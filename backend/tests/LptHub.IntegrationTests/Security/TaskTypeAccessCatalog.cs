@@ -14,12 +14,22 @@ public enum TypeHandling
     /// <summary>A deliberate exception named by the owner (bare integers in capacity and calendar loads; reports stay as they are). Swept, not asserted.</summary>
     Exception,
 
-    /// <summary>Not covered by issue #1400 on purpose: the Task Type pickers and the assignee lookup belong to issue #1401 (design README section 16).</summary>
-    Deferred,
-
     /// <summary>Carries no task data; the reason says why.</summary>
     NotTaskData,
 }
+
+/// <summary>How a WRITE endpoint relates to the Task Type access rule (issue #1401, design README section 15.10).</summary>
+public enum TypeWriteHandling
+{
+    /// <summary>Changes a task (or creates one): a hidden task is 404 and changes nothing, a task the caller may see but not edit is 403 <c>TASK_TYPE_READ_ONLY</c> and changes nothing; an assignee must be in Can Be Assigned.</summary>
+    EditGated,
+
+    /// <summary>Changes no task; the reason says what it changes.</summary>
+    NotTaskData,
+}
+
+/// <summary>One classified write endpoint: the handling, the inventory row of design README section 15.10, and why.</summary>
+public sealed record TypeWriteEntry(TypeWriteHandling Handling, string Area, string Reason);
 
 /// <summary>One classified endpoint: the handling, the inventory rows it implements (design README section 15), and why.</summary>
 public sealed record TypeEntry(TypeHandling Handling, string Area, string Reason);
@@ -118,8 +128,8 @@ public static class TaskTypeAccessCatalog
         ["GET api/v1/status-labels"] = new(TypeHandling.Port, "O5", "open-task counts over visible tasks"),
         ["GET api/v1/task-queue"] = new(TypeHandling.Port, "Q1", "Task Queue rows, totals, badges and filters from VisibleTasks.Of"),
         ["GET api/v1/task-queue/export"] = new(TypeHandling.Port, "Q2", "CSV and text export of the same rows as the queue"),
-        ["GET api/v1/task-types"] = new(TypeHandling.Deferred, "O4", "open-task counts are over visible tasks; the LIST of types (names) is filtered in issue #1401 (pickers)"),
-        ["GET api/v1/task-types/{id:int}"] = new(TypeHandling.Deferred, "O4", "open-task count is over visible tasks; a hidden type's detail is filtered in issue #1401 (pickers)"),
+        ["GET api/v1/task-types"] = new(TypeHandling.Port, "O4,P", "a person without TaskType.Manage gets only the types they may see (no name, no count of a hidden one); a manager gets all unless visibleOnly; creatableOnly lists the types the caller may create tasks of"),
+        ["GET api/v1/task-types/{id:int}"] = new(TypeHandling.ById, "O4,P", "a type the caller may not see is the same 404 as a missing id, for everybody without TaskType.Manage"),
         ["GET api/v1/tasks"] = new(TypeHandling.Port, "K1", "task list and total through TaskAccess.Visible"),
         ["GET api/v1/tasks/{taskId:long}"] = new(TypeHandling.ById, "K2", "a task by id: through TaskAccess.Visible / CanSeeTaskAsync, so a task of a type the caller may not see is the same 404 as a missing id"),
         ["GET api/v1/tasks/{taskId:long}/activity"] = new(TypeHandling.ById, "K7", "a task by id: through TaskAccess.Visible / CanSeeTaskAsync, so a task of a type the caller may not see is the same 404 as a missing id"),
@@ -130,7 +140,7 @@ public static class TaskTypeAccessCatalog
         ["GET api/v1/tasks/{taskId:long}/workflow"] = new(TypeHandling.ById, "K4", "a task by id: through TaskAccess.Visible / CanSeeTaskAsync, so a task of a type the caller may not see is the same 404 as a missing id"),
         ["GET api/v1/users"] = new(TypeHandling.Port, "O6", "open-task counts over visible tasks"),
         ["GET api/v1/users/counts"] = new(TypeHandling.Port, "O6", "open-task counts over visible tasks"),
-        ["GET api/v1/users/lookup"] = new(TypeHandling.Deferred, "S5", "counts over visible tasks; the TypeAssignable candidate filter is issue #1401"),
+        ["GET api/v1/users/lookup"] = new(TypeHandling.Port, "S5", "counts over visible tasks; with taskTypeId only the people the type's Can Be Assigned list allows (empty list: whoever may see the type), nobody for a hidden type"),
         ["GET api/v1/users/{userId:int}"] = new(TypeHandling.Port, "O6", "open-task count over visible tasks"),
         ["GET api/v1/vendors/{vendorId:int}/matters"] = new(TypeHandling.NotTaskData, "X2", "matters of a vendor: no task data"),
         ["GET api/v1/workflows"] = new(TypeHandling.Port, "O5", "workflow version counts over visible tasks"),
@@ -140,6 +150,91 @@ public static class TaskTypeAccessCatalog
         ["GET api/v1/workflows/{id:int}/versions/{versionId:int}"] = new(TypeHandling.Port, "O5", "workflow version counts over visible tasks"),
         ["POST api/v1/asset-reports/run"] = new(TypeHandling.Port, "M5", "asset report counts through the link reader"),
     }.ToFrozenDictionary(StringComparer.Ordinal);
+
+    /// <summary>
+    /// EVERY write endpoint of <see cref="SensitiveAccessCatalog"/> (<see cref="AccessKind.Write"/>), classified against the edit and assign rules (issue #1401): a new write path cannot ship until somebody decides whether it
+    /// changes a task. <c>TaskTypeWriteGuardTests</c> fails for an unlisted or stale key, and walks every <see cref="TypeWriteHandling.EditGated"/> entry as a person who may see the task but not edit it.
+    /// </summary>
+    public static readonly FrozenDictionary<string, TypeWriteEntry> Writes = new Dictionary<string, TypeWriteEntry>
+    {
+        ["DELETE api/v1/matter-events/{eventId:int}"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["DELETE api/v1/matters/{matterId:int}/team/{memberId:int}"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["DELETE api/v1/matters/{matterId:int}/vendors/{vendorId:int}"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["DELETE api/v1/note-templates/{templateId:int}"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["DELETE api/v1/notes/{noteId:int}"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["DELETE api/v1/production-comments/{commentId:int}"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["DELETE api/v1/productions/{productionId:int}"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["DELETE api/v1/tasks/{taskId:long}/assets/{assetId:int}"] = new(TypeWriteHandling.EditGated, "E9", "asset link: edit gate"),
+        ["DELETE api/v1/tasks/{taskId:long}/comments/{commentId:long}"] = new(TypeWriteHandling.EditGated, "E7", "comment (Edit covers comments): edit gate after the visible-task load"),
+        ["POST api/v1/assets"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["POST api/v1/assets/disposition"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["POST api/v1/assets/{assetId:int}/active"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["POST api/v1/assets/{assetId:int}/assign-number"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["POST api/v1/clients"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["POST api/v1/matters"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["POST api/v1/matters/{matterId:int}/active"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["POST api/v1/matters/{matterId:int}/events"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["POST api/v1/matters/{matterId:int}/tasks/bulk"] = new(TypeWriteHandling.EditGated, "E10", "bulk reassign / re-prioritise: every task is its own command through the edit gate; per row a hidden task is NOT_FOUND, a read-only one TASK_TYPE_READ_ONLY, an assignee outside Can Be Assigned USER_CANNOT_ASSIGN_TYPE"),
+        ["POST api/v1/matters/{matterId:int}/tasks/project"] = new(TypeWriteHandling.EditGated, "E11", "bulk set project: every task is its own command through the edit gate; per row hidden = NOT_FOUND, read-only = TASK_TYPE_READ_ONLY"),
+        ["POST api/v1/matters/{matterId:int}/team"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["POST api/v1/matters/{matterId:int}/vendors"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["POST api/v1/me/notifications/read-all"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["POST api/v1/me/notifications/{id:long}/read"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["POST api/v1/my-matters/activity/seen"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["POST api/v1/note-templates"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["POST api/v1/note-templates/{templateId:int}/duplicate"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["POST api/v1/note-templates/{templateId:int}/use"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["POST api/v1/notes"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["POST api/v1/notes/resolve-references"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["POST api/v1/notes/{noteId:int}/lock"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["POST api/v1/notes/{noteId:int}/unlock"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["POST api/v1/production-specs"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["POST api/v1/production-specs/{specId:int}/duplicate"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["POST api/v1/production-specs/{specId:int}/retire"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["POST api/v1/production-specs/{specId:int}/unretire"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["POST api/v1/productions"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["POST api/v1/productions/{productionId:int}/comments"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["POST api/v1/projects"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["POST api/v1/projects/{projectId:int}/active"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["POST api/v1/tasks"] = new(TypeWriteHandling.EditGated, "E1", "create: the caller must see and edit the type (hidden = NOT_FOUND on taskTypeId, read-only = TASK_TYPE_READ_ONLY on taskTypeId); the assignee must be in Can Be Assigned"),
+        ["POST api/v1/tasks/assign-batch"] = new(TypeWriteHandling.EditGated, "E4", "batch assign: per task the edit gate and the assignee check; hidden = NOT_FOUND per row"),
+        ["POST api/v1/tasks/{taskId:long}/assets"] = new(TypeWriteHandling.EditGated, "E9", "asset link: edit gate"),
+        ["POST api/v1/tasks/{taskId:long}/assignment"] = new(TypeWriteHandling.EditGated, "E3", "assign / unassign: edit gate, and the assignee must be in Can Be Assigned (USER_CANNOT_ASSIGN_TYPE)"),
+        ["POST api/v1/tasks/{taskId:long}/cancel"] = new(TypeWriteHandling.EditGated, "E6", "status change: edit gate"),
+        ["POST api/v1/tasks/{taskId:long}/comments"] = new(TypeWriteHandling.EditGated, "E7", "comment (Edit covers comments): edit gate after the visible-task load"),
+        ["POST api/v1/tasks/{taskId:long}/complete"] = new(TypeWriteHandling.EditGated, "E6", "status change: edit gate"),
+        ["POST api/v1/tasks/{taskId:long}/priority"] = new(TypeWriteHandling.EditGated, "E5", "priority: edit gate"),
+        ["POST api/v1/tasks/{taskId:long}/reopen"] = new(TypeWriteHandling.EditGated, "E6", "status change: edit gate"),
+        ["POST api/v1/tasks/{taskId:long}/status"] = new(TypeWriteHandling.EditGated, "E6", "status change: edit gate"),
+        ["POST api/v1/tasks/{taskId:long}/workflow/steps/{stepInstanceId:int}/complete"] = new(TypeWriteHandling.EditGated, "E6", "status change: edit gate"),
+        ["POST api/v1/tasks/{taskId:long}/workflow/steps/{stepInstanceId:int}/reopen"] = new(TypeWriteHandling.EditGated, "E6", "status change: edit gate"),
+        ["POST api/v1/tasks/{taskId:long}/workflow/steps/{stepInstanceId:int}/skip"] = new(TypeWriteHandling.EditGated, "E8", "workflow step: edit gate"),
+        ["POST api/v1/tasks/{taskId:long}/workflow/steps/{stepInstanceId:int}/start"] = new(TypeWriteHandling.EditGated, "E8", "workflow step: edit gate"),
+        ["POST api/v1/tasks/{taskId:long}/workflow/steps/{stepInstanceId:int}/values"] = new(TypeWriteHandling.EditGated, "E8", "workflow step: edit gate"),
+        ["PUT api/v1/asset-types/{assetTypeId:int}/numbering/counters/{matterId:int}"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["PUT api/v1/assets/{assetId:int}"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["PUT api/v1/assets/{assetId:int}/disposition"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["PUT api/v1/clients/{clientId:int}"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["PUT api/v1/clients/{clientId:int}/number"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["PUT api/v1/matter-events/{eventId:int}"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["PUT api/v1/matters/{matterId:int}"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["PUT api/v1/matters/{matterId:int}/managers"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["PUT api/v1/matters/{matterId:int}/number"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["PUT api/v1/matters/{matterId:int}/team/{memberId:int}"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["PUT api/v1/note-templates/{templateId:int}"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["PUT api/v1/notes/{noteId:int}"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["PUT api/v1/notes/{noteId:int}/pinned"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["PUT api/v1/production-comments/{commentId:int}"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["PUT api/v1/production-specs/{specId:int}"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["PUT api/v1/productions/{productionId:int}"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["PUT api/v1/projects/{projectId:int}"] = new(TypeWriteHandling.NotTaskData, "-", "writes no task: matter, asset, project, note, production or notification data"),
+        ["PUT api/v1/tasks/{taskId:long}"] = new(TypeWriteHandling.EditGated, "E2", "edit fields: TaskTransactions.LockForEditAsync"),
+        ["PUT api/v1/tasks/{taskId:long}/assets/{assetId:int}"] = new(TypeWriteHandling.EditGated, "E9", "asset link: edit gate"),
+        ["PUT api/v1/tasks/{taskId:long}/comments/{commentId:long}"] = new(TypeWriteHandling.EditGated, "E7", "comment (Edit covers comments): edit gate after the visible-task load"),
+    }.ToFrozenDictionary(StringComparer.Ordinal);
+
+    /// <summary>The write endpoints the guard requires an entry for: every <see cref="AccessKind.Write"/> endpoint of the sensitive catalogue.</summary>
+    public static IEnumerable<string> RequiredWrites() => SensitiveAccessCatalog.All.Where(kv => kv.Value.Kind == AccessKind.Write).Select(kv => kv.Key);
 
     /// <summary>The endpoints of <see cref="SensitiveAccessCatalog"/> the guard requires an entry for: lists, resources by id and aggregates (not neutral, not writes, not Reports).</summary>
     public static IEnumerable<string> Required() =>
