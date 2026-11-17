@@ -92,7 +92,6 @@ describe('mf-record-skeleton (#247, #615)', () => {
       'Assets (--)',
       'Productions',
       'Notes',
-      'Activities',
     ]);
     expect(el.querySelector('[role=tab][aria-selected=true]')?.textContent).toContain('Projects');
   });
@@ -170,7 +169,6 @@ describe('mf-record-skeleton (#247, #615)', () => {
       { key: 'assets', label: 'Assets', icon: 'pi-database', count: 6 },
       { key: 'productions', label: 'Productions', icon: 'pi-send' },
       { key: 'notes', label: 'Notes', icon: 'pi-file-edit' },
-      { key: 'activities', label: 'Activities', icon: 'pi-history' },
     ]);
     expect(recordTabLabel('matter', 'tasks')).toBe('Tasks');
     expect(recordTabLabel('client', 'nonsense')).toBe('Overview');

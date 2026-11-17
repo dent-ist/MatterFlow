@@ -14,6 +14,7 @@ import { FormDialog } from './form-dialog';
       [dirty]="dirty()"
       [busy]="busy()"
       [error]="error()"
+      [dismissOnScrim]="scrim()"
       [(visible)]="open"
       (submitted)="log.push('save')"
     >
@@ -25,6 +26,7 @@ class Host {
   readonly dirty = signal(false);
   readonly busy = signal(false);
   readonly error = signal('');
+  readonly scrim = signal(false);
   readonly log: string[] = [];
 }
 
@@ -58,6 +60,26 @@ describe('FormDialog (MD-22, #1026)', () => {
   it('closes at once when nothing changed', async () => {
     const f = await start();
     q('[data-panel-cancel] button')!.click();
+    f.detectChanges();
+    expect(f.componentInstance.open()).toBe(false);
+  });
+
+  it('closes on a click on the scrim only when dismissOnScrim is set and nothing changed (#1404)', async () => {
+    const f = await start();
+    const mask = () => q('.p-dialog-mask')!;
+    mask().click();
+    f.detectChanges();
+    expect(f.componentInstance.open()).toBe(true); // off by default
+    f.componentInstance.scrim.set(true);
+    f.componentInstance.dirty.set(true);
+    f.detectChanges();
+    mask().click();
+    f.detectChanges();
+    expect(f.componentInstance.open()).toBe(true); // asks first
+    expect(q('[data-panel-guard]')).not.toBeNull();
+    f.componentInstance.dirty.set(false);
+    f.detectChanges();
+    mask().click();
     f.detectChanges();
     expect(f.componentInstance.open()).toBe(false);
   });

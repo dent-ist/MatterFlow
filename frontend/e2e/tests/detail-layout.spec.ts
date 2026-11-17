@@ -100,7 +100,7 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     await expect(button).toBeFocused();
   });
 
-  test('Old ?tab= links: activity opens the Activities full view, details shows the Summary (the one page)', async ({
+  test('Old ?tab= links: activity opens the Activities dialog over the one page, details shows the Summary (the one page)', async ({
     page,
     seed,
   }) => {
@@ -113,14 +113,14 @@ test.describe('Detail pages: main area, Details panel and Activity drawer', () =
     await expect(page.getByRole('dialog')).toHaveCount(0);
 
     await page.goto(`/matters/${world.matter.matterId}?tab=activity`);
-    await expect(page.getByRole('tab', { name: 'Activities' })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
-    await expect(page.locator('[data-activities-tab]')).toBeVisible();
+    await expect(page.locator('[data-matter-one-page]')).toBeVisible();
+    await expect(page.getByRole('dialog', { name: /Activities/ })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(page).not.toHaveURL(/tab=/);
   });
 
-  test('Matter: one page with seven jump links; Summary has the facts and Edit, More actions has Set inactive; each full view has the seven tabs', async ({
+  test('Matter: one page with six jump links; Summary has the facts and Edit, More actions has Set inactive; each full view has the six tabs', async ({
     page,
     seed,
   }) => {

@@ -26,7 +26,6 @@ const TABS: TabCase[] = [
   { key: 'assets', search: 'Search assets', primary: 'New Asset' },
   { key: 'productions', search: 'Search productions', primary: 'New Production' },
   { key: 'notes', search: 'Search title and text', primary: 'New Note' },
-  { key: 'activities', search: null, primary: null },
 ];
 
 async function shot(page: Page, name: string): Promise<void> {
@@ -98,17 +97,18 @@ test.describe('Matter detail tab controls (LC-08)', () => {
     ).toBeLessThanOrEqual(8);
   });
 
-  test('Activities has the Kind dropdown above the frame and no heading inside it; Summary has no list controls', async ({
+  test('The Activities dialog has the Kind dropdown above the frame; Summary has no list controls', async ({
     page,
   }) => {
     await page.setViewportSize(DESKTOP);
     await page.goto(`/matters/${matterId}?tab=activities`);
-    const kind = page.getByRole('button', { name: /^Kind/ });
+    const dialog = page.getByRole('dialog', { name: /Activities/ });
+    await expect(dialog).toBeVisible();
+    const kind = dialog.getByRole('button', { name: /^Kind/ });
     await expect(kind).toBeVisible();
-    const frame = await box(page.getByRole('region', { name: 'Matter activities, scrollable' }));
+    const frame = await box(dialog.getByRole('region', { name: 'Matter activities, scrollable' }));
     const k = await box(kind);
     expect(k.y + k.height, 'the Kind dropdown is above the frame').toBeLessThanOrEqual(frame.y + 2);
-    await expect(page.getByRole('heading', { name: 'Activities', level: 2 })).toBeAttached();
     await page.goto(`/matters/${matterId}?tab=summary`);
     await expect(
       page.getByPlaceholder(/^Search (tasks|projects|assets|productions|specs)/),
