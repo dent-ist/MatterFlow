@@ -72,6 +72,7 @@ const WIDTHS: ColumnWidthMap = Object.fromEntries(
         origin="matter"
         rowList="matter-tasks"
         density="compact"
+        [scrollStopWhenScrolling]="true"
         [state]="state()"
         emptyText="No open tasks."
         [colWidths]="widths"

@@ -13,6 +13,12 @@
     var(--mf-surface);
 }
 
+/* The compact table of a card (a Matter section, D-03c) is as tall as its rows and never scrolls up and down: it must not trap the wheel or the keys (no overscroll-behavior: contain), they go on to the page. */
+.wt-wrap.wt-wrap--flow {
+  overflow-y: hidden;
+  overscroll-behavior: auto;
+}
+
 /* Shown only while the table really is wider than the screen (measured in the component). */
 .wt-hint {
   display: none;

@@ -24,7 +24,12 @@ import { ScrollArea } from './fixed-page';
   template: `
     <div class="head"><ng-content select="[frameHead]" /></div>
     <div class="status"><ng-content select="[frameStatus]" /></div>
-    <div class="scroll" [mfScrollArea]="scrollLabel()" [resetKey]="resetKey()">
+    <div
+      class="scroll"
+      [mfScrollArea]="scrollLabel()"
+      [whileScrolling]="inline()"
+      [resetKey]="resetKey()"
+    >
       <ng-content />
     </div>
     <div class="foot"><ng-content select="[frameFoot]" /></div>
@@ -144,10 +149,12 @@ import { ScrollArea } from './fixed-page';
       overflow: visible;
       --mf-grid-row-h: var(--mf-grid-row-h-compact);
     }
+    /* A card's grid has nothing to scroll up and down: the wheel, the trackpad and the keys go on to the page (no overscroll-behavior: contain, #1396 scroll fix). Only a table wider than the card scrolls sideways. */
     :host(.gf--inline) .scroll {
       flex: none;
       overflow-x: auto;
       overflow-y: hidden;
+      overscroll-behavior: auto;
     }
   `,
 })

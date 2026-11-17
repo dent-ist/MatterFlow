@@ -34,6 +34,24 @@ import { GridFrame } from './grid-frame';
 })
 class Host {}
 
+@Component({
+  selector: 'mf-test-inline-grid',
+  imports: [GridFrame],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <mf-grid-frame scrollLabel="Test list" [inline]="true">
+      <table class="tt">
+        <tbody>
+          <tr>
+            <td>One</td>
+          </tr>
+        </tbody>
+      </table>
+    </mf-grid-frame>
+  `,
+})
+class InlineHost {}
+
 /**
  * The two header bands of the shared grid (#1259): every heading cell sticks at the top, every filter cell right under it, the pinned first
  * column of both bands one layer above the pinned row cells, so nothing but the rows scrolls. (The browser check of the real lists, including
@@ -78,5 +96,19 @@ describe('GridFrame header bands', () => {
     const rowLayer = Number(getComputedStyle(row).zIndex);
     expect(Number(getComputedStyle(head).zIndex)).toBeGreaterThan(rowLayer);
     expect(Number(getComputedStyle(filter).zIndex)).toBeGreaterThan(rowLayer);
+  });
+});
+
+/** A grid inside a card (a Matter section, D-03a/c) has nothing to scroll up and down: it must pass the wheel and the keys on to the page. */
+describe('GridFrame inline', () => {
+  it('does not stop the scroll chain and is no empty Tab stop', () => {
+    const fixture = TestBed.createComponent(InlineHost);
+    fixture.detectChanges();
+    document.body.appendChild(fixture.nativeElement);
+    const scroll = fixture.nativeElement.querySelector('.scroll') as HTMLElement;
+    const style = getComputedStyle(scroll);
+    expect(style.overscrollBehaviorY).toBe('auto');
+    expect(style.overscrollBehaviorX).toBe('auto');
+    expect(scroll.hasAttribute('tabindex')).toBe(false);
   });
 });

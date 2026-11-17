@@ -132,6 +132,7 @@ const LONG_PRESS_MS = 500;
       [whileScrolling]="scrollStopWhenScrolling()"
       [resetKey]="resetKey()"
       [class.wt-dim]="loading() && rows().length > 0"
+      [class.wt-wrap--flow]="density() === 'compact'"
     >
       @if (cardMode()) {
         <mf-task-card-list
