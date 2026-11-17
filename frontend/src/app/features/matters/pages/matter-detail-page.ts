@@ -49,6 +49,7 @@ import {
   visibleMatterTabs,
 } from '../ui/matter-tabs';
 import { JumpLink, JumpStrip } from '../../../shared/ui/jump-strip';
+import { pickSection } from './section-spy';
 import { SECTION_ROWS, SectionCard, SectionStats } from '../../../shared/ui/section-card';
 import { MatterTasksSection } from '../ui/matter-tasks-section';
 import { MatterNotesSection } from '../ui/matter-notes-section';
@@ -68,6 +69,11 @@ import { BusinessNumberPipe } from '../../../shared/pipes/matter-ref.pipe';
 
 /** The API's largest page (`PageRequest.MaxPageSize`). */
 const PROJECTS_PAGE_MAX = 100;
+/** What a person does to scroll by hand; it releases the link a click chose (the keys are the browser's own, none is new). */
+/** Pixels the page may move on its own (rows arriving) before a held link is released. */
+const PIN_SLACK = 24;
+const MANUAL_EVENTS = ['wheel', 'touchmove', 'pointerdown', 'keydown'] as const;
+const SCROLL_KEYS = new Set(['PageDown', 'PageUp', 'Home', 'End', 'ArrowDown', 'ArrowUp', ' ']);
 
 type Tab = MatterTabKey;
 
@@ -719,6 +725,11 @@ export class MatterDetailPage {
   private io: IntersectionObserver | null = null;
   /** True while a jump scrolls: the sections it passes are not loaded. */
   private jumping = false;
+  /** True from a click on a jump link until the person scrolls by hand: the chosen section stays current, even one the page is too short to scroll up to the line. */
+  private pinned = false;
+  /** Where the page stopped after the jump (null while it still scrolls): a scroll that leaves this place releases the held link, whoever scrolled. */
+  private pinY: number | null = null;
+  private pageHeight = 0;
   private frame = 0;
   private readonly onScroll = (): void => {
     if (this.frame) return;
@@ -1002,6 +1013,8 @@ export class MatterDetailPage {
     this.spyKey.set('summary');
     window.addEventListener('scroll', this.onScroll, { passive: true });
     window.addEventListener('resize', this.onScroll);
+    for (const type of MANUAL_EVENTS)
+      window.addEventListener(type, this.onManual, { passive: true });
     this.observe();
     if (typeof ResizeObserver !== 'undefined') {
       this.heights.clear();
@@ -1018,11 +1031,13 @@ export class MatterDetailPage {
     this.sizeWatch = null;
     window.removeEventListener('scroll', this.onScroll);
     window.removeEventListener('resize', this.onScroll);
+    for (const type of MANUAL_EVENTS) window.removeEventListener(type, this.onManual);
     this.io?.disconnect();
     this.io = null;
     if (this.frame) cancelAnimationFrame(this.frame);
     this.frame = 0;
     this.jumping = false;
+    this.pinned = false;
   }
 
   /** A section loads when it is within about 300 px below the window (the rows it will have are already drawn as a placeholder, so nothing moves when they arrive). */
@@ -1075,6 +1090,7 @@ export class MatterDetailPage {
       const keys: string[] = this.pageSections().map((t) => t.key);
       if (key && keys.indexOf(key) < keys.indexOf(this.spyKey())) {
         window.scrollBy(0, height - before);
+        if (this.pinY !== null) this.pinY += height - before;
       }
     }
   };
@@ -1089,21 +1105,39 @@ export class MatterDetailPage {
     const top = parseFloat(getComputedStyle(strip).top) || 0;
     this.stuck.set(window.scrollY > 0 && box.top <= top + 1);
     if (this.jumping) return;
+    // A chosen link stays current until the person scrolls by hand (the click itself never moves the highlight on).
+    // A page that grew or shrank (rows arrived) moves the window by itself: that is not the person scrolling, the held place moves with it.
+    const pageHeight = document.documentElement.scrollHeight;
+    const reflowed = pageHeight !== this.pageHeight;
+    this.pageHeight = pageHeight;
+    if (this.pinned && this.pinY !== null) {
+      if (reflowed) this.pinY = window.scrollY;
+      else if (Math.abs(window.scrollY - this.pinY) > PIN_SLACK) this.pinned = false;
+    }
+    if (this.pinned) return;
     const keys = this.pageSections().map((t) => t.key);
-    let current = keys[0] ?? 'summary';
-    // At the very top the first section is the one in view, whatever the sections below measure.
-    for (const key of window.scrollY > 0 ? keys : []) {
-      const el = document.getElementById('section-' + key);
-      if (el && el.getBoundingClientRect().top <= box.bottom + 24) current = key;
-    }
-    if (
-      window.scrollY > 0 &&
-      window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2
-    ) {
-      current = keys[keys.length - 1] ?? current;
-    }
-    this.spyKey.set(current);
+    const els = keys.map((k) => document.getElementById('section-' + k));
+    const present = keys.filter((_, i) => els[i]);
+    const index = pickSection({
+      docTops: els
+        .filter((e): e is HTMLElement => !!e)
+        .map((e) => e.getBoundingClientRect().top + window.scrollY),
+      line: box.bottom + 24,
+      scrollY: window.scrollY,
+      maxScroll: document.documentElement.scrollHeight - window.innerHeight,
+    });
+    this.spyKey.set(present[index] ?? keys[0] ?? 'summary');
   }
+
+  /** The person scrolls by hand (wheel, touch, scroll bar, keys): the link a click chose is no longer held. */
+  private readonly onManual = (event: Event): void => {
+    if (event instanceof KeyboardEvent && !SCROLL_KEYS.has(event.key)) return;
+    // A press only counts on the scroll bar (the page itself), not on a button or a link.
+    if (event.type === 'pointerdown' && event.target !== document.documentElement) return;
+    if (!this.pinned) return;
+    this.pinned = false;
+    this.onScroll();
+  };
 
   /**
    * A jump link was chosen: scroll to the section (smooth, instant with reduced motion), load ONLY that section (the ones the scroll passes are not loaded; the ones that are
@@ -1113,6 +1147,8 @@ export class MatterDetailPage {
     const el = document.getElementById('section-' + key);
     if (!el) return;
     this.jumping = true;
+    this.pinned = true;
+    this.pinY = null;
     this.spyKey.set(key);
     if (key !== 'summary') this.activate(key);
     const reduced =
@@ -1129,6 +1165,7 @@ export class MatterDetailPage {
         return;
       }
       this.jumping = false;
+      this.pinY = window.scrollY;
       document.getElementById(`section-${key}-h`)?.focus({ preventScroll: true });
       this.updateSpy();
       this.observe();
