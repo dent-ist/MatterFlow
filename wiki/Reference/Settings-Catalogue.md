@@ -30,6 +30,7 @@ These are in `appsettings` and take effect on restart; full list in [Configurati
 | `Dashboard:Capacity:SlotsPerPerson` | 3 | Slots per person in the capacity battery |
 | `Dashboard:Workload:LightMax`, `NormalMax` | 3, 8 | Load levels of the Users tab |
 | `Features:SensitiveMatterAccess` | `false` | Go-live switch of the Sensitive matter rule |
+| `Features:TaskTypeAccess` | `false` | Go-live switch of the Task Type access rule (role lists per Task Type). Off: the lists are stored but nothing is enforced |
 | `Tasks:OnHoldReasonRequired` | `false` | Whether an on-hold reason is required |
 | `Notifications:Scheduler:*` | see reference | Notification scheduler |
 
@@ -45,4 +46,4 @@ These are in `appsettings` and take effect on restart; full list in [Configurati
 - [Configuration Reference](../Operations/Configuration-Reference.md)
 - [Availability Capacity and Calendar](../Architecture/Availability-Capacity-and-Calendar.md)
 
-Last verified against commit c4bfdaf.
+Last verified against commit e732648.

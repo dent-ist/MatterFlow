@@ -9,7 +9,8 @@ namespace LptHub.Identity.Api;
 /// <summary>
 /// Roles, role-permission assignment and the permission catalog (UX S12). Reading roles and the catalog needs <c>User.View</c> (the user
 /// drawer lists roles) or <c>Role.Manage</c> (each administration permission is enough to read what it manages, so the Roles tab works for
-/// a person who holds only that one; there is no <c>Role.View</c>); creating, editing and deleting needs <c>Role.Manage</c>.
+/// a person who holds only that one; there is no <c>Role.View</c>); creating, editing and deleting needs <c>Role.Manage</c>. The role list is
+/// also readable with <c>TaskType.Manage</c>: the Task Types screen picks roles for the access lists of a Task Type (epic #1397).
 /// </summary>
 [ApiController]
 [Route("api/v1")]
@@ -19,9 +20,12 @@ public class RolesController(RoleAdministration roles) : ControllerBase
     /// <summary>Who may read roles and the catalog: the users screens (<c>User.View</c>) and the role editor (<c>Role.Manage</c>).</summary>
     internal const string ReadAccess = Permissions.User.View + "|" + Permissions.Role.Manage;
 
+    /// <summary>Who may read the roles: <see cref="ReadAccess"/> and the Task Types administration (<c>TaskType.Manage</c>, the role pick list of the access lists).</summary>
+    internal const string RoleReadAccess = ReadAccess + "|" + Permissions.TaskType.Manage;
+
     /// <summary>Lists roles with member and permission counts (System Admin first).</summary>
     [HttpGet("roles", Name = "ListRoles")]
-    [RequirePermission(ReadAccess)]
+    [RequirePermission(RoleReadAccess)]
     [ProducesResponseType<RoleSummaryDto[]>(StatusCodes.Status200OK, "application/json")]
     public async Task<ActionResult<IReadOnlyList<RoleSummaryDto>>> List(CancellationToken cancellationToken) =>
         Ok(await roles.ListAsync(cancellationToken));

@@ -62,6 +62,7 @@ public class AuditScopeRulesTests
         ["NoteTagService.cs"] = 3, // NOTE_TAG_CREATED/DELETED and the tag field changes (epic #1001): firm-wide tag names and colours, administration data without a matter
         ["PriorityService.cs"] = 1,
         ["TaskTypeService.cs"] = 1,
+        ["TaskTypeAccessService.cs"] = 2, // TASK_TYPE_ACCESS_CHANGED, TASK_TYPE_RESTRICTED/UNRESTRICTED (epic #1397): role names and ids of a firm-wide type's access lists; no matter or task data
         ["UserResolver.cs"] = 3,
         ["RoleAdministration.cs"] = 2,
         ["UserAdministration.cs"] = 1,

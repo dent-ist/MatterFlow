@@ -30,6 +30,18 @@ internal sealed class TaskTypeWorkflowEligibilityConfiguration : IEntityTypeConf
     }
 }
 
+internal sealed class TaskTypeRoleAccessConfiguration : IEntityTypeConfiguration<TaskTypeRoleAccess>
+{
+    public void Configure(EntityTypeBuilder<TaskTypeRoleAccess> b)
+    {
+        b.ToTable("TaskTypeRoleAccess");
+        b.HasKey(x => new { x.TaskTypeId, x.RoleId });
+        b.Property(x => x.TaskTypeId).ValueGeneratedNever();
+        b.Property(x => x.RoleId).ValueGeneratedNever();
+        b.HasOne<TaskType>().WithMany().HasForeignKey(x => x.TaskTypeId).HasConstraintName("FK_TaskTypeRoleAccess_TaskType");
+    }
+}
+
 internal static class TaskTypeConstraints
 {
     public const string Name = "UQ_TaskType_Name";

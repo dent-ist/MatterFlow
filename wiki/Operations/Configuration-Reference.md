@@ -4,7 +4,7 @@
 
 **What this page is for.** Every configuration key the application reads (`appsettings*.json`, environment variables, command line), with defaults and the code that reads it. Environment variables use a double underscore for a colon (`Auth__Dev__DefaultUser`). Production values live in `appsettings.Production.json` (template: `deploy/appsettings.Production.template.json`; runbook section 2). **Application settings stored in the database** (changed in Administration > Settings) are different: see [Settings Catalogue](../Reference/Settings-Catalogue.md).
 
-Shipped defaults: `backend/src/LptHub.Api/appsettings.json` has only logging, `AllowedHosts`, `Features:SensitiveMatterAccess=false` and `Firm:TimeZoneId`. `appsettings.Development.json` adds the report connection string and the `Dev:Users` list (`KE\user1` to `KE\user10`).
+Shipped defaults: `backend/src/LptHub.Api/appsettings.json` has only logging, `AllowedHosts`, `Features:SensitiveMatterAccess=false`, `Features:TaskTypeAccess=false` and `Firm:TimeZoneId`. `appsettings.Development.json` adds the report connection string and the `Dev:Users` list (`KE\user1` to `KE\user10`).
 
 ## Connection and hosting
 
@@ -53,6 +53,7 @@ Shipped defaults: `backend/src/LptHub.Api/appsettings.json` has only logging, `A
 |---|---|---|---|
 | `Firm:TimeZoneId` | `America/New_York` | Time zone used when the browser sends no valid `X-Time-Zone` | `UserTimeZoneAccessor` |
 | `Features:SensitiveMatterAccess` | `false` | Go-live switch of the Sensitive matter rule; read once at start | `SensitiveMatterAccessOptions` (SharedKernel) |
+| `Features:TaskTypeAccess` | `false` | Go-live switch of the Task Type access rule (epic #1397); read once at start. Off: the role lists of a Task Type can be edited and are stored, nothing is enforced (the admin API reports `enforced: false`). The filtering itself arrives with issues #1400 and #1401 | `TaskTypeAccessOptions` (SharedKernel) |
 | `Tasks:OnHoldReasonRequired` | `false` | Require an on-hold reason when putting a task On Hold | `TaskLifecycleService` |
 | `Dashboard:CacheSeconds` | `15` | Per user dashboard cache; `0` off | `DashboardCache.cs` |
 | `Dashboard:Workload:LightMax`, `NormalMax` | `3`, `8` | Load levels of the Users tab | same |
@@ -116,4 +117,4 @@ The Angular app reads `frontend/src/environments/*` (`environment.authProvider`:
 - [Settings Catalogue](../Reference/Settings-Catalogue.md)
 - [How to Add a Setting](../Backend/How-to-Add-a-Setting.md)
 
-Last verified against commit 6c2e523.
+Last verified against commit e732648.

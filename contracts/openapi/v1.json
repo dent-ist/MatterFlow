@@ -4118,6 +4118,137 @@
         }
       }
     },
+    "/api/v1/task-types/{id}/access": {
+      "get": {
+        "tags": [
+          "TaskTypes"
+        ],
+        "operationId": "GetTaskTypeAccess",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskTypeAccessView"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "TaskTypes"
+        ],
+        "operationId": "ReplaceTaskTypeAccess",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplaceTaskTypeAccessRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplaceTaskTypeAccessRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplaceTaskTypeAccessRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskTypeAccessView"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/task-types/{id}/access/preview": {
+      "post": {
+        "tags": [
+          "TaskTypes"
+        ],
+        "operationId": "PreviewTaskTypeAccess",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewTaskTypeAccessRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewTaskTypeAccessRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewTaskTypeAccessRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskTypeAccessPreview"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/me/availability": {
       "get": {
         "tags": [
@@ -21766,6 +21897,9 @@
               "PUBLISH_VALIDATION_FAILED",
               "LAST_ADMIN",
               "ROLE_IN_USE",
+              "ROLE_USED_BY_TASK_TYPE",
+              "ROLE_NOT_FOUND",
+              "DUPLICATE_ROLE",
               "EMAIL_PARSE_FAILED",
               "PAYLOAD_TOO_LARGE",
               "HOLD_COMMENT_REQUIRED",
@@ -35220,6 +35354,37 @@
           }
         }
       },
+      "PreviewTaskTypeAccessRequest": {
+        "required": [
+          "canView",
+          "canEdit",
+          "canAssign"
+        ],
+        "type": "object",
+        "properties": {
+          "canView": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "canEdit": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "canAssign": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        }
+      },
       "PriorityView": {
         "required": [
           "id",
@@ -36226,6 +36391,41 @@
               "type": "integer",
               "format": "int32"
             }
+          }
+        }
+      },
+      "ReplaceTaskTypeAccessRequest": {
+        "required": [
+          "canView",
+          "canEdit",
+          "canAssign",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "canView": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "canEdit": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "canAssign": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "rowVersion": {
+            "type": "string"
           }
         }
       },
@@ -41092,6 +41292,155 @@
           }
         }
       },
+      "TaskTypeAccessLists": {
+        "required": [
+          "isRestricted",
+          "canView",
+          "canEdit",
+          "canAssign"
+        ],
+        "type": "object",
+        "properties": {
+          "isRestricted": {
+            "type": "boolean"
+          },
+          "canView": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "canEdit": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "canAssign": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        }
+      },
+      "TaskTypeAccessPreview": {
+        "required": [
+          "isRestricted",
+          "becomesOpenToEveryone",
+          "openTasksBecomingHidden",
+          "peopleLosingView",
+          "openTasksAssignedToPeopleLosingView",
+          "peopleLosingEdit",
+          "callerLosesView"
+        ],
+        "type": "object",
+        "properties": {
+          "isRestricted": {
+            "type": "boolean"
+          },
+          "becomesOpenToEveryone": {
+            "type": "boolean"
+          },
+          "openTasksBecomingHidden": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "peopleLosingView": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "openTasksAssignedToPeopleLosingView": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "peopleLosingEdit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "callerLosesView": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TaskTypeAccessRole": {
+        "required": [
+          "roleId",
+          "name",
+          "isActive"
+        ],
+        "type": "object",
+        "properties": {
+          "roleId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TaskTypeAccessView": {
+        "required": [
+          "taskTypeId",
+          "isRestricted",
+          "canView",
+          "canEdit",
+          "canAssign",
+          "roles",
+          "enforced",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "taskTypeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isRestricted": {
+            "type": "boolean"
+          },
+          "canView": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "canEdit": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "canAssign": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaskTypeAccessRole"
+            }
+          },
+          "enforced": {
+            "type": "boolean"
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
       "TaskTypeRef": {
         "required": [
           "taskTypeId",
@@ -41238,6 +41587,16 @@
               "integer"
             ],
             "format": "int32"
+          },
+          "access": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/TaskTypeAccessLists"
+              }
+            ]
           }
         }
       },
