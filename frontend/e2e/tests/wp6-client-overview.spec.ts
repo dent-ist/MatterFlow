@@ -393,8 +393,8 @@ test.describe('WP6: strip numbers equal the Task Queue totals behind each link, 
     const open = Number(await first.locator('td').nth(2).textContent());
     await first.getByRole('link').click();
     await expect(page).toHaveURL(new RegExp(`/matters/${data.matters[0].matterId}`));
-    await page.getByRole('tab', { name: /Tasks/ }).click();
-    await expect(page.getByRole('tab', { name: /Tasks/ })).toContainText(`(${open})`);
+    // The Matter page is one page since #1396: the jump link Tasks carries the same number as the old tab.
+    await expect(page.locator('[data-jump="tasks"]')).toContainText(`(${open})`);
   });
 
   test('no Task.View: no strip, no numbers, matters listed with reference, name and status; never an error', async ({

@@ -45,7 +45,8 @@ test.describe('Fixed-header screens at 1366x768', () => {
     test.setTimeout(300_000);
     bulk = await seedBulk(admin, seed, {
       tasks: 64,
-      clients: 30,
+      // More than one page of the Clients list (50), so Next is enabled whatever else the database holds.
+      clients: 60,
       matters: 30,
       projects: 0,
       assets: 0,

@@ -288,7 +288,8 @@ const emptySpec = (): SpecDraft => ({
     }
   `,
   template: `
-    <section class="pt" aria-label="Productions" data-productions-tab>
+    <!-- In the compact section the card is already the region named Productions (two regions of one name fail axe landmark-unique). -->
+    <section class="pt" [attr.aria-label]="compact() ? null : 'Productions'" data-productions-tab>
       @if (!compact()) {
         <div class="pt__bar">
           <mf-search-box
