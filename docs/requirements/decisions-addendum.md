@@ -778,7 +778,7 @@ The PM review of the battery found it showed "After hours" in the evening and at
 
 ## AW. Task Type access by role (decided 2026-11-16 by the owner, epic #1397, issues #1398 to #1403; design `docs/ux/task-type-access/README.md`)
 
-**Status (2026-11-17): designed, not built.** Open questions Q1 to Q5 of the design are with the owner.
+**Status (2026-11-17): designed, not built.** The open questions were answered by the owner on 2026-11-17 (items 9 to 13).
 
 1. **Three role lists per Task Type:** Can View, Can Edit, Can Be Assigned. A person qualifies when any of their active app roles is in the list (roles are `dbo.Role`, not the HR Title). Edit and Assign imply View.
 2. **No roles in Can View = open to everyone.** A type is restricted only when Can View has roles (`TaskType.IsRestricted`). Existing types keep working as today.
@@ -786,5 +786,10 @@ The PM review of the battery found it showed "After hours" in the evening and at
 4. **No assignee exception, no special access for project managers.** System Admin sees everything (only System Admin; `Matter.ViewSensitive` does not lift this rule).
 5. **Additional rule:** on top of `Task.View` and the sensitive-matter rule. Edit covers everything that changes the task, including comments and creating a task of the type. Can Be Assigned limits who the pickers offer and who the server accepts as assignee; who may perform the assigning stays `Task.Assign`.
 6. **One rule in one place:** the existing visibility port (`IMatterVisibility`, `VisibleTasks`, `WhereTaskVisibleBy`, `dbo.fnTaskVisible`). Go-live switch `Features:TaskTypeAccess`, default off. Guards by test (endpoint catalogue, persona walk, mutation tests, identity-with-no-restriction proof).
-7. **Reports respect the rule** is the target; the mechanism is an open question (design section 14, Q3).
+7. **Reports (revised 2026-11-17):** stay as they are for now. Report roles have their own permissions; no report row filter in this epic and no new issue. Accepted limitation at go-live (design section 14).
 8. Not deployed, so no backfill of old rows. No new or changed keyboard shortcuts (#420).
+9. **Empty Can Edit or Can Be Assigned list = no extra limit:** anyone who can view may edit, and may be assigned (if they hold `Workflow.Execute`).
+10. **System Admin** sees everything but, on a restricted type, is assignable only through Can Be Assigned (or when that list is empty). No admin exception.
+11. **Capacity and calendar** keep counting hidden-type tasks as a bare integer, as for sensitive matters (item AS 12).
+12. **Deleting a role named in any Task Type access list is blocked:** "This role is used by N Task Types. Remove it there first." (naming the Task Types; implemented in #1399).
+13. Comments need Edit; type and matter of a task stay immutable.

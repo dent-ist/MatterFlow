@@ -1,6 +1,6 @@
 # Task Type access by role: design and read-path inventory
 
-Epic #1397, design issue #1398. Status: **design only** (written 2026-11-17 on `origin/dev` at `11fae2b4`; no code, schema, OpenAPI or permission change comes with this note). Decisions: `docs/requirements/decisions-addendum.md` section AW. The model is a sibling of the sensitive-matter rule (`docs/ux/sensitive-matters/README.md`, architecture section 6.8) and reuses its port, its 404 mode, its guards and its go-live pattern. Code facts below were read from `dev` on the date above; file:line references drift, so the first work package that touches a file re-greps it (the endpoint catalogue test is the real authority, section 12).
+Epic #1397, design issue #1398. Status: **design only, owner decisions of 2026-11-17 recorded in section 17** (written 2026-11-17 on `origin/dev` at `11fae2b4`; no code, schema, OpenAPI or permission change comes with this note). Decisions: `docs/requirements/decisions-addendum.md` section AW. The model is a sibling of the sensitive-matter rule (`docs/ux/sensitive-matters/README.md`, architecture section 6.8) and reuses its port, its 404 mode, its guards and its go-live pattern. Code facts below were read from `dev` on the date above; file:line references drift, so the first work package that touches a file re-greps it (the endpoint catalogue test is the real authority, section 12).
 
 The inventory (section 15) is the work list for #1399 to #1403.
 
@@ -19,12 +19,12 @@ Each Task Type has three role lists. A role is an app permission role (`dbo.Role
 - The type rule is **additional**. A task is visible only when the existing rules pass (`Task.View`, the sensitive-matter rule of epic #788) **and** the type rule passes. Edit and assign actions keep their normal permission (`Task.Edit`, `Task.Assign`, `Workflow.Execute`) and also need the type rule.
 - **Hidden means hidden.** A hidden task is absent from every list, count, search, notification, export, audit view, report and picker, and a direct address gets the same 404 as a missing id (the mode of architecture 6.8).
 - **No exception for the assignee** (unlike sensitive matters, where the assignee sees their own task). **No special access for project managers.** **System Admin sees everything** (and only System Admin: `Matter.ViewSensitive` does not lift the type rule).
-- Reports respect the rule (decision of the epic; the mechanism is section 14 and open question Q3).
+- Reports respect the rule (target of the epic; at go-live reports stay as they are, an accepted limitation, section 14).
 - System actions may create tasks of a restricted type (section 9.5).
 - Counts come from the visible set, never from "all minus hidden".
 - Go-live switch `Features:TaskTypeAccess`, default `false`; off means behaviour exactly as today. `TaskType.IsRestricted` keeps the unrestricted case cheap. The app is not deployed, so no backfill of old rows is needed (CLAUDE.md, status of 2026-10-24).
 
-### 1.1 What an empty Edit or Assign list means (interpretation, see Q1)
+### 1.1 What an empty Edit or Assign list means (owner decision)
 
 The owner text fixes the View list only. This note reads the other two the same way, as "no extra limit":
 
@@ -35,7 +35,7 @@ The owner text fixes the View list only. This note reads the other two the same 
 | A, B | A | empty | A and B see it; only A edits (B is read-only) |
 | A, B | A | B | A edits; only B can be assignee (a person with both roles qualifies for both) |
 
-Empty Edit meaning "nobody may edit" would make a freshly restricted type read-only for everyone, which nobody wants; empty Assign meaning "nobody" would make it unassignable. The recommendation is the table above, to be confirmed (Q1).
+Empty Edit meaning "nobody may edit" would make a freshly restricted type read-only for everyone, which nobody wants; empty Assign meaning "nobody" would make it unassignable. Owner decision: the table above.
 
 ### 1.2 Definitions
 
@@ -43,7 +43,7 @@ For a viewer `v` (person, roles, `IsSystemAdmin`) and a task `t` of type `ty`:
 
 - `TypeViewable(ty, v)`: `NOT ty.IsRestricted OR v.IsSystemAdmin OR EXISTS access row (ty, role in v.ActiveRoles, CanView = 1)`.
 - `TypeEditable(ty, v)`: `TypeViewable AND (v.IsSystemAdmin OR no row of ty has CanEdit = 1 OR EXISTS row (ty, role in v.ActiveRoles, CanEdit = 1))`. For an open type (not restricted) the Edit and Assign lists are empty by constraint, so it reduces to true.
-- `TypeAssignable(ty, user)`: the same for `CanAssign`, evaluated for the proposed assignee, not the caller. System Admin is a valid assignee only if they hold `Workflow.Execute` (they hold every permission); the Admin bypass applies to *seeing*, not to being offered as assignee. Q2 asks whether that is intended.
+- `TypeAssignable(ty, user)`: the same for `CanAssign`, evaluated for the proposed assignee, not the caller. System Admin is a valid assignee only if they hold `Workflow.Execute` (they hold every permission); the Admin bypass applies to *seeing*, not to being offered as assignee. Owner decision: no admin exception.
 - `TaskVisible(t, v)` = `(matter rule OR assigned to v)  AND  TypeViewable(t.TaskTypeId, v)` (the existing mode T from 6.8, with the new term AND-ed on the outside, so the assignee exception of sensitive matters does not rescue a hidden type).
 - Active roles only: a deactivated role (`Role.IsActive = 0`) grants nothing, matching how the permission snapshot treats inactive roles (`MatterVisibility.ForAsync` filters `ur.Role.IsActive`).
 
@@ -156,9 +156,9 @@ Timing: the sensitive design accepts the generic 404 without a timing study; the
 
 Every number that counts tasks comes from `VisibleTasks` (or the matching predicate on a joined row), never from `all - hidden`. That includes: list totals and paging, filter facets, tab badges, KPI tiles, dashboard breakdowns and trend, swimlane lanes, My Matters sections, matter and client and project strips, "open task count" on Task Types, users and pods, search counts, notification unread counts. A restricted type with no visible task for the caller shows `0`, and **a type the caller may not see is not listed at all**, so a zero cannot be told from "does not exist".
 
-Three deliberate gaps are named so nobody "fixes" them by accident (Q4):
+Three deliberate gaps are named so nobody "fixes" them by accident (owner decision):
 
-1. **Capacity and workload numbers per person** (`CapacityService.cs:169,277`, `CalendarService.cs:446`, the ranker's true load) count all of a person's open assigned tasks as a bare integer. This is the existing exception of decision AS item 12 for sensitive matters (no names, ids or matter data; otherwise busy people look free). The type rule would extend it to tasks of hidden types. Recommendation: keep the exception, owner to confirm (Q4).
+1. **Capacity and workload numbers per person** (`CapacityService.cs:169,277`, `CalendarService.cs:446`, the ranker's true load) count all of a person's open assigned tasks as a bare integer. This is the existing exception of decision AS item 12 for sensitive matters (no names, ids or matter data; otherwise busy people look free). The type rule would extend it to tasks of hidden types. Recommendation: keep the exception, owner to confirm .
 2. **Integrity guards** that must tell the truth, for example the matter deactivation check (`TaskDirectory.cs:85`, text built at `MatterService.cs:717`: "This matter has N tasks that aren't Completed or Cancelled", with `openTaskCount` in the problem). The block stays, but the number must not include tasks the caller cannot see: show the visible count and, when hidden ones exist, "and other tasks you can't see" without a number. #1400 owns it.
 3. **The pre-save impact warning** on the Task Types screen (section 9.1) reports how many open tasks become hidden and for how many people. It is an aggregate about a change, shown only to `TaskType.Manage`; it does not list tasks.
 
@@ -203,7 +203,7 @@ Effect is immediate: the next request of every affected person reads the new lis
 ### 9.2 Edit and assign enforcement
 
 - Every mutation of a task needs `TypeEditable` in addition to its permission: edit fields (`TaskService.cs:392`), priority (`:721`), status, complete, cancel, reopen (`TaskLifecycleService.cs:56`), comments (`TaskCommentService.cs:77,111,163`), workflow steps (`TaskWorkflowService.cs:47`), asset links (`TaskAssetService.cs:40,86,135`), matter bulk (`TaskBulkService.cs:30,116`), batch assign. The check lives where the task is locked and loaded (`TaskTransactions.LockTaskAsync`) plus one `TaskEditGate` in `TaskActionRules`, so the 15 or so endpoints cannot each forget it; the endpoint catalogue test (12.2) classifies each endpoint as "edit-gated".
-- **Comments** are an edit (the epic says Edit covers comments): a View-only person can read comments, not add them. Q5 does not reopen this; it is decided.
+- **Comments** are an edit (the epic says Edit covers comments): a View-only person can read comments, not add them.
 - **Assigning** needs `Task.Assign` (who may perform it, unchanged) **and** the caller may see the task, **and** the proposed assignee satisfies `TypeAssignable` and today's checks (active, `Workflow.Execute`). The single check sits next to the existing one (`TaskService.ValidateAssigneesAsync`, `TaskService.cs:842`, plus `TaskBulkService.cs:70`) and is called by create, update, assignment, assign-batch and bulk reassign alike, so there is one rule (the same shape as `USER_CANNOT_EXECUTE`). Unassigning needs only Edit.
 - Does the **caller** need Edit to assign? Yes: assigning changes the task. A person with `Task.Assign` and a View-only role cannot reassign (they get `TASK_TYPE_READ_ONLY`). This follows "Edit covers everything that changes the task".
 
@@ -211,7 +211,7 @@ Effect is immediate: the next request of every affected person reads the new lis
 
 - **A user loses a role** (`UserRole` row deleted): effective on the next request (4.2 reads `UserRole` with no cache). A person with another qualifying role keeps access (union).
 - **A role is deactivated**: it grants nothing (the `Role.IsActive` join). The type stays restricted even if that was the last View role; only System Admin then sees it (fail closed). The Task Types screen shows a warning on a type whose View roles are all inactive.
-- **A role is deleted** (`RoleAdministration.DeleteAsync`, `RoleAdministration.cs:135`, today allowed once it has no members): deleting the last View role of a restricted type would delete its rows and silently turn the type **open to everyone** (fail open). The role delete must therefore be refused while the role is in any access list (`409 ROLE_USED_BY_TASK_TYPE`, naming the type names, same shape as `ROLE_IN_USE`); the administrator removes it from the type first (a save that empties Can View is allowed, because it is the owner's rule that no roles means open to everyone, but the preview and the confirm text say "This task type will become visible to everyone"). This is a change in the Identity module's role delete (#1399).
+- **A role is deleted** (`RoleAdministration.DeleteAsync`, `RoleAdministration.cs:135`, today allowed once it has no members): deleting the last View role of a restricted type would delete its rows and silently turn the type **open to everyone** (fail open). The role delete must therefore be refused while the role is in any access list (`409 ROLE_USED_BY_TASK_TYPE`, same shape as `ROLE_IN_USE`, message "This role is used by N Task Types. Remove it there first." with the type names in the problem meta); the administrator removes it from the type first (a save that empties Can View is allowed, because it is the owner's rule that no roles means open to everyone, but the preview and the confirm text say "This task type will become visible to everyone"). This is a change in the Identity module's role delete (#1399).
 - **A user has several roles**: union per list; there is no deny and no precedence.
 - **The caller is the only person who can see a type and removes themselves**: allowed with the preview warning (as for marking sensitive, `SENSITIVE_CONFIRMATION_REQUIRED`); no server-side block, but the confirm text says "You will no longer see this task type" when the caller's own access ends. System Admin cannot lose access.
 
@@ -305,7 +305,7 @@ What reads tasks today (all of these would show hidden tasks): 10 starter report
 | B. Row-level filter on the report login | Give the report login only views or a security policy over `dbo.Task`: run each report on a connection that carries the *running person's* id in `SESSION_CONTEXT` (set read-only by the app before the query), and let a SQL Server row-level security policy or a filtered view on `dbo.Task` apply `fnTaskVisible`-style logic (type rule; matter rule optional). | Real design and spike work (does RLS apply to the report login as configured, does pooling reset session context, does the validator allow only the allow-listed names, plan quality), touches the reports module and `report-access.json`. Also fixes sensitive matters in reports (R58 to R60 open since #808). |
 | C. Report-level type tag | A report is marked "may read restricted types"; unmarked reports get a rewritten `dbo.Task` reference to a filtered view (the SQL validator already parses and allow-lists names). | Medium; every new report author must understand the view; joins to `TaskAsset` need the same treatment. |
 
-Recommendation: **B in a separate issue** after #1400, with A as the documented interim for go-live (the runbook states it plainly), and with the access table **denied** to the report login until B needs it. This is the same open item as the sensitive-matter R58 to R60 rows and should be decided once for both (Q3). Not decided here; the epic's sentence "Reports respect the rule too" is recorded and this section is its work list.
+**Owner decision: reports stay as they are for now.** Report roles have their own permissions (`Report.Run`, report-to-role assignment); no report row filter is built in this epic and no new issue is opened. This is an accepted limitation at go-live (the runbook states it plainly): a person who may run a task report can see restricted tasks through it. The access table stays **denied** to the report login. Options B and C remain a possible later step, together with the sensitive-matter rows R58 to R60.
 
 ## 15. Read-path inventory
 
@@ -365,11 +365,11 @@ Counts per area are at the end of the section.
 | D3 | `GET /dashboard/scopes` (`DashboardController.cs:37`) | Counts per scope | T | Automatic | W,C |
 | D4 | `GET /dashboard/trend` (`DashboardTrendService.cs:60`) | Trend series | T, cached by stamp | Automatic; stamp change (10) | W,C |
 | D5 | `GET /dashboard/workload` (`WorkloadService.cs:40`) | Per-person load | T | Automatic | W,C |
-| D6 | `GET /dashboard/capacity`, `/capacity/people` (`CapacityService.cs:169,277`; unassigned at `:178`) | Battery, per-person load integer | load: **none** by design (AS item 12); unassigned: T | Decision Q4; unassigned automatic | W,C,X |
+| D6 | `GET /dashboard/capacity`, `/capacity/people` (`CapacityService.cs:169,277`; unassigned at `:178`) | Battery, per-person load integer | load: **none** by design (AS item 12); unassigned: T | unassigned automatic | W,C,X |
 | D7 | `GET /dashboard/users/{id}/history` (`UserHistory.cs:153`) | Completed tasks of a person | T | Automatic | W |
 | D8 | `GET /dashboard/users/skills` (`SkillsMatrix.cs:101`) | Skills by type | T | Automatic; type names listed only for viewable types | W,C |
 | D9 | `GET /dashboard/coverage` (`CoverageService.cs:44`) | Coverage by type | T | Automatic; same | W,C |
-| D10 | `GET /dashboard/calendar/days|day|summary` (`DashboardCalendarController.cs:22,33,44`, `CalendarService.cs:446`) | Per-person load integer | **none** by design (AT item 21) | Decision Q4 | W,X |
+| D10 | `GET /dashboard/calendar/days|day|summary` (`DashboardCalendarController.cs:22,33,44`, `CalendarService.cs:446`) | Per-person load integer | **none** by design (AT item 21) | Owner decision (capacity keeps the integer) | W,X |
 | D11 | `DashboardCache.cs`, `VisibilityStamp.cs` | Cache keys | stamp | Stamp change (10) | X |
 | D12 | `GET /matters/{id}/overview` (`MatterOverviewController.cs:22`, `MatterOverviewService.cs:81`) | Matter task summary | T | Automatic | W,C |
 
@@ -483,26 +483,24 @@ Paths that read tasks **without** any visibility filter today and become leaks u
 
 | Issue | Scope in the issue | Verdict |
 |---|---|---|
-| #1399 data model, admin API, audit and switch | Script, `IsRestricted`, access table, admin read/write, audit, switch | **Confirmed**, with additions: the `PUT` takes the three lists, the **preview endpoint** (9.1), `GET /roles` read widening for `TaskType.Manage` (2), the **role delete block** (9.3), the `fnTaskVisible` replacement (4.3, could sit in #1400), `report-access.json` entry (DENY by default), wiki table pages. The switch class and the `Viewer` shape change can start here so #1400 builds on them. |
-| #1400 hide restricted tasks on every read path | Port, sources, all read paths | **Confirmed, and it is the big one** (most of the read rows of section 15). Adjust the list: add My Matters through the single scope (M1), the matter and project strips (O2, O3), the "own tasks" shortcuts (Q4, D2, O7), the asset assignee rule (K11, M4), audit facets, the stamp, the by-ids assertion tests, the deactivation guard text (K9). Reports are **not** in #1400 (Q3). Suggest cutting into two pull requests: port, SQL twin, Task module, Task Queue and Dashboard first; then My Matters, Organization, Search, Assets, Audit, Notifications. |
+| #1399 data model, admin API, audit and switch | Script, `IsRestricted`, access table, admin read/write, audit, switch | **Confirmed**, with additions: the `PUT` takes the three lists, the **preview endpoint** (9.1), `GET /roles` read widening for `TaskType.Manage` (2), the **role delete block** with the message "This role is used by N Task Types. Remove it there first." (9.3, owner decision), the `fnTaskVisible` replacement (4.3, could sit in #1400), `report-access.json` entry (DENY by default), wiki table pages. The switch class and the `Viewer` shape change can start here so #1400 builds on them. |
+| #1400 hide restricted tasks on every read path | Port, sources, all read paths | **Confirmed, and it is the big one** (most of the read rows of section 15). Adjust the list: add My Matters through the single scope (M1), the matter and project strips (O2, O3), the "own tasks" shortcuts (Q4, D2, O7), the asset assignee rule (K11, M4), audit facets, the stamp, the by-ids assertion tests, the deactivation guard text (K9). Reports are **not** in #1400 . Suggest cutting into two pull requests: port, SQL twin, Task module, Task Queue and Dashboard first; then My Matters, Organization, Search, Assets, Audit, Notifications. |
 | #1401 Edit and Assign rules, pickers, creation | Edit gate, assignee check, pickers, create | **Confirmed**; add: the 403 `TASK_TYPE_READ_ONLY` and a read-only task screen (the issue says it), the `GET /task-types` filtering and the Edit-only create list (7), `GET /users/lookup` type filter and ranker input, the system-actor flag design (9.5, build only the hook, no caller exists). Depends on #1400 (shares the port). |
 | #1402 Task Types screen | Access section and column | **Confirmed**; add: the preview confirmation text including "will become visible to everyone" when Can View empties and "You will no longer see this task type" for the caller's own lost access, the inactive-roles warning (9.3), the role-delete refusal message on the Roles screen (small, belongs here or #1399). Depends on #1399 only; can run in parallel with #1400. |
 | #1403 test guards, regression proof and go-live | Catalogue, walk, mutation, regression, e2e, docs | **Confirmed**; add: the by-ids assertion tests, `fnTaskVisible` parity, statement-count and plan checks (12.5), seed-demo restricted type (T1), runbook section (Reports interim statement, section 14), and the consistency query for `IsRestricted`. Because every earlier issue must keep the existing suites green, #1403's catalogue extension should land **with #1400** (the build fails on unclassified endpoints); the rest of #1403 stays last. |
-| New: Reports and Task Type access | not in the epic | **Proposed** (Q3): one issue after #1400 for the report mechanism (option B), shared with sensitive-matter R58 to R60 (#808). |
+| (Reports) | not in the epic | **No new issue** (owner decision): reports are an accepted limitation at go-live, section 14. |
 
 Order: #1399 then (#1400, #1402 in parallel) then #1401 then #1403, with the catalogue test landing with #1400. The epic notes work starts after the current issues of epic #1389 are done; no code change is needed from this note.
 
-## 17. Open questions for the owner (recommended answers)
+## 17. Owner decisions on the open questions (2026-11-17)
 
-| # | Question | Recommendation |
-|---|---|---|
-| Q1 | When a type is restricted (Can View has roles) and **Can Edit** or **Can Be Assigned** is empty, does that mean "no extra limit" (every viewer may edit, every viewer with `Workflow.Execute` may be assigned) or "nobody"? | No extra limit (section 1.1). "Nobody" would make a new restriction freeze the type. |
-| Q2 | Is **System Admin** a valid assignee of a restricted type even when no list names their role? | No. Admin *sees* everything, but is offered and accepted as assignee only through Can Be Assigned (or an empty Assign list), like everybody else. Keeps "assign" meaning one thing in one place. (If the owner wants admins always assignable, it is one line in `TypeAssignable`.) |
-| Q3 | **Reports.** Reports read `dbo.Task` outside the port. Accept option A (report roles are trusted) as the go-live state and build a row-level mechanism (option B) afterwards for both Task Types and sensitive matters, or hold the Task Type go-live until B exists? | A at go-live, stated plainly in the runbook, then B as its own issue. The epic sentence "Reports respect the rule too" is kept as the target. Until B, only people who may run task reports and are not in the View roles can see restricted tasks through a report. |
-| Q4 | **Workload numbers.** Capacity battery, Calendar and per-person load show the true open-task count including tasks of hidden types (a bare integer, like the existing sensitive-matter exception of decision AS item 12), or only visible tasks? | Keep the true count as a bare integer, as for sensitive matters: hiding it makes busy people look free and breaks fair assignment; no task data is exposed. Everything else (lists, strips, search, audit) stays strictly visible-only. |
-| Q5 | **Deleting a role** that appears in a Task Type list: block it until the role is removed from the lists, or remove it from the lists automatically (which can silently open the type to everyone)? | Block (`ROLE_USED_BY_TASK_TYPE`). Failing open is the one dangerous outcome. |
+1. **Empty Can Edit or Can Be Assigned list = no extra limit.** Anyone who can view may edit, and anyone who can view and holds `Workflow.Execute` may be assignee (section 1.1).
+2. **System Admin** sees everything, but on a restricted type is assignable only through Can Be Assigned (or when that list is empty). No admin exception.
+3. **Reports stay as they are for now.** Report roles have their own permissions; no report row filter in this epic and no new reports issue. Accepted limitation at go-live (section 14).
+4. **Capacity and calendar** keep counting hidden-type tasks as a bare integer, as for sensitive matters (section 6, gap 1).
+5. **Deleting a role named in any Task Type access list is blocked** with a message naming the Task Types: "This role is used by N Task Types. Remove it there first." (section 9.3).
 
-Not asked, because the owner already decided or the answer follows from the decisions: comments need Edit; no assignee exception; no PM exception; no backfill; the lists apply the union of roles; type and matter of a task stay immutable (no "change type" case); a task assigned to someone who loses View is not auto-reassigned (preview warns).
+Also decided earlier: comments need Edit; no assignee exception; no PM exception; no backfill; roles add up (union); type and matter of a task stay immutable; a task assigned to someone who loses View is not auto-reassigned (the preview warns).
 
 ## 18. What this note did not check
 
