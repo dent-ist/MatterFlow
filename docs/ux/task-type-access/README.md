@@ -1,6 +1,6 @@
 # Task Type access by role: design and read-path inventory
 
-Epic #1397, design issue #1398. Status: **design only, owner decisions of 2026-11-17 recorded in section 17** (written 2026-11-17 on `origin/dev` at `11fae2b4`; no code, schema, OpenAPI or permission change comes with this note). Decisions: `docs/requirements/decisions-addendum.md` section AW. The model is a sibling of the sensitive-matter rule (`docs/ux/sensitive-matters/README.md`, architecture section 6.8) and reuses its port, its 404 mode, its guards and its go-live pattern. Code facts below were read from `dev` on the date above; file:line references drift, so the first work package that touches a file re-greps it (the endpoint catalogue test is the real authority, section 12).
+Epic #1397, design issue #1398. Status: **design; issue #1399 (data model, admin API, audit, switch) is implemented, see section 19; owner decisions of 2026-11-17 recorded in section 17** (written 2026-11-17 on `origin/dev` at `11fae2b4`; no code, schema, OpenAPI or permission change comes with this note). Decisions: `docs/requirements/decisions-addendum.md` section AW. The model is a sibling of the sensitive-matter rule (`docs/ux/sensitive-matters/README.md`, architecture section 6.8) and reuses its port, its 404 mode, its guards and its go-live pattern. Code facts below were read from `dev` on the date above; file:line references drift, so the first work package that touches a file re-greps it (the endpoint catalogue test is the real authority, section 12).
 
 The inventory (section 15) is the work list for #1399 to #1403.
 
@@ -509,3 +509,18 @@ Also decided earlier: comments need Edit; no assignee exception; no PM exception
 - **Exhaustiveness of line numbers.** The inventory is from a grep of `dev` at `11fae2b4` over `Application`, `Infrastructure`, `Api`, the baseline SQL, the report starters and the frontend task-type usage. A few frontend caches (global search recents, route titles) were not opened; `SensitiveAccessCatalog` should be walked once more at the start of #1400 because it enumerates operations, not rows.
 - **Workflow engine internals** (`WorkflowInstanceService`) and `Integrations` (Entra/Graph) were not read beyond confirming they do not insert tasks.
 - **Wiki.** `wiki/Architecture/Sensitive-Matter-Visibility.md` and `wiki/How-To/Add-a-Task-Type-or-Workflow.md` describe neighbouring areas; this change adds no behaviour, schema, route, permission or setting, so no wiki page is edited. The wiki changes belong to #1399 (tables) and #1403 (feature, permission and how-to pages).
+
+## 19. What issue #1399 built, and where it differs from this note
+
+Built: script `81-task-type-access.sql` (table, constraints, index, `TaskType.IsRestricted`, DENY for the report login), `TaskTypeAccessService` (read, replace, preview, role usage), the endpoints `GET` and `PUT /task-types/{id}/access` and `POST /task-types/{id}/access/preview`, the `access` object on `GET /task-types[/{id}]` for `TaskType.Manage` holders, the audit events of section 8.2, the role-delete block (9.3), `GET /roles` readable with `TaskType.Manage`, and the switch `Features:TaskTypeAccess` (off by default; with it off the lists are stored and edited but nothing is enforced; the API reports `enforced`). `tools/db/task-type-access-consistency.sql` is the consistency query of section 3.
+
+Differences from the text above (decisions for the reviewer):
+
+1. The save is its own endpoint `PUT /task-types/{id}/access` (with the Task Type row version), not an `access` member of `PUT /task-types/{id}`. The two saves share the same row version, so they cannot overwrite each other; the Task Types dialog calls both. Say so if the owner wants a single request.
+2. A role that is deactivated today is refused when it is newly added; a deactivated role that is already in a list may stay, so the administrator can still save other changes (the screen warns, section 9.3).
+3. `PUT` with only Can Edit or Can Be Assigned roles and an empty Can View list restricts the type (those roles are added to Can View), it does not clear them. All three lists empty opens the type.
+4. A duplicate id inside one list is `DUPLICATE_ROLE`, an unknown or inactive role `ROLE_NOT_FOUND`, a non-positive id `INVALID`, all `400 VALIDATION_FAILED` on the field `canView`, `canEdit` or `canAssign`.
+5. The preview counts "people" as active users who hold `Task.View` through an active role (System Admin always); it also returns `becomesOpenToEveryone` and `callerLosesView` for the confirm texts of section 9.3.
+6. `dbo.fnTaskVisible` is not replaced in script 81 (section 4.3 allows #1400 to do it).
+7. The audit labels for the three new events in `audit-format.ts` and the Task Types screen are left to #1402.
+

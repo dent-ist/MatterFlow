@@ -40,6 +40,10 @@ public static class ConfigurationModule
         services.AddScoped<IAssetLinkRoleCatalog>(sp => sp.GetRequiredService<AssetLinkRoleService>());
         services.AddScoped<IConfigurationNameDirectory, ConfigurationNameDirectory>();
         services.TryAddScoped<IConfigurationTaskCounts, NoTasksConfigurationTaskCounts>();
+        services.TryAddScoped<ITaskTypeAccessImpact, NoTasksTaskTypeAccessImpact>();
+        services.AddScoped<TaskTypeAccessService>();
+        // The role-delete block of the Identity module asks which Task Types list a role (epic #1397); Identity registers a "none" default that this replaces.
+        services.Replace(ServiceDescriptor.Scoped<LptHub.Identity.Contracts.ITaskTypeRoleUsage>(sp => sp.GetRequiredService<TaskTypeAccessService>()));
         services.AddScoped<TaskTypeService>();
         services.AddScoped<ITaskTypeCatalog>(sp => sp.GetRequiredService<TaskTypeService>());
         services.AddSingleton<AppSettingsCache>();

@@ -82,7 +82,8 @@ Totals (counted by `tools/db/schema-fingerprint.sql` on a database built from th
 | [TaskComment](#taskcomment) | Tasks and task configuration | WorkManagement | 14 | 5 |
 | [TaskCommentRevision](#taskcommentrevision) | Tasks and task configuration | WorkManagement | 6 | 2 |
 | [TaskStatusLabel](#taskstatuslabel) | Tasks and task configuration | Configuration | 8 | 2 |
-| [TaskType](#tasktype) | Tasks and task configuration | Configuration | 13 | 2 |
+| [TaskType](#tasktype) | Tasks and task configuration | Configuration | 14 | 2 |
+| [TaskTypeRoleAccess](#tasktyperoleaccess) | Tasks and task configuration | Configuration | 7 | 3 |
 | [TaskTypeWorkflowEligibility](#tasktypeworkfloweligibility) | Workflows | Configuration | 4 | 2 |
 | [TeamTitle](#teamtitle) | Clients, Matters and Projects | Configuration | 9 | 2 |
 | [UserAbsence](#userabsence) | Availability and Calendar | Identity | 11 | 3 |
@@ -546,15 +547,33 @@ Junction: assets linked to a task, with an optional link role. The matter of tas
 Admin-defined type of task, with icon, colour key, target days, default workflow and a request form.
 
 - **Module:** Configuration. **Area:** Tasks and task configuration.
-- **Scripts:** created by script 8; changed by scripts 19, 40.
+- **Scripts:** created by script 8; changed by scripts 19, 40, 81.
 - **Report login (`lpt_report_reader`):** allow.
 - **Primary key:** `PK_TaskType` (TaskTypeId), int identity.
-- **Columns (13; `?` = nullable):** `TaskTypeId int`, `Name nvarchar(100)`, `Description nvarchar(1000)?`, `IsActive bit`, `DefaultWorkflowDefinitionId int?`, `IconKey varchar(50)`, `ColourKey varchar(20)?`, `TargetDays smallint?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
+- **Columns (14; `?` = nullable):** `TaskTypeId int`, `Name nvarchar(100)`, `Description nvarchar(1000)?`, `IsActive bit`, `DefaultWorkflowDefinitionId int?`, `IconKey varchar(50)`, `ColourKey varchar(20)?`, `TargetDays smallint?`, `IsRestricted bit` (default 0; script 81). Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
 - **Foreign keys (2):**
   - `FK_TaskType_CreatedBy`: `CreatedByUserId` to `AppUser(UserId)`
   - `FK_TaskType_ModifiedBy`: `ModifiedByUserId` to `AppUser(UserId)`
 - **Indexes and unique constraints (1):** `UQ_TaskType_Name` (Name) - unique.
 - **Check constraints (4):** `CK_TaskType_ColourKey`, `CK_TaskType_IconKey`, `CK_TaskType_Name`, `CK_TaskType_TargetDays`.
+- **Restriction flag:** `IsRestricted` is true exactly when at least one `TaskTypeRoleAccess` row of the type has `CanView = 1` (no View role = open to everyone). It is a plain column kept in the same transaction as the access rows by `TaskTypeAccessService`, the only writer; `tools/db/task-type-access-consistency.sql` finds a mismatch. Existing types start at 0 (no backfill).
+
+### TaskTypeRoleAccess
+
+The three role lists of a Task Type (epic #1397, issue #1399): one row per (type, role) with three flags, Can View, Can Edit and Can Be Assigned. A person qualifies for a list when any of their active roles is in it; an empty Can Edit or Can Be Assigned list means no extra limit among those who can view. Edit and Assign imply View, which the table enforces itself. A role that is in no list has no row. The lists are replaced as a set by `TaskTypeAccessService`, which also writes the audit events (`TASK_TYPE_ACCESS_CHANGED`, `TASK_TYPE_RESTRICTED`, `TASK_TYPE_UNRESTRICTED`). Enforced only when the go-live switch `Features:TaskTypeAccess` is on (issues #1400 and #1401); until then the rows are only stored.
+
+- **Module:** Configuration. **Area:** Tasks and task configuration.
+- **Scripts:** created by script 81.
+- **Report login (`lpt_report_reader`):** deny (access configuration is not report data; reports stay as they are).
+- **Primary key:** `PK_TaskTypeRoleAccess` (TaskTypeId, RoleId).
+- **Columns (7; `?` = nullable):** `TaskTypeId int`, `RoleId int`, `CanView bit`, `CanEdit bit`, `CanAssign bit`, `CreatedAt datetime2(7)`, `CreatedByUserId int?`.
+- **Foreign keys (3):**
+  - `FK_TaskTypeRoleAccess_CreatedBy`: `CreatedByUserId` to `AppUser(UserId)`
+  - `FK_TaskTypeRoleAccess_Role`: `RoleId` to `Role(RoleId)` (a role named in a list cannot be deleted; the application refuses first with a message naming the Task Types)
+  - `FK_TaskTypeRoleAccess_TaskType`: `TaskTypeId` to `TaskType(TaskTypeId)`
+- **Indexes and unique constraints (1):** `IX_TaskTypeRoleAccess_Role` (RoleId) - includes TaskTypeId, CanView, CanEdit, CanAssign (the viewer lookup is "the rows of my roles").
+- **Check constraints (2):** `CK_TaskTypeRoleAccess_Implies` (Edit and Assign imply View), `CK_TaskTypeRoleAccess_NotEmpty` (at least one flag).
+- **Rights:** `lpt_app` has SELECT, INSERT, UPDATE and DELETE (the lists are replaced as a set); ALTER is denied.
 
 ### Priority
 

@@ -249,9 +249,9 @@ erDiagram
 
 ## Tasks and task configuration
 
-Tables: `Task`, `TaskComment`, `TaskCommentRevision`, `TaskAsset`, `TaskType`, `Priority`, `TaskStatusLabel`, `OnHoldReason`, `AssetLinkRole`.
+Tables: `Task`, `TaskComment`, `TaskCommentRevision`, `TaskAsset`, `TaskType`, `TaskTypeRoleAccess`, `Priority`, `TaskStatusLabel`, `OnHoldReason`, `AssetLinkRole`.
 
-`Task` points at its matter, optionally a project (composite key `ProjectId + MatterId` forces the same matter), a task type, a priority, a status label, an assigned pod and or user, a form version and a workflow instance. `TaskAsset` links tasks to assets of the same matter (composite keys on `MatterId`). `TaskStatusLabel` holds the display labels of the five fixed status codes; `Task.StatusCode` references it. The audit trail of a task is in `AuditEvent` (no history tables).
+`TaskTypeRoleAccess` holds the three role lists of a task type (Can View, Can Edit, Can Be Assigned) as one row per type and role with three flags; `TaskType.IsRestricted` is true exactly when a type has a Can View row (epic #1397). `Task` points at its matter, optionally a project (composite key `ProjectId + MatterId` forces the same matter), a task type, a priority, a status label, an assigned pod and or user, a form version and a workflow instance. `TaskAsset` links tasks to assets of the same matter (composite keys on `MatterId`). `TaskStatusLabel` holds the display labels of the five fixed status codes; `Task.StatusCode` references it. The audit trail of a task is in `AuditEvent` (no history tables).
 
 ::: mermaid
 erDiagram
@@ -297,8 +297,19 @@ erDiagram
     int TaskTypeId PK
     nvarchar_100 Name UK
     bit IsActive
+    bit IsRestricted
     varchar_50 IconKey
     varchar_20 ColourKey
+  }
+  TaskTypeRoleAccess {
+    int TaskTypeId PK
+    int RoleId PK
+    bit CanView
+    bit CanEdit
+    bit CanAssign
+  }
+  Role {
+    int RoleId PK
   }
   Priority {
     int PriorityId PK
@@ -350,6 +361,8 @@ erDiagram
   Project ||--o{ Task : "ProjectId+MatterId"
   TaskStatusLabel ||--o{ Task : "StatusCode"
   TaskType ||--o{ Task : "TaskTypeId"
+  TaskType ||--o{ TaskTypeRoleAccess : "TaskTypeId"
+  Role ||--o{ TaskTypeRoleAccess : "RoleId"
   WorkflowInstance ||--o{ Task : "WorkflowInstanceId"
   Asset ||--o{ TaskAsset : "AssetId+MatterId"
   AssetLinkRole |o--o{ TaskAsset : "AssetLinkRoleId"
@@ -367,6 +380,7 @@ erDiagram
   AppUser |o--o{ TaskComment : "CreatedBy, ModifiedBy"
   AppUser |o--o{ TaskStatusLabel : "CreatedBy, ModifiedBy"
   AppUser |o--o{ TaskType : "CreatedBy, ModifiedBy"
+  AppUser |o--o{ TaskTypeRoleAccess : "CreatedBy"
 :::
 
 ## Workflows

@@ -12,9 +12,9 @@ namespace LptHub.Identity.Application;
 
 /// <summary>
 /// Roles and role-permission assignment from the catalog. The built-in System Admin role is read-only and undeletable;
-/// a role can be deleted only while unused. Every change is audited and drops all cached effective permissions.
+/// a role can be deleted only while unused (no user holds it and no Task Type lists it). Every change is audited and drops all cached effective permissions.
 /// </summary>
-public sealed class RoleAdministration(DbContext db, IUserAccessInvalidator invalidator, IAuditWriter audit, ICurrentUser currentUser, IPermissionChecker callerPermissions, IClock clock)
+public sealed class RoleAdministration(DbContext db, IUserAccessInvalidator invalidator, IAuditWriter audit, ICurrentUser currentUser, IPermissionChecker callerPermissions, IClock clock, ITaskTypeRoleUsage taskTypeUsage)
 {
     public async Task<IReadOnlyList<RoleSummaryDto>> ListAsync(CancellationToken ct)
     {
@@ -147,6 +147,17 @@ public sealed class RoleAdministration(DbContext db, IUserAccessInvalidator inva
                 ErrorCodes.RoleInUse,
                 $"{members} user(s) have this role. Remove them first.",
                 new Dictionary<string, object?> { ["memberCount"] = members });
+        }
+
+        // A role that a Task Type still lists (Can View, Can Edit or Can Be Assigned) cannot be deleted: removing the last Can View role would turn a restricted type
+        // into an open one without anybody deciding it (epic #1397, design section 9.3). The administrator removes it from the Task Types first.
+        var taskTypes = await taskTypeUsage.TaskTypeNamesUsingRoleAsync(roleId, ct);
+        if (taskTypes.Count > 0)
+        {
+            return Error.Conflict(
+                ErrorCodes.RoleUsedByTaskType,
+                $"This role is used by {taskTypes.Count} {(taskTypes.Count == 1 ? "Task Type" : "Task Types")}. Remove it there first.",
+                new Dictionary<string, object?> { ["taskTypeCount"] = taskTypes.Count, ["taskTypes"] = taskTypes });
         }
 
         db.Set<RolePermission>().RemoveRange(role.Permissions);

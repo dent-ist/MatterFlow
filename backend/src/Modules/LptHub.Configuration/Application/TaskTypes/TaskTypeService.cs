@@ -40,6 +40,10 @@ namespace LptHub.Configuration.Application.TaskTypes;
 /// (sensitive-matter rule). Null (not 0) when the viewer lacks <c>Task.View</c>. The list, the detail and the create and
 /// update responses all carry it.
 /// </param>
+/// <param name="Access">
+/// The role lists of the type (epic #1397: Can View, Can Edit, Can Be Assigned) and whether it is restricted. Only for holders of <c>TaskType.Manage</c>; null for everybody else, who
+/// get no hint about the lists. The detail of the lists (role names, the go-live state) is <c>GET /task-types/{id}/access</c>.
+/// </param>
 public sealed record TaskTypeView(
     [property: Required] int Id,
     [property: Required] string Name,
@@ -59,7 +63,8 @@ public sealed record TaskTypeView(
     [property: Required] string RowVersion,
     int? OpenTaskCount = null,
     string? ColourKey = null,
-    int? TargetDays = null);
+    int? TargetDays = null,
+    TaskTypeAccessLists? Access = null);
 
 /// <summary>Body to create a Task Type. Its (empty) request form is provisioned with it.</summary>
 /// <param name="Name">Unique display name.</param>
@@ -103,7 +108,8 @@ public sealed class TaskTypeService(
     IClock clock,
     ICurrentUser currentUser,
     IPermissionChecker permissions,
-    IConfigurationTaskCounts taskCounts) : ITaskTypeCatalog
+    IConfigurationTaskCounts taskCounts,
+    TaskTypeAccessService access) : ITaskTypeCatalog
 {
     private const string ObjectType = "TaskType";
 
@@ -160,7 +166,8 @@ public sealed class TaskTypeService(
         var ids = rows.Select(r => r.Id).ToList();
         var facts = await LoadFormFactsAsync(ids, ct);
         var counts = withCounts ? await OpenCountsAsync(ids, ct) : null;
-        return [.. rows.Select(r => ToView(r, facts.GetValueOrDefault(r.Id), counts is null ? null : counts.GetValueOrDefault(r.Id)))];
+        var lists = withCounts ? await AccessListsAsync(ids, ct) : null;
+        return [.. rows.Select(r => ToView(r, facts.GetValueOrDefault(r.Id), counts is null ? null : counts.GetValueOrDefault(r.Id), lists?.GetValueOrDefault(r.Id)))];
     }
 
     public async Task<Result<TaskTypeView>> GetViewAsync(int id, CancellationToken ct = default) => await GetViewAsync(id, true, ct);
@@ -172,8 +179,13 @@ public sealed class TaskTypeService(
             return Error.NotFound("Task type not found.");
         var facts = await LoadFormFactsAsync([id], ct);
         var counts = withCounts ? await OpenCountsAsync([id], ct) : null;
-        return ToView(row, facts.GetValueOrDefault(id), counts is null ? null : counts.GetValueOrDefault(id));
+        var lists = withCounts ? await AccessListsAsync([id], ct) : null;
+        return ToView(row, facts.GetValueOrDefault(id), counts is null ? null : counts.GetValueOrDefault(id), lists?.GetValueOrDefault(id));
     }
+
+    /// <summary>The access lists for the admin views, or null for a viewer without <c>TaskType.Manage</c> (no hint about the lists; the catalogue reads never carry them).</summary>
+    private async Task<IReadOnlyDictionary<int, TaskTypeAccessLists>?> AccessListsAsync(IReadOnlyCollection<int> ids, CancellationToken ct) =>
+        permissions.Has(Permissions.TaskType.Manage) ? await access.ListsForAsync(ids, ct) : null;
 
     /// <summary>
     /// The open Task count of each Task Type (one grouped statement for the whole page of ids), or null when the viewer may not see Tasks, so the
@@ -224,7 +236,7 @@ public sealed class TaskTypeService(
     private static TaskTypeInfo ToInfo(TaskTypeView v) =>
         new(v.Id, v.Name, v.Description, v.IconKey, v.IsActive, v.FormDefinitionId, v.PublishedFormVersionId, v.HasFormFields, v.EligibleWorkflowIds, v.DefaultWorkflowDefinitionId, v.IsUsable, v.ColourKey, v.TargetDays);
 
-    private static TaskTypeView ToView(TaskType t, FormFacts? form, int? openTaskCount)
+    private static TaskTypeView ToView(TaskType t, FormFacts? form, int? openTaskCount, TaskTypeAccessLists? access)
     {
         var eligible = t.EligibleWorkflows.Select(e => e.WorkflowDefinitionId).Order().ToList();
         var issues = new List<string>();
@@ -260,7 +272,8 @@ public sealed class TaskTypeService(
             LookupSupport.FormatRowVersion(t.RowVersion),
             openTaskCount,
             t.ColourKey,
-            t.TargetDays);
+            t.TargetDays,
+            access);
     }
 
     private async Task<Dictionary<int, FormFacts>> LoadFormFactsAsync(IReadOnlyCollection<int> taskTypeIds, CancellationToken ct)

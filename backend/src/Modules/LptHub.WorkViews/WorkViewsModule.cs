@@ -52,6 +52,8 @@ public static class WorkViewsModule
         services.AddScoped<IOrganizationTaskCounts, OrganizationTaskCounts>();
         services.RemoveAll<IConfigurationTaskCounts>();
         services.AddScoped<IConfigurationTaskCounts, ConfigurationTaskCounts>();
+        services.RemoveAll<ITaskTypeAccessImpact>();
+        services.AddScoped<ITaskTypeAccessImpact, TaskTypeAccessImpactReader>();
         services.RemoveAll<IUserTaskCounts>();
         services.AddScoped<IUserTaskCounts, UserTaskCounts>();
         services.RemoveAll<IAssigneeLoadReader>();

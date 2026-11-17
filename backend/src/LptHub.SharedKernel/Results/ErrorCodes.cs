@@ -67,6 +67,15 @@ public static class ErrorCodes
     public const string PublishValidationFailed = "PUBLISH_VALIDATION_FAILED";
     public const string LastAdmin = "LAST_ADMIN";
     public const string RoleInUse = "ROLE_IN_USE";
+
+    /// <summary>A role that is named in the access list of a Task Type cannot be deleted (epic #1397); remove it from the Task Types first.</summary>
+    public const string RoleUsedByTaskType = "ROLE_USED_BY_TASK_TYPE";
+
+    /// <summary>A role id in a Task Type access list does not exist or is deactivated.</summary>
+    public const string RoleNotFound = "ROLE_NOT_FOUND";
+
+    /// <summary>A role id appears twice in one Task Type access list.</summary>
+    public const string DuplicateRole = "DUPLICATE_ROLE";
     public const string EmailParseFailed = "EMAIL_PARSE_FAILED";
     public const string PayloadTooLarge = "PAYLOAD_TOO_LARGE";
 

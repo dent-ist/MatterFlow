@@ -360,6 +360,11 @@
       "reason": "Business data that reports may read."
     },
     {
+      "name": "TaskTypeRoleAccess",
+      "access": "deny",
+      "reason": "Task Type access lists by role (epic #1397, #1399): access configuration, not report data. Reports stay as they are (design section 14)."
+    },
+    {
       "name": "TaskTypeWorkflowEligibility",
       "access": "allow",
       "reason": "Business data that reports may read."

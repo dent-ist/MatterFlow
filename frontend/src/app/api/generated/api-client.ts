@@ -6373,6 +6373,18 @@ export interface ITaskTypesClient {
      * @return OK
      */
     updateTaskType(id: number, body: UpdateTaskTypeRequest): Observable<TaskTypeView>;
+    /**
+     * @return OK
+     */
+    getTaskTypeAccess(id: number): Observable<TaskTypeAccessView>;
+    /**
+     * @return OK
+     */
+    replaceTaskTypeAccess(id: number, body: ReplaceTaskTypeAccessRequest): Observable<TaskTypeAccessView>;
+    /**
+     * @return OK
+     */
+    previewTaskTypeAccess(id: number, body: PreviewTaskTypeAccessRequest): Observable<TaskTypeAccessPreview>;
 }
 
 @Injectable({
@@ -6602,6 +6614,173 @@ export class TaskTypesClient implements ITaskTypesClient {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
             result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TaskTypeView;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getTaskTypeAccess(id: number): Observable<TaskTypeAccessView> {
+        let url_ = this.baseUrl + "/api/v1/task-types/{id}/access";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetTaskTypeAccess(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetTaskTypeAccess(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<TaskTypeAccessView>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<TaskTypeAccessView>;
+        }));
+    }
+
+    protected processGetTaskTypeAccess(response: HttpResponseBase): Observable<TaskTypeAccessView> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TaskTypeAccessView;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    replaceTaskTypeAccess(id: number, body: ReplaceTaskTypeAccessRequest): Observable<TaskTypeAccessView> {
+        let url_ = this.baseUrl + "/api/v1/task-types/{id}/access";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processReplaceTaskTypeAccess(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processReplaceTaskTypeAccess(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<TaskTypeAccessView>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<TaskTypeAccessView>;
+        }));
+    }
+
+    protected processReplaceTaskTypeAccess(response: HttpResponseBase): Observable<TaskTypeAccessView> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TaskTypeAccessView;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    previewTaskTypeAccess(id: number, body: PreviewTaskTypeAccessRequest): Observable<TaskTypeAccessPreview> {
+        let url_ = this.baseUrl + "/api/v1/task-types/{id}/access/preview";
+        if (id === undefined || id === null)
+            throw new globalThis.Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processPreviewTaskTypeAccess(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processPreviewTaskTypeAccess(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<TaskTypeAccessPreview>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<TaskTypeAccessPreview>;
+        }));
+    }
+
+    protected processPreviewTaskTypeAccess(response: HttpResponseBase): Observable<TaskTypeAccessPreview> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as TaskTypeAccessPreview;
             return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
@@ -34472,6 +34651,14 @@ export interface PreviewResponse {
     [key: string]: any;
 }
 
+export interface PreviewTaskTypeAccessRequest {
+    canView: number[];
+    canEdit: number[];
+    canAssign: number[];
+
+    [key: string]: any;
+}
+
 export interface PriorityView {
     id: number;
     label: string;
@@ -34722,6 +34909,15 @@ export interface ReorderRequest {
 
 export interface ReorderVendorOptionsRequest {
     ids: number[];
+
+    [key: string]: any;
+}
+
+export interface ReplaceTaskTypeAccessRequest {
+    canView: number[];
+    canEdit: number[];
+    canAssign: number[];
+    rowVersion: string;
 
     [key: string]: any;
 }
@@ -36055,6 +36251,48 @@ export interface TaskTransitionOption {
     [key: string]: any;
 }
 
+export interface TaskTypeAccessLists {
+    isRestricted: boolean;
+    canView: number[];
+    canEdit: number[];
+    canAssign: number[];
+
+    [key: string]: any;
+}
+
+export interface TaskTypeAccessPreview {
+    isRestricted: boolean;
+    becomesOpenToEveryone: boolean;
+    openTasksBecomingHidden: number;
+    peopleLosingView: number;
+    openTasksAssignedToPeopleLosingView: number;
+    peopleLosingEdit: number;
+    callerLosesView: boolean;
+
+    [key: string]: any;
+}
+
+export interface TaskTypeAccessRole {
+    roleId: number;
+    name: string;
+    isActive: boolean;
+
+    [key: string]: any;
+}
+
+export interface TaskTypeAccessView {
+    taskTypeId: number;
+    isRestricted: boolean;
+    canView: number[];
+    canEdit: number[];
+    canAssign: number[];
+    roles: TaskTypeAccessRole[];
+    enforced: boolean;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
 export interface TaskTypeRef {
     taskTypeId: number;
     name: string;
@@ -36083,6 +36321,7 @@ export interface TaskTypeView {
     openTaskCount?: number | undefined;
     colourKey?: string | undefined;
     targetDays?: number | undefined;
+    access?: TaskTypeAccessLists | undefined;
 
     [key: string]: any;
 }
@@ -37210,6 +37449,9 @@ export enum ApiProblemDetailsCode {
     PUBLISH_VALIDATION_FAILED = "PUBLISH_VALIDATION_FAILED",
     LAST_ADMIN = "LAST_ADMIN",
     ROLE_IN_USE = "ROLE_IN_USE",
+    ROLE_USED_BY_TASK_TYPE = "ROLE_USED_BY_TASK_TYPE",
+    ROLE_NOT_FOUND = "ROLE_NOT_FOUND",
+    DUPLICATE_ROLE = "DUPLICATE_ROLE",
     EMAIL_PARSE_FAILED = "EMAIL_PARSE_FAILED",
     PAYLOAD_TOO_LARGE = "PAYLOAD_TOO_LARGE",
     HOLD_COMMENT_REQUIRED = "HOLD_COMMENT_REQUIRED",
