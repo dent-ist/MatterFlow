@@ -45,7 +45,8 @@ test.describe('Fixed-header screens at 1366x768', () => {
     test.setTimeout(300_000);
     bulk = await seedBulk(admin, seed, {
       tasks: 64,
-      clients: 30,
+      // More than one page of the Clients list (50), so Next is enabled whatever else the database holds.
+      clients: 60,
       matters: 30,
       projects: 0,
       assets: 0,
@@ -156,7 +157,7 @@ test.describe('Fixed-header screens at 1366x768', () => {
     expect(await documentOverflow(page)).toBeLessThanOrEqual(0);
 
     await scrollRegion(region, 400);
-    expect(await scrollTopOf(region)).toBeGreaterThan(100);
+    await expect.poll(() => scrollTopOf(region)).toBeGreaterThan(100);
     expect(await box(filters)).toEqual(before.filters);
     expect(await box(region.locator('thead th').first())).toEqual(before.header);
 
@@ -184,7 +185,7 @@ test.describe('Fixed-header screens at 1366x768', () => {
     const before = { details: await box(details), title: await box(title) };
     expect(await documentOverflow(page)).toBeLessThanOrEqual(0);
     await scrollRegion(region, 300);
-    expect(await scrollTopOf(region)).toBeGreaterThan(50);
+    await expect.poll(() => scrollTopOf(region)).toBeGreaterThan(50);
     expect(await box(details)).toEqual(before.details);
     expect(await box(title)).toEqual(before.title);
   });

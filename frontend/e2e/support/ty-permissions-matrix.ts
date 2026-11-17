@@ -210,7 +210,12 @@ function watch(page: Page): { failed: string[] } {
 
 async function settle(page: Page): Promise<void> {
   await page.waitForLoadState('networkidle');
-  await expect(page.locator('[data-loading], [data-skeleton]')).toHaveCount(0);
+  // The placeholders of the Matter page's sections are not "still loading": a section loads when it is near the window (#1396).
+  await expect(
+    page.locator(
+      '[data-loading]:not([data-section] [data-loading]), [data-skeleton]:not([data-section] [data-skeleton])',
+    ),
+  ).toHaveCount(0);
 }
 
 /** The 403 page is shown (it keeps the address that was asked for, #598, so the URL no longer says `/403`). */
