@@ -157,7 +157,7 @@ test.describe('Fixed-header screens at 1366x768', () => {
     expect(await documentOverflow(page)).toBeLessThanOrEqual(0);
 
     await scrollRegion(region, 400);
-    expect(await scrollTopOf(region)).toBeGreaterThan(100);
+    await expect.poll(() => scrollTopOf(region)).toBeGreaterThan(100);
     expect(await box(filters)).toEqual(before.filters);
     expect(await box(region.locator('thead th').first())).toEqual(before.header);
 
@@ -185,7 +185,7 @@ test.describe('Fixed-header screens at 1366x768', () => {
     const before = { details: await box(details), title: await box(title) };
     expect(await documentOverflow(page)).toBeLessThanOrEqual(0);
     await scrollRegion(region, 300);
-    expect(await scrollTopOf(region)).toBeGreaterThan(50);
+    await expect.poll(() => scrollTopOf(region)).toBeGreaterThan(50);
     expect(await box(details)).toEqual(before.details);
     expect(await box(title)).toEqual(before.title);
   });
