@@ -76,7 +76,7 @@ test.describe('T4: status menu (M1, #303)', () => {
       await detail.open(id);
       await detail.expectStatus(status);
       await detail.statusMenu.click();
-      expect(await itemLabels(page), status).toEqual(labels);
+      await expect.poll(() => itemLabels(page), { message: status }).toEqual(labels);
       // No second, repeated label: the target status is the tooltip only.
       await expect(page.locator('.im-pop .im-hint'), status).toHaveCount(0);
       const first = page.locator('.im-pop [role=menuitemradio]').first();
