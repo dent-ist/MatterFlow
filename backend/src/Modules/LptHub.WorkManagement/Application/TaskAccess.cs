@@ -12,7 +12,10 @@ namespace LptHub.WorkManagement.Application;
 public sealed class TaskAccess(DbContext db, IMatterVisibility visibility)
 {
     /// <summary>The tasks the caller may see, read-only. Written as the join form of the rule (never <c>EXISTS ... OR assignee</c>).</summary>
-    public IQueryable<WorkTask> Visible() => visibility.WhereTaskFlagVisible(db.Set<WorkTask>().AsNoTracking(), t => t.MatterId, t => t.IsMatterSensitive, t => t.AssignedUserId);
+    public IQueryable<WorkTask> Visible() => visibility.WhereTaskFlagVisible(db.Set<WorkTask>().AsNoTracking(), t => t.MatterId, t => t.IsMatterSensitive, t => t.AssignedUserId, t => t.TaskTypeId);
+
+    /// <summary>Keeps the tasks whose type the caller may see (the Task Type term only, epic #1397), for readers that already know the matter or the assignee rule holds. A no-op while the switch is off.</summary>
+    public IQueryable<WorkTask> WhereTypeVisible(IQueryable<WorkTask> tasks) => visibility.WhereTaskTypeVisible(tasks, t => t.TaskTypeId);
 
     /// <summary>True when the task exists and the caller may see it.</summary>
     public Task<bool> CanSeeAsync(long taskId, CancellationToken ct) => visibility.CanSeeTaskAsync(taskId, ct);
@@ -31,8 +34,9 @@ public sealed class TaskAccess(DbContext db, IMatterVisibility visibility)
         if (visibility.Current.UserId is not { } user)
             return false;
 
+        // An assigned task opens the asset only when the caller may also see the task's type (epic #1397: no assignee exception for a hidden type).
         return await (from l in db.Set<TaskAsset>().AsNoTracking()
-                      join t in db.Set<WorkTask>().AsNoTracking() on l.TaskId equals t.Id
+                      join t in WhereTypeVisible(db.Set<WorkTask>().AsNoTracking()) on l.TaskId equals t.Id
                       where l.AssetId == assetId && t.AssignedUserId == user
                       select l.AssetId).AnyAsync(ct);
     }

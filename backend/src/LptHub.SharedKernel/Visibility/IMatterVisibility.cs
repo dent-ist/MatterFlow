@@ -13,6 +13,15 @@ public interface IMatterVisibility
     /// <summary>True when the rule is enforced (<c>Features:SensitiveMatterAccess</c>).</summary>
     bool Enabled { get; }
 
+    /// <summary>True when the Task Type access rule is enforced (<c>Features:TaskTypeAccess</c>, epic #1397). Independent of <see cref="Enabled"/>: each rule has its own switch.</summary>
+    bool TaskTypeAccessEnabled { get; }
+
+    /// <summary>True when any rule that hides tasks is on (<see cref="Enabled"/> or <see cref="TaskTypeAccessEnabled"/>): the guard for "skip the task check entirely".</summary>
+    bool TaskRulesEnabled => Enabled || TaskTypeAccessEnabled;
+
+    /// <summary>True when the Task Type term applies to the caller of this request: the switch is on and the caller is not the System Admin. Guards extra work that is pointless otherwise.</summary>
+    bool TaskTypeRuleApplies { get; }
+
     /// <summary>The caller of this request: person and see-all flag, from the current permissions (a role change is effective on the next request).</summary>
     Viewer Current { get; }
 
@@ -25,7 +34,10 @@ public interface IMatterVisibility
     /// <summary>The matters the viewer may see (all matters while the rule is off). Mode M.</summary>
     IQueryable<MatterAccessRow> VisibleMatters(Viewer? viewer = null);
 
-    /// <summary>The tasks the viewer may see: those of a visible matter, plus those currently assigned to the viewer (all tasks while the rule is off). Mode T.</summary>
+    /// <summary>
+    /// The tasks the viewer may see: (those of a visible matter, plus those currently assigned to the viewer) AND whose type the viewer may see (Task Type access rule: a restricted type whose Can View
+    /// roles the viewer holds none of hides its tasks, even from the assignee; the System Admin is exempt). All tasks while both rules are off. Mode T.
+    /// </summary>
     IQueryable<TaskAccessRow> VisibleTasks(Viewer? viewer = null);
 
     /// <summary>Keeps the rows whose matter the viewer may see. A no-op while the rule is off or for a see-all viewer. Mode M.</summary>
@@ -38,18 +50,19 @@ public interface IMatterVisibility
     /// Mode T for set-wide readers over rows that carry a matter id and the task's assignee: the matter rule OR assigned to the viewer, written as the LEFT JOIN form
     /// (never <c>EXISTS ... OR assignee</c>, which costs about 38,500 reads at 24,000 tasks). A no-op while the rule is off or for a see-all viewer.
     /// </summary>
-    IQueryable<T> WhereTaskVisibleBy<T>(IQueryable<T> source, Expression<Func<T, int>> matterId, Expression<Func<T, int?>> assignedUserId, Viewer? viewer = null);
+    IQueryable<T> WhereTaskVisibleBy<T>(IQueryable<T> source, Expression<Func<T, int>> matterId, Expression<Func<T, int?>> assignedUserId, Expression<Func<T, int>> taskTypeId, Viewer? viewer = null);
 
     /// <summary>
     /// Mode T for set-wide readers over rows that carry the task's own copy of the matter's sensitivity (<c>Task.IsMatterSensitive</c>): not sensitive, OR assigned to the viewer, OR a matter the
     /// viewer manages. Every term is a test on the row, so no join to the matter table is needed and a covering index answers it (issue #810); same result as <see cref="WhereTaskVisibleBy{T}"/>.
-    /// A no-op while the rule is off or for a see-all viewer.
+    /// A no-op while both rules are off; the Task Type term (<paramref name="taskTypeId"/>) is applied on top whenever <see cref="TaskTypeAccessEnabled"/> and the viewer is not the System Admin.
     /// </summary>
     IQueryable<T> WhereTaskFlagVisible<T>(
         IQueryable<T> source,
         Expression<Func<T, int>> matterId,
         Expression<Func<T, bool>> isMatterSensitive,
         Expression<Func<T, int?>> assignedUserId,
+        Expression<Func<T, int>> taskTypeId,
         Viewer? viewer = null);
 
     /// <summary>
@@ -78,14 +91,28 @@ public interface IMatterVisibility
         Expression<Func<T, int?>> secondaryManagerId,
         Viewer? viewer = null);
 
-    /// <summary>The same for rows that also carry the task's assignee: the matter rule OR currently assigned to the viewer. Mode T.</summary>
+    /// <summary>The same for rows that also carry the task's assignee: the matter rule OR currently assigned to the viewer, AND the Task Type rule over <paramref name="taskTypeId"/>. Mode T.</summary>
     IQueryable<T> WhereTaskRowVisible<T>(
         IQueryable<T> source,
         Expression<Func<T, bool>> isSensitive,
         Expression<Func<T, int?>> primaryManagerId,
         Expression<Func<T, int?>> secondaryManagerId,
         Expression<Func<T, int?>> assignedUserId,
+        Expression<Func<T, int>> taskTypeId,
         Viewer? viewer = null);
+
+    /// <summary>
+    /// ONLY the Task Type term of the rule, for task rows whose matter is already known to be visible (the matter's own task list, a project's tasks, My Matters, whose matters were narrowed by mode M): a
+    /// restricted type the viewer holds no Can View role of hides its tasks even inside a visible matter, and from the project manager and the assignee alike. A no-op while the Task Type switch is off
+    /// or for the System Admin.
+    /// </summary>
+    IQueryable<T> WhereTaskTypeVisible<T>(IQueryable<T> source, Expression<Func<T, int>> taskTypeId, Viewer? viewer = null);
+
+    /// <summary>
+    /// For rows that point at a task by id without carrying its columns (audit events, activity): hides the rows whose task is of a type the viewer may not see (the task's CURRENT type; a type cannot change on a task).
+    /// Rows without a task id are unchanged. Only the Task Type term: the matter side of audit stays with the audit module's own sensitive-scope rule. A no-op while the switch is off or for the System Admin.
+    /// </summary>
+    IQueryable<T> WhereTaskEventVisible<T>(IQueryable<T> source, Expression<Func<T, long?>> taskId, Viewer? viewer = null);
 
     /// <summary>True when the matter exists and the caller may see it. For single-record gates and for ids that come from a client.</summary>
     Task<bool> CanSeeMatterAsync(int matterId, CancellationToken cancellationToken = default);
@@ -94,8 +121,14 @@ public interface IMatterVisibility
     Task<bool> CanSeeTaskAsync(long taskId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// The task types the caller may not see (restricted, and none of the caller's active roles is in Can View): empty while the Task Type rule is off, for the System Admin and when no type is
+    /// restricted. Used for the one rule that cannot go through a task row (audit events, which carry a task id only).
+    /// </summary>
+    Task<IReadOnlyList<int>> HiddenTaskTypeIdsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// A short key that changes whenever what the caller may see changes (a matter marked or un-marked, a manager added or removed, a sensitive-matter task assigned to or away
-    /// from the caller, the see-all permission): <c>off</c> while the rule is off, <c>all</c> for a see-all caller. Part of every cache key that holds viewer-dependent numbers
+    /// from the caller, the see-all permission, the set of hidden task types): <c>off</c> while both rules are off, <c>all</c> for a see-all caller who is not subject to the type rule. Part of every cache key that holds viewer-dependent numbers
     /// (README section 10). One indexed statement, shared with the request's preparation (<see cref="PreparesViewerAttribute"/>).
     /// </summary>
     Task<string> AccessStampAsync(CancellationToken cancellationToken = default);

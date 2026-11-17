@@ -84,6 +84,7 @@ public static class IdentityModule
         services.Configure<LptHub.SharedKernel.Visibility.SensitiveMatterAccessOptions>(configuration.GetSection(LptHub.SharedKernel.Visibility.SensitiveMatterAccessOptions.Section));
         // The go-live switch of the Task Type access rule (epic #1397). Registered here next to the sensitive-matter switch; #1400 reads it in the visibility port.
         services.Configure<LptHub.SharedKernel.Visibility.TaskTypeAccessOptions>(configuration.GetSection(LptHub.SharedKernel.Visibility.TaskTypeAccessOptions.Section));
+        services.AddScoped<Access.IActiveRoleSource, Access.ActiveRoleSource>();
         services.AddScoped<MatterVisibility>();
         services.AddScoped<LptHub.SharedKernel.Visibility.IMatterVisibility>(sp => sp.GetRequiredService<MatterVisibility>());
         services.AddScoped<LptHub.SharedKernel.Visibility.IManagedMatterScope, ManagedMatterScope>();

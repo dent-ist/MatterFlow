@@ -141,7 +141,12 @@ public class VisibilityRuleTests
         matters.Rows().Returns(_ => Matters.AsQueryable());
         var tasks = Substitute.For<ITaskAccessSource>();
         tasks.Rows().Returns(_ => Tasks.AsQueryable());
-        return new MatterVisibility(user, permissions, matters, tasks, null!, Options.Create(new SensitiveMatterAccessOptions { SensitiveMatterAccess = enabled }));
+        var types = Substitute.For<ITaskTypeAccessSource>();
+        types.Types().Returns(_ => Array.Empty<TaskTypeAccessRow>().AsQueryable());
+        types.ViewRoles().Returns(_ => Array.Empty<TaskTypeViewRoleRow>().AsQueryable());
+        var roles = Substitute.For<IActiveRoleSource>();
+        roles.RoleIdsOf(Arg.Any<int>()).Returns(_ => Array.Empty<int>().AsQueryable());
+        return new MatterVisibility(user, permissions, matters, tasks, null!, Options.Create(new SensitiveMatterAccessOptions { SensitiveMatterAccess = enabled }), types, roles, Options.Create(new TaskTypeAccessOptions()));
     }
 
     [Fact]

@@ -118,9 +118,9 @@ public class VisibilitySourceRulesTests
     {
         // Issue #1304: the helpers filter with a subquery over these rows. EF applies AsNoTracking to the WHOLE statement, so one AsNoTracking here makes every entity a caller loads through
         // the filter untracked and SaveChanges silently saves nothing for a caller who is not "see all" while the sensitive-matter rule is on. The rows are a projection (never tracked), so the option buys nothing.
-        var implementers = new Regex(@"class\s+\w+[^{]*:\s*[^{]*\bI(Matter|Task)AccessSource\b", RegexOptions.CultureInvariant);
+        var implementers = new Regex(@"class\s+\w+[^{]*:\s*[^{]*\bI(Matter|Task|TaskType)AccessSource\b", RegexOptions.CultureInvariant);
         var sources = ProductSources().Where(f => implementers.IsMatch(File.ReadAllText(f))).ToList();
-        sources.Select(Path.GetFileName).Order(StringComparer.Ordinal).ShouldBe(["MatterAccessSource.cs", "TaskAccessSource.cs"]);
+        sources.Select(Path.GetFileName).Order(StringComparer.Ordinal).ShouldBe(["MatterAccessSource.cs", "TaskAccessSource.cs", "TaskTypeAccessSource.cs"]);
         var offenders = sources
             .Where(f => File.ReadAllLines(f).Any(line => !line.TrimStart().StartsWith("//", StringComparison.Ordinal) && line.Contains("AsNoTracking", StringComparison.Ordinal)))
             .Select(Path.GetFileName)

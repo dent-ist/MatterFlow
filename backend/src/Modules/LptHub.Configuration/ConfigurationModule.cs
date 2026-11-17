@@ -42,6 +42,7 @@ public static class ConfigurationModule
         services.TryAddScoped<IConfigurationTaskCounts, NoTasksConfigurationTaskCounts>();
         services.TryAddScoped<ITaskTypeAccessImpact, NoTasksTaskTypeAccessImpact>();
         services.AddScoped<TaskTypeAccessService>();
+        services.AddScoped<LptHub.SharedKernel.Visibility.ITaskTypeAccessSource, Application.TaskTypes.TaskTypeAccessSource>();
         // The role-delete block of the Identity module asks which Task Types list a role (epic #1397); Identity registers a "none" default that this replaces.
         services.Replace(ServiceDescriptor.Scoped<LptHub.Identity.Contracts.ITaskTypeRoleUsage>(sp => sp.GetRequiredService<TaskTypeAccessService>()));
         services.AddScoped<TaskTypeService>();

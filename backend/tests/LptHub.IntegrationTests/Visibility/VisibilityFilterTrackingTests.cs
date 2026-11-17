@@ -34,10 +34,10 @@ public sealed class VisibilityFilterTrackingTests(SqlServerFixture sql)
         var task = await visibility.WhereTaskVisible(db.Set<WorkTask>(), t => t.Id, persona).SingleAsync(t => t.Id == u.TN1);
         db.Entry(task).State.ShouldBe(EntityState.Unchanged, "WhereTaskVisible");
 
-        var byAssignee = await visibility.WhereTaskVisibleBy(db.Set<WorkTask>(), t => t.MatterId, t => t.AssignedUserId, persona).SingleAsync(t => t.Id == u.TN1);
+        var byAssignee = await visibility.WhereTaskVisibleBy(db.Set<WorkTask>(), t => t.MatterId, t => t.AssignedUserId, t => t.TaskTypeId, persona).SingleAsync(t => t.Id == u.TN1);
         byAssignee.ShouldBeSameAs(task);
 
-        var flagged = await visibility.WhereTaskFlagVisible(db.Set<WorkTask>(), t => t.MatterId, t => t.IsMatterSensitive, t => t.AssignedUserId, persona).SingleAsync(t => t.Id == u.TN1);
+        var flagged = await visibility.WhereTaskFlagVisible(db.Set<WorkTask>(), t => t.MatterId, t => t.IsMatterSensitive, t => t.AssignedUserId, t => t.TaskTypeId, persona).SingleAsync(t => t.Id == u.TN1);
         flagged.ShouldBeSameAs(task);
 
         var viaOr = await visibility.WhereMatterVisibleOr(db.Set<Project>(), p => p.MatterId, _ => p => false, persona).SingleAsync(p => p.Id == u.PN1);

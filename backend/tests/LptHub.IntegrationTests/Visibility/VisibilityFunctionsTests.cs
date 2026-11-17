@@ -161,7 +161,7 @@ public sealed class VisibilityFunctionsTests(SqlServerFixture sql, ITestOutputHe
             (await port.VisibleMatters(viewer).Select(m => m.MatterId).OrderBy(i => i).ToListAsync()).Select(i => (long)i).ShouldBe(expectedMatters, "EF: " + label);
 
             var expectedTasks = tasks.Where(t => visibleMatters.Contains(t.MatterId) || assigned(t)).Select(t => t.TaskId).Order().ToList();
-            (await ReadLongsAsync("SELECT TaskId FROM dbo.fnTaskVisible(@u, @s) ORDER BY TaskId", args)).ShouldBe(expectedTasks, label);
+            (await ReadLongsAsync("SELECT TaskId FROM dbo.fnTaskVisible(@u, @s, 0) ORDER BY TaskId", args)).ShouldBe(expectedTasks, label);
             (await port.VisibleTasks(viewer).Select(t => t.TaskId).OrderBy(i => i).ToListAsync()).ShouldBe(expectedTasks, "EF: " + label);
 
             // The flag form (Task.IsMatterSensitive, issue #810) as the readers use it: with the managed matters as a prepared list and as the subquery fallback.
@@ -274,7 +274,7 @@ public sealed class VisibilityFunctionsTests(SqlServerFixture sql, ITestOutputHe
         var plain = await LogicalReadsAsync("SELECT COUNT(*) FROM dbo.Task t WHERE t.StatusCode IN ('NEW', 'IN_PROGRESS', 'ON_HOLD')", user, 0);
         foreach (var viewer in new[] { new Viewer(user, false), new Viewer(null, false) })
         {
-            var visible = visibility.WhereTaskVisibleBy(db.Set<WorkTask>().AsNoTracking(), t => t.MatterId, t => t.AssignedUserId, viewer)
+            var visible = visibility.WhereTaskVisibleBy(db.Set<WorkTask>().AsNoTracking(), t => t.MatterId, t => t.AssignedUserId, t => t.TaskTypeId, viewer)
                 .Where(t => t.Status == TaskStatusCode.New || t.Status == TaskStatusCode.InProgress || t.Status == TaskStatusCode.OnHold);
             var sqlText = visible.GroupBy(_ => 1).Select(g => g.Count()).ToQueryString();
             var reads = await LogicalReadsAsync(sqlText, user, 0);
@@ -314,7 +314,7 @@ public sealed class VisibilityFunctionsTests(SqlServerFixture sql, ITestOutputHe
         var asset = (await ReadLongsAsync("SELECT TOP 1 AssetId FROM dbo.Asset ORDER BY AssetId DESC")).Single();
         foreach (var seeAll in new[] { 0, 1 })
         {
-            var taskReads = await LogicalReadsAsync($"SELECT 1 FROM dbo.fnTaskVisible(@u, @s) WHERE TaskId = {task}", _people[4], seeAll);
+            var taskReads = await LogicalReadsAsync($"SELECT 1 FROM dbo.fnTaskVisible(@u, @s, 0) WHERE TaskId = {task}", _people[4], seeAll);
             var assetReads = await LogicalReadsAsync($"SELECT 1 FROM dbo.fnAssetVisible(@u, @s) WHERE AssetId = {asset}", _people[4], seeAll);
             output.WriteLine($"single task {taskReads} reads, single asset {assetReads} reads (seeAll {seeAll})");
             taskReads.ShouldBeLessThanOrEqualTo(25);

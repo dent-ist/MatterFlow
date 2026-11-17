@@ -190,7 +190,8 @@ public sealed class DashboardService(DbContext db, IClock clock, IUserTimeZone t
         DashboardMine? mine = null;
         if (showUnassigned && !showSummary)
         {
-            var own = db.Set<WorkTask>().AsNoTracking().Where(t => t.AssignedUserId == me).Where(TaskQueueRules.Open);
+            // "Mine" is no shortcut around the Task Type rule: an assigned task of a restricted type the caller may not see is not counted (epic #1397).
+            var own = visibility.WhereTaskTypeVisible(db.Set<WorkTask>().AsNoTracking().Where(t => t.AssignedUserId == me).Where(TaskQueueRules.Open), t => t.TaskTypeId);
             mine = new DashboardMine(await own.CountAsync(ct), await own.CountAsync(overdue, ct));
         }
 

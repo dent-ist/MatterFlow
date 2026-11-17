@@ -103,9 +103,9 @@ public sealed class OrganizationTaskCounts(DbContext db, IClock clock, IUserTime
             case TaskCountScope.Client:
                 var joined = from t in open
                              join m in db.Set<Matter>().AsNoTracking() on t.MatterId equals m.Id
-                             select new { Task = t, m.ClientId, m.IsSensitive, m.PrimaryManagerId, m.SecondaryManagerId, t.AssignedUserId };
+                             select new { Task = t, m.ClientId, m.IsSensitive, m.PrimaryManagerId, m.SecondaryManagerId, t.AssignedUserId, t.TaskTypeId };
                 // The task rule on the matter columns this join already has: the matter's tasks for a visible matter, otherwise only the caller's own.
-                joined = visibility.WhereTaskRowVisible(joined, x => x.IsSensitive, x => x.PrimaryManagerId, x => x.SecondaryManagerId, x => x.AssignedUserId);
+                joined = visibility.WhereTaskRowVisible(joined, x => x.IsSensitive, x => x.PrimaryManagerId, x => x.SecondaryManagerId, x => x.AssignedUserId, x => x.TaskTypeId);
                 if (keys is not null)
                     joined = joined.Where(x => keys.Contains(x.ClientId));
                 return joined.GroupBy(x => x.ClientId, x => x.Task);

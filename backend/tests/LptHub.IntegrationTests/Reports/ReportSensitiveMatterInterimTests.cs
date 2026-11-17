@@ -123,7 +123,7 @@ public sealed class ReportSensitiveMatterInterimTests(SqlServerFixture sql)
 
         foreach (var statement in new[]
                  {
-                     "SELECT * FROM dbo.fnMatterVisible(1, 1)", "SELECT * FROM dbo.fnTaskVisible(1, 1)", "SELECT * FROM dbo.fnAssetVisible(1, 1)", "SELECT IsSensitiveScope FROM dbo.AuditEvent",
+                     "SELECT * FROM dbo.fnMatterVisible(1, 1)", "SELECT * FROM dbo.fnTaskVisible(1, 1, 1)", "SELECT * FROM dbo.fnAssetVisible(1, 1)", "SELECT IsSensitiveScope FROM dbo.AuditEvent",
                      "SELECT COUNT(*) FROM dbo.AuditEvent WHERE IsSensitiveScope = 1",
                  })
         {

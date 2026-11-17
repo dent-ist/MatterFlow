@@ -105,7 +105,7 @@ public sealed class SkillsService(DbContext db, IClock clock, CapacityService ca
                 .ToListAsync(ct);
 
         var usedTypes = grouped.Select(g => g.TaskTypeId).ToHashSet();
-        var types = await db.Set<TaskType>().AsNoTracking()
+        var types = await visibility.WhereTaskTypeVisible(db.Set<TaskType>().AsNoTracking(), t => t.Id)
             .Where(t => t.IsActive || usedTypes.Contains(t.Id))
             .Select(t => new { t.Id, t.Name, t.IconKey, t.IsActive })
             .ToListAsync(ct);

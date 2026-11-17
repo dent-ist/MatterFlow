@@ -47,7 +47,8 @@ public sealed class DashboardTrendService(DbContext db, IClock clock, IUserTimeZ
         if (!query.Fresh && cache.TryGet<DashboardTrend>(cacheKey, out var cached))
             return cached;
 
-        var catalogue = await db.Set<TaskType>().AsNoTracking().Select(t => new { t.Id, t.Name, t.IconKey, t.IsActive }).ToListAsync(ct);
+        // Only the task types the caller may see (epic #1397): a hidden type is as unknown as a missing one.
+        var catalogue = await visibility.WhereTaskTypeVisible(db.Set<TaskType>().AsNoTracking(), t => t.Id).Select(t => new { t.Id, t.Name, t.IconKey, t.IsActive }).ToListAsync(ct);
         var unknown = wanted.Where(id => catalogue.All(t => t.Id != id)).ToList();
         if (unknown.Count > 0)
             return Error.Validation("taskTypeIds", "UNKNOWN_TASK_TYPE", $"Unknown task type id {string.Join(", ", unknown)}.", "UNKNOWN_TASK_TYPE");
