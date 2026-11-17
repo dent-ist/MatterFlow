@@ -775,3 +775,16 @@ The PM review of the battery found it showed "After hours" in the evening and at
 4. **Honest overload.** `UsedPercent` stays slots based. New `OverCapacityTasks` = sum over counted workers of max(0, load - slots), so slack elsewhere cannot hide overload; the frontend shows "N tasks over capacity" when above 0.
 5. **Unassigned waiting.** New nullable `UnassignedWaiting` = the open unassigned tasks of the scope through the same visibility-filtered definition as the Summary's Unassigned card (`VisibleTasks.OpenUnassigned`, sensitive-matter rule applied); null unless the caller also holds `Dashboard.ViewSummary` or `Dashboard.ViewUnassigned` (the permissions that already show unassigned counts). The capacity numbers stay aggregate only (decision AS item 12). `DashboardCapacity` also echoes `CountOffHours`.
 6. **Frontend (Agent H, after US-11 and this backend):** no "After hours" state in normal use, summary line "N unassigned waiting, M free slots", red "N tasks over capacity" only above 0, Settings > Dashboard checkbox "Count people outside work hours as available". No new or changed keyboard shortcuts (#420).
+
+## AW. Task Type access by role (decided 2026-11-16 by the owner, epic #1397, issues #1398 to #1403; design `docs/ux/task-type-access/README.md`)
+
+**Status (2026-11-17): designed, not built.** Open questions Q1 to Q5 of the design are with the owner.
+
+1. **Three role lists per Task Type:** Can View, Can Edit, Can Be Assigned. A person qualifies when any of their active app roles is in the list (roles are `dbo.Role`, not the HR Title). Edit and Assign imply View.
+2. **No roles in Can View = open to everyone.** A type is restricted only when Can View has roles (`TaskType.IsRestricted`). Existing types keep working as today.
+3. **Hidden means hidden:** absent from every list, count, search, notification, export, audit view and picker; a direct address answers the same 404 as a missing id (the mode of architecture 6.8). Counts come from the visible set.
+4. **No assignee exception, no special access for project managers.** System Admin sees everything (only System Admin; `Matter.ViewSensitive` does not lift this rule).
+5. **Additional rule:** on top of `Task.View` and the sensitive-matter rule. Edit covers everything that changes the task, including comments and creating a task of the type. Can Be Assigned limits who the pickers offer and who the server accepts as assignee; who may perform the assigning stays `Task.Assign`.
+6. **One rule in one place:** the existing visibility port (`IMatterVisibility`, `VisibleTasks`, `WhereTaskVisibleBy`, `dbo.fnTaskVisible`). Go-live switch `Features:TaskTypeAccess`, default off. Guards by test (endpoint catalogue, persona walk, mutation tests, identity-with-no-restriction proof).
+7. **Reports respect the rule** is the target; the mechanism is an open question (design section 14, Q3).
+8. Not deployed, so no backfill of old rows. No new or changed keyboard shortcuts (#420).
