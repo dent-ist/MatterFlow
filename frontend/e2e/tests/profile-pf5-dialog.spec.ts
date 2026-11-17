@@ -108,7 +108,12 @@ test.describe('pf5-dialog-presets: quick choices fill Until (#538)', () => {
     await dialog.locator('[data-key="week"]').focus();
     await me.keyboard.press('Space');
     await expect(dialog.locator('[data-key="week"]')).toHaveAttribute('aria-pressed', 'true');
-    await dialog.getByRole('button', { name: 'Set Out of Office', exact: true }).focus();
+    const confirm = dialog.getByRole('button', { name: 'Set Out of Office', exact: true });
+    await expect(confirm).toBeEnabled();
+    await expect(async () => {
+      await confirm.focus();
+      await expect(confirm).toBeFocused({ timeout: 1000 });
+    }).toPass({ timeout: 10_000 });
     await me.keyboard.press('Enter');
     await expect(me.locator('[data-ooo-label]')).toContainText(
       `Out of Office until ${inDays(7).numeric}`,
