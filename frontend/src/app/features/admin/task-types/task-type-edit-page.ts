@@ -23,7 +23,26 @@ import {
   HasUnsavedChanges,
   LeaveConfirmService,
 } from '../../../shared/guards/unsaved-changes.guard';
-import { TaskTypeView, TaskTypesApi } from './task-types-api';
+import {
+  TaskTypeAccessPreview,
+  AccessRoleChoice,
+  TaskTypeView,
+  TaskTypesApi,
+} from './task-types-api';
+import {
+  AccessConfirm,
+  AccessModel,
+  OPEN_ACCESS,
+  mergeRoles,
+  accessOf,
+  confirmOf,
+  isRestricted,
+  needsConfirm,
+  normalised,
+  sameAccess,
+} from './task-type-access';
+import { AccessDialogKind, TaskTypeAccessConfirm } from './task-type-access-confirm';
+import { TaskTypeAccessTab } from './task-type-access-tab';
 import { ActivityDrawer } from '../../../shared/ui/activity-drawer';
 import { CharCounter } from '../../../shared/ui/char-counter';
 import { Dropdown, DropdownItem } from '../../../shared/ui/dropdown';
@@ -142,6 +161,8 @@ const workflowsKey = (m: Model): string =>
     TaskTypeChip,
     TaskTypeStatusNote,
     TaskTypeWorkflowsTab,
+    TaskTypeAccessTab,
+    TaskTypeAccessConfirm,
     WorkStrip,
   ],
   templateUrl: './task-type-edit-page.html',
@@ -150,7 +171,7 @@ const workflowsKey = (m: Model): string =>
 export class TaskTypeEditPage implements HasUnsavedChanges {
   /** Route parameter `id`; absent on `/admin/task-types/new`. */
   readonly id = input<string | undefined>(undefined);
-  /** `?tab=`: `workflows` or `form`; absent (or anything else) is Overview. */
+  /** `?tab=`: `workflows`, `form` or `access`; absent (or anything else) is Overview. */
   readonly tab = input<string | undefined>(undefined);
 
   private readonly api = inject(TaskTypesApi);
@@ -186,6 +207,27 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
   /** The versions of the request form, read when the Request form tab opens (field count and last published date). */
   private readonly formVersions = signal<readonly FormVersionSummary[] | null>(null);
 
+  // ---- Access (epic #1397, #1402) ----
+  /** The three role lists being edited and the saved ones. */
+  protected readonly accessModel = signal<AccessModel>({ ...OPEN_ACCESS });
+  protected readonly savedAccess = signal<AccessModel>({ ...OPEN_ACCESS });
+  protected readonly accessRoles = signal<AccessRoleChoice[]>([]);
+  /** Whether the server enforces the rules; null until it is known (never for a type that is not saved yet). */
+  protected readonly accessEnforced = signal<boolean | null>(null);
+  protected readonly accessState = signal<'loading' | 'error' | 'ready'>('loading');
+  /** Server refusals by list (a role that is inactive or gone). */
+  protected readonly accessErrors = signal<Record<string, string>>({});
+  protected readonly accessDialog = signal<AccessDialogKind>('closed');
+  protected readonly accessConfirm = signal<AccessConfirm | null>(null);
+  protected readonly accessDialogError = signal('');
+  private accessLoaded = false;
+  private accessResolve: ((saved: boolean) => void) | null = null;
+  /** Lists typed on the New page whose save failed after the type was created: the Access tab opens with them still to save. */
+  private readonly accessDraft: AccessModel | null = (() => {
+    const draft = inject(Router).currentNavigation()?.extras.state?.['accessDraft'];
+    return draft ? accessOf(draft as AccessModel) : null;
+  })();
+
   protected readonly isNew = computed(() => this.id() === undefined);
   protected readonly current = computed<TaskTypeTab>(() => tabOf(this.tab(), this.isNew()));
   protected readonly overviewDirty = computed(
@@ -194,7 +236,12 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
   protected readonly workflowsDirty = computed(
     () => workflowsKey(this.model()) !== workflowsKey(this.saved()),
   );
-  protected readonly dirty = computed(() => this.overviewDirty() || this.workflowsDirty());
+  protected readonly accessDirty = computed(
+    () => !sameAccess(this.accessModel(), this.savedAccess()),
+  );
+  protected readonly dirty = computed(
+    () => this.overviewDirty() || this.workflowsDirty() || this.accessDirty(),
+  );
   /** The footer (Save, Cancel) is there only while there is something to save: always on a new type, else when a tab has edits. */
   protected readonly showFooter = computed(
     () => this.current() !== 'form' && (this.isNew() || this.dirty()),
@@ -215,6 +262,12 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
     link: this.back.tree,
     state: this.listCrumb.state,
   }));
+  /** The chips after the status in the header: a restricted type says so on every tab. */
+  protected readonly extraBadges = computed(() =>
+    this.taskType()?.access?.isRestricted
+      ? [{ label: 'Restricted', tone: 'neutral' as const, icon: 'pi-lock' }]
+      : [],
+  );
   protected readonly badge = computed(() => {
     const t = this.taskType();
     return t ? statusBadgeOf(t) : null;
@@ -256,6 +309,7 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
         label: TASK_TYPE_TAB_LABEL.form,
         ...(new_ ? { disabledReason: FORM_TAB_REASON } : {}),
       },
+      { key: 'access', label: TASK_TYPE_TAB_LABEL.access, icon: tabIcon('access') },
     ];
   });
 
@@ -302,6 +356,13 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
         this.pageTitle.set(recordStateTitle('taskType', state));
       } else if (name) this.pageTitle.set(shortTitleText(name));
     });
+    // The Access tab reads the lists and the roles when it opens (once; Reload Latest reads them again).
+    effect(() => {
+      const open = this.current() === 'access';
+      const t = this.taskType();
+      const ready = this.state() === 'ready';
+      if (open && ready && !this.accessLoaded) untracked(() => void this.loadAccess(t));
+    });
     // The Request form tab reads the versions of the form (field count, last published) when it opens.
     effect(() => {
       const t = this.taskType();
@@ -323,6 +384,7 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
   protected async load(id: string | undefined): Promise<void> {
     this.failure.set('');
     this.conflict.set(false);
+    this.accessLoaded = false;
     await this.flow.run(
       () =>
         Promise.all([
@@ -340,8 +402,51 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
         this.workflowsDenied.set(workflows.denied);
         this.taskType.set(t);
         this.apply(t ? this.modelOf(t) : { ...EMPTY });
+        // The lists the type came with (a manager's GET carries them): a reload drops edits of the Access tab like those of the other tabs.
+        const lists = accessOf(t?.access);
+        this.savedAccess.set(lists);
+        this.accessModel.set(accessOf(lists));
+        this.accessErrors.set({});
       },
     );
+  }
+
+  /** The Access tab's data: the saved lists and the roles of a saved type (with whether the server enforces them), or just the roles of a new one. */
+  protected async loadAccess(t: TaskTypeView | null): Promise<void> {
+    this.accessLoaded = true;
+    this.accessState.set('loading');
+    try {
+      if (t) {
+        const [view, choices] = await Promise.all([
+          firstValueFrom(this.api.getAccess(t.id)),
+          firstValueFrom(this.api.accessRoles()),
+        ]);
+        this.accessRoles.set(mergeRoles(choices, view.roles));
+        this.accessEnforced.set(view.enforced);
+        const saved = accessOf(view);
+        this.savedAccess.set(saved);
+        if (!this.accessDirty() || !this.accessLoadedOnce) {
+          this.accessModel.set(this.accessDraft ?? saved);
+        }
+        this.accessLoadedOnce = true;
+      } else {
+        this.accessRoles.set(await firstValueFrom(this.api.accessRoles()));
+      }
+      this.accessState.set('ready');
+    } catch {
+      this.accessLoaded = false;
+      this.accessState.set('error');
+    }
+  }
+  private accessLoadedOnce = false;
+
+  protected retryAccess(): void {
+    void this.loadAccess(this.taskType());
+  }
+
+  protected changeAccess(next: AccessModel): void {
+    this.accessModel.set(next);
+    this.accessErrors.set({});
   }
 
   private async loadVersions(t: TaskTypeView): Promise<void> {
@@ -432,7 +537,8 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
       return;
     }
     // The edits of the open tab are dropped (a saved tab has none): the record goes back to what was saved.
-    this.revert(this.current() === 'workflows' ? 'workflows' : 'overview');
+    const tab = this.current();
+    this.revert(tab === 'workflows' || tab === 'access' ? tab : 'overview');
     this.announcement.set('Changes discarded.');
   }
 
@@ -485,7 +591,12 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
     this.fieldErrors.set({});
   }
 
-  private revert(tab: 'overview' | 'workflows'): void {
+  private revert(tab: 'overview' | 'workflows' | 'access'): void {
+    if (tab === 'access') {
+      this.accessModel.set(accessOf(this.savedAccess()));
+      this.accessErrors.set({});
+      return;
+    }
     const s = this.saved();
     const m = this.model();
     this.model.set(
@@ -540,14 +651,17 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
       const from = this.current();
       const edits =
         (from === 'overview' && this.overviewDirty()) ||
-        (from === 'workflows' && this.workflowsDirty());
+        (from === 'workflows' && this.workflowsDirty()) ||
+        (from === 'access' && this.accessDirty());
       if (edits) {
         const leave = await this.leave.ask({
           label: this.saveForLeaveLabel,
           run: () => this.saveForLeave(),
         });
         if (!leave) return false;
-        if (this.dirty()) this.revert(from === 'workflows' ? 'workflows' : 'overview');
+        if (this.dirty()) {
+          this.revert(from === 'workflows' || from === 'access' ? from : 'overview');
+        }
       }
     }
     await this.go(to);
@@ -572,6 +686,7 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
    * fields from what is saved. A new type is created with everything and opens on its Workflows tab. Resolves true when it was saved.
    */
   protected async save(): Promise<boolean> {
+    if (this.current() === 'access' && !this.isNew()) return this.saveAccess();
     const m = this.model();
     const name = m.name.trim();
     if (!name) {
@@ -606,11 +721,14 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
           }),
         );
         this.apply(this.modelOf(created));
-        this.notify.success('Task type created');
-        // Lands on the Workflows tab (the next thing to set up); the address is replaced so Back returns to where Create was opened.
+        const draft = normalised(this.accessModel());
+        const outcome = await this.createAccess(created, draft);
+        // Lands on the Workflows tab (the next thing to set up), or on the Access tab when its rules could not be saved; the address is replaced so Back
+        // returns to where Create was opened.
         await this.router.navigate(['/admin/task-types', created.id], {
-          queryParams: { tab: 'workflows' },
+          queryParams: { tab: outcome === 'failed' ? 'access' : 'workflows' },
           replaceUrl: true,
+          ...(outcome === 'failed' ? { state: { accessDraft: draft } } : {}),
         });
         return true;
       }
@@ -642,6 +760,161 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
     }
   }
 
+  /**
+   * A new type is created first and its access rules saved right after (two requests, one click). The type exists even when the second fails: the person lands on its
+   * Access tab with the lists still to save, and a toast says so.
+   */
+  private async createAccess(
+    created: TaskTypeView,
+    draft: AccessModel,
+  ): Promise<'open' | 'saved' | 'failed'> {
+    if (!isRestricted(draft)) {
+      this.accessModel.set({ ...OPEN_ACCESS });
+      this.savedAccess.set({ ...OPEN_ACCESS });
+      this.notify.success('Task type created');
+      return 'open';
+    }
+    try {
+      const view = await firstValueFrom(
+        this.api.replaceAccess(created.id, { ...draft, rowVersion: created.rowVersion }),
+      );
+      this.savedAccess.set(draft);
+      this.notify.success('Task type created');
+      if (view.enforced === false) this.notify.info('Access rules saved', 'Not enforced yet.');
+      return 'saved';
+    } catch {
+      // The guard must not ask about lists that travel on to the Access tab.
+      this.accessModel.set({ ...OPEN_ACCESS });
+      this.savedAccess.set({ ...OPEN_ACCESS });
+      this.notify.error(
+        'Task type created, but its access rules were not saved.',
+        'Open the Access tab and save them again.',
+      );
+      return 'failed';
+    }
+  }
+
+  /**
+   * Saves the Access tab of a saved type: asks the server who would be affected (`POST .../access/preview`), opens the confirmation only when people lose view or
+   * edit, the type becomes open to everyone or the caller loses access, then replaces the lists (`PUT .../access`). A failed preview blocks the save (Cancel and
+   * Retry). Resolves true when the rules were saved, false when the person cancelled or it failed.
+   */
+  protected saveAccess(): Promise<boolean> {
+    if (this.busy() || !this.taskType()) return Promise.resolve(false);
+    return new Promise<boolean>((resolve) => {
+      this.accessResolve = resolve;
+      void this.checkAccess();
+    });
+  }
+
+  private finishAccess(saved: boolean): void {
+    const resolve = this.accessResolve;
+    this.accessResolve = null;
+    resolve?.(saved);
+  }
+
+  protected async checkAccess(): Promise<void> {
+    const t = this.taskType();
+    if (!t) return;
+    this.busy.set(true);
+    this.failure.set('');
+    this.conflict.set(false);
+    this.accessDialogError.set('');
+    // The question appears only when there is something to say; a slow check shows quiet lines meanwhile.
+    const slow = setTimeout(() => this.accessDialog.set('checking'), 400);
+    let preview: TaskTypeAccessPreview;
+    try {
+      const { canView, canEdit, canAssign } = normalised(this.accessModel());
+      preview = await firstValueFrom(this.api.previewAccess(t.id, { canView, canEdit, canAssign }));
+    } catch (e) {
+      clearTimeout(slow);
+      this.busy.set(false);
+      if (serverFormErrors(e).conflict) {
+        this.accessDialog.set('closed');
+        this.conflict.set(true);
+        this.finishAccess(false);
+        return;
+      }
+      this.accessDialog.set('error');
+      return;
+    }
+    clearTimeout(slow);
+    this.busy.set(false);
+    if (needsConfirm(preview)) {
+      this.accessConfirm.set(
+        confirmOf(preview, this.accessEnforced() !== false, t.name, t.openTaskCount),
+      );
+      this.accessDialog.set('confirm');
+      return;
+    }
+    this.accessDialog.set('closed');
+    await this.commitAccess();
+  }
+
+  protected cancelAccessDialog(): void {
+    if (this.busy()) return;
+    this.accessDialog.set('closed');
+    this.accessDialogError.set('');
+    this.finishAccess(false);
+  }
+
+  protected async commitAccess(): Promise<void> {
+    const t = this.taskType();
+    if (!t || this.busy()) return;
+    this.busy.set(true);
+    this.accessDialogError.set('');
+    try {
+      const view = await firstValueFrom(
+        this.api.replaceAccess(t.id, {
+          ...normalised(this.accessModel()),
+          rowVersion: t.rowVersion,
+        }),
+      );
+      const saved = accessOf(view);
+      this.taskType.set({
+        ...t,
+        rowVersion: view.rowVersion,
+        access: { isRestricted: view.isRestricted, ...saved },
+      });
+      this.accessRoles.set(mergeRoles(this.accessRoles(), view.roles));
+      this.accessEnforced.set(view.enforced);
+      this.savedAccess.set(saved);
+      this.accessModel.set(accessOf(saved));
+      this.accessErrors.set({});
+      this.accessDialog.set('closed');
+      this.announcement.set(`Access rules saved for ${t.name}.`);
+      if (view.enforced === false) this.notify.info('Access rules saved', 'Not enforced yet.');
+      else this.notify.success('Access rules saved');
+      this.finishAccess(true);
+    } catch (e) {
+      const errors = serverFormErrors(e);
+      if (errors.conflict) {
+        this.accessDialog.set('closed');
+        this.conflict.set(true);
+      } else if (Object.keys(errors.fields).length > 0) {
+        this.accessDialog.set('closed');
+        this.accessErrors.set(errors.fields);
+      } else if (this.accessDialog() === 'confirm') {
+        // The question stays open with the reason, focus on its button (#414).
+        this.accessDialogError.set(
+          e instanceof Error && e.message
+            ? e.message
+            : "Couldn't save the access rules. Try again.",
+        );
+        this.busy.set(false);
+        return;
+      } else {
+        // The page's failure line (as for the other tabs); the shared error toast says the request failed.
+        this.failure.set(
+          `Couldn't save the access rules.${e instanceof Error && e.message ? ` ${e.message}` : ''}`,
+        );
+      }
+      this.finishAccess(false);
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
   private fail(e: unknown): void {
     const errors = serverFormErrors(e);
     if (errors.conflict) this.conflict.set(true);
@@ -651,6 +924,7 @@ export class TaskTypeEditPage implements HasUnsavedChanges {
 
   /** After a conflict: take the latest saved version (dropping local edits). */
   protected async reload(): Promise<void> {
+    this.accessLoadedOnce = false;
     await this.load(this.id());
   }
 }

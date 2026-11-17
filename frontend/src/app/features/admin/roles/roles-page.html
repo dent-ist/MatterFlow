@@ -81,6 +81,26 @@
             }
             @if (error()) {
               <p class="mf-error" role="alert" data-error>{{ error() }}</p>
+              @if (usedBy().length > 0) {
+                <ul class="mf-used-by" aria-label="Task Types that use this role" data-used-by>
+                  @for (t of usedBy(); track t.name) {
+                    <li>
+                      @if (t.id !== null) {
+                        <button
+                          type="button"
+                          class="mf-btn mf-btn--text"
+                          [attr.data-used-by-type]="t.id"
+                          (click)="openTaskType(t.id)"
+                        >
+                          {{ t.name }}
+                        </button>
+                      } @else {
+                        <span>{{ t.name }}</span>
+                      }
+                    </li>
+                  }
+                </ul>
+              }
             }
 
             <p class="mf-editor-count" data-editor-count>

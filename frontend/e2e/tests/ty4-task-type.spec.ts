@@ -134,6 +134,7 @@ test.describe('Task Type record page', () => {
           'Overview',
           'Workflows (2)',
           'Request Form',
+          'Access',
         ]);
         await clean(page, 'overview');
         await shot(page, 'overview', size.w);
@@ -279,6 +280,9 @@ test.describe('Task Type record page', () => {
       await expect(tab(page, 'workflows')).toBeFocused();
       await expect(page).toHaveURL(/tab=workflows/);
       await page.keyboard.press('End');
+      await expect(tab(page, 'access')).toBeFocused();
+      await expect(page).toHaveURL(/tab=access/);
+      await page.keyboard.press('ArrowLeft');
       await expect(tab(page, 'form')).toBeFocused();
       await expect(page).toHaveURL(/tab=form/);
       await page.keyboard.press('Home');

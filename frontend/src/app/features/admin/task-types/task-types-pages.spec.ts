@@ -208,8 +208,8 @@ describe('TaskTypesPage phone cards and narrow columns (#374)', () => {
       expect(heads(fixture), `at ${width}`).toEqual([
         'Name',
         'Default Workflow',
-        'Target (Days)',
         'Request Form',
+        'Access',
         'Workflows',
         'Status',
         'Actions',
@@ -359,7 +359,7 @@ describe('TaskTypesPage', () => {
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     item('notUsable').dispatchEvent(new MouseEvent('click', { bubbles: true }));
     expect(navigate).toHaveBeenLastCalledWith([], {
-      queryParams: { status: null, form: null, usable: 'no', page: null },
+      queryParams: { status: null, form: null, access: null, usable: 'no', page: null },
       queryParamsHandling: 'merge',
     });
     await settle(fixture);
@@ -368,7 +368,7 @@ describe('TaskTypesPage', () => {
     );
     item('inactive').dispatchEvent(new MouseEvent('click', { bubbles: true }));
     expect(navigate).toHaveBeenLastCalledWith([], {
-      queryParams: { status: 'inactive', form: null, usable: null, page: null },
+      queryParams: { status: 'inactive', form: null, access: null, usable: null, page: null },
       queryParamsHandling: 'merge',
     });
   });
@@ -380,6 +380,16 @@ describe('TaskTypesPage', () => {
         .subscribe(() => resolve()),
     );
     await (fixture.componentInstance as unknown as { load(): Promise<void> }).load();
+    await settle(fixture);
+    // Target (Days) is an optional column since #1402: hidden until the Columns menu adds it.
+    expect(el().querySelector('th[data-col="target"]')).toBeNull();
+    expect(el().querySelector('mf-record-columns')).not.toBeNull();
+    const grid = (
+      fixture.componentInstance as unknown as {
+        grid: { shown(): string[]; set(p: { order: string[]; visible: string[] }): void };
+      }
+    ).grid;
+    grid.set({ order: [], visible: [...grid.shown(), 'target'] });
     await settle(fixture);
     expect(el().querySelector('th[data-col="target"]')!.textContent).toContain('Target (Days)');
     expect(row('Production').querySelector('[data-target]')!.textContent!.trim()).toBe('3');

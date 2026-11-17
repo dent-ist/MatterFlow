@@ -1,14 +1,17 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  Injector,
   OnInit,
   computed,
   inject,
   input,
   signal,
 } from '@angular/core';
+import { Router } from '@angular/router';
 import { Button } from 'primeng/button';
 import { firstValueFrom } from 'rxjs';
+import { TaskTypesClient } from '../../../api/generated/api-client';
 import { ApiError } from '../../../core/http/api-error';
 import {
   IdentityAdminApi,
@@ -109,6 +112,8 @@ export class RolesPage implements OnInit, HasUnsavedChanges {
   private readonly notify = inject(NotificationService);
   private readonly landingApi = inject(LandingApi);
   private readonly auth = inject(AuthStore);
+  private readonly router = inject(Router);
+  private readonly injector = inject(Injector);
   private readonly reportCount = AdminTabCounts.report('roles');
 
   /**
@@ -145,6 +150,11 @@ export class RolesPage implements OnInit, HasUnsavedChanges {
   protected readonly note = signal('');
   protected readonly error = signal('');
   protected readonly nameError = signal('');
+  /**
+   * The Task Types that still list the role (409 ROLE_USED_BY_TASK_TYPE, #1402): the names come in the problem's meta; the id is found by name in the Task Type list for
+   * a person who may manage Task Types, who then gets one text button per type that opens its Access tab. Without the permission the names are plain text.
+   */
+  protected readonly usedBy = signal<{ name: string; id: number | null }[]>([]);
   protected readonly saving = signal(false);
   protected readonly confirmingDelete = signal(false);
 
@@ -481,6 +491,7 @@ export class RolesPage implements OnInit, HasUnsavedChanges {
     this.confirmingDelete.set(false);
     if (!role || role.isSystemAdmin) return;
     this.error.set('');
+    this.usedBy.set([]);
     try {
       await firstValueFrom(this.api.deleteRole(role.roleId));
       this.setRoles(await firstValueFrom(this.api.listRoles()));
@@ -505,6 +516,10 @@ export class RolesPage implements OnInit, HasUnsavedChanges {
           ? `${count === 1 ? '1 user has' : `${count} users have`} this role. Remove them from it before deleting.`
           : 'People still have this role. Remove them from it before deleting.',
       );
+    } else if (err.code === 'ROLE_USED_BY_TASK_TYPE') {
+      this.error.set(err.message);
+      const names = err.problem?.meta?.['taskTypes'];
+      if (Array.isArray(names)) void this.showUsedBy(names.map(String));
     } else if (err.code === 'PAGE_NOT_OPENABLE') {
       this.error.set(err.message);
     } else if (err.code === 'CONCURRENCY_CONFLICT') {
@@ -514,9 +529,27 @@ export class RolesPage implements OnInit, HasUnsavedChanges {
     }
   }
 
+  private async showUsedBy(names: string[]): Promise<void> {
+    this.usedBy.set(names.map((name) => ({ name, id: null })));
+    if (!this.auth.has('TaskType.Manage')) return;
+    try {
+      const types = await firstValueFrom(this.injector.get(TaskTypesClient).listTaskTypes());
+      const byName = new Map(types.map((t) => [t.name.toLowerCase(), t.id]));
+      this.usedBy.set(names.map((name) => ({ name, id: byName.get(name.toLowerCase()) ?? null })));
+    } catch {
+      // The names stay as plain text.
+    }
+  }
+
+  /** Opens the Access tab of a Task Type that uses the role (the Task Type page asks first about unsaved edits here, as the roles page does for its own). */
+  protected openTaskType(id: number): void {
+    void this.router.navigate(['/admin/task-types', id], { queryParams: { tab: 'access' } });
+  }
+
   private resetMessages(): void {
     this.note.set('');
     this.error.set('');
+    this.usedBy.set([]);
     this.nameError.set('');
     this.filter.set('');
   }
