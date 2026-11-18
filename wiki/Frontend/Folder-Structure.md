@@ -50,7 +50,7 @@
 | `matters` | Matters list, form, the one-page detail (Summary and section cards, jump strip, full views by `?tab=`), header, managers dialog, events panel, Activities dialog | 15 |
 | `my-matters` | The Project Manager's page (`ui`, `tabs`, `panels`, `data`) | 37 |
 | `my-work` | My Work page | 2 |
-| `notes` | Notes tab, note editor (Tiptap) and tag chip | 4 |
+| `notes` | Notes tab, note editor (Tiptap), tag chip and the folder tree (`note-folders.ts` rules, `note-folder-store.ts`, `note-folder-tree.ts`, `note-folder-picker.ts`, `note-folder-dialogs.ts`) | 4 |
 | `notifications` | Notifications page | 5 |
 | `people` | People page and the Person dialog (the person picker is in `shared/ui`) | 5 |
 | `pod-work` | Pod Work page | 5 |

@@ -50,6 +50,20 @@ import { SlidePanel } from '../../shared/ui/slide-panel';
 import { StateBlock } from '../../shared/ui/state-block';
 import { Tip } from '../../shared/ui/tip';
 import { NotesHeightPref } from './notes-height-pref';
+import { NoteFolderDialogs } from './note-folder-dialogs';
+import { NoteFolderStore } from './note-folder-store';
+import { NoteFolderTree } from './note-folder-tree';
+import {
+  FolderScope,
+  RAIL_W,
+  TREE_MIN_CARD,
+  TREE_W,
+  folderParam,
+  parseFolderParam,
+  pathOf,
+  pathText,
+  scopeFilter,
+} from './note-folders';
 import { TextField } from '../../shared/ui/text-field';
 import { EmbedContent, NoteEditor, RefInfo, SuggestItem, SuggestKind } from './note-editor';
 import { NoteTagChip } from './note-tag-chip';
@@ -129,6 +143,8 @@ interface RefChip {
     FormDialog,
     NgTemplateOutlet,
     NoteEditor,
+    NoteFolderDialogs,
+    NoteFolderTree,
     NoteTagChip,
     NumericDatePipe,
     Segmented,
@@ -141,6 +157,7 @@ interface RefChip {
     Tip,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [NoteFolderStore],
   host: { class: 'mf-fill', '(keydown)': 'onKey($event)' },
   styleUrls: [
     './notes-tab.scss',
@@ -148,6 +165,7 @@ interface RefChip {
     './notes-tab-panel.scss',
     './notes-tab-tpl.scss',
     './notes-tab-misc.scss',
+    './notes-tab-folders.scss',
   ],
   template: `
     <section
@@ -161,6 +179,10 @@ interface RefChip {
       [class.nt--tighter]="cardWidth() > 0 && cardWidth() <= 1000"
     >
       <div class="nt__body">
+        <!-- the folder tree (D-46b): hidden in the Templates view, folds to a rail -->
+        @if (showTree()) {
+          <mf-note-folder-tree [narrow]="treeNarrow()" (selected)="onFolderSelected($event)" />
+        }
         <!-- the list -->
         @if (showList()) {
           <div
@@ -338,6 +360,46 @@ interface RefChip {
                 </div>
               }
             </div>
+            @if (view() !== 'templates') {
+              <div class="nt__path" data-notes-path>
+                <i
+                  class="pi"
+                  [class]="
+                    folders.scope() === 'all'
+                      ? 'pi-list'
+                      : folders.scope() === 'none'
+                        ? 'pi-file'
+                        : 'pi-folder-open'
+                  "
+                  aria-hidden="true"
+                ></i>
+                <nav class="nt__crumbs" aria-label="Folder path">
+                  @if (folders.scope() === 'all' || folders.scope() === 'none') {
+                    <b>{{ folders.scopeName() }}</b>
+                  } @else {
+                    @for (f of scopePath(); track f.id; let last = $last) {
+                      @if (last) {
+                        <b>{{ f.name }}</b>
+                      } @else {
+                        <button
+                          type="button"
+                          class="mf-btn mf-btn--text"
+                          (click)="onFolderSelected(f.id)"
+                        >
+                          {{ f.name }}
+                        </button>
+                        <i class="pi pi-angle-right nt__sepi" aria-hidden="true"></i>
+                      }
+                    }
+                  }
+                </nav>
+                @if (loaded()) {
+                  <mf-count-chip [attr.aria-label]="items().length + ' notes in this list'">{{
+                    items().length
+                  }}</mf-count-chip>
+                }
+              </div>
+            }
             <div class="nt__scroll" tabindex="-1">
               @if (listError()) {
                 <p class="nt__error" role="alert" data-notes-error>
@@ -419,9 +481,12 @@ interface RefChip {
                   </mf-state-block>
                 }
               } @else if (totalCount() === 0 && !query() && !filterValues().length) {
-                <mf-state-block icon="pi-file" data-notes-empty>
-                  {{ canEdit() ? 'No notes yet.' : 'No notes.' }}
-                  @if (canEdit()) {
+                <mf-state-block
+                  [icon]="folders.scope() === 'all' ? 'pi-file' : 'pi-folder-open'"
+                  data-notes-empty
+                >
+                  {{ emptyText() }}
+                  @if (canEdit() && emptyAction()) {
                     <button
                       mfStateAction
                       type="button"
@@ -435,13 +500,27 @@ interface RefChip {
               } @else if (items().length === 0) {
                 <mf-state-block icon="pi-search" data-notes-nomatch>
                   @if (query() && !filterValues().length) {
-                    No results for "{{ query() }}".
+                    No results for "{{ query() }}"{{
+                      folders.scope() === 'all' ? '' : ' in ' + scopeLeaf()
+                    }}.
                   } @else {
                     No notes match these filters.
                   }
-                  <button mfStateAction type="button" class="mf-btn" (click)="clearFilters()">
-                    Clear Filters
-                  </button>
+                  @if (query() && !filterValues().length && folders.scope() !== 'all') {
+                    <button
+                      mfStateAction
+                      type="button"
+                      class="mf-btn mf-btn--text"
+                      data-search-all
+                      (click)="searchAll()"
+                    >
+                      Search All Notes
+                    </button>
+                  } @else {
+                    <button mfStateAction type="button" class="mf-btn" (click)="clearFilters()">
+                      Clear Filters
+                    </button>
+                  }
                 </mf-state-block>
               } @else if (view() === 'tag') {
                 @for (g of groups(); track g.id) {
@@ -751,8 +830,8 @@ interface RefChip {
               <!-- the header: read mode and edit mode -->
               @if (editing()) {
                 <header class="nt__ph" data-note-head>
-                  <span class="nt__crumb"
-                    >Notes / <b>{{ note()?.title || 'New note' }}</b></span
+                  <span class="nt__crumb" data-note-where
+                    >{{ noteWhere() }} / <b>{{ note()?.title || 'New note' }}</b></span
                   >
                   <mf-badge data-editing-label>Editing</mf-badge>
                   <span class="nt__state" [class.is-dirty]="dirty()" id="nt-state" data-note-state>
@@ -812,9 +891,22 @@ interface RefChip {
                 </header>
               } @else if (note(); as n) {
                 <header class="nt__ph" data-note-head>
-                  <span class="nt__crumb"
-                    >Notes / <b>{{ n.title }}</b></span
-                  >
+                  <span class="nt__crumb">
+                    <button
+                      type="button"
+                      class="mf-btn mf-btn--text nt__where"
+                      data-note-where
+                      [attr.title]="'Show ' + noteWhere() + ' in the list'"
+                      (click)="showInFolder(n.folderId ?? null)"
+                    >
+                      <i
+                        class="pi"
+                        [class]="n.folderId ? 'pi-folder' : 'pi-file'"
+                        aria-hidden="true"
+                      ></i
+                      ><span class="nt__where-t">{{ noteWhere() }}</span>
+                    </button>
+                  </span>
                   <mf-ai-button
                     [allowed]="aiAllowed()"
                     [showNote]="false"
@@ -1227,6 +1319,9 @@ interface RefChip {
           data-note-item
           [class.is-twin]="twinId() === n.noteId && n.tags.length > 1 && gid !== ''"
           [attr.aria-current]="isOpen(n.noteId)"
+          [attr.draggable]="canDragNotes() ? 'true' : null"
+          (dragstart)="onNoteDragStart($event, n)"
+          (dragend)="folders.drag.set(null)"
           (mouseenter)="twinId.set(n.noteId)"
           (mouseleave)="twinId.set(null)"
           (focus)="twinId.set(n.noteId)"
@@ -1291,6 +1386,12 @@ interface RefChip {
                 }
               }
             </span>
+            @if (showRowFolder()) {
+              <span class="nt__where-row" data-note-folder>
+                <i class="pi" [class]="n.folderId ? 'pi-folder' : 'pi-file'" aria-hidden="true"></i>
+                <span class="mf-sr-only">Folder: </span>{{ folderText(n.folderId) }}
+              </span>
+            }
             <span class="nt__meta">
               <span class="mf-sr-only">Author. </span>
               <span
@@ -1375,6 +1476,19 @@ interface RefChip {
                       <i class="pi pi-lock" aria-hidden="true"></i>Lock Note
                     </button>
                   }
+                </li>
+                <li role="none">
+                  <button
+                    type="button"
+                    class="mf-btn mf-btn--text nt__mi"
+                    role="menuitem"
+                    data-note-move
+                    [attr.aria-disabled]="organiseReason() ? 'true' : null"
+                    [title]="organiseReason()"
+                    (click)="onMenu(organiseReason(), 'move')"
+                  >
+                    <i class="pi pi-arrow-right-arrow-left" aria-hidden="true"></i>Move to Folder...
+                  </button>
                 </li>
                 <li role="separator" class="nt__sep"></li>
                 <li role="presentation" class="nt__mh">Share and reuse</li>
@@ -1723,6 +1837,7 @@ interface RefChip {
       }
     </mf-form-dialog>
 
+    <mf-note-folder-dialogs />
     <mf-ai-coming-soon [(visible)]="aiPanel" />
     <mf-confirm-dialog
       title="Delete Note"
@@ -1779,6 +1894,8 @@ export class NotesTab {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   protected readonly notify = inject(NotificationService);
+  /** The folders of the matter's notes: the tree, the selected scope and every folder change (D-46b). */
+  protected readonly folders = inject(NoteFolderStore);
   private readonly editorRef = viewChild<NoteEditor>('editor');
   private readonly cardRef = viewChild<ElementRef<HTMLElement>>('card');
   private readonly titleRef = viewChild<ElementRef<HTMLElement>>('ptitle');
@@ -1899,8 +2016,19 @@ export class NotesTab {
     this.folded() ? 'Show the matter header again' : 'Expand to the full height',
   );
   protected readonly stacked = computed(() => this.cardWidth() > 0 && this.cardWidth() < 760);
+  /** The folder tree is shown beside the list (not in the Templates view, not stacked, not while the note has the whole width). */
+  protected readonly showTree = computed(
+    () => this.view() !== 'templates' && !this.stacked() && this.showList(),
+  );
+  /** The card is too narrow for the open tree: it shows as the rail (the remembered choice stays). */
+  protected readonly treeNarrow = computed(
+    () => this.cardWidth() > 0 && this.cardWidth() < TREE_MIN_CARD,
+  );
+  private readonly treeWidth = computed(() =>
+    !this.showTree() ? 0 : this.treeNarrow() || !this.folders.treeOpen() ? RAIL_W : TREE_W,
+  );
   protected readonly splitMaxNow = computed(() =>
-    splitLimit(this.cardWidth() || SPLIT_DEFAULT + 420),
+    splitLimit((this.cardWidth() || SPLIT_DEFAULT + 420 + TREE_W) - this.treeWidth()),
   );
   protected readonly listWidth = computed(() => clampSplit(this.split(), this.splitMaxNow()));
   protected readonly showPanel = computed(
@@ -1908,6 +2036,39 @@ export class NotesTab {
   );
   protected readonly showList = computed(
     () => !(this.stacked() && this.showPanel()) && !(this.wide() && this.showPanel()),
+  );
+
+  // ---- folders (D-46b)
+  /** The folder a new note is saved into: the folder selected when it was started (none in All Notes and No Folder). */
+  protected readonly newFolder = signal<number | null>(null);
+  protected readonly scopePath = computed(() =>
+    pathOf(this.folders.tree().byId, this.folders.selectedId()),
+  );
+  protected readonly scopeLeaf = computed(() => {
+    const p = this.scopePath();
+    return p.length ? p[p.length - 1].name : this.folders.scopeName();
+  });
+  /** A row names its folder in All Notes and in a search (a note's place is never a guess). */
+  protected readonly showRowFolder = computed(
+    () => this.folders.scope() === 'all' || this.query() !== '',
+  );
+  protected readonly canDragNotes = computed(() => this.canEdit() && this.view() !== 'templates');
+  protected readonly emptyText = computed(() => {
+    if (!this.canEdit() && this.folders.scope() === 'all') return 'No notes.';
+    if (this.folders.scope() === 'all' || this.folders.totalCount() === 0) return 'No notes yet.';
+    return this.folders.scope() === 'none'
+      ? 'Every note is in a folder.'
+      : 'No notes in this folder yet.';
+  });
+  protected readonly emptyAction = computed(
+    () => this.folders.scope() !== 'none' || this.folders.totalCount() === 0,
+  );
+  /** Where the open note is (or where a new one will go), as shown in the pane header. */
+  protected readonly noteWhere = computed(() =>
+    pathText(
+      this.folders.tree().byId,
+      this.note() ? (this.note()!.folderId ?? null) : this.newFolder(),
+    ),
   );
 
   // ---- the open note
@@ -2232,6 +2393,8 @@ export class NotesTab {
   constructor() {
     // Read the remembered height choice once when the tab is created (#1342).
     this.heightPref.refresh();
+    // `?tab=notes&folder=<id|none>` opens a folder; the choice is written back to the address (replaced, never pushed; D-03e) and is not kept in browser storage.
+    this.folders.scope.set(parseFolderParam(this.route.snapshot.queryParamMap.get('folder')));
     inject(DestroyRef).onDestroy(() => {
       this.stopDrag();
       this.stopWatch?.();
@@ -2266,7 +2429,24 @@ export class NotesTab {
       this.matterId();
       this.query();
       this.sortValue();
+      this.folders.scope();
+      this.folders.revision();
       untracked(() => void this.loadList());
+    });
+    effect(() => {
+      const id = this.matterId();
+      untracked(() => void this.folders.load(id));
+    });
+    effect(() => {
+      const wanted = folderParam(this.folders.scope());
+      untracked(() => {
+        if ((this.route.snapshot.queryParamMap.get('folder') ?? null) === wanted) return;
+        void this.router.navigate([], {
+          queryParams: { folder: wanted },
+          queryParamsHandling: 'merge',
+          replaceUrl: true,
+        });
+      });
     });
     effect(() => {
       this.matterId();
@@ -2388,6 +2568,53 @@ export class NotesTab {
     return 'Changing a matter template needs the Matter Note Edit permission';
   }
 
+  // ---------------------------------------------------------------- folders
+
+  /** A tree row or a path crumb was chosen: unsaved changes are asked about first (as for a view change), then the scope changes. */
+  protected onFolderSelected(scope: FolderScope): void {
+    if (this.folders.scope() === scope) return;
+    this.guard(() => this.folders.select(scope));
+  }
+
+  protected searchAll(): void {
+    this.guard(() => {
+      this.folders.select('all');
+    });
+  }
+
+  /** The place of the open note as a text button: shows that folder in the list. */
+  protected showInFolder(folderId: number | null): void {
+    this.onFolderSelected(folderId ?? 'none');
+  }
+
+  protected folderText(folderId: number | null | undefined): string {
+    return pathText(this.folders.tree().byId, folderId ?? null);
+  }
+
+  protected onNoteDragStart(e: DragEvent, n: NoteListItem): void {
+    if (!this.canDragNotes()) return;
+    e.dataTransfer?.setData('text/plain', n.title);
+    if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+    this.folders.drag.set({
+      kind: 'note',
+      id: n.noteId,
+      title: n.title,
+      folderId: n.folderId ?? null,
+    });
+  }
+
+  /** "Move to Folder..." of the note's Actions menu (a locked note can be moved). */
+  private askMoveNote(): void {
+    const n = this.note();
+    if (n)
+      this.folders.ask({
+        kind: 'move-note',
+        noteId: n.noteId,
+        title: n.title,
+        folderId: n.folderId ?? null,
+      });
+  }
+
   // ---------------------------------------------------------------- list
 
   protected onSearch(value: string): void {
@@ -2480,7 +2707,7 @@ export class NotesTab {
   /** Runs a menu item, or says why it cannot (a disabled item stays visible with its reason). */
   protected onMenu(
     reason: string,
-    what: 'pin' | 'lock' | 'unlock' | 'copy' | 'saveTpl' | 'history' | 'refs' | 'delete',
+    what: 'pin' | 'lock' | 'unlock' | 'copy' | 'saveTpl' | 'history' | 'refs' | 'delete' | 'move',
   ): void {
     this.closeMenus();
     if (reason) {
@@ -2494,6 +2721,7 @@ export class NotesTab {
     else if (what === 'saveTpl') this.openSaveTemplate();
     else if (what === 'history') this.historyButton();
     else if (what === 'refs') this.refsButton();
+    else if (what === 'move') this.askMoveNote();
     else this.confirmDelete.set(true);
   }
 
@@ -2536,9 +2764,13 @@ export class NotesTab {
     }
   }
 
+  private listSeq = 0;
+
   protected async loadList(): Promise<void> {
+    const seq = ++this.listSeq;
     try {
       const sort = this.sortValue() === 'created' ? 'createdAt' : undefined;
+      const { folderId, noFolder } = scopeFilter(this.folders.scope());
       const all: NoteListItem[] = [];
       for (let page = 1; page <= 10; page += 1) {
         const r = await firstValueFrom(
@@ -2547,8 +2779,8 @@ export class NotesTab {
             undefined,
             undefined,
             this.query() || undefined,
-            undefined,
-            undefined,
+            folderId,
+            noFolder,
             page,
             100,
             sort,
@@ -2557,6 +2789,7 @@ export class NotesTab {
         all.push(...r.items);
         if (all.length >= r.total || r.items.length === 0) break;
       }
+      if (seq !== this.listSeq) return;
       this.allNotes.set(all);
       if (!this.query()) this.totalCount.set(all.length);
       this.listError.set('');
@@ -2577,7 +2810,7 @@ export class NotesTab {
         });
       }
     } catch {
-      this.listError.set("Couldn't load the notes.");
+      if (seq === this.listSeq) this.listError.set("Couldn't load the notes.");
     } finally {
       this.loaded.set(true);
     }
@@ -2702,6 +2935,7 @@ export class NotesTab {
   }
 
   private startNew(html: string, tags: NoteTemplateResponse['tags']): void {
+    this.newFolder.set(this.folders.selectedId());
     this.note.set(null);
     this.saveError.set('');
     this.lockedWhileEditing.set('');
@@ -2853,12 +3087,14 @@ export class NotesTab {
               matterId: this.matterId(),
               bodyHtml: html,
               tagIds,
+              folderId: this.newFolder() ?? undefined,
             }),
           );
       this.notify.success('Note saved');
       this.showNote(saved);
       this.focusTitle();
       await this.loadList();
+      if (!n) void this.folders.load();
     } catch (e) {
       if (e instanceof ApiError && e.code === 'NOTE_LOCKED') {
         const who = (e.problem?.meta?.['lockedByName'] as string | undefined) ?? 'someone';
@@ -3037,6 +3273,7 @@ export class NotesTab {
       this.wide.set(false);
       this.notify.success('Note deleted');
       await this.loadList();
+      void this.folders.load();
       setTimeout(
         () => (document.querySelector('[data-new-note]') as HTMLElement | null)?.focus(),
         60,

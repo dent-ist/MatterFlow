@@ -1,0 +1,296 @@
+// The folder tree of the Notes tab and the Move picker (D-46b; mockup docs/ux/mockups/notes-round-2/, issue #1408). Tokens only.
+:host {
+  display: block;
+}
+
+:host(.ft-host) {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  width: var(--mf-notes-tree-w);
+  min-height: 0;
+  border-right: 1px solid var(--mf-border);
+  background: var(--mf-surface);
+}
+
+:host(.ft-host--rail) {
+  width: var(--mf-notes-rail-w);
+}
+
+.ft__head {
+  display: flex;
+  flex: none;
+  gap: var(--mf-s1);
+  align-items: center;
+  height: 48px;
+  padding: 0 var(--mf-s2) 0 var(--mf-s3);
+
+  h2 {
+    flex: 1;
+    margin: 0;
+    font-size: var(--mf-fs-md);
+    font-weight: 600;
+  }
+}
+
+.ft__rail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mf-s1);
+  align-items: center;
+  padding: var(--mf-s2) 0;
+}
+
+.ft__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0 var(--mf-s2) var(--mf-s3);
+  overflow: auto;
+}
+
+.ft {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.ft--pick {
+  max-height: 264px;
+  padding: var(--mf-s1);
+  overflow: auto;
+  border: 1px solid var(--mf-border-strong);
+  border-radius: var(--mf-radius);
+}
+
+// One row: chevron, icon, name, count (which gives way to the "..." button on the pointer, the focus and the selected row).
+.ft__row {
+  position: relative;
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  height: var(--mf-row-h-compact);
+  padding: 0 var(--mf-s1) 0 calc(var(--mf-s1) + var(--lvl, 0) * 16px);
+  border-radius: var(--mf-radius);
+  cursor: pointer;
+  user-select: none;
+
+  &:hover {
+    background: var(--mf-row-hover);
+  }
+
+  &:focus-visible {
+    outline-offset: -2px;
+  }
+
+  &[aria-selected='true'] {
+    background: var(--mf-selected-bg);
+    font-weight: 600;
+
+    .ft__icon {
+      color: var(--mf-primary);
+    }
+  }
+
+  // The selected row of the tree has the 3 px primary bar (like the note list); in the picker the radio dot says it.
+  .ft:not(.ft--pick) &[aria-selected='true']::before {
+    position: absolute;
+    top: 6px;
+    bottom: 6px;
+    left: 0;
+    width: 3px;
+    border-radius: var(--mf-radius);
+    background: var(--mf-primary);
+    content: '';
+  }
+
+  &[aria-disabled='true'] {
+    color: var(--mf-text-disabled);
+    cursor: not-allowed;
+
+    &:hover {
+      background: none;
+    }
+
+    .ft__icon {
+      color: var(--mf-text-disabled);
+    }
+  }
+
+  &.is-top {
+    margin-bottom: 0;
+  }
+
+  &.is-first {
+    margin-top: var(--mf-s2);
+  }
+
+  &.is-first::after {
+    position: absolute;
+    top: calc(var(--mf-s2) / -2 - 1px);
+    right: var(--mf-s1);
+    left: var(--mf-s1);
+    height: 1px;
+    background: var(--mf-border);
+    content: '';
+  }
+
+  // Dragging: the valid target under the pointer, and the ones that cannot take the item.
+  &.is-drop {
+    background: var(--mf-selected-bg);
+    outline: 2px solid var(--mf-primary);
+    outline-offset: -2px;
+    font-weight: 600;
+
+    .ft__icon {
+      color: var(--mf-primary);
+    }
+  }
+
+  // A row that cannot take what is dragged is greyed like a greyed picker target (colour, not opacity: the text keeps its contrast); the folder being dragged is shaded.
+  &.is-dim {
+    color: var(--mf-text-disabled);
+    cursor: not-allowed;
+
+    .ft__icon,
+    .ft__count {
+      color: var(--mf-text-disabled);
+    }
+
+    &:hover {
+      background: none;
+    }
+  }
+
+  &.is-dragging {
+    background: var(--mf-surface-alt);
+  }
+}
+
+.ft__chev {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--mf-radius);
+  color: var(--mf-text-muted);
+
+  &:hover {
+    background: var(--mf-border);
+  }
+
+  .pi {
+    font-size: var(--mf-icon-xs);
+  }
+
+  &.is-none {
+    visibility: hidden;
+  }
+}
+
+.ft__icon {
+  flex: none;
+  width: 18px;
+  color: var(--mf-text-muted);
+  font-size: var(--mf-icon-sm);
+  text-align: center;
+}
+
+.ft__name {
+  flex: 1;
+  min-width: 0;
+  margin-left: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ft__count {
+  min-width: 18px;
+  padding-right: 2px;
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-xs);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+// The row action is the shared "..." menu (36 px target, quiet), shown on the pointer, the focus and the selected row; it takes the count's place.
+.ft__more {
+  display: none;
+  flex: none;
+}
+
+.ft__row:hover,
+.ft__row:focus-within,
+.ft__row[aria-selected='true'],
+.ft__row.menu-open {
+  .ft__more {
+    display: inline-flex;
+  }
+
+  .ft__count {
+    display: none;
+  }
+}
+
+.ft__none {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mf-s2);
+  align-items: center;
+  padding: var(--mf-s2);
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm);
+}
+
+// The picker rows: a radio dot first, the reason of a greyed target at the right.
+.ft__radio {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  margin-left: 2px;
+  border: 1px solid var(--mf-border-strong);
+  border-radius: 50%;
+  background: var(--mf-surface);
+}
+
+.ft__row[aria-selected='true'] .ft__radio {
+  border-color: var(--mf-primary);
+
+  &::after {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--mf-primary);
+    content: '';
+  }
+}
+
+.ft__why {
+  margin-left: auto;
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-xs);
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+// The label that follows the pointer while something is dragged ("Move to Custodians > IT and Records").
+.ft__drag {
+  position: fixed;
+  z-index: 1200;
+  max-width: 320px;
+  padding: var(--mf-s1) var(--mf-s3);
+  overflow: hidden;
+  border: 1px solid var(--mf-primary);
+  border-radius: var(--mf-radius-lg);
+  background: var(--mf-surface);
+  box-shadow: var(--mf-shadow-pop);
+  color: var(--mf-text);
+  font-size: var(--mf-fs-sm);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+}

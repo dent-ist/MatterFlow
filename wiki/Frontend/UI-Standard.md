@@ -47,6 +47,7 @@ Later decisions sit in section 2 of the guidelines. These are the ones that chan
 | D-82 Desktop only | 1366x768 and 1920x1080 are the only layouts. A test of a phone or tablet layout (375, 390, 414 px, 768x1024) is deleted with the feature, not skipped. Desktop behaviour checked at a desktop size stays |
 | D-10a and D-53a Banner | One notice bar, the `.pg-banner` class (info, danger, success and `--full` variants), always with its icon |
 | D-46a Notes height toggle | `mf-btn mf-btn--icon mf-btn--toggle` (pressed look: `--mf-selected-bg` fill, `--mf-primary` icon) folds the Matter header on the Notes tab; choice kept per person in browser storage (`notes/notes-height-pref.ts`) |
+| D-46b Notes folder tree | `mf-note-folder-tree` (`role="tree"`, rows 32 px, direct counts, row menu with `mf-action-menu`, folds to a 44 px rail kept per person in `mf.notes.tree`), drag of a note or folder onto a row is a shortcut for "Move to Folder...", and the Move picker `mf-note-folder-picker` greys impossible targets with a reason (`features/notes/note-folder-*.ts`) |
 | D-12 Chips | Four kinds only. A task or disposition status is `mf-status-chip`; toggles are `mf-filter-chips` (the `pressed` item option for a multiple choice) |
 | D-44f Details card | A record page's fields are one `mf-details-card`; a second group (custom fields) is a second card with a count chip |
 | D-44m Record names | A name that opens a drawer or dialog is `mf-btn mf-btn--text mf-btn--name`; a grid row key is the record id, never a name |
@@ -68,4 +69,4 @@ First line `<ID> <short what changed>`, a blank line, one bullet per main naviga
 - [Testing the Frontend](Testing-the-Frontend.md)
 - [How to Add a Page](How-to-Add-a-Page.md)
 
-Last verified against commit 70f744b6.
+Last verified against commit 8cc0b293.
