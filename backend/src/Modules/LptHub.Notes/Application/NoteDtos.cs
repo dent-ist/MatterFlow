@@ -437,6 +437,7 @@ public sealed class DuplicateNoteTemplateRequest
 /// <param name="TargetName">The client (Client Level) or matter (Matter Level) the template belongs to; null at System Level.</param>
 /// <param name="UsedCount">How many times it was used.</param>
 /// <param name="CanEdit">True when the caller may change or delete it.</param>
+/// <param name="ImagesLeftOut">Set on the answer to a create or a save: how many pictures of the submitted text were left out (a template carries no images). 0 otherwise.</param>
 public sealed record NoteTemplateResponse(
     [property: Required] int NoteTemplateId,
     [property: Required] string Scope,
@@ -453,4 +454,25 @@ public sealed record NoteTemplateResponse(
     [property: Required] DateTime UpdatedAtUtc,
     int? UpdatedByUserId,
     string? UpdatedByName,
-    [property: Required] string RowVersion);
+    [property: Required] string RowVersion,
+    [property: Required] int ImagesLeftOut = 0);
+
+// ---------------------------------------------------------------- images
+
+/// <summary>An uploaded or copied note image. The note body refers to it as <c>&lt;img data-image-id="{noteImageId}"&gt;</c>.</summary>
+/// <param name="ContentType"><c>image/png</c> or <c>image/jpeg</c>, found by the bytes.</param>
+public sealed record NoteImageResponse(
+    [property: Required] int NoteImageId,
+    [property: Required] int MatterId,
+    [property: Required] int Width,
+    [property: Required] int Height,
+    [property: Required] string ContentType,
+    [property: Required] int ByteSize);
+
+/// <summary>Copies an image into another matter (a note pasted from matter A into matter B). The copy is a separate record, never shared.</summary>
+public sealed class CopyNoteImageRequest
+{
+    /// <summary>The matter the copy belongs to: the caller must see it and it must be active.</summary>
+    [Range(1, int.MaxValue)]
+    public int TargetMatterId { get; init; }
+}

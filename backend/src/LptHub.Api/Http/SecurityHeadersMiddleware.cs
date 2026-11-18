@@ -9,6 +9,8 @@ namespace LptHub.Api.Http;
 /// <item><c>X-Content-Type-Options: nosniff</c>, <c>X-Frame-Options: DENY</c> (plus <c>frame-ancestors 'none'</c>),
 /// <c>Referrer-Policy: no-referrer</c>, a <c>Permissions-Policy</c> that switches the powerful features off, and
 /// <c>Cross-Origin-Opener-Policy: same-origin</c>.</item>
+/// <item><c>img-src</c> of the application policy allows <c>blob:</c> (epic #1405, issue #1409): the note editor fetches a note image through the API client and shows it from a blob URL its own
+/// script made; a plain <c>&lt;img src="/api/v1/notes/images/{id}"&gt;</c> is covered by <c>'self'</c>.</item>
 /// <item><c>Cache-Control: no-store</c> on <c>/api</c>: lists of users, audit events and forms must not sit in a browser or proxy cache
 /// (except a response that itself says <c>private, no-cache</c>, the revalidated notification poll, and the public branding responses under
 /// <c>/api/v1/branding</c>, which say <c>public</c> with a <c>max-age</c> so the icon and name are cacheable; epic #850).</item>
@@ -19,7 +21,7 @@ public sealed class SecurityHeadersMiddleware(RequestDelegate next)
 {
     /// <summary>Policy for the single-page application and its static files.</summary>
     public const string AppContentSecurityPolicy =
-        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; "
+        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; "
         + "connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
 
     /// <summary>Policy for API responses: nothing may be loaded or framed.</summary>
@@ -36,8 +38,12 @@ public sealed class SecurityHeadersMiddleware(RequestDelegate next)
     /// <summary>The only API paths whose responses may set their own public cache header (the application name and icon, readable without signing in).</summary>
     public const string PublicBrandingPath = "/api/v1/branding";
 
+    /// <summary>The API path of the note image bytes: like the branding icon it brings its own sandbox policy, kept when it really sandboxes (so an image opened directly can run nothing).</summary>
+    public const string NoteImagePath = "/api/v1/notes/images";
+
     public Task InvokeAsync(HttpContext context)
     {
+        var isNoteImage = context.Request.Path.StartsWithSegments(NoteImagePath, StringComparison.OrdinalIgnoreCase);
         var isBranding = context.Request.Path.StartsWithSegments(PublicBrandingPath, StringComparison.OrdinalIgnoreCase);
         var isApi = context.Request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase);
         var isSwagger = context.Request.Path.StartsWithSegments("/swagger", StringComparison.OrdinalIgnoreCase);
@@ -46,7 +52,7 @@ public sealed class SecurityHeadersMiddleware(RequestDelegate next)
             var headers = context.Response.Headers;
             // An SVG icon brings its own sandboxing policy; it is kept only on the branding path and only when it really sandboxes.
             var ownPolicy = headers.ContentSecurityPolicy.ToString();
-            headers["Content-Security-Policy"] = isBranding && ownPolicy.Contains("sandbox", StringComparison.Ordinal)
+            headers["Content-Security-Policy"] = (isBranding || isNoteImage) && ownPolicy.Contains("sandbox", StringComparison.Ordinal)
                 ? ownPolicy
                 : isApi ? ApiContentSecurityPolicy : isSwagger ? SwaggerContentSecurityPolicy : AppContentSecurityPolicy;
             headers["X-Content-Type-Options"] = "nosniff";

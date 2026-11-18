@@ -72,6 +72,7 @@ public class SecurityHeadersTests
         app.ShouldBe(SecurityHeadersMiddleware.AppContentSecurityPolicy);
         app.ShouldContain("default-src 'self'");
         app.ShouldContain("script-src 'self'");
+        app.ShouldContain("img-src 'self' data: blob:"); // the note editor shows fetched images from blob URLs (issue #1409)
         app.ShouldContain("object-src 'none'");
         app.ShouldNotContain("unsafe-eval");
         app.Replace("style-src 'self' 'unsafe-inline'", string.Empty, StringComparison.Ordinal).ShouldNotContain("unsafe-inline"); // inline only for styles

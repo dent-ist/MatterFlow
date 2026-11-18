@@ -13,6 +13,7 @@
 | [Add a Task Type or Workflow](How-To/Add-a-Task-Type-or-Workflow.md) | Configure task types, workflows, steps and forms |
 | [Set up an Entra ID Integration](How-To/Set-up-an-Entra-ID-Integration.md) | Connect Matter Lookup, Ethical Wall or another API through Entra ID |
 | [Work with Note Folders](How-To/Work-with-Note-Folders.md) | Understand the rules, endpoints and tests of note folders |
+| [Work with Note Images](How-To/Work-with-Note-Images.md) | Understand how pasted note images are stored, limited, served and cleaned up, and what the editor must do |
 | [Release Checklist](How-To/Release-Checklist.md) | Prepare and ship a release |
 
 ## Related pages

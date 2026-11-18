@@ -43,6 +43,7 @@ Totals (counted by `tools/db/schema-fingerprint.sql` on a database built from th
 | [MatterType](#mattertype) | Clients, Matters and Projects | Configuration | 9 | 2 |
 | [Note](#note) | Notes | Notes | 17 | 6 |
 | [NoteFolder](#notefolder) | Notes | Notes | 9 | 5 |
+| [NoteImage](#noteimage) | Notes | Notes | 10 | 2 |
 | [NoteLink](#notelink) | Notes | Notes | 3 | 1 |
 | [NoteTag](#notetag) | Notes | Notes | 9 | 2 |
 | [NoteTagLink](#notetaglink) | Notes | Notes | 2 | 2 |
@@ -1039,12 +1040,27 @@ A folder of a matter's notes. Folders nest (5 levels, 200 per matter, both check
 - **Indexes and unique constraints (4):** `IX_NoteFolder_Parent` (MatterId,ParentFolderId); `UQ_NoteFolder_IdMatter` (NoteFolderId,MatterId) - unique; `UQ_NoteFolder_Name` (MatterId,ParentFolderId,Name) - unique (a name is unique inside a parent, also at the top level, case-insensitive); `PK_NoteFolder`.
 - **Check constraints (2):** `CK_NoteFolder_Name` (not empty after trimming, no `/` or `\`), `CK_NoteFolder_NotOwnParent`.
 
-### NoteLink
+### NoteImage
 
-A link from a note to another record (user, note, matter, project or asset).
+The bytes of one image pasted into a matter's notes (PNG or JPEG, at most 2 MB and 8,000 px), stored outside the note body and owned by the matter. The note body holds `<img data-image-id>`; a `NoteLink` row of type `IMAGE` says which saved note uses it. An image no note uses is deleted at once. Never selected by list queries.
 
 - **Module:** Notes. **Area:** Notes.
-- **Scripts:** created by script 54.
+- **Scripts:** created by script 84.
+- **Report login (`lpt_report_reader`):** deny.
+- **Primary key:** `PK_NoteImage` (NoteImageId), int identity.
+- **Columns (10; `?` = nullable):** `NoteImageId int`, `MatterId int`, `ContentType varchar(20)`, `Width smallint`, `Height smallint`, `ByteSize int`, `ContentSha256 binary(32)` (the ETag), `Content varbinary(max)`, `UploadedAt datetime2(7)` (default `SYSUTCDATETIME()`), `UploadedByUserId int?`.
+- **Foreign keys (2):**
+  - `FK_NoteImage_Matter`: `MatterId` to `Matter(MatterId)`
+  - `FK_NoteImage_UploadedBy`: `UploadedByUserId` to `AppUser(UserId)`
+- **Indexes and unique constraints (4):** `IX_NoteImage_Matter` (MatterId); `IX_NoteImage_Uploaded` (UploadedAt; the nightly sweep); `IX_NoteImage_UploadedBy` (UploadedByUserId; the 50-pending guard); `PK_NoteImage`.
+- **Check constraints (3):** `CK_NoteImage_Type` (image/png or image/jpeg), `CK_NoteImage_Dimensions` (1 to 8,000), `CK_NoteImage_Size` (1 byte to 2 MB, equal to the length of `Content`).
+
+### NoteLink
+
+A link from a note to another record (user, note, matter, project, asset or image).
+
+- **Module:** Notes. **Area:** Notes.
+- **Scripts:** created by script 54; script 84 added the type `IMAGE` to `CK_NoteLink_Type`.
 - **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_NoteLink` (NoteId, TargetType, TargetId).
 - **Columns (3; `?` = nullable):** `NoteId int`, `TargetType varchar(10)`, `TargetId int`.

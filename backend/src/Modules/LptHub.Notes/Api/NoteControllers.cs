@@ -5,6 +5,7 @@ using LptHub.SharedKernel.Results;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace LptHub.Notes.Api;
 
@@ -195,6 +196,155 @@ public class NoteFoldersController(NoteFolderService folders) : ControllerBase
         var result = await folders.DeleteAsync(folderId, rowVersion, moveContentsUp, cancellationToken);
         return result.IsFailure ? this.Problem(result.Error!) : NoContent();
     }
+}
+
+/// <summary>Multipart body of an image upload.</summary>
+public sealed class UploadNoteImageForm
+{
+    /// <summary>The image: PNG or JPEG, at most 2 MB, at most 8,000 px on a side. The type is found by the bytes; the declared content type and the file name are ignored.</summary>
+    public IFormFile? File { get; set; }
+}
+
+/// <summary>
+/// Pasted images of notes (epic #1405, issue #1409; ADR 030). Upload and copy need Matter Note Edit, read needs Matter Note Read, and all of them follow the matter: a hidden matter's image is a 404, the same
+/// answer as a missing one. The bytes are served only here, never through a URL kept in a note body. Errors: 413 <c>IMAGE_TOO_LARGE</c> (2 MB or 8,000 px), 415 <c>IMAGE_TYPE_UNSUPPORTED</c> (anything but
+/// PNG and JPEG, found by content), 400 <c>IMAGE_CORRUPT</c>, 409 <c>MATTER_INACTIVE</c>, 409 <c>TOO_MANY_PENDING_IMAGES</c> (50 unsaved uploads per person), 409 <c>IMAGE_IN_USE</c>, 403 <c>NOT_IMAGE_UPLOADER</c>.
+/// </summary>
+[ApiController]
+public class NoteImagesController(NoteImageService images) : ControllerBase
+{
+    /// <summary><c>Cache-Control</c> of an image: kept by the browser but checked every time (the ETag answers 304), so a note whose matter access changed never shows a stale image.</summary>
+    internal const string ReadCacheControl = "private, no-cache";
+
+    /// <summary>Policy of an image response: nothing loads, nothing runs, and the document is sandboxed even if someone opens the URL directly.</summary>
+    internal const string ReadContentSecurityPolicy = "default-src 'none'; sandbox; frame-ancestors 'none'";
+
+    /// <summary>
+    /// Adds an image to a matter (multipart field <c>file</c>, PNG or JPEG, at most 2 MB). The note body then refers to it as <c>&lt;img data-image-id="..."&gt;</c>; an image no saved note uses is deleted by
+    /// the save, by <c>DELETE /note-images/{id}</c> or by the nightly sweep. The matter must be active. Audited (<c>NOTE_IMAGE_ADDED</c>, no content).
+    /// </summary>
+    [HttpPost("/api/v1/matters/{matterId:int}/note-images", Name = "UploadNoteImage")]
+    [Authorize(Policy = NotePolicies.NoteEdit)]
+    [Consumes("multipart/form-data")]
+    [NoteImageRequestLimits]
+    [RequestFormLimits(MultipartBodyLengthLimit = NoteImageRequestLimitsAttribute.MaxRequestBytes, MemoryBufferThreshold = (int)NoteImageRequestLimitsAttribute.MaxRequestBytes, ValueCountLimit = 8, MultipartHeadersCountLimit = 16)]
+    [ProducesResponseType<NoteImageResponse>(StatusCodes.Status201Created, "application/json")]
+    public async Task<IActionResult> Upload(int matterId, [FromForm] UploadNoteImageForm form, CancellationToken cancellationToken)
+    {
+        if (form.File is not { Length: > 0 } file)
+            return this.Problem(Error.Validation("file", "REQUIRED", "Choose a PNG or JPEG image.", "IMAGE_REQUIRED"));
+        if (file.Length > NoteImageService.MaxBytes)
+            return this.Problem(NoteImageService.TooLarge("The image is larger than 2 MB."));
+
+        byte[] bytes;
+        await using (var stream = file.OpenReadStream())
+        {
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer, cancellationToken);
+            bytes = buffer.ToArray();
+        }
+
+        return this.ToActionResult(await images.UploadAsync(matterId, bytes, cancellationToken), r => StatusCode(StatusCodes.Status201Created, r));
+    }
+
+    /// <summary>
+    /// The image bytes (<c>image/png</c> or <c>image/jpeg</c>, the type found when it was uploaded). Matter Note Read and the matter's visibility; a hidden matter is a 404. Sent with <c>nosniff</c>,
+    /// <c>Content-Disposition: inline</c>, a sandbox policy, <c>Cache-Control: private, no-cache</c> and the SHA-256 as <c>ETag</c> (304 when <c>If-None-Match</c> matches). An image of an inactive matter is still readable.
+    /// </summary>
+    [HttpGet("/api/v1/notes/images/{noteImageId:int}", Name = "GetNoteImage")]
+    [Authorize(Policy = NotePolicies.NoteView)]
+    [Produces("image/png", "image/jpeg")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status304NotModified)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Get(int noteImageId, CancellationToken cancellationToken)
+    {
+        var header = await images.GetHeaderAsync(noteImageId, cancellationToken);
+        if (header is null)
+            return this.Problem(NoteSupport.NotFound("Image"));
+
+        var etag = "\"" + Convert.ToHexString(header.Sha256).ToLowerInvariant() + "\"";
+        Response.Headers.ETag = etag;
+        Response.Headers.CacheControl = ReadCacheControl;
+        Response.Headers.ContentDisposition = "inline";
+        Response.Headers.ContentSecurityPolicy = ReadContentSecurityPolicy;
+        if (Request.GetTypedHeaders().IfNoneMatch.Any(v => v.Tag == "*" || string.Equals(v.Tag.Value, etag, StringComparison.Ordinal)))
+            return StatusCode(StatusCodes.Status304NotModified);
+
+        var bytes = await images.GetContentAsync(noteImageId, cancellationToken);
+        return bytes is null ? this.Problem(NoteSupport.NotFound("Image")) : File(bytes, header.ContentType);
+    }
+
+    /// <summary>
+    /// Deletes an image no saved note uses: the editor calls it on Cancel and Discard for every image uploaded in that editing session and not saved. Only the person who uploaded it (403
+    /// <c>NOT_IMAGE_UPLOADER</c>); 409 <c>IMAGE_IN_USE</c> when a saved note uses it (the editor ignores that answer); 404 when it is already gone (a save deleted it) or its matter is hidden.
+    /// </summary>
+    [HttpDelete("/api/v1/note-images/{noteImageId:int}", Name = "DeleteNoteImage")]
+    [Authorize(Policy = NotePolicies.NoteEdit)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> Delete(int noteImageId, CancellationToken cancellationToken)
+    {
+        var result = await images.DeleteAsync(noteImageId, cancellationToken);
+        return result.IsFailure ? this.Problem(result.Error!) : NoContent();
+    }
+
+    /// <summary>
+    /// Copies an image into another matter (a note pasted from matter A into matter B): a separate record with the same bytes, never shared. The caller must see both matters and the target must be
+    /// active (409 <c>MATTER_INACTIVE</c>). Audited at the target. The editor swaps the id in the pasted text.
+    /// </summary>
+    [HttpPost("/api/v1/note-images/{noteImageId:int}/copy", Name = "CopyNoteImage")]
+    [Authorize(Policy = NotePolicies.NoteEdit)]
+    [ProducesResponseType<NoteImageResponse>(StatusCodes.Status201Created, "application/json")]
+    public async Task<IActionResult> Copy(int noteImageId, [FromBody] CopyNoteImageRequest request, CancellationToken cancellationToken) =>
+        this.ToActionResult(await images.CopyAsync(noteImageId, request, cancellationToken), r => StatusCode(StatusCodes.Status201Created, r));
+}
+
+/// <summary>
+/// Caps the image upload before anything reads it (the request body may be at most 2 MB plus the multipart envelope; a larger declared length is answered with a 413 problem without reading a byte) and
+/// turns failures of the form reader (limits exceeded, truncated or malformed multipart) into problems that never echo content.
+/// </summary>
+[AttributeUsage(AttributeTargets.Method)]
+internal sealed class NoteImageRequestLimitsAttribute : Attribute, IAsyncResourceFilter, IExceptionFilter
+{
+    /// <summary>The file is at most 2 MB; the rest is the multipart envelope.</summary>
+    internal const long MaxRequestBytes = NoteImageService.MaxBytes + 64 * 1024;
+
+    public async Task OnResourceExecutionAsync(ResourceExecutingContext context, ResourceExecutionDelegate next)
+    {
+        var http = context.HttpContext;
+        var feature = http.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpMaxRequestBodySizeFeature>();
+        if (feature is { IsReadOnly: false })
+            feature.MaxRequestBodySize = MaxRequestBytes;
+
+        if (http.Request.ContentLength > MaxRequestBytes)
+        {
+            context.Result = Problem(context, NoteImageService.TooLarge("The image is larger than 2 MB."));
+            return;
+        }
+
+        await next();
+    }
+
+    public void OnException(ExceptionContext context)
+    {
+        var error = context.Exception switch
+        {
+            BadHttpRequestException { StatusCode: StatusCodes.Status413PayloadTooLarge } => NoteImageService.TooLarge("The image is larger than 2 MB."),
+            InvalidDataException => NoteImageService.TooLarge("The image is larger than 2 MB."),
+            BadHttpRequestException or IOException or InvalidOperationException { Source: "Microsoft.AspNetCore.Http" } =>
+                Error.Validation("file", NoteImageService.CorruptCode, "The upload could not be read. Choose the image again.", NoteImageService.CorruptCode),
+            _ => null,
+        };
+        if (error is null)
+            return;
+
+        context.Result = Problem(context, error);
+        context.ExceptionHandled = true;
+    }
+
+    private static IActionResult Problem(ActionContext context, Error error) => new ProblemCarrier { ControllerContext = new ControllerContext(context) }.Problem(error);
+
+    private sealed class ProblemCarrier : ControllerBase;
 }
 
 /// <summary>The firm-wide note tags. Everyone who reads notes reads the list; the Labels administrators change it.</summary>

@@ -58,8 +58,8 @@ public sealed class NoteTemplateService(DbContext db, IAuditWriter audit, NoteAc
 
         db.Set<NoteTemplate>().Add(template);
         audit.Write(new AuditEntry { EventType = "NOTE_TEMPLATE_CREATED", ObjectType = ObjectType, ObjectIdFactory = () => NoteSupport.Id(template.Id), MatterId = matterId, Summary = template.Name });
-        var saved = await SaveWithTagsAsync(template, applied.Value, ct);
-        return saved.IsFailure ? saved.Error! : await GetAsync(template.Id, ct);
+        var saved = await SaveWithTagsAsync(template, applied.Value.Tags, ct);
+        return saved.IsFailure ? saved.Error! : await WithLeftOutAsync(template.Id, applied.Value.ImagesLeftOut, ct);
     }
 
     public async Task<Result<NoteTemplateResponse>> UpdateAsync(int id, UpdateNoteTemplateRequest request, CancellationToken ct)
@@ -89,14 +89,21 @@ public sealed class NoteTemplateService(DbContext db, IAuditWriter audit, NoteAc
         if (applied.IsFailure)
             return applied.Error!;
 
-        var wanted = applied.Value.Select(t => t.Id).ToHashSet();
+        var wanted = applied.Value.Tags.Select(t => t.Id).ToHashSet();
         db.Set<NoteTemplateTag>().RemoveRange(current.Where(l => !wanted.Contains(l.NoteTagId)));
         var have = current.Select(l => l.NoteTagId).ToHashSet();
         db.Set<NoteTemplateTag>().AddRange(wanted.Where(w => !have.Contains(w)).Select(w => new NoteTemplateTag { NoteTemplateId = id, NoteTagId = w }));
         audit.Write(new AuditEntry { EventType = "NOTE_TEMPLATE_EDITED", ObjectType = ObjectType, ObjectId = NoteSupport.Id(id), MatterId = template.MatterId, Summary = template.Name });
         NoteSupport.TrackOriginalRowVersion(db, template, request.RowVersion);
         var saved = await SaveAsync(template, ct);
-        return saved.IsFailure ? saved.Error! : await GetAsync(id, ct);
+        return saved.IsFailure ? saved.Error! : await WithLeftOutAsync(id, applied.Value.ImagesLeftOut, ct);
+    }
+
+    /// <summary>The template as saved, with the number of pictures of the submitted text that a template cannot carry.</summary>
+    private async Task<Result<NoteTemplateResponse>> WithLeftOutAsync(int id, int imagesLeftOut, CancellationToken ct)
+    {
+        var template = await GetAsync(id, ct);
+        return template.IsFailure || imagesLeftOut == 0 ? template : template.Value with { ImagesLeftOut = imagesLeftOut };
     }
 
     public async Task<Result<NoteTemplateResponse>> DuplicateAsync(int id, DuplicateNoteTemplateRequest request, CancellationToken ct)
@@ -239,7 +246,7 @@ public sealed class NoteTemplateService(DbContext db, IAuditWriter audit, NoteAc
         }
     }
 
-    private async Task<Result<IReadOnlyList<NoteTag>>> ApplyAsync(NoteTemplate template, NoteTemplateInput input, IReadOnlyCollection<int> existingTags, CancellationToken ct)
+    private async Task<Result<(IReadOnlyList<NoteTag> Tags, int ImagesLeftOut)>> ApplyAsync(NoteTemplate template, NoteTemplateInput input, IReadOnlyCollection<int> existingTags, CancellationToken ct)
     {
         var name = input.Name.Trim();
         if (name.Length == 0)
@@ -261,11 +268,11 @@ public sealed class NoteTemplateService(DbContext db, IAuditWriter audit, NoteAc
         template.Name = name;
         template.Description = NoteSupport.Clean(input.Description);
         template.TitleTemplate = NoteSupport.Clean(input.TitleTemplate);
-        template.BodyHtml = NoteContent.StripReferences(body.Value.Html);
+        template.BodyHtml = NoteContent.StripReferences(body.Value.Html, out var imagesLeftOut);
         if (await NameTakenAsync(template, template.Id == 0 ? null : template.Id, ct))
             return NoteSupport.Duplicate("name", $"A template named '{name}' already exists here.");
 
-        return Result<IReadOnlyList<NoteTag>>.Success(tags);
+        return Result<(IReadOnlyList<NoteTag> Tags, int ImagesLeftOut)>.Success((tags, imagesLeftOut));
     }
 
     private Task<bool> NameTakenAsync(NoteTemplate t, int? exceptId, CancellationToken ct) =>
