@@ -2,7 +2,7 @@
 
 Issue #1406, epic #1405. **Design only.** No application code, no schema script and no OpenAPI change are in this branch. Mockup: `docs/ux/mockups/notes-round-2/` (open `index.html`). Screenshots: branch `design-evidence`, folder `notes-round-2-1406`.
 
-Written 2026-11-18 for the owner and the UI designer. Where a rule here differs from `docs/ux/design-guidelines.md`, the guideline wins until the designer approves the change (section 14 lists the new patterns).
+Written 2026-11-18 for the owner and the UI designer; updated the same day with the owner's decisions. Where a rule here differs from `docs/ux/design-guidelines.md`, the guideline wins until the designer approves the change (section 14 lists the new patterns).
 
 ## 0. The short version
 
@@ -17,10 +17,10 @@ What this note proposes:
 | Request | Proposal in one paragraph |
 | --- | --- |
 | Folders | A folder tree on the left of the Notes tab (All Notes, No Folder, then the folders). A note is in one folder or in none. Folders belong to one matter, nest up to 5 levels, have unique names inside a parent, and are created, renamed, moved and deleted by people who can edit notes (delete: who can delete notes). A folder can be deleted only when empty, or with "Move Contents Up and Delete". Notes move by the "Move to Folder" menu item or by drag. Tags, pinning, lock, search and the three views keep working inside the selected folder. No new permission. |
-| Images | A pasted image is uploaded at once, stored in a new SQL Server table (outside the note body), and the body keeps only a small reference (`<img data-image-id alt width height>`, no URL). PNG or JPEG, at most 2 MB, at most 20 per note. Resize by corner handles with a live size readout, by presets, or by an exact width in "Image Details". Removed or never-saved images are purged after 7 days. **This amends architecture decision 027 ("no file storage") and needs the owner's yes (question 1).** |
+| Images | A pasted image is uploaded at once, stored in a new SQL Server table (outside the note body), and the body keeps only a small reference (`<img data-image-id alt width height>`, no URL). PNG or JPEG, at most 2 MB, at most 20 per note. Resize by corner handles with a live size readout, by presets, or by an exact width in "Image Details". An image no saved note uses any more is deleted when the note is saved; an image uploaded but never saved is deleted when the editor is cancelled; deleting a note deletes its images. No per-matter size or count limit. **This amends architecture decision 027 ("no file storage"); the owner has decided yes (question 1).** |
 | Formatted paste | The client stops flattening paste to plain text. It cleans Word, Outlook, Google Docs, Excel and web HTML, keeps what the note can already hold (headings, bold, italic, underline, lists, tables, links, quotes) and drops the rest (colours, fonts, highlight, strikethrough, page layout). After a paste a "Paste Options" chip offers "Keep Formatting" and "Paste as Plain Text". The server sanitiser needs almost no change for this; it does need to drop hidden text. |
 
-The three questions that most need the owner's answer are 1 (store images in the database), 3 (delete rule for folders) and 9 (which formatting to keep). All questions are in section 15 with a recommendation each.
+**All 20 open questions were decided by the owner on 2026-11-18** (section 15). The design below follows those decisions.
 
 **No keyboard shortcut is added or changed** (owner decision 2026-11-10, #420). Every action in this design has a button or a menu item. The keys that appear (arrows in the folder tree, Esc, Enter, Tab) are the keys of a widget while it has focus, like the splitter's keys; no F2, no Delete key, no Ctrl+Shift+N. Ctrl+Shift+V is the browser's own "paste as plain text"; the design only makes sure it keeps working (section 5.5).
 
@@ -51,7 +51,7 @@ The three questions that most need the owner's answer are 1 (store images in the
 
 In scope: the three requests, for the Notes tab (full view) of a Matter, desktop only (1366x768, 1920x1080).
 
-Not in this round, on purpose: files other than images; drag and drop of files into a note (drop stays blocked); an "Insert Image" file button (question 17); shared folders across matters; folder templates (question 19); "Duplicate Note"; sorting folders by hand; folder-level permissions; images in note templates; OCR of images; Word RTF picture extraction; mobile layouts.
+Not in this round, on purpose: files other than images; drag and drop of files into a note (drop stays blocked); an "Insert Image" file button (decided, question 17); shared folders across matters; folder templates (decided, question 19: follow-up issue); "Duplicate Note"; sorting folders by hand; folder-level permissions; images in note templates; OCR of images; Word RTF picture extraction; mobile layouts.
 
 ## 3. Folders
 
@@ -67,7 +67,7 @@ Not in this round, on purpose: files other than images; drag and drop of files i
 | Rule | Decision |
 | --- | --- |
 | Scope | One matter. A folder, its parent and its notes are always in the same matter; the database enforces it with composite foreign keys (3.3). A note cannot be moved to another matter's folder. |
-| Depth | Top-level folders are level 1. At most **5 levels** (question 2). Create, move and "Move Contents Up" check it, including the height of the moved subtree. Error `FOLDER_TOO_DEEP`: "Folders can be nested up to 5 levels." |
+| Depth | Top-level folders are level 1. At most **5 levels** (decided, question 2). Create, move and "Move Contents Up" check it, including the height of the moved subtree. Error `FOLDER_TOO_DEEP`: "Folders can be nested up to 5 levels." |
 | Number | At most **200 folders per matter** (`FOLDER_LIMIT`). The tree is not virtualised, so a cap keeps it fast. |
 | Name | 1 to 100 characters after trimming, no `/` or `\`, no control characters. **Unique inside the same parent**, case-insensitive (the database collation), also at the top level. Error `FOLDER_NAME_TAKEN` with the sentence "A folder named "Finance" already exists in Custodians." shown under the field. Two different parents may both have "Finance". |
 | Order | Alphabetical, natural order ("Volume 2" before "Volume 10"). No manual order. |
@@ -110,12 +110,12 @@ Mockup scenes: `main`, `new-folder`, `rename`, `move-folder`, `move-note`, `dele
 - **Tree column** left of the list, 232 px default, resizable by the same splitter pattern as the list, **folds to a 44 px rail** (icon buttons for All Notes and the current folder; "Show Folders" to open it). Header row: "Folders", "New Folder" icon button, "Hide Folders" icon button. Rows are 32 px: chevron, folder icon (`pi-folder`, `pi-folder-open` when expanded), name with ellipsis (tooltip with the full name), direct count; the count gives way to a "..." button on hover and on the selected row. The selected row uses the selected background and a 3 px primary bar at the left, like the list.
 - **Width at 1366x768.** The card is about 1,114 px wide. Tree 232 + list 388 + note 494 leaves the note above its 420 px minimum. The list keeps its splitter and the note keeps 420 px, so the tree gives way first (it folds) when the card is narrower, and the existing "stacked" mode still applies below 760 px. The mockup `image` scenes show the rail.
 - **Row menu** ("..." on a folder row): New Subfolder, Rename, Move to Folder..., Copy Link, Delete Folder (red, far down; disabled with a tooltip for a person without `MatterNote.Delete`). The tree is **not** a navigation menu: clicking a name selects the folder and shows its notes.
-- **List**: a path bar under the controls ("Custodians > Executive Team" with the direct count) shows the scope; the list rows are unchanged. In **All Notes**, in a search, and with "Include Subfolders", each row gets one more muted line with its folder path (folder icon, "Custodians > Finance") so a note's place is never a guess.
+- **List**: a path bar under the controls ("Custodians > Executive Team" with the direct count) shows the scope; the list rows are unchanged. In **All Notes** and in a search, each row gets one more muted line with its folder path (folder icon, "Custodians > Finance") so a note's place is never a guess.
 - **Note panel**: the header's left side is the note's place as a text button ("Custodians > Executive Team"; clicking selects that folder in the tree). A note at the top level shows "No Folder".
 - **New Note** creates the note in the selected folder (All Notes and No Folder create it at the top level). "Use a template" (`/template`) does the same.
-- **View Options** gets one new item: "Include Subfolders" (checkbox, off by default; off means the list shows the notes directly in the selected folder). The tag filter counts follow the current scope. The tag and Locked filter chips stay as they are; the folder is shown by the path bar, not a chip.
+- **View Options** gets no folder item. A folder shows **only the notes directly in it**, like a file explorer; there is no "Include Subfolders" switch (owner decision 5). The tag filter counts follow the current scope. The tag and Locked filter chips stay as they are; the folder is shown by the path bar, not a chip.
 - **Templates view** has no folders (templates are not in folders), so the tree hides while Templates is selected and returns when By Tag or Latest is chosen.
-- **The one-page Matter** keeps its compact Notes section as it is (latest notes, any folder); "Open Full View" is where folders live. `?tab=notes&folder=<id>` opens a folder (and `&note=` a note); the address is replaced, never pushed, as for D-03e. The selected folder is **not** stored in browser storage (nothing about a matter is stored there). Expanded or collapsed tree nodes are kept in memory only; the path to the selected folder is always expanded.
+- **The one-page Matter** keeps its compact Notes section as it is (latest notes, any folder); "Open Full View" is where folders live. `?tab=notes&folder=<id>` opens a folder (and `&note=` a note); the address is replaced, never pushed, as for D-03e. The selected folder is **not** stored in browser storage (nothing about a matter is stored there). Whether the tree is open or folded **is** remembered per person (a preference like the list width, key `mf.notes.tree`, no matter data in it). Expanded or collapsed tree nodes are kept in memory only; the path to the selected folder is always expanded.
 - **Drag and drop.** A note row can be dragged onto a tree row; a folder can be dragged onto another folder or onto "No Folder" to move it to the top level. While dragging, the valid target under the pointer gets the selected background and a 2 px primary outline, a small label near the pointer says what will happen ("Move to Custodians > IT and Records"), a folder that cannot take the item is dimmed with the reason in its tooltip. A hover of 600 ms opens a collapsed folder. Dropping in the note body does nothing (the editor's drop stays blocked). **Drag is a shortcut for "Move to Folder..." which does the same and is the keyboard way.** Pointer-only drag is never the only way (WCAG 2.5.7).
 - **Tree keyboard** (ARIA tree pattern, keys of the widget): Up and Down move, Right and Left open and close or go to the parent, Home and End, Enter selects. `role="tree"`, `treeitem`, `aria-level`, `aria-expanded`, `aria-selected`. Rename, move and delete are on the row menu, not on keys.
 - **States.** First use: in the tree, a one-line muted "No folders yet." with a "New Folder" text button (D-44x: small area, not a full state block); the "No Folder" row is hidden while there are no folders. Empty folder: the list shows the shared state block "No notes in this folder yet." with "New Note". Search with no match inside a folder: `No results for "tablet" in Executive Team.` with a "Search All Notes" text button. Read-only person (no `MatterNote.Edit`): the "New Folder" button and the row-menu items that change things are absent or disabled with the sentence "You don't have permission to change folders." The "Read only" badge already on the tab covers the rest.
@@ -127,7 +127,7 @@ Mockup scenes: `main`, `new-folder`, `rename`, `move-folder`, `move-note`, `dele
 | **Tags** | Unchanged and independent. By Tag groups the notes of the selected scope; a note with several tags still shows once per tag. Tag filter and Locked filter combine with the folder scope (AND). Tag counts follow the scope. Deleting or deactivating a tag does nothing to folders. |
 | **Search** | The text search (title and text, server side, whole matter) is applied, then the list is narrowed to the selected folder **and its subfolders** (the file-explorer rule). With All Notes selected it is the whole matter. A hit outside the selected folder is offered with "Search All Notes". No folder-name search in round 2. |
 | **Pinning** | A pin is per note and works in any folder (also on a locked note, as today). Pinned notes come first inside the shown list. There is no pinned folder. |
-| **Lock** | A locked note can be **moved** (organisation, like pin, not content); it cannot be edited or deleted. Moving does not change Last Updated and shows in History as "moved this note to ...". A folder cannot be locked. Deleting a folder with locked notes inside is only possible through "Move Contents Up and Delete". Question 6. |
+| **Lock** | A locked note can be **moved** (organisation, like pin, not content); it cannot be edited or deleted. Moving does not change Last Updated and shows in History as "moved this note to ...". A folder cannot be locked. Deleting a folder with locked notes inside is only possible through "Move Contents Up and Delete". Decided (question 6). |
 | **Templates** | A template has no folder. Using a template creates the note in the selected folder. "Save as template" copies the text, not the folder. |
 | **Copy of a note** | There is no "Duplicate Note" today and none is added. "Copy Link" gives `?tab=notes&note=<id>`; it survives a move because it uses the id. If a duplicate is added later, the copy lands in the same folder and its images are copied as new rows (4.6). Copying text between notes of one matter is plain paste (5). |
 | **References and embeds** | `@`, `#` and note references and embedded notes use ids, so a move never breaks them. The References panel is unchanged. |
@@ -170,7 +170,7 @@ Decision 027 says there is no file storage. Options:
 | B. Files on disk or a share | Cheap storage | ACLs, backup in step with the database, orphan files, new deployment dependency, decision 027 fully reversed |
 | C. Azure Blob or similar | Scales | New service, network rules, not in this stack |
 
-**Recommendation: A**, with an ADR and a change to decision 027 in the build issue ("No attachments; the only stored binaries are small, matter-owned images of notes and the branding icon"). Question 1.
+**Recommendation: A**, with an ADR and a change to decision 027 in the build issue ("No attachments; the only stored binaries are small, matter-owned images of notes and the branding icon"). Decided (question 1): yes.
 
 ```
 dbo.NoteImage
@@ -182,31 +182,30 @@ dbo.NoteImage
   ContentSha256      BINARY(32) NOT NULL   (ETag)
   Content            VARBINARY(MAX) NOT NULL
   UploadedAt, UploadedByUserId             (UploadedBy -> AppUser)
-  UnreferencedSince  DATETIME2 NULL        (= UploadedAt at upload; NULL while a saved note refers to it)
-  IX_NoteImage_Matter (MatterId); IX_NoteImage_Unreferenced (UnreferencedSince) WHERE UnreferencedSince IS NOT NULL
+  IX_NoteImage_Matter (MatterId); IX_NoteImage_Uploaded (UploadedAt)   (for the safety sweep)
 dbo.NoteLink  CK_NoteLink_Type gains 'IMAGE'
 ```
 
-Size planning (the DBA should confirm headroom): a screenshot is typically 100 to 500 KB. At 2 images per note and 400 KB, a matter with 50 notes adds about 40 MB; 2,000 active matters is about 80 GB as an upper bound, usually far less. The per-matter cap in 4.3 limits the worst case.
+Size planning (no matter limit, so the DBA should confirm headroom): a screenshot is typically 100 to 500 KB. At 2 images per note and 400 KB, a matter with 50 notes adds about 40 MB; 2,000 active matters is about 80 GB as an upper bound, usually far less. Because images are deleted as soon as nothing uses them, only images that are in saved notes count.
 
 ### 4.3 Limits
 
-| Limit | Value (question 12 and 13) | Why |
+| Limit | Value (decided, questions 12 and 13) | Why |
 | --- | --- | --- |
 | Types the server accepts | PNG, JPEG (checked by the first bytes and a header decode, never by the client's type or the file name) | Safe, universal. SVG is refused (script risk). Animated GIF, WebP, BMP, HEIC, TIFF are not stored; the client converts what the browser can decode (WebP, GIF first frame, BMP) to PNG before upload, the rest fails with the "type" message. |
 | Size per image | 2 MB after the client's shrink | Fits one upload request (the route raises the 2 MB default a little, as branding does) |
 | Pixels | Long side shrunk to 1,600 px by the client; the server accepts up to 8,000 px on either side | A 4K screenshot is shrunk before it travels |
 | Per note | 20 images | Keeps notes readable and the body small |
-| Per matter | 250 images or 100 MB, whichever first (`NOTE_IMAGE_QUOTA`) | Bounds growth |
-| Pending per person and matter | 50 unreferenced images | Stops abuse and runaway retries |
+| Per matter | **No limit** on count or total size (owner decision 13) | Growth is bounded only by the per-note cap and by images being deleted as soon as nothing uses them |
+| Pending per person and matter | 50 unreferenced images | A technical guard against runaway retries only, not a product limit; it clears when the editor is closed |
 | Metadata | Removed: the client always re-draws the image on a canvas and exports PNG or JPEG, which drops EXIF and GPS data | Privacy for photos pasted from a phone folder |
 
 ### 4.4 Read and upload paths
 
-- **Upload:** `POST /api/v1/matters/{matterId}/note-images` (multipart `file`, the same pattern and OpenAPI treatment as the branding icon and `parse-email`). Needs `MatterNote.Edit`, a matter the caller can see and that is active. Answers `{ noteImageId, width, height, contentType, byteSize }`. Failures: 413 or 422 `IMAGE_TOO_LARGE`, 422 `IMAGE_TYPE_UNSUPPORTED`, 422 `IMAGE_CORRUPT`, 409 `NOTE_IMAGE_QUOTA`, 409 `MATTER_INACTIVE`, 404 hidden matter. Audited (7).
+- **Upload:** `POST /api/v1/matters/{matterId}/note-images` (multipart `file`, the same pattern and OpenAPI treatment as the branding icon and `parse-email`). Needs `MatterNote.Edit`, a matter the caller can see and that is active. Answers `{ noteImageId, width, height, contentType, byteSize }`. Failures: 413 or 422 `IMAGE_TOO_LARGE`, 422 `IMAGE_TYPE_UNSUPPORTED`, 422 `IMAGE_CORRUPT`, 409 `MATTER_INACTIVE`, 404 hidden matter. Audited (7). A second call, `DELETE /api/v1/note-images/{id}`, lets the editor delete an image the same person uploaded and no saved note uses (used on Cancel and Discard).
 - **Read:** `GET /api/v1/notes/images/{noteImageId}` needs `MatterNote.View` and the matter's visibility (hidden = 404, the same answer as a missing image, so ids leak nothing). Headers: the stored `Content-Type`, `X-Content-Type-Options: nosniff`, `Content-Disposition: inline`, a restrictive CSP with `sandbox` on this route (the branding icon route is the precedent), `Cache-Control: private, no-cache` with the SHA-256 as `ETag`, so every use re-checks access and answers 304 when unchanged. An image of an inactive matter is still readable.
 - **How the browser gets it.** Recommendation: the editor loads the bytes through the API client as a blob and shows them as a blob URL (with a small in-memory cache per id), **not** as a plain `<img src="/api/...">`. A plain `<img>` cannot send the headers the app relies on in Development and Test (`X-Dev-User`) or during impersonation, and cannot show a clean "removed" or "no access" state. In production Windows authentication would work with a plain `<img>`, but one code path that works everywhere is safer. The current CSP is `img-src 'self' data:`, which most likely **refuses `blob:` images**. The build either adds `blob:` to `img-src` (a small change reviewed with the security headers; blob URLs are made only by our own script) or draws the bytes onto a canvas. See risk R6.
-- **Another matter's image** (a note copied from matter A into matter B): the body would refer to an image that is not B's. The save would fail (`IMAGE_NOT_IN_MATTER`). To avoid that the editor, on paste, calls `POST /api/v1/note-images/{id}/copy` `{ targetMatterId }` (the caller must see both matters and hold `MatterNote.Edit` on the target) and swaps the id. Question 15.
+- **Another matter's image** (a note copied from matter A into matter B): the body would refer to an image that is not B's. The save would fail (`IMAGE_NOT_IN_MATTER`). To avoid that the editor, on paste, calls `POST /api/v1/note-images/{id}/copy` `{ targetMatterId }` (the caller must see both matters and hold `MatterNote.Edit` on the target) and swaps the id. Decided (decided, question 15): a separate server-side copy, never shared; needs `MatterNote.Edit` on the target.
 
 ### 4.5 Paste, upload and the failure states
 
@@ -227,7 +226,6 @@ Reasons, in the words of the interface:
 | Over 2 MB after shrinking | It is larger than 2 MB even after shrinking. Crop it or take a smaller screenshot. | yes |
 | Not PNG or JPEG and the browser cannot convert it | This image type isn't supported. Paste a PNG or JPEG, or take a screenshot. | no |
 | 20 images in the note | A note can hold up to 20 images. Remove one first. | no |
-| Matter quota reached | This matter has reached its image limit. Remove images you no longer need. | no |
 | Connection lost, server error | The upload didn't finish. Check your connection and try again. | yes |
 | No `MatterNote.Edit` (changed while editing) | You don't have permission to add images to this matter's notes. | no |
 | Note locked by someone while editing | This note was locked by Tomas Berg while you were editing. | no |
@@ -240,19 +238,19 @@ Reasons, in the words of the interface:
 - **Without a mouse.** The image bar's size buttons, and **"Image Details"** (a normal form dialog: alt text up to 200 characters with a counter, a size row, an exact **Width (px)** field, "Height follows: 300 px. Original is 960 x 600 px.", "Remove Image" far left, `[Cancel] [Save Changes]`). Opened by "Alt Text" on the bar, or by Enter on a selected image. Dragging is therefore never the only way. The arrow keys are not used for resizing (they move the text cursor off a selected image).
 - **Alt text.** Default "Pasted image" (never empty, so screen readers announce something); the person improves it in Image Details. The server keeps up to 200 plain characters. It is also part of the note's search text (section 8).
 - **Read mode and locked notes.** The image shows at its stored size, no handles, no bar. Hover shows a subtle outline and the tooltip "Open full size". Click or Enter on the focused image opens the original in a new tab (a blob of the same bytes; the tab shows only the image). A locked note is read mode for everybody.
-- **Remove.** From the bar or Image Details: takes the image out of the text. Saving makes it unreferenced; the row is purged after 7 days (4.7).
+- **Remove.** From the bar or Image Details: takes the image out of the text. While the editor is open the image is kept, so undo works; the save deletes it if no saved note uses it any more (4.7).
 - **Where an image can sit.** Between paragraphs, inside a list item and inside a table cell. It is a block, not a character in a line (no text wrapping, no float, no alignment options in round 2).
 
 ### 4.7 Clean-up of orphans
 
 | Case | Rule |
 | --- | --- |
-| Uploaded, never saved into a note (cancelled draft, closed tab, failed save) | `UnreferencedSince = UploadedAt`. Purged after **7 days**. |
-| Removed from a note by a save | The save recomputes the note's `NoteLink` rows (as it does today). An image with no remaining reference in any note gets `UnreferencedSince = now`. Purged after 7 days. The grace keeps "Copy My Text" after an edit conflict working and tolerates a second open tab. |
-| Referenced again before the purge (a paste of the same id, an undo in another tab) | `UnreferencedSince` is cleared by the next save that refers to it. |
+| Uploaded, never saved into a note (cancelled draft, discard, closed tab) | Cancel and Discard call `DELETE /note-images/{id}` for every image uploaded in that editing session and not saved. Editing, removing and undoing inside the open editor still work, because nothing is deleted before Save or Cancel. |
+| Removed from a note by a save | The save recomputes the note's `NoteLink` rows (as it does today). An image with no remaining reference in any note is **deleted in the same transaction**. No retention period. |
+| A crash or a closed browser left an image behind | Only a quiet nightly safety sweep: it deletes images with no reference whose upload is older than 48 hours (a long-open draft is the only thing that can get that old). No user action, no audit. |
 | Note deleted | The delete transaction removes the images that **no other note** refers to, at once (a note is deleted "for good"; its images follow). |
 | Image used by two notes (cross-note copy in one matter) | Stays while one reference remains. |
-| The job | A `NoteImageSweeper : BackgroundService`, once a day at night, deletes in batches of 100, logs the counts, never audits per image (no person acted). Same pattern as `ReportResultSweeper`. |
+| The job | `NoteImageSweeper : BackgroundService`, once a night, batches of 100, logs the counts, never audits per image. Same pattern as `ReportResultSweeper`. It is a crash safety net, not a retention rule. |
 
 ### 4.8 Images and the other note features
 
@@ -287,9 +285,9 @@ Today `handlePaste` takes `text/plain` and inserts it as text, so bold, lists, t
 | Headings 1 to 3 | **Kept** | Heading 4 to 6 become heading 3. Word "Title" becomes heading 1 |
 | Bulleted and numbered lists, nesting | **Kept** | Word's list paragraphs (`mso-list`, typed bullet characters) are rebuilt as real lists with their levels. A numbered list's start number is not kept (starts at 1). To-do or check lists become bullets |
 | Tables | **Kept**: rows, cells, header row, merged cells (colspan, rowspan up to 100) | Widths, borders, shading, alignment and vertical alignment dropped. Nested tables up to depth 3 (the server's limit), deeper ones flatten to paragraphs. Excel's first row stays a normal row (use the table tools to mark a header) |
-| Links | **Kept** when http, https, mailto or `onenote:https:` | Others (`javascript:`, `file:`, relative) keep the text only. Outlook Safe Links (`...safelinks.protection.outlook.com/?url=...`) are **unwrapped** to the real address (question 16; the wrapper also carries the reader's address) |
+| Links | **Kept** when http, https, mailto or `onenote:https:` | Others (`javascript:`, `file:`, relative) keep the text only. Outlook Safe Links (`...safelinks.protection.outlook.com/?url=...`) are **unwrapped** to the real address (decided, question 16; the wrapper also carries the reader's address) |
 | Quotes | **Kept** as quote (blockquote) | |
-| Text colour | **Dropped** (question 9) | The note has 8 colours of its own, picked on purpose from the toolbar; a Word red is not one of them |
+| Text colour | **Dropped** (decided, question 9) | The note has 8 colours of its own, picked on purpose from the toolbar; a Word red is not one of them |
 | Highlight, background colour | **Dropped** | |
 | Strikethrough | Mark **dropped**, text kept | The note has no strikethrough mark. |
 | Subscript, superscript | Mark **dropped**, text kept | A footnote "2" becomes a plain digit |
@@ -298,7 +296,7 @@ Today `handlePaste` takes `text/plain` and inserts it as text, so bold, lists, t
 | Horizontal rule, page break | **Dropped** | |
 | Images in the pasted text | **Not kept in round 2** (5.3) | An info toast says how many were left out |
 | Comments, footnotes, endnotes (Word) | **Dropped** | |
-| **Tracked changes** | Inserted text **kept**, deleted text **dropped** | Pasting a redline would otherwise give a garbled run of both. The toast says "Pasted without tracked deletions" when it happened (question 10) |
+| **Tracked changes** | Inserted text **kept**, deleted text **dropped** | Pasting a redline would otherwise give a garbled run of both. The toast says "Pasted without tracked deletions" when it happened (decided, question 10) |
 | **Hidden text** (`display:none`, `hidden`, `mso-hide`, zero-size or invisible text) | **Dropped** | See the privacy note in 5.4 |
 | Scripts, styles, forms, iframes, objects, `<o:p>`, XML islands, conditional comments | **Dropped** with their content | Also dropped by the server |
 | @mentions from Outlook or Teams | Stay as plain text or `mailto:` links | They do not become the note's own `@` person chips |
@@ -377,7 +375,7 @@ All through `IAuditWriter` with the matter id, as the Notes service does now.
 | `NOTE_IMAGE_ADDED` | Note (matter scoped) | type, size, dimensions; **no content**. Written at upload (a person put data into the matter even if the note is never saved) |
 | `NOTE_EDITED` | Note | unchanged; an edit that only changes images or alt text is an edit |
 
-Not audited: reads, the purge job (no person acted; the job logs counts), resizing (it is an edit of the body).
+Not audited: reads, the safety sweep (no person acted; the job logs counts), resizing (it is an edit of the body).
 
 Build items: add `NoteFolder` to `AuditDisplayLookup.cs` (the Audit Logs page names objects through it; `INoteLabels` gets a folder lookup), add the new event types to `shared/ui/audit-format.ts` and `event-type.ts`, and `noteHistoryText` for `NOTE_MOVED`. Folders have no History panel of their own; their events are in Audit Logs.
 
@@ -398,7 +396,7 @@ Build items: add `NoteFolder` to `AuditDisplayLookup.cs` (the Audit Logs page na
 | Resize, alt text | `MatterNote.Edit` (it is editing the body) | |
 | Paste | `MatterNote.Edit` | A read-only person has no editor |
 
-**Recommendation: reuse `MatterNote.View|Edit|Delete`; add no permission** (question 4). A new `MatterNote.ManageFolders` would need `contracts/permissions.json`, the generated C# and TypeScript, the role editor, a seed migration for every role that holds Edit today, and a decision about who gets it; the owner's wording (a file explorer for notes) does not ask for a stricter right than editing the notes themselves. If the owner wants only managers to restructure folders, add the permission later; the endpoint policy is one constant (`NotePolicies`).
+**Recommendation: reuse `MatterNote.View|Edit|Delete`; add no permission** (decided, question 4). A new `MatterNote.ManageFolders` would need `contracts/permissions.json`, the generated C# and TypeScript, the role editor, a seed migration for every role that holds Edit today, and a decision about who gets it; the owner's wording (a file explorer for notes) does not ask for a stricter right than editing the notes themselves. If the owner wants only managers to restructure folders, add the permission later; the endpoint policy is one constant (`NotePolicies`).
 
 A person who cannot see the matter gets 404 for folders and images. A person with View but not Edit sees the tree and the images, with the change controls absent or disabled with a sentence.
 
@@ -406,7 +404,7 @@ A person who cannot see the matter gets 404 for folders and images. A person wit
 
 | ID | Risk | Mitigation |
 | --- | --- | --- |
-| R1 | Decision 027 reversed in part; the database grows | Owner decision (question 1); ADR; quotas (4.3); DBA sizing; list queries never select `Content`; purge job |
+| R1 | Decision 027 reversed in part; the database grows | Owner decided yes (question 1); ADR; no per-matter limit by decision, so DBA sizing; 20 per note and 2 MB each; list queries never select `Content`; images deleted at once when unused |
 | R2 | Images are a new place for privileged content: no DLP or AI policy sees pixels | Same visibility and permissions as the text; documented; the AI seam must not read images (R7) |
 | R3 | Sanitiser change opens an injection or tracking hole | Note profile only; no URL attributes at all; fixpoint tests; the mXSS suite re-run; image bytes served with `nosniff`, a sandbox CSP and a type taken from the stored magic bytes, never from the client |
 | R4 | Malformed or malicious image (decompression bomb, polyglot) | Header decode with a pixel cap (8,000 x 8,000 stops at about 64 megapixels), size cap before decode, no server-side image processing library in round 2 (the client re-draws every image; the server only validates the header). If server re-encoding is wanted later, check the library's licence (ImageSharp needs a commercial licence for a firm of this kind; SkiaSharp is MIT) and add the package in `Directory.Packages.props` only. |
@@ -420,7 +418,8 @@ A person who cannot see the matter gets 404 for folders and images. A person wit
 | R12 | Formatting rules disappoint (a colour the owner wanted) | Question 9 before build; the clean-up is one function with fixtures, easy to extend |
 | R13 | Pasted Word lists or tables clean up badly | Captured fixtures from real Word and Outlook output, a manual pass by the owner on the first build |
 | R14 | An image pasted into a note in an inactive or locked state | Server refuses (`MATTER_INACTIVE`, 409 `NOTE_LOCKED` on save); the editor shows the inline reasons in 4.5 |
-| R15 | Unreferenced images linger | Daily sweeper; counts logged; a test inserts old rows and proves they go |
+| R15 | An image is left behind after a crash | Nightly safety sweep (48 hours); counts logged; a test inserts old rows and proves they go |
+| R18 | An image is deleted on save while someone else's unsaved copy still points at it (second tab, "Copy My Text" after a conflict) | Accepted by the owner's rule (no retention); the editor shows the inline "image is no longer available" state for a missing image and the text stays; documented |
 | R16 | Cross-matter copy of an image moves privileged material between matters | It is the same person with access to both and the same as copying text; audited at the target; the endpoint checks both matters |
 | R17 | Wiki and docs drift | Section 13 lists what the build must update in the same change |
 
@@ -453,7 +452,7 @@ Legend. **Change**: what the build does. Tests: **P** persona walk (sensitive ma
 | ID | Action | Where | Change | Test |
 | --- | --- | --- | --- | --- |
 | W1 | Create note | `NoteService.CreateAsync` (:155) | Optional `folderId`, checked in the same matter | X |
-| W2 | Save note | `NoteService.UpdateAsync` (:212) | Body may contain images: links, existence in the matter, cap 20, `UnreferencedSince` maintenance | X |
+| W2 | Save note | `NoteService.UpdateAsync` (:212) | Body may contain images: links, existence in the matter, cap 20; images no note uses any more are deleted in the same transaction | X |
 | W3 | **new** Move note | `PUT /notes/{id}/folder` | New; allowed when locked; `NOTE_MOVED`; no Last Updated change | P, X |
 | W4 | Delete note | `NoteService.DeleteAsync` (:373) | Same transaction deletes images no other note uses | X |
 | W5 | Pin, lock, unlock | `NoteService` (:303, :328, :348) | None (row version effect, 3.6) | |
@@ -461,9 +460,9 @@ Legend. **Change**: what the build does. Tests: **P** persona walk (sensitive ma
 | W7 | **new** Rename folder | `PUT /note-folders/{id}` | Row version, unique name, audit | P, X |
 | W8 | **new** Move folder | `PUT /note-folders/{id}/parent` | Cycle, depth, name clash, app lock, audit | P, X |
 | W9 | **new** Delete folder | `DELETE /note-folders/{id}` | Empty rule, `moveContentsUp`, `NOTE_MOVED` per note, audit | P, X |
-| W10 | **new** Upload image | `POST /matters/{id}/note-images` | Magic bytes, size, pixels, quota, pending cap, audit | P, X |
+| W10 | **new** Upload image | `POST /matters/{id}/note-images` | Magic bytes, size, pixels, pending guard, audit; plus `DELETE /note-images/{id}` for Cancel | P, X |
 | W11 | **new** Copy image to another matter | `POST /note-images/{id}/copy` | Both matters visible, Edit on the target | P, X |
-| W12 | **new** Sweeper | `NoteImageSweeper : BackgroundService` | Purge unreferenced rows older than 7 days | X |
+| W12 | **new** Safety sweep | `NoteImageSweeper : BackgroundService` | Nightly: delete unreferenced rows uploaded more than 48 hours ago | X |
 | W13 | Templates create, update, duplicate, use | `NoteTemplateService` (:264 `StripReferences`) | Strip images; "N images left out" count returned | U |
 | W14 | Sanitiser and content rules | `RichHtml.cs`, `RichHtmlGuard.cs`, `NoteContent.cs` | Section 6 | U |
 | W15 | Matter deactivate or reactivate | Organization | Folder create refused while inactive (as New Note); no data change | X |
@@ -474,7 +473,7 @@ Totals: 15 read paths, 16 write paths. **Not changed:** tags and tag administrat
 ## 12. Test plan
 
 - **Backend unit:** name, depth, limit, cycle rules; sanitiser fixtures (images, hidden text, `del`, 1,001 cells, fixpoint); paste-related server cases.
-- **Backend integration (Docker):** every new endpoint in the sensitive-matter persona walk (hidden matter: 404 identical to missing); cross-matter move and image reference refused; composite foreign key violations; concurrent folder moves (cycle); delete rules and "Move Contents Up" with a clashing name; image upload types, sizes, quota; ETag 304; purge job with old and new rows; note delete removes images; lost-write checks for folder rename and move.
+- **Backend integration (Docker):** every new endpoint in the sensitive-matter persona walk (hidden matter: 404 identical to missing); cross-matter move and image reference refused; composite foreign key violations; concurrent folder moves (cycle); delete rules and "Move Contents Up" with a clashing name; image upload types and sizes; ETag 304; image deleted on save when unused, on Cancel, and with its note; the 48-hour safety sweep; lost-write checks for folder rename and move.
 - **Schema tests:** script 83 applies on a fresh database and on one with the baseline; `report-access.json` lists the new tables.
 - **Frontend unit:** `note-paste` against the captured clipboards; the tree (keyboard, counts, disabled targets); the image node (resize maths: ratio, min 48, max natural, stored values); Paste Options (undo and replace with plain); text-only clipboard (Ctrl+Shift+V).
 - **E2E (Playwright, 1366x768 and 1920x1080):** create, rename, move, delete a folder; drag a note; paste a PNG; resize; remove; paste failure and Retry; paste formatted HTML from a fixture; Paste as Plain Text; read-only person; locked note. axe on the tree, the dialogs and the editor with an image.
@@ -488,7 +487,7 @@ Suggested children of epic #1405 (rough size S, M, L):
 | --- | --- | --- | --- |
 | A | Folders: script 83 (`NoteFolder`, `Note.FolderId`), service, endpoints, audit, tests | M | |
 | B | Folders UI: tree, scoped list, dialogs, drag, deep link, states | L | A |
-| C | Images: `NoteImage`, upload and read endpoints, sanitiser, `NoteLink` IMAGE, quota, sweeper, tests, ADR | L | owner yes on question 1 |
+| C | Images: `NoteImage`, upload and read endpoints, sanitiser, `NoteLink` IMAGE, delete-on-save, safety sweep, tests, ADR | L | decided (question 1) |
 | D | Images UI: paste upload, placeholder, image node, resize, Image Details, read mode | L | C |
 | E | Formatted paste: `note-paste.ts`, fixtures, Paste Options, hidden-text and `del` rules in the sanitiser | M | none (can go first) |
 
@@ -513,34 +512,34 @@ None of these exists in `docs/ux/design-guidelines.md`; I used the shared parts 
 5. **Paste Options chip** and its menu.
 6. **Move Folder / Move Note picker**: a tree of radio rows with greyed targets and reason labels.
 
-Words used (Title Case for things you click, sentence case for text, per D-20): New Folder, New Subfolder, Rename, Move to Folder..., Copy Link, Delete Folder, Show Folders, Hide Folders, All Notes, No Folder, Include Subfolders, Move Folder, Move Note, Move Contents Up and Delete, Alt Text, Image Details, Remove Image, Fit to Width, Keep Formatting, Paste as Plain Text, Retry, Remove, Search All Notes. Toasts: "Folder created", "Folder renamed", "Folder deleted", "Note moved" (with Undo), "Folder moved" (with Undo), "Pasted without 2 images", "Pasted without tracked deletions". States: "No folders yet.", "No notes in this folder yet.", `No results for "tablet" in Executive Team.`, "Couldn't add the image.".
+Words used (Title Case for things you click, sentence case for text, per D-20): New Folder, New Subfolder, Rename, Move to Folder..., Copy Link, Delete Folder, Show Folders, Hide Folders, All Notes, No Folder, Move Folder, Move Note, Move Contents Up and Delete, Alt Text, Image Details, Remove Image, Fit to Width, Keep Formatting, Paste as Plain Text, Retry, Remove, Search All Notes. Toasts: "Folder created", "Folder renamed", "Folder deleted", "Note moved" (with Undo), "Folder moved" (with Undo), "Pasted without 2 images", "Pasted without tracked deletions". States: "No folders yet.", "No notes in this folder yet.", `No results for "tablet" in Executive Team.`, "Couldn't add the image.".
 
 Where the mockup is not the guideline (for the designer): the mockup's tree and list share one card (as the existing list and note do); the image bar uses 28 px buttons (a dense floating toolbar, like the table tools; the guideline's 36 px control height is for page controls); the folder rows are 32 px (dense list rows, D-02).
 
-## 15. Open decisions for the owner
+## 15. Decisions (owner, 2026-11-18)
 
-Each has a recommendation; the design above follows the recommendations.
+All 20 questions are decided. The design above follows these decisions.
 
-1. **Store images in the database (amend decision 027 "no file storage")?** Without it there are no pasted images. *Recommendation: yes. A `NoteImage` table, PNG and JPEG, 2 MB each, 20 per note, 250 images or 100 MB per matter; an ADR records it.*
-2. **How deep and how many folders?** *Recommendation: 5 levels, 200 folders per matter.*
-3. **What does Delete Folder do when the folder has notes?** *Recommendation: it refuses, and offers "Move Contents Up and Delete" (notes go to the parent, nothing is deleted). Notes are never deleted by deleting a folder.*
-4. **Who may manage folders?** *Recommendation: reuse the note permissions: Matter Note Edit to create, rename and move; Matter Note Delete to delete a folder. No new permission, no role migration.*
-5. **What does a folder show: only its own notes, or its subfolders' too?** *Recommendation: its own notes, with "Include Subfolders" in View Options (off). Counts are direct and add up to All Notes. Search covers the selected folder and its subfolders.*
-6. **May a locked note be moved to another folder?** *Recommendation: yes, like pinning (it changes where it is, not what it says); audited; Last Updated unchanged.*
-7. **Does New Note (and a template) go into the selected folder?** *Recommendation: yes; All Notes and No Folder create at the top level.*
-8. **Is the folder tree always shown?** *Recommendation: shown by default in the Notes full view at 232 px, folds to a rail, hidden in the Templates view, and not part of the compact Notes section of the one-page Matter.*
-9. **Which pasted formatting is kept?** *Recommendation: keep paragraphs, headings 1 to 3, bold, italic, underline, bullet and numbered lists with nesting, tables, links and quotes; drop text colour, highlight, strikethrough, fonts, sizes and layout. Do not add strikethrough or highlight to the editor. Do not map a pasted red to one of the note colours.*
-10. **Tracked changes in pasted Word text?** *Recommendation: keep inserted text, drop deleted text, and say so in a toast.*
-11. **Pictures inside pasted Word or Outlook text?** The browser does not hand them over. *Recommendation: not in round 2; a toast says they were left out and to paste a picture on its own; open a separate issue if the owner wants Word and Outlook pictures (needs reading the RTF flavour).*
-12. **Image types, size and metadata?** *Recommendation: PNG or JPEG stored; the browser converts WebP, GIF (first frame) and BMP; no SVG, no animation; 2 MB; long side shrunk to 1,600 px; every image re-drawn in the browser so camera metadata (EXIF, GPS) is removed.*
-13. **Per-matter image quota and how long a removed image stays?** *Recommendation: 250 images or 100 MB per matter; an image no note uses is purged after 7 days; deleting a note removes its images at once.*
-14. **How does a person paste as plain text?** *Recommendation: a "Paste Options" chip after the paste (Keep Formatting, Paste as Plain Text), plus the browser's own Ctrl + Shift + V; no toolbar button (it would trigger a browser clipboard-permission prompt).*
-15. **Copying text with an image from one matter's note into another's?** *Recommendation: the editor copies the image to the target matter through a server call (needs Edit on the target); if the owner would rather not allow it, the image is dropped with a toast.*
-16. **Unwrap Outlook Safe Links when pasting?** The wrapper hides the real address and carries the reader's e-mail address. *Recommendation: yes, unwrap to the real address.*
-17. **Insert Image button (file picker) and dropping files into a note?** *Recommendation: not now. The owner asked for paste; drop stays blocked; revisit after round 2.*
-18. **Undo after moving a note or folder?** *Recommendation: no confirmation, an Undo in the toast (D-34).*
-19. **Standard folders for a new matter (for example Privilege Review, Custodians, Search Terms, Vendor Communications, Meet and Confer)?** *Recommendation: not in round 2; a follow-up issue "folder templates" if the firm wants a standard structure.*
-20. **Default alt text of a pasted image?** *Recommendation: "Pasted image", improved in Image Details; never empty.*
+1. **Images stored in the database.** Yes: a `NoteImage` table, with an ADR amending decision 027 ("no file storage").
+2. **Folder depth and number.** 5 levels, 200 folders per matter.
+3. **Delete Folder.** A folder with notes is refused as it is, and "Move Contents Up and Delete" is offered. An empty folder deletes without asking. Notes are never deleted with a folder.
+4. **Permissions.** Reuse `MatterNote.Edit` (create, rename, move) and `MatterNote.Delete` (delete a folder). No new permission.
+5. **What a folder shows.** Only its direct notes, like a file explorer. **There is no "Include Subfolders" switch.** Counts are direct and add up to All Notes. Search covers the selected folder and its subfolders.
+6. **Locked notes.** A locked note may be moved.
+7. **New Note and templates.** They go into the selected folder (top level in All Notes and No Folder).
+8. **The tree.** Open by default, folds to an icon strip, the choice is remembered per person, hidden in the Templates view, absent from the compact Notes section of the one-page Matter.
+9. **Pasted formatting kept.** Headings, bold, italic, underline, lists, tables, links, quotes. Dropped: colours, fonts, highlight, strikethrough, layout.
+10. **Tracked changes.** Inserted text kept, deleted text dropped, and a toast says so.
+11. **Pictures inside pasted Word or Outlook text.** Not kept in round 2; a toast says so.
+12. **Image format.** PNG and JPEG only, 2 MB per file, long side shrunk to 1,600 px, metadata stripped.
+13. **Image limits and clean-up.** **No per-matter size or count limit.** 20 images per note. An image no saved note uses any more is deleted **when the note is saved** (editing and undo before saving still work). An image uploaded but never saved is deleted when the editor is cancelled or discarded. Deleting a note deletes its images. Only a quiet nightly safety sweep remains, for crashes. **No 7-day retention.**
+14. **Paste as plain text.** The Paste Options chip plus the browser's own Ctrl+Shift+V. No toolbar button, no app shortcut.
+15. **Image copied between matters.** A separate server-side copy, never shared; needs `MatterNote.Edit` on the target matter.
+16. **Outlook Safe Links.** Unwrapped on paste.
+17. **Insert Image button and file drop.** Neither in round 2.
+18. **Undo after a move.** Yes, in the toast.
+19. **Standard folders for new matters.** A follow-up issue only.
+20. **Default alt text.** "Pasted image", never empty.
 
 ## 16. What this note did not check
 

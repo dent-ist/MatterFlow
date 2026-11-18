@@ -2,7 +2,7 @@
 
 Mockup only: static HTML, CSS and JS, no build, no network, nothing saves, no app code changed. Open `index.html` in a browser (double-click). Sizes: 1366x768 and 1920x1080 (desktop only). `assets/tokens.css` is a copy of `docs/ux/tokens.css`; icons are PrimeIcons (`assets/primeicons.*`); `base.css` is the shared base block of the integrations and one-page Matter mockups; `notes.css` holds the Notes pieces. All data is invented (the matter, people and documents are made up). "Today" is 11/18/2026. No keyboard shortcut is added or changed (#420).
 
-The design note is `docs/ux/notes-round-2/README.md`. Screenshots (branch `design-evidence`, folder `notes-round-2-1406`) are listed in its README.
+The design note is `docs/ux/notes-round-2/README.md`; section 15 there holds the owner's decisions (a folder shows only its direct notes, so the mockup has no Include Subfolders switch; the tree open or folded choice is remembered per person; images have no per-matter limit and are deleted on save). Screenshots (branch `design-evidence`, folder `notes-round-2-1406`) are listed in its README.
 
 ## Scenes
 
