@@ -368,12 +368,29 @@ public static partial class RichHtml
                 element.Remove();
         }
 
+        if (profile == RichHtmlProfile.Note)
+            DropHiddenAndDeleted(body);
+
         // Pasted or contenteditable markup (div lines, headings, quotes) becomes paragraphs so line breaks survive the allow-list.
         // One read-only post-order walk that writes the result (depth is bounded by RichHtmlGuard). Moving nodes inside the DOM
         // per element was the cubic cost of SEC2-02.
         var output = new StringBuilder(html.Length + 64);
         EmitChildren(body, output, tableDepth: 0, profile);
         return output.ToString();
+    }
+
+    /// <summary>
+    /// Note profile only (formatted paste, #1411): removes, with their content, the elements a reader could not see (the <c>hidden</c> attribute, or an inline style of
+    /// <c>display:none</c>, <c>visibility:hidden</c>, <c>mso-hide:all</c>, <c>font-size:0</c>, <c>opacity:0</c>) and tracked deletions (<c>del</c>). The allow-list removes every
+    /// style but keeps the text of the element, so without this a hidden paragraph of a pasted Word or web fragment would become visible text in the note.
+    /// </summary>
+    private static void DropHiddenAndDeleted(AngleSharp.Dom.IElement body)
+    {
+        foreach (var element in body.QuerySelectorAll("del, [hidden], [style]").ToList())
+        {
+            if (element.LocalName == "del" || element.HasAttribute("hidden") || HiddenStylePattern().IsMatch(element.GetAttribute("style") ?? string.Empty))
+                element.Remove();
+        }
     }
 
     /// <summary>
@@ -495,6 +512,10 @@ public static partial class RichHtml
     private static readonly HashSet<string> BlockWrappers = new(["div", "h1", "h2", "h3", "h4", "h5", "h6", "blockquote", "pre", "section", "article", "address"], StringComparer.Ordinal);
 
     private static readonly HashSet<string> BlockNames = new(["p", "ul", "ol", "li", "div", "h1", "h2", "h3", "h4", "h5", "h6", "blockquote", "pre", "section", "article", "address", "table", "tr", "td", "th", "tbody", "thead", "tfoot", "caption"], StringComparer.Ordinal);
+
+    /// <summary>An inline style that hides its element: display:none, visibility:hidden, mso-hide:all, a font size of zero, or zero opacity (spaces and !important allowed).</summary>
+    [GeneratedRegex(@"(^|;)\s*(display\s*:\s*none|visibility\s*:\s*(hidden|collapse)|mso-hide\s*:\s*all|font-size\s*:\s*0+(\.0+)?[a-z%]*|opacity\s*:\s*0+(\.0+)?)\s*(!\s*important\s*)?(;|$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex HiddenStylePattern();
 
     [GeneratedRegex(@"<\s*(br\s*/?|/p|/li|/tr|/caption|/table|/h[1-6]|/blockquote)\s*>", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex BreakPattern();

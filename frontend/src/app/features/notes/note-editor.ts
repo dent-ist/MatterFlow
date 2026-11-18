@@ -3,6 +3,7 @@ import {
   Component,
   DestroyRef,
   ElementRef,
+  Injector,
   ViewEncapsulation,
   afterNextRender,
   effect,
@@ -13,9 +14,13 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
+import { NotificationService } from '../../core/notify/notification.service';
 import { Dropdown, DropdownItem } from '../../shared/ui/dropdown';
+import { PASTE_COPY, cleanPaste } from './note-paste';
 import { AnyExtension, Editor, Extension, Mark, Node } from '@tiptap/core';
 import { Placeholder } from '@tiptap/extensions';
+import { closeHistory } from '@tiptap/pm/history';
+import { Node as PmNode } from '@tiptap/pm/model';
 import { PluginKey } from '@tiptap/pm/state';
 import StarterKit from '@tiptap/starter-kit';
 import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table';
@@ -378,7 +383,12 @@ export interface RefInfo {
   imports: [Dropdown],
   changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None,
-  styleUrls: ['./note-editor.scss', './note-editor-refs.scss', './note-editor-colours.scss'],
+  styleUrls: [
+    './note-editor.scss',
+    './note-editor-refs.scss',
+    './note-editor-colours.scss',
+    './note-editor-paste.scss',
+  ],
   template: `
     <div class="ne" [class.ne--edit]="editable()" [class.ne--read]="!editable()" data-note-editor>
       @if (editable()) {
@@ -655,8 +665,75 @@ export interface RefInfo {
           }
         </div>
       }
+      @if (pasteMessage(); as msg) {
+        <p class="ne__paste-msg" role="alert" data-paste-message>{{ msg }}</p>
+      }
       <div class="ne__area" #host data-editor-area></div>
       @if (editable()) {
+        <span class="mf-sr-only" role="status" aria-live="polite" data-paste-live>{{
+          pasteLive()
+        }}</span>
+        @if (pasteChip()) {
+          <div class="ne__paste" tabindex="-1" data-paste-options (keydown)="pasteKey($event)">
+            <span class="ne__po" role="toolbar" aria-label="Paste options">
+              <i class="pi pi-clipboard" aria-hidden="true"></i>
+              {{ pasteCopy.chip }}
+              <button
+                type="button"
+                class="ne__po-btn"
+                data-paste-caret
+                aria-label="Paste options"
+                aria-haspopup="menu"
+                [attr.aria-expanded]="pasteMenu()"
+                (click)="togglePasteMenu()"
+              >
+                <i class="pi pi-angle-down" aria-hidden="true"></i>
+              </button>
+            </span>
+            @if (pasteMenu()) {
+              <div
+                class="ne__po-menu"
+                role="menu"
+                aria-label="Paste options"
+                tabindex="-1"
+                data-paste-menu
+              >
+                <button
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked="true"
+                  tabindex="0"
+                  data-paste-keep
+                  (click)="keepFormatting()"
+                >
+                  <i class="pi pi-check" aria-hidden="true"></i>
+                  <span
+                    ><b>{{ pasteCopy.keep }}</b
+                    ><span>{{ pasteCopy.keepHelp }}</span></span
+                  >
+                </button>
+                <button
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked="false"
+                  tabindex="-1"
+                  data-paste-plain
+                  (click)="pasteAsPlainText()"
+                >
+                  <span class="ne__po-gap" aria-hidden="true"></span>
+                  <span
+                    ><b>{{ pasteCopy.plain }}</b
+                    ><span>{{ pasteCopy.plainHelp }}</span></span
+                  >
+                </button>
+                <div class="ne__po-tip">
+                  In the browser, <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>V</kbd> pastes as plain
+                  text from the start.
+                </div>
+              </div>
+            }
+          </div>
+        }
         @if (emptyDoc()) {
           <p class="ne__hint" data-editor-hint data-editor-empty-hint>
             Type <kbd>/</kbd> for commands, for example <kbd>/template</kbd> to start from a
@@ -834,10 +911,24 @@ export class NoteEditor {
 
   private destroyed = false;
 
+  private readonly notifier = inject(NotificationService);
+  private readonly injector = inject(Injector);
+  protected readonly pasteCopy = PASTE_COPY;
+  /** The Paste Options chip: set after a paste that kept formatting; holds the plain version of that paste and the document right after it. */
+  protected readonly pasteChip = signal<{ plain: string; doc: PmNode } | null>(null);
+  protected readonly pasteMenu = signal(false);
+  /** The inline message above the text ("That's too much to paste at once."); cleared on the next edit or click. */
+  protected readonly pasteMessage = signal('');
+  protected readonly pasteLive = signal('');
+  /** True while our own paste (or its plain replacement) runs through ProseMirror, so `handlePaste` lets it through. */
+  private pasting = false;
+  private removeAway: (() => void) | null = null;
+
   constructor() {
     afterNextRender(() => this.create());
     inject(DestroyRef).onDestroy(() => {
       this.destroyed = true;
+      this.removeAway?.();
       this.editor?.destroy();
     });
     effect(() => {
@@ -890,6 +981,152 @@ export class NoteEditor {
     effect(() => {
       if (this.linkOpen()) queueMicrotask(() => this.linkInputEl()?.nativeElement.focus());
     });
+  }
+
+  /**
+   * One paste (design note 5): HTML from Word, Outlook, Google Docs, Excel or a web page is cleaned and kept as headings, bold, italic, underline, lists, tables,
+   * links and quotes; a clipboard with text only (also the browser's Ctrl+Shift+V) takes ProseMirror's own plain path, one paragraph per line. A clean-up error falls
+   * back to that plain path and never blocks the paste. Returns true when the event is handled here.
+   */
+  private handlePaste(event: ClipboardEvent): boolean {
+    if (this.pasting) return false; // our own insert, now on its way through ProseMirror
+    const editor = this.editor;
+    if (!editor || !this.editable()) return true;
+    const data = event.clipboardData;
+    const html = data?.getData('text/html') ?? '';
+    this.pasteMessage.set('');
+    this.closePasteOptions();
+    const plain = data?.getData('text/plain') ?? '';
+    // Text only (also the browser's Ctrl+Shift+V): the editor's plain paste, one paragraph per line. A picture file alone is not pasted (images are a later issue).
+    if (!html.trim()) return !plain;
+    let result;
+    try {
+      result = cleanPaste(html, plain);
+    } catch {
+      return this.pastePlain(editor, event, plain);
+    }
+    if (result.droppedImages > 0) {
+      this.notifier.info(PASTE_COPY.imagesSummary(result.droppedImages), PASTE_COPY.imagesDetail);
+    }
+    if (result.droppedDeletions) {
+      this.notifier.info(PASTE_COPY.deletionsSummary, PASTE_COPY.deletionsDetail);
+    }
+    if (result.problem === 'too-large') {
+      this.pasteMessage.set(PASTE_COPY.tooLarge);
+      return true;
+    }
+    if (result.problem === 'too-many-cells') {
+      this.pasteMessage.set(PASTE_COPY.tooManyCells(result.tableCells));
+      return true;
+    }
+    // Nothing is left of the html (a picture on its own, or only hidden text): the text flavour, if there is one, goes the plain way.
+    if (!result.html)
+      return this.pastePlain(editor, event, result.droppedImages > 0 ? '' : result.plain);
+    const view = editor.view;
+    this.pasting = true;
+    try {
+      // Own undo step, so the toolbar's or the editor's Undo removes the whole paste and Paste as Plain Text can take it back.
+      view.dispatch(closeHistory(view.state.tr));
+      view.pasteHTML(result.html, event);
+      view.dispatch(closeHistory(view.state.tr));
+    } finally {
+      this.pasting = false;
+    }
+    if (result.formatted) {
+      this.pasteChip.set({ plain: result.plain, doc: view.state.doc });
+      this.pasteLive.set('');
+      queueMicrotask(() => this.pasteLive.set(PASTE_COPY.live));
+    }
+    return true;
+  }
+
+  private pastePlain(editor: Editor, event: ClipboardEvent, text: string): boolean {
+    if (!text.trim()) return true;
+    this.pasting = true;
+    try {
+      editor.view.pasteText(text, event);
+    } finally {
+      this.pasting = false;
+    }
+    return true;
+  }
+
+  private closePasteOptions(): void {
+    if (this.pasteChip()) this.pasteChip.set(null);
+    if (this.pasteMenu()) this.pasteMenu.set(false);
+  }
+
+  protected togglePasteMenu(): void {
+    const open = !this.pasteMenu();
+    this.pasteMenu.set(open);
+    if (open) afterNextRender(() => this.pasteItems()[0]?.focus(), { injector: this.injector });
+  }
+
+  protected keepFormatting(): void {
+    this.pasteMenu.set(false);
+    this.focusCaret();
+  }
+
+  /** Takes this paste back and inserts the plain version kept from the same paste event (no clipboard read, so no permission prompt). */
+  protected pasteAsPlainText(): void {
+    const chip = this.pasteChip();
+    const editor = this.editor;
+    this.closePasteOptions();
+    if (!chip || !editor || !editor.state.doc.eq(chip.doc)) return;
+    editor.commands.focus();
+    if (!editor.commands.undo()) return;
+    this.pasting = true;
+    try {
+      editor.view.pasteText(chip.plain);
+      editor.view.dispatch(closeHistory(editor.view.state.tr));
+    } finally {
+      this.pasting = false;
+    }
+    this.pasteLive.set('');
+    queueMicrotask(() => this.pasteLive.set(PASTE_COPY.livePlain));
+  }
+
+  private pasteItems(): HTMLButtonElement[] {
+    return Array.from(
+      this.hostEl().nativeElement.parentElement?.querySelectorAll<HTMLButtonElement>(
+        '[data-paste-menu] button',
+      ) ?? [],
+    );
+  }
+
+  private focusCaret(): void {
+    queueMicrotask(() =>
+      this.hostEl()
+        .nativeElement.parentElement?.querySelector<HTMLElement>('[data-paste-caret]')
+        ?.focus(),
+    );
+  }
+
+  /** Keys of the chip and its menu (widget keys while one of them has focus, not app shortcuts, #420): Arrow Down opens the menu, the arrows, Home and End move, Esc closes. */
+  protected pasteKey(ev: KeyboardEvent): void {
+    if (!this.pasteMenu()) {
+      if (ev.key === 'ArrowDown' && (ev.target as HTMLElement).closest('[data-paste-caret]')) {
+        ev.preventDefault();
+        this.togglePasteMenu();
+      }
+      return;
+    }
+    const items = this.pasteItems();
+    const at = items.indexOf(document.activeElement as HTMLButtonElement);
+    const move = (to: number) => {
+      ev.preventDefault();
+      items.forEach((b, i) => (b.tabIndex = i === to ? 0 : -1));
+      items[to]?.focus();
+    };
+    if (ev.key === 'ArrowDown') move((at + 1) % items.length);
+    else if (ev.key === 'ArrowUp') move((at - 1 + items.length) % items.length);
+    else if (ev.key === 'Home') move(0);
+    else if (ev.key === 'End') move(items.length - 1);
+    else if (ev.key === 'Escape') {
+      ev.preventDefault();
+      this.pasteMenu.set(false);
+      this.focusCaret();
+    } else if (ev.key === 'Tab') this.pasteMenu.set(false);
   }
 
   protected currentColour(): string {
@@ -1257,21 +1494,26 @@ export class NoteEditor {
       ],
       editorProps: {
         attributes: { 'aria-label': 'Note text', role: 'textbox', 'aria-multiline': 'true' },
-        // Paste is plain text only and nothing is dropped into the text (the mockup's rule: no foreign markup).
-        handlePaste: (view, event) => {
-          const text = event.clipboardData?.getData('text/plain');
-          if (!text) return true;
-          view.dispatch(view.state.tr.insertText(text));
-          return true;
-        },
+        // Formatted paste (#1411): the clipboard's html is cleaned (note-paste.ts) and parsed with the note's own schema; nothing is dropped into the text.
+        handlePaste: (_view, event) => this.handlePaste(event),
         handleDrop: () => true,
       },
       onUpdate: ({ editor }) => {
         this.changed.emit(editor.getHTML());
         this.markTokens();
       },
-      onTransaction: () => this.tick.update((n) => n + 1),
+      onTransaction: ({ transaction }) => {
+        this.tick.update((n) => n + 1);
+        if (transaction.docChanged && !this.pasting) this.closePasteOptions();
+      },
     });
+    // A click anywhere else (not on the chip or its menu) puts the chip away; there is no timer.
+    const away = (ev: MouseEvent) => {
+      if (!(ev.target instanceof Element && ev.target.closest('[data-paste-options]')))
+        this.closePasteOptions();
+    };
+    document.addEventListener('mousedown', away, true);
+    this.removeAway = () => document.removeEventListener('mousedown', away, true);
     const root = this.hostEl().nativeElement;
     root.addEventListener('click', (ev) => this.onReadClick(ev));
     root.addEventListener('keydown', (ev) => {
