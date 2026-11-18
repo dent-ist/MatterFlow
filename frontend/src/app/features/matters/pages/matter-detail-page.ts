@@ -1185,6 +1185,8 @@ export class MatterDetailPage {
       // The filters of the Tasks and Assets tabs, and the Assets paging and sort, belong to their tab only.
       queryParams: {
         tab: key === 'summary' ? null : key,
+        // The folder of the Notes tab belongs to that tab only.
+        folder: null,
         name: null,
         typeId: null,
         extref: null,

@@ -1,0 +1,71 @@
+// The folder parts of the Notes tab (D-46c; issue #1408): the path bar under the controls, the folder line of a note row and the place button of the note header. Tokens only.
+.nt__path {
+  display: flex;
+  flex: none;
+  gap: var(--mf-s2);
+  align-items: center;
+  height: 40px;
+  min-width: 0;
+  padding: 0 var(--mf-s3);
+  border-bottom: 1px solid var(--mf-border);
+
+  > .pi {
+    color: var(--mf-text-muted);
+    font-size: var(--mf-icon-sm);
+  }
+}
+
+.nt__crumbs {
+  display: flex;
+  flex: 1;
+  gap: 4px;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 600;
+  white-space: nowrap;
+
+  b {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.nt__sepi {
+  color: var(--mf-text-muted);
+  font-size: var(--mf-icon-xs);
+  font-weight: 400;
+}
+
+// The folder of a note, one muted line in All Notes and in a search.
+.nt__where-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+  margin-top: 6px;
+  overflow: hidden;
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  .pi {
+    flex: none;
+    font-size: var(--mf-icon-xs);
+  }
+}
+
+.nt__crumb .nt__where {
+  display: inline-flex;
+  max-width: 100%;
+  min-width: 0;
+  vertical-align: middle;
+}
+
+.nt__where-t {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

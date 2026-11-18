@@ -91,6 +91,9 @@
   --mf-dialog-w-lg: 768px;
   --mf-drawer-w: 520px;
   --mf-drawer-w-wide: 720px;
+  /* Matter > Notes folder tree (D-46c): the open column and the folded rail */
+  --mf-notes-tree-w: 232px;
+  --mf-notes-rail-w: 44px;
   /* Work grid (mf-task-table: Task Queue, My Work, Pod Work, Matter and Project task lists; ux-spec 5.2). These are the documented
      numbers; the grid's styles (task-table.scss, src/styles/_tables.scss) carry them as literals, so change both together.
      --mf-row-h above is for generic tables and pickers, not the work grid. */

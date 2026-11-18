@@ -438,6 +438,7 @@ describe('MatterDetailPage', () => {
       // The filters of the Tasks and Assets tabs, and the Assets paging and sort, belong to their tab only.
       queryParams: {
         tab: 'projects',
+        folder: null,
         name: null,
         typeId: null,
         extref: null,
