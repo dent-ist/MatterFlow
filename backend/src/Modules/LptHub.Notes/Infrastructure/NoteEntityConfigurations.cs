@@ -18,6 +18,18 @@ internal sealed class NoteConfiguration : IEntityTypeConfiguration<Note>
         b.Property(x => x.LockedAtUtc).HasColumnName("LockedAt");
         b.Property(x => x.ContentUpdatedAtUtc).HasColumnName("ContentUpdatedAt");
         b.HasIndex(x => x.MatterId).HasDatabaseName("IX_Note_Matter");
+        b.HasIndex(x => new { x.MatterId, x.FolderId }).HasDatabaseName("IX_Note_Folder");
+    }
+}
+
+internal sealed class NoteFolderConfiguration : IEntityTypeConfiguration<NoteFolder>
+{
+    public void Configure(EntityTypeBuilder<NoteFolder> b)
+    {
+        b.ToTable("NoteFolder");
+        b.Property(x => x.Name).HasMaxLength(100).IsRequired();
+        b.HasIndex(x => new { x.MatterId, x.ParentFolderId, x.Name }).IsUnique().HasDatabaseName(NoteSupport.FolderNameUnique);
+        b.HasIndex(x => new { x.MatterId, x.ParentFolderId }).HasDatabaseName("IX_NoteFolder_Parent");
     }
 }
 

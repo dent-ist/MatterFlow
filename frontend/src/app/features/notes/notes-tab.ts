@@ -2185,7 +2185,16 @@ export class NotesTab {
         }
         default: {
           const notes = await firstValueFrom(
-            this.notesApi.listNotes(matterId, undefined, undefined, q || undefined, 1, 8),
+            this.notesApi.listNotes(
+              matterId,
+              undefined,
+              undefined,
+              q || undefined,
+              undefined,
+              undefined,
+              1,
+              8,
+            ),
           );
           return notes.items
             .filter((n) => n.noteId !== this.note()?.noteId)
@@ -2538,6 +2547,8 @@ export class NotesTab {
             undefined,
             undefined,
             this.query() || undefined,
+            undefined,
+            undefined,
             page,
             100,
             sort,

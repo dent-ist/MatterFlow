@@ -27,7 +27,7 @@ A module (`LPT Hub.<Module>`) may reference only `LptHub.SharedKernel` and the *
 | Notifications | In-app notifications, preferences, scheduler | yes |
 | Reports | Report definitions, versions, runs, assignment, read-only report login | yes |
 | Productions | Production specs, productions, production comments | yes (marker and label interface) |
-| Notes | Matter notes, tags, templates | yes (marker and label interface) |
+| Notes | Matter notes, note folders, tags, templates | yes (marker and label interface) |
 | Integrations | The one Microsoft Entra ID connection and the integrations that use it (Matter Lookup, Ethical Wall, Other), their access tokens, Test Connection, the Matter Lookup call | yes (`IIntegrationTokenProvider`, `IIntegrationRegistry`) |
 
 Per-module detail: [Module Guide](../Backend/Module-Guide.md).

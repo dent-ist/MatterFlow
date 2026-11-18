@@ -83,7 +83,16 @@ public sealed class NoteListQuery : NoteListQueryBase
     [StringLength(200)]
     public string? Q { get; init; }
 
-    internal static readonly string[] Keys = ["page", "pageSize", "sort", "matterId", "tagId", "locked", "q"];
+    /// <summary>
+    /// Only the notes directly in this folder (a folder of the matter, else 404). With <c>q</c> the search covers the folder and its subfolders (the file-explorer rule).
+    /// Not together with <c>noFolder</c>.
+    /// </summary>
+    public int? FolderId { get; init; }
+
+    /// <summary>True: only the notes that are in no folder (the top level).</summary>
+    public bool? NoFolder { get; init; }
+
+    internal static readonly string[] Keys = ["page", "pageSize", "sort", "matterId", "tagId", "locked", "q", "folderId", "noFolder"];
 }
 
 /// <summary>Creates a note in an active matter.</summary>
@@ -99,6 +108,9 @@ public sealed class CreateNoteRequest
 
     /// <summary>At most five active tags.</summary>
     public IReadOnlyList<int>? TagIds { get; init; }
+
+    /// <summary>The folder the note is created in (a folder of the same matter); omitted or null = no folder.</summary>
+    public int? FolderId { get; init; }
 }
 
 /// <summary>Saves a note.</summary>
@@ -149,6 +161,7 @@ public sealed class UnlockNoteRequest
 public sealed record NoteListItem(
     [property: Required] int NoteId,
     [property: Required] int MatterId,
+    int? FolderId,
     [property: Required] string Title,
     [property: Required] string Snippet,
     [property: Required] IReadOnlyList<NoteTagRef> Tags,
@@ -174,6 +187,7 @@ public sealed record NoteReferenceRef([property: Required] string Kind, [propert
 public sealed record NoteResponse(
     [property: Required] int NoteId,
     [property: Required] int MatterId,
+    int? FolderId,
     [property: Required] string Title,
     [property: Required] string Snippet,
     [property: Required] string BodyHtml,
@@ -194,6 +208,75 @@ public sealed record NoteResponse(
 
 /// <summary>The numbers of the Notes tab.</summary>
 public sealed record NoteSummaryResponse([property: Required] int NoteCount, [property: Required] int LockedCount);
+
+// ---------------------------------------------------------------- folders
+
+/// <summary>A folder of a matter's notes.</summary>
+/// <param name="ParentFolderId">Null for a top-level folder.</param>
+/// <param name="NoteCount">Notes directly in the folder (not in its subfolders).</param>
+/// <param name="SubfolderCount">Folders directly under it.</param>
+public sealed record NoteFolderResponse(
+    [property: Required] int NoteFolderId,
+    [property: Required] int MatterId,
+    int? ParentFolderId,
+    [property: Required] string Name,
+    [property: Required] int NoteCount,
+    [property: Required] int SubfolderCount,
+    [property: Required] string RowVersion);
+
+/// <summary>All folders of a matter (flat, at most 200) with the direct counts. The client builds the tree.</summary>
+/// <param name="Folders">By name; the client orders the tree.</param>
+/// <param name="NoFolderNoteCount">Notes in no folder.</param>
+/// <param name="TotalNoteCount">All notes of the matter: the folder counts plus <c>NoFolderNoteCount</c> add up to it.</param>
+public sealed record NoteFolderListResponse(
+    [property: Required] IReadOnlyList<NoteFolderResponse> Folders,
+    [property: Required] int NoFolderNoteCount,
+    [property: Required] int TotalNoteCount);
+
+/// <summary>Creates a folder in an active matter.</summary>
+public sealed class CreateNoteFolderRequest
+{
+    [Required]
+    public int MatterId { get; init; }
+
+    /// <summary>A folder of the same matter; omitted or null = top level.</summary>
+    public int? ParentFolderId { get; init; }
+
+    /// <summary>1 to 100 characters after trimming, no <c>/</c> or <c>\</c>, unique inside the parent (case-insensitive).</summary>
+    [Required, StringLength(200)]
+    public string Name { get; init; } = string.Empty;
+}
+
+/// <summary>Renames a folder.</summary>
+public sealed class RenameNoteFolderRequest
+{
+    [Required, StringLength(200)]
+    public string Name { get; init; } = string.Empty;
+
+    /// <summary>Concurrency token (base64) last read; a stale one is a 409.</summary>
+    [Required]
+    public string RowVersion { get; init; } = string.Empty;
+}
+
+/// <summary>Moves a folder (with everything in it) under another folder of the same matter, or to the top level.</summary>
+public sealed class MoveNoteFolderRequest
+{
+    /// <summary>The new parent; null = top level.</summary>
+    public int? ParentFolderId { get; init; }
+
+    [Required]
+    public string RowVersion { get; init; } = string.Empty;
+}
+
+/// <summary>Moves a note into a folder of its matter, or out of any folder.</summary>
+public sealed class MoveNoteRequest
+{
+    /// <summary>The target folder; null = No Folder.</summary>
+    public int? FolderId { get; init; }
+
+    [Required]
+    public string RowVersion { get; init; } = string.Empty;
+}
 
 // ---------------------------------------------------------------- references
 

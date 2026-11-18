@@ -39,7 +39,7 @@ internal static class ListFilters
 [Route("api/v1/notes")]
 public class NotesController(NoteService notes) : ControllerBase
 {
-    /// <summary>Lists the notes of a matter (<c>matterId</c> is required), pinned first. <c>tagId</c> (repeatable) keeps notes with any of the tags, <c>locked</c> true or false, <c>q</c> searches title and text. Sort: updatedAt (default, newest first), title, createdAt.</summary>
+    /// <summary>Lists the notes of a matter (<c>matterId</c> is required), pinned first. <c>tagId</c> (repeatable) keeps notes with any of the tags, <c>locked</c> true or false, <c>q</c> searches title and text, <c>folderId</c> keeps the notes directly in a folder (with <c>q</c>: the folder and its subfolders), <c>noFolder=true</c> the notes in no folder. Sort: updatedAt (default, newest first), title, createdAt.</summary>
     [HttpGet(Name = "ListNotes")]
     [Authorize(Policy = NotePolicies.NoteView)]
     [ProducesResponseType<PagedResult<NoteListItem>>(StatusCodes.Status200OK, "application/json")]
@@ -105,6 +105,16 @@ public class NotesController(NoteService notes) : ControllerBase
     public async Task<IActionResult> Lock(int noteId, [FromBody] LockNoteRequest request, CancellationToken cancellationToken) =>
         this.ToActionResult(await notes.LockAsync(noteId, request, cancellationToken));
 
+    /// <summary>
+    /// Moves a note into a folder of its matter, or out of every folder (<c>folderId</c> null = No Folder). Allowed on a locked note (like pinning). Does not change Last Updated.
+    /// Send the <c>rowVersion</c> last read. 400 <c>NOT_FOUND</c> on <c>folderId</c> when the folder is not one of the note's matter.
+    /// </summary>
+    [HttpPut("{noteId:int}/folder", Name = "MoveNote")]
+    [Authorize(Policy = NotePolicies.NoteEdit)]
+    [ProducesResponseType<NoteResponse>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> Move(int noteId, [FromBody] MoveNoteRequest request, CancellationToken cancellationToken) =>
+        this.ToActionResult(await notes.MoveAsync(noteId, request, cancellationToken));
+
     /// <summary>Unlocks a note. Only the person who locked it or an administrator may (403 <c>NOT_LOCK_OWNER</c>).</summary>
     [HttpPost("{noteId:int}/unlock", Name = "UnlockNote")]
     [Authorize(Policy = NotePolicies.NoteEdit)]
@@ -132,6 +142,59 @@ public class NotesController(NoteService notes) : ControllerBase
     [ProducesResponseType<ResolveNoteReferencesResponse>(StatusCodes.Status200OK, "application/json")]
     public async Task<IActionResult> ResolveReferences([FromBody] ResolveNoteReferencesRequest request, CancellationToken cancellationToken) =>
         this.ToActionResult(await notes.ResolveReferencesAsync(request, cancellationToken));
+}
+
+/// <summary>
+/// Nested folders of a matter's notes. A hidden matter has no folders for the caller (404). Read: Matter Note Read; create, rename and move: Matter Note Edit; delete: Matter Note Delete.
+/// Errors (409): <c>FOLDER_NAME_TAKEN</c>, <c>FOLDER_TOO_DEEP</c> (5 levels), <c>FOLDER_LIMIT</c> (200 per matter), <c>FOLDER_CYCLE</c>, <c>FOLDER_NOT_EMPTY</c>, <c>MATTER_INACTIVE</c>, <c>CONCURRENCY_CONFLICT</c>.
+/// </summary>
+[ApiController]
+public class NoteFoldersController(NoteFolderService folders) : ControllerBase
+{
+    /// <summary>All folders of the matter, flat (id, parentId, name, direct note count, subfolder count, rowVersion), plus the number of notes in no folder and the total.</summary>
+    [HttpGet("/api/v1/matters/{matterId:int}/note-folders", Name = "ListNoteFolders")]
+    [Authorize(Policy = NotePolicies.NoteView)]
+    [ProducesResponseType<NoteFolderListResponse>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> List(int matterId, CancellationToken cancellationToken) =>
+        this.ToActionResult(await folders.ListAsync(matterId, cancellationToken));
+
+    /// <summary>Creates a folder in an active matter (top level, or under <c>parentFolderId</c>). 409 <c>FOLDER_NAME_TAKEN</c>, <c>FOLDER_TOO_DEEP</c>, <c>FOLDER_LIMIT</c>, <c>MATTER_INACTIVE</c>.</summary>
+    [HttpPost("/api/v1/note-folders", Name = "CreateNoteFolder")]
+    [Authorize(Policy = NotePolicies.NoteEdit)]
+    [ProducesResponseType<NoteFolderResponse>(StatusCodes.Status201Created, "application/json")]
+    public async Task<IActionResult> Create([FromBody] CreateNoteFolderRequest request, CancellationToken cancellationToken) =>
+        this.ToActionResult(await folders.CreateAsync(request, cancellationToken), f => StatusCode(StatusCodes.Status201Created, f));
+
+    /// <summary>Renames a folder. Send the <c>rowVersion</c> last read. 409 <c>FOLDER_NAME_TAKEN</c>.</summary>
+    [HttpPut("/api/v1/note-folders/{folderId:int}", Name = "RenameNoteFolder")]
+    [Authorize(Policy = NotePolicies.NoteEdit)]
+    [ProducesResponseType<NoteFolderResponse>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> Rename(int folderId, [FromBody] RenameNoteFolderRequest request, CancellationToken cancellationToken) =>
+        this.ToActionResult(await folders.RenameAsync(folderId, request, cancellationToken));
+
+    /// <summary>Moves a folder with everything in it under another folder (<c>parentFolderId</c>) or to the top level (null). 409 <c>FOLDER_CYCLE</c>, <c>FOLDER_TOO_DEEP</c>, <c>FOLDER_NAME_TAKEN</c>.</summary>
+    [HttpPut("/api/v1/note-folders/{folderId:int}/parent", Name = "MoveNoteFolder")]
+    [Authorize(Policy = NotePolicies.NoteEdit)]
+    [ProducesResponseType<NoteFolderResponse>(StatusCodes.Status200OK, "application/json")]
+    public async Task<IActionResult> Move(int folderId, [FromBody] MoveNoteFolderRequest request, CancellationToken cancellationToken) =>
+        this.ToActionResult(await folders.MoveAsync(folderId, request, cancellationToken));
+
+    /// <summary>
+    /// Deletes a folder (needs Matter Note Delete). A folder that holds notes or subfolders is refused with 409 <c>FOLDER_NOT_EMPTY</c> (<c>noteCount</c> and <c>subfolderCount</c> in meta) unless
+    /// <c>moveContentsUp</c> is true: then its notes and subfolders move to the parent folder (top level for a top-level folder) and the folder is deleted, in one transaction (409
+    /// <c>FOLDER_NAME_TAKEN</c> when a moved subfolder's name clashes). Notes are never deleted. Send the <c>rowVersion</c> last read as a query parameter.
+    /// </summary>
+    [HttpDelete("/api/v1/note-folders/{folderId:int}", Name = "DeleteNoteFolder")]
+    [Authorize(Policy = NotePolicies.NoteDelete)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> Delete(int folderId, [FromQuery] string? rowVersion, [FromQuery] bool moveContentsUp, CancellationToken cancellationToken)
+    {
+        if (ListFilters.UnknownFilter(Request, ["rowVersion", "moveContentsUp"]) is { } unknown)
+            return this.Problem(unknown);
+
+        var result = await folders.DeleteAsync(folderId, rowVersion, moveContentsUp, cancellationToken);
+        return result.IsFailure ? this.Problem(result.Error!) : NoContent();
+    }
 }
 
 /// <summary>The firm-wide note tags. Everyone who reads notes reads the list; the Labels administrators change it.</summary>

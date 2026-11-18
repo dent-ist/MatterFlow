@@ -12724,12 +12724,14 @@ export interface INotesClient {
      * @param tagId (optional) 
      * @param locked (optional) 
      * @param q (optional) 
+     * @param folderId (optional) 
+     * @param noFolder (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @param sort (optional) 
      * @return OK
      */
-    listNotes(matterId?: number | undefined, tagId?: number[] | undefined, locked?: boolean | undefined, q?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfNoteListItem>;
+    listNotes(matterId?: number | undefined, tagId?: number[] | undefined, locked?: boolean | undefined, q?: string | undefined, folderId?: number | undefined, noFolder?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfNoteListItem>;
     /**
      * @return Created
      */
@@ -12759,6 +12761,10 @@ export interface INotesClient {
      * @return OK
      */
     lockNote(noteId: number, body: LockNoteRequest): Observable<NoteResponse>;
+    /**
+     * @return OK
+     */
+    moveNote(noteId: number, body: MoveNoteRequest): Observable<NoteResponse>;
     /**
      * @return OK
      */
@@ -12793,12 +12799,14 @@ export class NotesClient implements INotesClient {
      * @param tagId (optional) 
      * @param locked (optional) 
      * @param q (optional) 
+     * @param folderId (optional) 
+     * @param noFolder (optional) 
      * @param page (optional) 
      * @param pageSize (optional) 
      * @param sort (optional) 
      * @return OK
      */
-    listNotes(matterId?: number | undefined, tagId?: number[] | undefined, locked?: boolean | undefined, q?: string | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfNoteListItem> {
+    listNotes(matterId?: number | undefined, tagId?: number[] | undefined, locked?: boolean | undefined, q?: string | undefined, folderId?: number | undefined, noFolder?: boolean | undefined, page?: number | undefined, pageSize?: number | undefined, sort?: string | undefined): Observable<PagedResultOfNoteListItem> {
         let url_ = this.baseUrl + "/api/v1/notes?";
         if (matterId === null)
             throw new globalThis.Error("The parameter 'matterId' cannot be null.");
@@ -12816,6 +12824,14 @@ export class NotesClient implements INotesClient {
             throw new globalThis.Error("The parameter 'q' cannot be null.");
         else if (q !== undefined)
             url_ += "Q=" + encodeURIComponent("" + q) + "&";
+        if (folderId === null)
+            throw new globalThis.Error("The parameter 'folderId' cannot be null.");
+        else if (folderId !== undefined)
+            url_ += "FolderId=" + encodeURIComponent("" + folderId) + "&";
+        if (noFolder === null)
+            throw new globalThis.Error("The parameter 'noFolder' cannot be null.");
+        else if (noFolder !== undefined)
+            url_ += "NoFolder=" + encodeURIComponent("" + noFolder) + "&";
         if (page === null)
             throw new globalThis.Error("The parameter 'page' cannot be null.");
         else if (page !== undefined)
@@ -13262,6 +13278,63 @@ export class NotesClient implements INotesClient {
     /**
      * @return OK
      */
+    moveNote(noteId: number, body: MoveNoteRequest): Observable<NoteResponse> {
+        let url_ = this.baseUrl + "/api/v1/notes/{noteId}/folder";
+        if (noteId === undefined || noteId === null)
+            throw new globalThis.Error("The parameter 'noteId' must be defined.");
+        url_ = url_.replace("{noteId}", encodeURIComponent("" + noteId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processMoveNote(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processMoveNote(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<NoteResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<NoteResponse>;
+        }));
+    }
+
+    protected processMoveNote(response: HttpResponseBase): Observable<NoteResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as NoteResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
     unlockNote(noteId: number, body: UnlockNoteRequest): Observable<NoteResponse> {
         let url_ = this.baseUrl + "/api/v1/notes/{noteId}/unlock";
         if (noteId === undefined || noteId === null)
@@ -13423,6 +13496,326 @@ export class NotesClient implements INotesClient {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
             result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ResolveNoteReferencesResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
+export interface INoteFoldersClient {
+    /**
+     * @return OK
+     */
+    listNoteFolders(matterId: number): Observable<NoteFolderListResponse>;
+    /**
+     * @return Created
+     */
+    createNoteFolder(body: CreateNoteFolderRequest): Observable<NoteFolderResponse>;
+    /**
+     * @return OK
+     */
+    renameNoteFolder(folderId: number, body: RenameNoteFolderRequest): Observable<NoteFolderResponse>;
+    /**
+     * @param rowVersion (optional) 
+     * @param moveContentsUp (optional) 
+     * @return No Content
+     */
+    deleteNoteFolder(folderId: number, rowVersion?: string | undefined, moveContentsUp?: boolean | undefined): Observable<void>;
+    /**
+     * @return OK
+     */
+    moveNoteFolder(folderId: number, body: MoveNoteFolderRequest): Observable<NoteFolderResponse>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class NoteFoldersClient implements INoteFoldersClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @return OK
+     */
+    listNoteFolders(matterId: number): Observable<NoteFolderListResponse> {
+        let url_ = this.baseUrl + "/api/v1/matters/{matterId}/note-folders";
+        if (matterId === undefined || matterId === null)
+            throw new globalThis.Error("The parameter 'matterId' must be defined.");
+        url_ = url_.replace("{matterId}", encodeURIComponent("" + matterId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processListNoteFolders(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processListNoteFolders(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<NoteFolderListResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<NoteFolderListResponse>;
+        }));
+    }
+
+    protected processListNoteFolders(response: HttpResponseBase): Observable<NoteFolderListResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as NoteFolderListResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return Created
+     */
+    createNoteFolder(body: CreateNoteFolderRequest): Observable<NoteFolderResponse> {
+        let url_ = this.baseUrl + "/api/v1/note-folders";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCreateNoteFolder(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCreateNoteFolder(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<NoteFolderResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<NoteFolderResponse>;
+        }));
+    }
+
+    protected processCreateNoteFolder(response: HttpResponseBase): Observable<NoteFolderResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as NoteFolderResponse;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    renameNoteFolder(folderId: number, body: RenameNoteFolderRequest): Observable<NoteFolderResponse> {
+        let url_ = this.baseUrl + "/api/v1/note-folders/{folderId}";
+        if (folderId === undefined || folderId === null)
+            throw new globalThis.Error("The parameter 'folderId' must be defined.");
+        url_ = url_.replace("{folderId}", encodeURIComponent("" + folderId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processRenameNoteFolder(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processRenameNoteFolder(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<NoteFolderResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<NoteFolderResponse>;
+        }));
+    }
+
+    protected processRenameNoteFolder(response: HttpResponseBase): Observable<NoteFolderResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as NoteFolderResponse;
+            return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @param rowVersion (optional) 
+     * @param moveContentsUp (optional) 
+     * @return No Content
+     */
+    deleteNoteFolder(folderId: number, rowVersion?: string | undefined, moveContentsUp?: boolean | undefined): Observable<void> {
+        let url_ = this.baseUrl + "/api/v1/note-folders/{folderId}?";
+        if (folderId === undefined || folderId === null)
+            throw new globalThis.Error("The parameter 'folderId' must be defined.");
+        url_ = url_.replace("{folderId}", encodeURIComponent("" + folderId));
+        if (rowVersion === null)
+            throw new globalThis.Error("The parameter 'rowVersion' cannot be null.");
+        else if (rowVersion !== undefined)
+            url_ += "rowVersion=" + encodeURIComponent("" + rowVersion) + "&";
+        if (moveContentsUp === null)
+            throw new globalThis.Error("The parameter 'moveContentsUp' cannot be null.");
+        else if (moveContentsUp !== undefined)
+            url_ += "moveContentsUp=" + encodeURIComponent("" + moveContentsUp) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processDeleteNoteFolder(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processDeleteNoteFolder(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processDeleteNoteFolder(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    moveNoteFolder(folderId: number, body: MoveNoteFolderRequest): Observable<NoteFolderResponse> {
+        let url_ = this.baseUrl + "/api/v1/note-folders/{folderId}/parent";
+        if (folderId === undefined || folderId === null)
+            throw new globalThis.Error("The parameter 'folderId' must be defined.");
+        url_ = url_.replace("{folderId}", encodeURIComponent("" + folderId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processMoveNoteFolder(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processMoveNoteFolder(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<NoteFolderResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<NoteFolderResponse>;
+        }));
+    }
+
+    protected processMoveNoteFolder(response: HttpResponseBase): Observable<NoteFolderResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            result200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as NoteFolderResponse;
             return _observableOf(result200);
             }));
         } else if (status !== 200 && status !== 204) {
@@ -32293,10 +32686,19 @@ export interface CreateMatterRequest {
     [key: string]: any;
 }
 
+export interface CreateNoteFolderRequest {
+    matterId: number;
+    parentFolderId?: number | undefined;
+    name: string;
+
+    [key: string]: any;
+}
+
 export interface CreateNoteRequest {
     matterId: number;
     bodyHtml?: string | undefined;
     tagIds?: number[] | undefined;
+    folderId?: number | undefined;
 
     [key: string]: any;
 }
@@ -33516,6 +33918,20 @@ export interface MeResponse {
     [key: string]: any;
 }
 
+export interface MoveNoteFolderRequest {
+    parentFolderId?: number | undefined;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
+export interface MoveNoteRequest {
+    folderId?: number | undefined;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
 export interface MyLandingPageDto {
     choice: string | undefined;
     choiceAllowed: boolean;
@@ -34048,6 +34464,26 @@ export interface NextHolidayDto {
     [key: string]: any;
 }
 
+export interface NoteFolderListResponse {
+    folders: NoteFolderResponse[];
+    noFolderNoteCount: number;
+    totalNoteCount: number;
+
+    [key: string]: any;
+}
+
+export interface NoteFolderResponse {
+    noteFolderId: number;
+    matterId: number;
+    parentFolderId: number | undefined;
+    name: string;
+    noteCount: number;
+    subfolderCount: number;
+    rowVersion: string;
+
+    [key: string]: any;
+}
+
 export interface NoteHistoryEntry {
     auditEventId: number;
     occurredAtUtc: string;
@@ -34071,6 +34507,7 @@ export interface NoteHistoryResponse {
 export interface NoteListItem {
     noteId: number;
     matterId: number;
+    folderId: number | undefined;
     title: string;
     snippet: string;
     tags: NoteTagRef[];
@@ -34116,6 +34553,7 @@ export interface NoteReferenceResolution {
 export interface NoteResponse {
     noteId: number;
     matterId: number;
+    folderId: number | undefined;
     title: string;
     snippet: string;
     bodyHtml: string;
@@ -34891,6 +35329,13 @@ export interface RecentReportResponse {
 
 export interface RecentReportsResponse {
     reports: RecentReportResponse[];
+
+    [key: string]: any;
+}
+
+export interface RenameNoteFolderRequest {
+    name: string;
+    rowVersion: string;
 
     [key: string]: any;
 }

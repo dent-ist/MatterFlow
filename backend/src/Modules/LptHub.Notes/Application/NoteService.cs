@@ -13,7 +13,7 @@ using Microsoft.EntityFrameworkCore;
 namespace LptHub.Notes.Application;
 
 /// <summary>
-/// Notes of a matter: list, read, create, save, delete, pin, lock and unlock, history and the resolving of the references in a body. The body is sanitised and the title, snippet,
+/// Notes of a matter: list, read, create, save, delete, pin, lock, unlock and move to a folder, history and the resolving of the references in a body. The body is sanitised and the title, snippet,
 /// search text and links are derived on the server. A locked note is read only for everybody (pinning still works) and cannot be deleted. Every state change is audited with its matter.
 /// </summary>
 public sealed class NoteService(
@@ -38,6 +38,7 @@ public sealed class NoteService(
     public const string UnpinnedEvent = "NOTE_UNPINNED";
     public const string AiWarningEvent = "NOTE_SAVED_AFTER_AI_WARNING";
     public const string DeletedEvent = "NOTE_DELETED";
+    public const string MovedEvent = "NOTE_MOVED";
 
     public const int MaxTags = 5;
     public const int MaxAckItems = 20;
@@ -61,6 +62,30 @@ public sealed class NoteService(
             return NoteSupport.NotFound("Matter");
 
         var notes = access.Visible(db.Set<Note>().AsNoTracking(), n => n.MatterId).Where(n => n.MatterId == matterId);
+        if (query.NoFolder == true && query.FolderId is not null)
+            return Error.Validation("noFolder", "CONFLICTING_FILTERS", "Use folderId or noFolder, not both.");
+        if (query.NoFolder == true)
+        {
+            notes = notes.Where(n => n.FolderId == null);
+        }
+        else if (query.FolderId is { } folderId)
+        {
+            var tree = await LoadTreeAsync(matterId, ct);
+            if (!tree.Contains(folderId))
+                return NoteSupport.NotFound("Folder");
+
+            // A folder shows only its direct notes; a text search inside it also covers its subfolders (the file-explorer rule).
+            if (!string.IsNullOrWhiteSpace(query.Q))
+            {
+                var scope = tree.SelfAndDescendants(folderId).ToList();
+                notes = notes.Where(n => n.FolderId != null && scope.Contains(n.FolderId.Value));
+            }
+            else
+            {
+                notes = notes.Where(n => n.FolderId == folderId);
+            }
+        }
+
         if (query.Locked is { } locked)
             notes = locked ? notes.Where(n => n.LockedByUserId != null) : notes.Where(n => n.LockedByUserId == null);
         if (query.TagId is { Length: > 0 } tagIds)
@@ -101,6 +126,7 @@ public sealed class NoteService(
             {
                 Id = n.Id,
                 MatterId = n.MatterId,
+                FolderId = n.FolderId,
                 Title = n.Title,
                 Snippet = n.Snippet,
                 IsPinned = n.IsPinned,
@@ -160,6 +186,9 @@ public sealed class NoteService(
         if (!matter.IsActive)
             return Error.Conflict(ErrorCodes.MatterInactive, $"Matter {matter.MatterRef} is inactive; notes can't be added to it.");
 
+        if (request.FolderId is { } folderId && !(await LoadTreeAsync(matter.MatterId, ct)).Contains(folderId))
+            return FolderGone();
+
         var content = NoteContent.Process(request.BodyHtml);
         if (content.IsFailure)
             return content.Error!;
@@ -173,7 +202,7 @@ public sealed class NoteService(
             return references.Error!;
 
         var now = clock.UtcNow;
-        var note = new Note { MatterId = matter.MatterId, ContentUpdatedAtUtc = now, ContentUpdatedByUserId = Me };
+        var note = new Note { MatterId = matter.MatterId, FolderId = request.FolderId, ContentUpdatedAtUtc = now, ContentUpdatedByUserId = Me };
         ApplyContent(note, content.Value);
         db.Set<Note>().Add(note);
         audit.Write(new AuditEntry
@@ -185,8 +214,9 @@ public sealed class NoteService(
             Summary = DisplayTitle(note),
         });
 
-        await using (var transaction = await db.Database.BeginTransactionAsync(ct))
+        try
         {
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
             await db.SaveChangesAsync(ct);
             db.Set<NoteTagLink>().AddRange(tags.Value.Select(t => new NoteTagLink { NoteId = note.Id, NoteTagId = t.Id }));
             db.Set<NoteLink>().AddRange(NoteContent.Links(content.Value.References).Select(l => new NoteLink { NoteId = note.Id, TargetType = l.Target, TargetId = l.Id }));
@@ -204,6 +234,13 @@ public sealed class NoteService(
 
             await db.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
+        }
+        catch (DbUpdateException ex) when (NoteSupport.IsForeignKeyViolation(ex, NoteSupport.NoteFolderForeignKey))
+        {
+            // The folder was deleted between the check and the save.
+            db.ChangeTracker.Clear();
+            audit.DiscardPending();
+            return FolderGone();
         }
 
         return await GetAsync(note.Id, ct);
@@ -295,6 +332,42 @@ public sealed class NoteService(
 
         note.ContentUpdatedAtUtc = clock.UtcNow;
         note.ContentUpdatedByUserId = Me;
+        NoteSupport.TrackOriginalRowVersion(db, note, request.RowVersion);
+        var saved = await SaveAsync(ct);
+        return saved.IsFailure ? saved.Error! : await GetAsync(id, ct);
+    }
+
+    /// <summary>
+    /// Moves a note into a folder of its matter, or out of every folder (<c>folderId</c> null). Allowed on a locked note (organisation, like pinning, not content). Does not change
+    /// "last updated". Audited with the old and the new folder path.
+    /// </summary>
+    public async Task<Result<NoteResponse>> MoveAsync(int id, MoveNoteRequest request, CancellationToken ct)
+    {
+        var note = await access.FindTrackedAsync<Note>(n => n.MatterId, n => n.Id == id, ct);
+        if (note is null)
+            return NoteSupport.NotFound("Note");
+
+        var version = NoteSupport.CheckRowVersion(note.RowVersion, request.RowVersion);
+        if (version.IsFailure)
+            return version.Error!;
+        if (note.FolderId == request.FolderId)
+            return await GetAsync(id, ct);
+
+        var tree = await LoadTreeAsync(note.MatterId, ct);
+        if (request.FolderId is { } target && !tree.Contains(target))
+            return FolderGone();
+
+        audit.Write(new AuditEntry
+        {
+            EventType = MovedEvent,
+            ObjectType = ObjectType,
+            ObjectId = NoteSupport.Id(id),
+            MatterId = note.MatterId,
+            OldValue = tree.Path(note.FolderId),
+            NewValue = tree.Path(request.FolderId),
+            Summary = DisplayTitle(note),
+        });
+        note.FolderId = request.FolderId;
         NoteSupport.TrackOriginalRowVersion(db, note, request.RowVersion);
         var saved = await SaveAsync(ct);
         return saved.IsFailure ? saved.Error! : await GetAsync(id, ct);
@@ -455,6 +528,11 @@ public sealed class NoteService(
         return new ResolveNoteReferencesResponse(items);
     }
 
+    private static Error FolderGone() => Error.Validation("folderId", "NOT_FOUND", "The folder no longer exists in this matter.");
+
+    private async Task<NoteFolderTree> LoadTreeAsync(int matterId, CancellationToken ct) =>
+        new(await db.Set<NoteFolder>().AsNoTracking().Where(f => f.MatterId == matterId).Select(f => new NoteFolderNode(f.Id, f.ParentFolderId, f.Name)).ToListAsync(ct));
+
     private static NoteReferenceResolution Gone(string kind, int id, string state) => new(kind, id, state, null, null, null);
 
     /// <summary>Everything a note refers to must be a record of the note's own matter (assets, projects, notes), an existing person, or a matter the author may see.</summary>
@@ -569,6 +647,12 @@ public sealed class NoteService(
             db.ChangeTracker.Clear();
             return NoteSupport.ConcurrencyError();
         }
+        catch (DbUpdateException ex) when (NoteSupport.IsForeignKeyViolation(ex, NoteSupport.NoteFolderForeignKey))
+        {
+            db.ChangeTracker.Clear();
+            audit.DiscardPending();
+            return FolderGone();
+        }
     }
 
     private static NoteListItem ToListItem(Note n, IReadOnlyDictionary<int, IReadOnlyList<NoteTagRef>> tags, IReadOnlyDictionary<int, string> names)
@@ -577,6 +661,7 @@ public sealed class NoteService(
         return new NoteListItem(
             n.Id,
             n.MatterId,
+            n.FolderId,
             DisplayTitle(n),
             n.Snippet,
             tags.GetValueOrDefault(n.Id) ?? [],
@@ -601,6 +686,7 @@ public sealed class NoteService(
         return new NoteResponse(
             n.Id,
             n.MatterId,
+            n.FolderId,
             DisplayTitle(n),
             n.Snippet,
             n.BodyHtml,

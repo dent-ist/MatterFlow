@@ -8009,6 +8009,21 @@
             }
           },
           {
+            "name": "FolderId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "NoFolder",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
             "name": "Page",
             "in": "query",
             "schema": {
@@ -8332,6 +8347,57 @@
         }
       }
     },
+    "/api/v1/notes/{noteId}/folder": {
+      "put": {
+        "tags": [
+          "Notes"
+        ],
+        "operationId": "MoveNote",
+        "parameters": [
+          {
+            "name": "noteId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveNoteRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveNoteRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveNoteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoteResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/notes/{noteId}/unlock": {
       "post": {
         "tags": [
@@ -8465,6 +8531,215 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ResolveNoteReferencesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/matters/{matterId}/note-folders": {
+      "get": {
+        "tags": [
+          "NoteFolders"
+        ],
+        "operationId": "ListNoteFolders",
+        "parameters": [
+          {
+            "name": "matterId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoteFolderListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/note-folders": {
+      "post": {
+        "tags": [
+          "NoteFolders"
+        ],
+        "operationId": "CreateNoteFolder",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateNoteFolderRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateNoteFolderRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateNoteFolderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoteFolderResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/note-folders/{folderId}": {
+      "put": {
+        "tags": [
+          "NoteFolders"
+        ],
+        "operationId": "RenameNoteFolder",
+        "parameters": [
+          {
+            "name": "folderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenameNoteFolderRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenameNoteFolderRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenameNoteFolderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoteFolderResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "NoteFolders"
+        ],
+        "operationId": "DeleteNoteFolder",
+        "parameters": [
+          {
+            "name": "folderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "rowVersion",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "moveContentsUp",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/note-folders/{folderId}/parent": {
+      "put": {
+        "tags": [
+          "NoteFolders"
+        ],
+        "operationId": "MoveNoteFolder",
+        "parameters": [
+          {
+            "name": "folderId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveNoteFolderRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveNoteFolderRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveNoteFolderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoteFolderResponse"
                 }
               }
             }
@@ -26586,6 +26861,31 @@
           }
         }
       },
+      "CreateNoteFolderRequest": {
+        "required": [
+          "matterId",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "matterId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "parentFolderId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 0,
+            "type": "string"
+          }
+        }
+      },
       "CreateNoteRequest": {
         "required": [
           "matterId"
@@ -26613,6 +26913,13 @@
               "type": "integer",
               "format": "int32"
             }
+          },
+          "folderId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -31138,6 +31445,42 @@
           }
         }
       },
+      "MoveNoteFolderRequest": {
+        "required": [
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "parentFolderId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
+      "MoveNoteRequest": {
+        "required": [
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "folderId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
       "MyLandingPageDto": {
         "required": [
           "choice",
@@ -33208,6 +33551,73 @@
           }
         }
       },
+      "NoteFolderListResponse": {
+        "required": [
+          "folders",
+          "noFolderNoteCount",
+          "totalNoteCount"
+        ],
+        "type": "object",
+        "properties": {
+          "folders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NoteFolderResponse"
+            }
+          },
+          "noFolderNoteCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalNoteCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "NoteFolderResponse": {
+        "required": [
+          "noteFolderId",
+          "matterId",
+          "parentFolderId",
+          "name",
+          "noteCount",
+          "subfolderCount",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "noteFolderId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "matterId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "parentFolderId": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "noteCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "subfolderCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rowVersion": {
+            "type": "string"
+          }
+        }
+      },
       "NoteHistoryEntry": {
         "required": [
           "auditEventId",
@@ -33291,6 +33701,7 @@
         "required": [
           "noteId",
           "matterId",
+          "folderId",
           "title",
           "snippet",
           "tags",
@@ -33313,6 +33724,13 @@
           },
           "matterId": {
             "type": "integer",
+            "format": "int32"
+          },
+          "folderId": {
+            "type": [
+              "null",
+              "integer"
+            ],
             "format": "int32"
           },
           "title": {
@@ -33464,6 +33882,7 @@
         "required": [
           "noteId",
           "matterId",
+          "folderId",
           "title",
           "snippet",
           "bodyHtml",
@@ -33490,6 +33909,13 @@
           },
           "matterId": {
             "type": "integer",
+            "format": "int32"
+          },
+          "folderId": {
+            "type": [
+              "null",
+              "integer"
+            ],
             "format": "int32"
           },
           "title": {
@@ -36341,6 +36767,23 @@
             "items": {
               "$ref": "#/components/schemas/RecentReportResponse"
             }
+          }
+        }
+      },
+      "RenameNoteFolderRequest": {
+        "required": [
+          "name",
+          "rowVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "maxLength": 200,
+            "minLength": 0,
+            "type": "string"
+          },
+          "rowVersion": {
+            "type": "string"
           }
         }
       },
@@ -45873,6 +46316,9 @@
     },
     {
       "name": "Notes"
+    },
+    {
+      "name": "NoteFolders"
     },
     {
       "name": "NoteTags"

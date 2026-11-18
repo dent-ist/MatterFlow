@@ -13,6 +13,7 @@ public static class NotesModule
 
         services.AddScoped<NoteAccess>();
         services.AddScoped<NoteService>();
+        services.AddScoped<NoteFolderService>();
         services.AddScoped<NoteTagService>();
         services.AddScoped<NoteTemplateService>();
         services.AddScoped<LptHub.Notes.Contracts.INoteLabels, NoteLabels>();
