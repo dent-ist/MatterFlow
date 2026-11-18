@@ -154,6 +154,7 @@ Conventions common to all modules:
 - **Controllers:** `/notes`, `/note-tags`, `/note-templates`, `/note-folders` and `/matters/{id}/note-folders` (`NoteControllers.cs`).
 - **Key services:** `NoteService`, `NoteFolderService` (folder rules in `Domain/NoteFolderRules.cs`), `NoteTagService`, `NoteTemplateService`, `NoteAccess`, `NoteContent` (sanitises HTML with `RichHtml` and the `Note` profile).
 - **Permissions:** `MatterNote.View/Edit/Delete`.
+- **Paste (#1411):** the `Note` profile of `RichHtml` also removes, with their content, hidden elements (`hidden`, `display:none`, `visibility:hidden`, `mso-hide:all`, `font-size:0`, `opacity:0`) and `del` (tracked deletions) before the allow-list runs, so pasted hidden text cannot become visible text. The other profiles are unchanged. The client clean-up (`features/notes/note-paste.ts`) is for quality; this is the safety net. Tests: `UnitTests/Notes/NotePasteSanitiserTests`.
 - **Frontend:** `features/notes`, Notes tab of the matter detail, Administration > Lists > Note Tags.
 - **Tests:** `IntegrationTests/Security/MatterContentApiTests`, `IntegrationTests/Notes/NoteFoldersApiTests`, `UnitTests/Notes`.
 

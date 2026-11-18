@@ -74,6 +74,15 @@ Design tokens are CSS variables in `docs/ux/tokens.css` (loaded through `angular
 
 Lists share one grid anatomy (row heights, header, pager 25/50/100, column resize, reorder, filters, Columns menu, remembered preferences): `shared/ui/grid-*.ts`, `data-table.ts`, `pager.ts`, `shared/work-queue/task-table.ts`. See [Grids and Column Preferences](../Frontend/Grids-and-Column-Preferences.md).
 
+## Pasting into a note
+
+The note editor (`features/notes/note-editor.ts`, Tiptap) keeps formatting when formatted text is pasted (#1411). `handlePaste` reads the clipboard's `text/html` and gives it to `cleanPaste` in `features/notes/note-paste.ts`, one pure function that works in an inert `DOMParser` document, never in the live editor:
+
+- **Kept:** paragraphs, headings 1 to 3, bold, italic, underline (also from `font-weight`, `font-style` and `text-decoration` styles), bulleted and numbered lists (Word's `mso-list` paragraphs are rebuilt as nested lists), tables (merged cells, header cells), links (http, https, mailto, `onenote:https:`; Outlook Safe Links are unwrapped to the real address) and quotes. The editor's own colours are kept only for text copied from another note.
+- **Dropped:** colours, fonts, highlight, strikethrough, layout, hidden text, tracked deletions (inserted text is kept), comments, scripts, styles and pictures inside the text. The result says how many pictures and whether deletions were left out, and the editor shows an info toast from the `PASTE_COPY` table.
+- **Result:** `view.pasteHTML(cleaned)` parses with the note's schema as one undo step. If the paste kept formatting the **Paste Options chip** shows under the text (Keep Formatting, Paste as Plain Text); Paste as Plain Text undoes the paste and inserts the plain text kept from the same paste event, so there is no clipboard permission prompt. There is no toolbar button and no shortcut (#420). A text-only clipboard (also the browser's Ctrl+Shift+V) takes ProseMirror's plain path.
+- **Safety:** the server (`RichHtml`, profile Note) re-checks everything on save and drops hidden text and `del` too. Add a source by adding a fixture and a case to `note-paste.spec.ts`; keep the module small, it is in the lazy editor chunk, not the initial bundle.
+
 ## Related pages
 
 - [Folder Structure](../Frontend/Folder-Structure.md)

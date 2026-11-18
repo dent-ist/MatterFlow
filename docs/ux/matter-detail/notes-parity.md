@@ -126,7 +126,7 @@ Design option B (tag rail) and C (board of columns as the default) of the mockup
 | H12 | Ctrl+B, Ctrl+I, Ctrl+U, Ctrl+Z, Ctrl+Y inside the text field | D |
 | H13 | Ctrl+K opens the link dialog | P: no Ctrl+K (no new shortcuts, #420); the Link button does the same |
 | H15 | (addition beyond the mockup, owner 2026-11-02, #1034) Text colour: toolbar button with the current colour, menu with Default and eight named colours (red, orange, amber, green, teal, blue, violet, grey), arrow keys, current colour in the button name; stored as a span with `data-color`, unknown keys stripped by the Note sanitiser; drawn from `--mf-note-*` tokens (4.5:1 checked) in edit, read, templates and the /note embed | D |
-| H14 | Paste is plain text only; drop is blocked | D |
+| H14 | Paste keeps headings, bold, italic, underline, lists, tables, links and quotes and drops colours, fonts, highlight, strikethrough and layout (#1411, D-46b); the Paste Options chip offers Keep Formatting and Paste as Plain Text (no toolbar button, no shortcut); a text-only clipboard (Ctrl+Shift+V) pastes as plain paragraphs; drop is blocked | D |
 
 ## I. Slash, @ and # menus
 

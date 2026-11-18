@@ -1,0 +1,137 @@
+// ---- Paste Options chip (#1411; mockup notes-round-2 scenes `paste` and `plain`): after a paste that kept formatting, under the text. No timer.
+.ne__paste {
+  position: relative;
+
+  &:focus {
+    outline: none;
+  }
+
+  flex: none;
+  margin-top: var(--mf-s2, 8px);
+}
+
+.ne__po {
+  display: inline-flex;
+  gap: var(--mf-s2, 8px);
+  align-items: center;
+  height: 28px;
+  padding: 0 var(--mf-s2, 8px) 0 var(--mf-s3, 12px);
+  border: 1px solid var(--mf-border-strong);
+  border-radius: var(--mf-radius-pill);
+  background: var(--mf-surface);
+  box-shadow: var(--mf-shadow-1);
+  color: var(--mf-text);
+  font-size: var(--mf-fs-sm, 13px);
+  font-weight: var(--mf-fw-semibold, 600);
+
+  > .pi {
+    color: var(--mf-text-muted);
+    font-size: var(--mf-icon-sm);
+  }
+}
+
+.ne__po-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--mf-radius-pill);
+  background: transparent;
+  color: var(--mf-text);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--mf-row-hover);
+  }
+
+  &[aria-expanded='true'] {
+    background: var(--mf-selected-bg);
+    color: var(--mf-primary);
+  }
+
+  .pi {
+    font-size: var(--mf-icon-xs);
+  }
+}
+
+.ne__po-menu {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  z-index: 40;
+  width: 340px;
+  padding: var(--mf-s1, 4px);
+  border: 1px solid var(--mf-border-soft);
+  border-radius: var(--mf-radius-lg);
+  background: var(--mf-surface);
+  box-shadow: var(--mf-shadow-pop);
+
+  button {
+    display: grid;
+    grid-template-columns: 18px 1fr;
+    gap: var(--mf-s2, 8px);
+    align-items: start;
+    width: 100%;
+    padding: var(--mf-s2, 8px);
+    border: 0;
+    border-radius: var(--mf-radius);
+    background: none;
+    color: var(--mf-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible {
+      background: var(--mf-row-hover);
+    }
+
+    b {
+      display: block;
+      font-weight: var(--mf-fw-semibold, 600);
+    }
+
+    span span {
+      color: var(--mf-text-muted);
+      font-size: var(--mf-fs-sm, 13px);
+    }
+
+    .pi {
+      margin-top: 2px;
+      color: var(--mf-primary);
+      font-size: var(--mf-icon-md);
+    }
+  }
+}
+
+.ne__po-tip {
+  margin-top: var(--mf-s1, 4px);
+  padding: var(--mf-s2, 8px) var(--mf-s2, 8px) var(--mf-s1, 4px);
+  border-top: 1px solid var(--mf-border-soft);
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm, 13px);
+
+  kbd {
+    padding: 0 5px;
+    border: 1px solid var(--mf-border-strong);
+    border-radius: var(--mf-radius);
+    background: var(--mf-surface);
+    color: var(--mf-text);
+    font: inherit;
+    font-size: var(--mf-fs-xs, 12px);
+  }
+}
+
+// The inline message when a paste is refused ("That's too much to paste at once."): the editor's error style, above the text.
+.ne__paste-msg {
+  flex: none;
+  margin: var(--mf-s2, 8px) 0;
+  padding: var(--mf-s2, 8px) var(--mf-s3, 12px);
+  border: 1px solid var(--mf-sem-overdue-line);
+  border-radius: var(--mf-radius);
+  background: var(--mf-sem-overdue-bg);
+  color: var(--mf-sem-overdue-fg);
+  font-size: var(--mf-fs-sm, 13px);
+}
