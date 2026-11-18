@@ -100,14 +100,14 @@ test.describe('Task Types rows and columns (#371)', () => {
     await expect(long).toHaveAttribute('title', /.+/);
   });
 
-  test('every column shows at 1366 and 1920 (the narrower windows that dropped Open tasks, Workflows, Request form and Target went with the desktop-only rule)', async ({
+  test('every column shows at 1366 and 1920 (the narrower windows that dropped Open tasks, Workflows, Request form and Target went with the desktop-only rule; Target (Days) is optional since #1402)', async ({
     page,
   }) => {
     const all = [
       'Name',
       'Default Workflow',
-      'Target (Days)',
       'Request Form',
+      'Access',
       'Workflows',
       'Open Tasks',
       'Status',

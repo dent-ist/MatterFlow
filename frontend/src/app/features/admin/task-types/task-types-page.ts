@@ -17,7 +17,9 @@ import { AuthStore } from '../../../core/auth/auth.store';
 import { ApiError } from '../../../core/http/api-error';
 import { WorkflowLookup, WorkflowOption } from '../../../core/lookups/workflow-lookup';
 import { NotificationService } from '../../../core/notify/notification.service';
-import { TaskTypeView, TaskTypesApi } from './task-types-api';
+import { TaskTypeAccessRole, TaskTypeView, TaskTypesApi } from './task-types-api';
+import { AccessCell, accessCellOf } from './task-type-access';
+import { Tip } from '../../../shared/ui/tip';
 import { ActiveBadge, Badge } from '../../../shared/ui/badge';
 import { ActionMenu, MenuAction } from '../../../shared/ui/action-menu';
 import { ConfirmDialog } from '../../../shared/ui/confirm-dialog';
@@ -31,6 +33,7 @@ import { adminListState } from '../../../shared/ui/admin-list-state';
 import {
   RecordCell,
   RecordGrid,
+  RecordColumns,
   RecordGridColumn,
   RecordGridState,
 } from '../../../shared/ui/record-grid';
@@ -76,6 +79,7 @@ const BONES: Record<string, string> = {
   defaultWorkflow: '9rem',
   target: '5rem', // as wide as its header ("Target (days)"), so the loaded table does not shift
   form: '5rem',
+  access: '5rem',
   workflows: '1.5rem',
   openTasks: '1.5rem',
   status: '4rem',
@@ -88,6 +92,12 @@ const FORM_OPTIONS = [
   { value: 'draft', label: 'Draft' },
   { value: 'retired', label: 'Retired' },
   { value: 'none', label: 'No Form' },
+] as const;
+
+/** Access filter values (the `access` parameter): open types and restricted types (#1402). */
+const ACCESS_OPTIONS = [
+  { value: 'everyone', label: 'Everyone' },
+  { value: 'restricted', label: 'Restricted' },
 ] as const;
 
 /**
@@ -105,6 +115,7 @@ const FORM_OPTIONS = [
     Button,
     NgTemplateOutlet,
     RecordGrid,
+    RecordColumns,
     RecordCell,
     ConfirmDialog,
     ActiveBadge,
@@ -125,6 +136,7 @@ const FORM_OPTIONS = [
     RecordSort,
     FilterChips,
     TaskCount,
+    Tip,
   ],
   templateUrl: './task-types-page.html',
   styleUrls: ['../admin-lookup.scss', './task-types-page.scss'],
@@ -140,6 +152,28 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
   protected readonly listId = ADMIN_LIST.taskTypes.id;
 
   protected readonly defaultSort = 'name';
+  /** The roles (names, active or not) and whether the server enforces the rules: read from the access of one restricted type, once the list is loaded. */
+  private readonly accessRoles = signal<ReadonlyMap<number, TaskTypeAccessRole>>(new Map());
+  protected readonly accessEnforced = signal<boolean | null>(null);
+  protected readonly restrictedCount = computed(
+    () => this.all().filter((t) => this.isRestricted(t)).length,
+  );
+  /** The amber banner: rules exist but the switch is off. */
+  protected readonly notEnforced = computed(
+    () => this.accessEnforced() === false && this.restrictedCount() > 0,
+  );
+  private readonly cells = computed(
+    () =>
+      new Map(
+        this.all().map(
+          (t) =>
+            [
+              t.id,
+              accessCellOf(t.access, this.accessRoles(), this.accessEnforced(), t.name),
+            ] as const,
+        ),
+      ),
+  );
   protected readonly workflowOptions = signal<ReadonlyMap<number, WorkflowOption>>(new Map());
   protected readonly workflowNames = computed<ReadonlyMap<number, string>>(
     () => new Map([...this.workflowOptions()].map(([id, w]) => [id, w.name])),
@@ -163,14 +197,27 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
       width: '179px',
       minWidth: '179px',
     },
+    // Optional since #1402: the Access column took its room at 1366 and Name keeps its 200 px minimum (D-44u).
     {
       key: 'target',
       label: 'Target (Days)',
       num: true,
+      defaultHidden: true,
+      extra: true,
       width: '122px',
       minWidth: '122px',
     },
     { key: 'form', label: 'Request Form', sort: 'form', width: '8rem', minWidth: '8rem' },
+    // Everyone, or a chip with the number of roles that can view; the first click on the heading puts Restricted first. 132 px (the mockup said 148): with Name at its 200 px
+    // minimum the default columns are 1095 of the 1096 px of the frame at 1366 (D-44u).
+    {
+      key: 'access',
+      label: 'Access',
+      sort: 'access',
+      firstDesc: true,
+      width: '132px',
+      minWidth: '132px',
+    },
     {
       key: 'workflows',
       label: 'Workflows',
@@ -214,6 +261,7 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
     { value: 'name', label: 'Name' },
     { value: 'defaultWorkflow', label: 'Default Workflow' },
     { value: 'form', label: 'Request Form' },
+    { value: 'access', label: 'Access', descFirst: true },
     { value: 'workflows', label: 'Workflows' },
     { value: 'openTasks', label: 'Open Tasks', descFirst: true },
     { value: 'status', label: 'Status' },
@@ -239,6 +287,14 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
         type: 'select',
         allLabel: 'All Forms',
         options: FORM_OPTIONS,
+      },
+      {
+        key: 'access',
+        label: 'Access',
+        column: 'access',
+        type: 'select',
+        allLabel: 'All Access',
+        options: ACCESS_OPTIONS,
       },
       statusDef(),
       {
@@ -348,8 +404,14 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
     const name = this.filters.text('name').trim().toLowerCase();
     if (name && !t.name.toLowerCase().includes(name)) return false;
     if (this.filters.text('usable') === 'no' && !this.isNotUsable(t)) return false;
+    const access = this.filters.text('access');
+    if (access && this.isRestricted(t) !== (access === 'restricted')) return false;
     const form = this.filters.text('form');
     return !form || this.formKey(t) === form;
+  }
+
+  private isRestricted(t: TaskTypeView): boolean {
+    return t.access?.isRestricted === true;
   }
 
   /** An active type users cannot create tasks of (the red line of its row, the "Not Usable" of the strip). */
@@ -363,6 +425,13 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
    */
   private readonly stripDefs: readonly StripDef<TaskTypeView>[] = [
     { key: 'active', label: 'Active', matches: (t) => t.isActive, params: { status: null } },
+    {
+      key: 'restricted',
+      label: 'Restricted',
+      hint: 'Task types that only some roles can view',
+      matches: (t) => this.isRestricted(t),
+      params: { status: null, access: 'restricted' },
+    },
     {
       key: 'notUsable',
       label: 'Not Usable',
@@ -434,6 +503,8 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
         return this.formStatus(t);
       case 'defaultWorkflow':
         return this.defaultWorkflowName(t);
+      case 'access':
+        return t.access?.isRestricted ? Math.max(1, t.access.canView.length) : 0;
       case 'workflows':
         return t.eligibleWorkflowIds.length;
       case 'openTasks':
@@ -456,9 +527,39 @@ export class TaskTypesPage extends LocalListPage<TaskTypeView> {
       this.all.set(rows);
       this.workflowOptions.set(new Map(workflows.map((w) => [w.id, w])));
       this.state.set('ready');
+      void this.loadAccessFacts(rows);
     } catch {
       this.state.set('error');
     }
+  }
+
+  /** Role names, which roles are inactive and the enforcement switch come with the access of any one type; without a restricted type there is nothing to show. */
+  private async loadAccessFacts(rows: readonly TaskTypeView[]): Promise<void> {
+    const first = rows.find((t) => this.isRestricted(t));
+    if (!first) {
+      this.accessEnforced.set(null);
+      return;
+    }
+    try {
+      const view = await firstValueFrom(this.api.getAccess(first.id));
+      this.accessRoles.set(new Map(view.roles.map((r) => [r.roleId, r])));
+      this.accessEnforced.set(view.enforced);
+    } catch {
+      // The chips still say Restricted and the count; only the role names in the tooltip and the banner are missing.
+    }
+  }
+
+  protected accessCell(t: TaskTypeView): AccessCell {
+    return this.cells().get(t.id) ?? accessCellOf(t.access, this.accessRoles(), null, t.name);
+  }
+
+  /** The Restricted chip opens the type on its Access tab. */
+  protected openAccess(t: TaskTypeView): void {
+    this.drill.leaveRow(this.listId, t.id);
+    void this.router.navigate(['/admin/task-types', t.id], {
+      queryParams: { tab: 'access' },
+      state: this.leave.state(),
+    });
   }
 
   /** The facts line of a card: `Published v1 - Quick Request +1` (the form, then the default workflow and how many more may be used). */

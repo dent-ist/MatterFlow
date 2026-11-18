@@ -5,12 +5,13 @@ import {
   ddText,
   ddValue,
 } from '../../../testing/dropdown-testing.spec-util';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { firstValueFrom, of, throwError } from 'rxjs';
-import { ReportAssignmentClient } from '../../../api/generated/api-client';
+import { ReportAssignmentClient, TaskTypesClient } from '../../../api/generated/api-client';
 import { ApiError } from '../../../core/http/api-error';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FakeMeApi, provideFakeMe, withPermissions } from '../../../core/auth/auth-testing';
+import { AuthStore } from '../../../core/auth/auth.store';
 import { LandingApi } from '../../../core/landing/landing-api';
 import { NotificationService } from '../../../core/notify/notification.service';
 import { IdentityAdminApi } from '../../../core/identity-admin/identity-admin-api';
@@ -747,4 +748,102 @@ describe('RolesPage Landing Page field (epic #1330)', () => {
   function ddButtonDisabled(): boolean {
     return q<HTMLButtonElement>('#role-landing').disabled;
   }
+});
+
+describe('RolesPage: a role that Task Types still list (#1402)', () => {
+  const problem = (taskTypes: string[]): ApiError =>
+    ApiError.from(
+      new HttpErrorResponse({
+        status: 409,
+        error: {
+          code: 'ROLE_USED_BY_TASK_TYPE',
+          detail: `This role is used by ${taskTypes.length} ${taskTypes.length === 1 ? 'Task Type' : 'Task Types'}. Remove it there first.`,
+          meta: { taskTypeCount: taskTypes.length, taskTypes },
+        },
+      }),
+    );
+
+  async function openAndDelete(
+    permissions: ('Role.Manage' | 'TaskType.Manage')[],
+    taskTypes: string[],
+  ): Promise<{ fixture: ComponentFixture<RolesPage>; navigate: ReturnType<typeof vi.spyOn> }> {
+    const typesClient = {
+      listTaskTypes: vi.fn(() =>
+        of([
+          { id: 3, name: 'Privilege Review' },
+          { id: 9, name: 'Contract Analysis' },
+        ]),
+      ),
+    };
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        InMemoryIdentityAdminApi,
+        { provide: IdentityAdminApi, useExisting: InMemoryIdentityAdminApi },
+        { provide: ReportAssignmentClient, useValue: { getReportsOfRole: () => of([]) } },
+        { provide: LandingApi, useValue: { role: () => of({ pages: [], rowVersion: 'v' }) } },
+        { provide: TaskTypesClient, useValue: typesClient },
+        provideFakeMe(new FakeMeApi(withPermissions(...permissions))),
+      ],
+    });
+    const api = TestBed.inject(InMemoryIdentityAdminApi);
+    vi.spyOn(api, 'deleteRole').mockReturnValue(throwError(() => problem(taskTypes)));
+    const notify = TestBed.inject(NotificationService);
+    const toasts = vi.spyOn(notify, 'error');
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    await TestBed.inject(AuthStore).ensureLoaded();
+    const fixture = TestBed.createComponent(RolesPage);
+    const settle = async (): Promise<void> => {
+      for (let i = 0; i < 3; i++) {
+        await new Promise((r) => setTimeout(r));
+        fixture.detectChanges();
+      }
+      await fixture.whenStable();
+    };
+    await settle();
+    const host: HTMLElement = fixture.nativeElement;
+    host.querySelector<HTMLElement>('[data-role="4"]')!.click();
+    await settle();
+    const del = Array.from(host.querySelectorAll<HTMLButtonElement>('p-button button')).find(
+      (b) => b.textContent!.trim() === 'Delete Role',
+    )!;
+    del.click();
+    await settle();
+    Array.from(document.body.querySelectorAll<HTMLButtonElement>('.p-dialog button'))
+      .find((b) => b.textContent!.trim() === 'Delete Role')!
+      .click();
+    await settle();
+    expect(toasts).not.toHaveBeenCalled();
+    return { fixture, navigate };
+  }
+
+  it('shows the server sentence inline (no toast) with one text button per Task Type that opens its Access tab', async () => {
+    const { fixture, navigate } = await openAndDelete(
+      ['Role.Manage', 'TaskType.Manage'],
+      ['Privilege Review', 'Contract Analysis'],
+    );
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector('[data-error]')!.textContent).toContain(
+      'This role is used by 2 Task Types. Remove it there first.',
+    );
+    const buttons = Array.from(el.querySelectorAll<HTMLButtonElement>('[data-used-by] button'));
+    expect(buttons.map((b) => b.textContent!.trim())).toEqual([
+      'Privilege Review',
+      'Contract Analysis',
+    ]);
+    buttons[0].click();
+    expect(navigate).toHaveBeenCalledWith(['/admin/task-types', 3], {
+      queryParams: { tab: 'access' },
+    });
+  });
+
+  it('shows the names as plain text for a person who may not manage Task Types', async () => {
+    const { fixture } = await openAndDelete(['Role.Manage'], ['Privilege Review']);
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.querySelector('[data-error]')!.textContent).toContain(
+      'This role is used by 1 Task Type. Remove it there first.',
+    );
+    expect(el.querySelectorAll('[data-used-by] button')).toHaveLength(0);
+    expect(el.querySelector('[data-used-by]')!.textContent).toContain('Privilege Review');
+  });
 });

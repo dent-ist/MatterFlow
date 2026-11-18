@@ -62,6 +62,9 @@ const OBJECT_TYPES: Readonly<Record<string, string>> = {
 const EVENT_TYPES: Readonly<Record<string, string>> = {
   FIELD_CHANGED: 'Field changed',
   TASK_TYPE_WORKFLOWS_CHANGED: 'Task type workflows changed',
+  TASK_TYPE_ACCESS_CHANGED: 'Task type access changed',
+  TASK_TYPE_RESTRICTED: 'Task type restricted',
+  TASK_TYPE_UNRESTRICTED: 'Task type opened to everyone',
   FORM_PUBLISHED: 'Form published',
   FORM_RETIRED: 'Form retired',
   MATTER_SENSITIVITY_CHANGED: 'Matter sensitivity changed',

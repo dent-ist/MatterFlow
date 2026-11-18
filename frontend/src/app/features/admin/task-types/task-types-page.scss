@@ -49,3 +49,13 @@ td[data-default-workflow] {
 .muted {
   color: var(--mf-text-muted);
 }
+
+/* The health strip and the Columns button on one line (as on Users); Target (Days) and the other optional columns are added there (#1402). */
+.tt-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mf-s2);
+  margin-bottom: var(--mf-s2);
+}

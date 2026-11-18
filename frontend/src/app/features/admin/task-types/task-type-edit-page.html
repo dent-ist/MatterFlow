@@ -19,6 +19,7 @@
       [backTo]="backTo()"
       [showStatus]="!isNew()"
       [statusBadge]="badge()"
+      [extraBadges]="extraBadges()"
       [actions]="headerActions()"
     >
       @if (!isNew()) {
@@ -309,6 +310,18 @@
             </section>
           }
         }
+        @case ('access') {
+          <mf-task-type-access-tab
+            [roles]="accessRoles()"
+            [model]="accessModel()"
+            [saved]="savedAccess()"
+            [enforced]="accessEnforced()"
+            [state]="accessState()"
+            [errors]="accessErrors()"
+            (modelChange)="changeAccess($event)"
+            (retry)="retryAccess()"
+          />
+        }
       }
 
       @if (showFooter()) {
@@ -340,6 +353,16 @@
       />
     }
   </div>
+
+  <mf-task-type-access-confirm
+    [kind]="accessDialog()"
+    [confirm]="accessConfirm()"
+    [busy]="busy()"
+    [error]="accessDialogError()"
+    (confirmed)="commitAccess()"
+    (retry)="checkAccess()"
+    (cancelled)="cancelAccessDialog()"
+  />
 
   <mf-confirm-dialog
     [title]="copy.title"

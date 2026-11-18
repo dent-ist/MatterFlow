@@ -432,6 +432,17 @@ describe('toastFor', () => {
     ).toBeNull();
   });
 
+  it('suppresses the role-in-use refusal of a Task Type: the Roles page shows it inline (#1402)', () => {
+    expect(
+      toastFor(
+        make(409, {
+          code: 'ROLE_USED_BY_TASK_TYPE',
+          detail: 'This role is used by 1 Task Type. Remove it there first.',
+        }),
+      ),
+    ).toBeNull();
+  });
+
   it('maps 403 and 404 to copy-deck messages, and leaves a 401 to the sign-in banner', () => {
     expect(toastFor(make(403))?.summary).toBe("You don't have permission to do that.");
     expect(toastFor(make(404))?.summary).toBe("We couldn't find that.");

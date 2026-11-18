@@ -555,3 +555,18 @@ Differences and decisions (for the reviewer):
 8. **Existing read-side tests.** Two tests of #1400 created a restricted task assigned to a person without the role through the API; that is now refused by design (item 3 of the rule), so they make the stranded assignee in the database, which is also how it happens in real life (a role is removed after the assignment).
 9. **Not run in this issue:** the 12.5 performance plans (24,000 tasks, 0/1/10 restricted types) and the section 11 sweep of global search recents and route titles.
 
+## 22. What issue #1402 built (Task Types screen), and where it differs from the mockup
+
+Built: the Access tab (fourth tab of `/admin/task-types/:id`, also on `/admin/task-types/new`), the `Restricted` chip in the record header, the Access column, filter, sort and strip chip of the Task Types list (Target (Days) is optional now), the Save Access Rules confirmation with the preview, the not-enforced banners, the inline `ROLE_USED_BY_TASK_TYPE` message on Administration > Users > Roles, and the three audit labels. Design rules: D-44ab (and D-44u) in `docs/ux/design-guidelines.md`; wiki: `Add-a-Task-Type-or-Workflow.md`, `Feature-Map.md`. No backend change and no API change.
+
+How to see it: start the stack with the switch on (`Features__TaskTypeAccess=true`, `E2E_TASKTYPE_ACCESS=1` for the e2e script) or leave it off to see the amber banners. Open Administration > Task Types.
+
+Decisions and differences (for the reviewer):
+
+1. **New Task Type** creates the type and then calls `PUT .../access` (two requests, no confirmation: a new type has no tasks and nobody to lose access; an open type does not call the endpoint). If the second request fails the page opens the new type on its Access tab with the lists still to save, and a toast says so. A creator who picks roles they do not hold locks themselves out of the new type without a warning (no preview exists before the type exists); the System Admin is never locked out.
+2. **No "not enforced" banner on the New page**: whether the switch is on is only known from `GET .../access` of a saved type. After the save a toast says "Not enforced yet." when it is off.
+3. **Checking state of the preview**: the dialog (quiet lines) appears only when the check takes longer than 0.4 s; a save that affects nobody does not flash a dialog.
+4. **Roles screen**: the 409 meta has the Task Type names only (no ids), so the buttons are matched to the Task Type list by name (names are unique) and only for a person with `TaskType.Manage`; otherwise the names are plain text. A later API change could add ids.
+5. **Role member counts** are not shown in the role lists (`TaskTypeAccessRole` has no count); the list shows names and "Inactive".
+6. **List banner and tooltips** read role names and the switch from the access of one restricted type (`GET .../access`), once per load; if that call fails the chips still say Restricted and the count.
+

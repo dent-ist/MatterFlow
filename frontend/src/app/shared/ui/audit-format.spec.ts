@@ -75,6 +75,9 @@ describe('audit formatting', () => {
   it('words the event and object types of the Audit filters; the code stays the value (#650)', () => {
     expect(eventTypeLabel('COMMENT_ADDED')).toBe('Comment added');
     expect(eventTypeLabel('TASK_TYPE_WORKFLOWS_CHANGED')).toBe('Task type workflows changed');
+    expect(eventTypeLabel('TASK_TYPE_ACCESS_CHANGED')).toBe('Task type access changed');
+    expect(eventTypeLabel('TASK_TYPE_RESTRICTED')).toBe('Task type restricted');
+    expect(eventTypeLabel('TASK_TYPE_UNRESTRICTED')).toBe('Task type opened to everyone');
     expect(eventTypeLabel('MATTER_SENSITIVITY_CHANGED')).toBe('Matter sensitivity changed');
     expect(eventTypeLabel('MATTER_TYPE_CHANGED')).toBe('Matter Types changed');
     expect(eventTypeLabel('MATTER_PATHS_CHANGED')).toBe('Matter Paths changed');

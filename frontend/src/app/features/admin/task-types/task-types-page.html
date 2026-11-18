@@ -4,13 +4,33 @@
   <p class="error" role="alert" data-failure>{{ failure() }}</p>
 }
 
-<mf-filter-chips
-  label="Task types summary"
-  [strip]="true"
-  [chips]="stripChipList()"
-  [value]="stripActive()"
-  (valueChange)="pickStrip($event)"
-/>
+@if (notEnforced()) {
+  <p class="pg-banner" role="status" data-not-enforced-banner>
+    <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+    <span
+      >Access rules are saved but not enforced yet.
+      {{
+        restrictedCount() === 1
+          ? '1 restricted task type is'
+          : restrictedCount() + ' restricted task types are'
+      }}
+      still visible to everyone until Task Type Access is switched on.</span
+    >
+  </p>
+}
+
+<div class="tt-bar">
+  <mf-filter-chips
+    label="Task types summary"
+    [strip]="true"
+    [chips]="stripChipList()"
+    [value]="stripActive()"
+    (valueChange)="pickStrip($event)"
+  />
+  @if (!phone()) {
+    <mf-record-columns [grid]="grid" />
+  }
+</div>
 
 <mf-filters-bar [bare]="true" [filters]="filters" [clearAlso]="['q']">
   <mf-record-sort
@@ -190,6 +210,30 @@
           {{ formStatus(t) }}
           @if (formVersion(t)) {
             <span class="muted">{{ formVersion(t) }}</span>
+          }
+        </td>
+      </ng-template>
+      <ng-template mfCell="access" let-t>
+        <td class="pg-nowrap" data-access>
+          @if (accessCell(t); as a) {
+            @if (a.restricted) {
+              <button
+                type="button"
+                class="mf-btn mf-btn--text mf-btn--chip"
+                data-access-chip
+                [mfTip]="a.tip"
+                [attr.aria-label]="a.label"
+                (click)="openAccess(t)"
+              >
+                <mf-badge
+                  [tone]="a.allInactive ? 'warning' : 'neutral'"
+                  [icon]="a.allInactive ? 'pi-exclamation-triangle' : 'pi-lock'"
+                  >Restricted {{ a.count }}</mf-badge
+                >
+              </button>
+            } @else {
+              <span class="muted">Everyone</span>
+            }
           }
         </td>
       </ng-template>

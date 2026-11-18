@@ -60,7 +60,7 @@ The `/admin` route is open to anyone who may open any admin menu item (`ADMIN_NA
 |---|---|---|---|
 | `/admin/users`, `/admin/roles`, `/admin/pods` (three tabs of one page) | `users`, `roles`, `pods` | `UsersRolesPage` | `User.View`, `User.Manage`, `Role.Manage`, `Pod.Manage`, `Pod.ManageMembers` |
 | `/admin/task-types`, `/admin/workflows`, `/admin/steps` (three tabs) | `task-types`, `workflows`, `steps` | `TaskTypesAdminPage` | `TaskType.Manage` or `Workflow.Manage` |
-| `/admin/task-types/new`, `/:id`, `/:ownerId/form` | `task-types` | task type edit and request form designer | `TaskType.Manage` |
+| `/admin/task-types/new`, `/:id`, `/:ownerId/form` | `task-types` | task type record (tabs `?tab=workflows`, `form`, `access`) and request form designer | `TaskType.Manage` |
 | `/admin/steps/new`, `/:stepId`, `/:ownerId/form` | `steps` | `StepEditPage`, step form designer | `Workflow.Manage` |
 | `/admin/workflows/new`, `/:workflowId`, `/:workflowId/versions/:versionId` | `workflows` | `WorkflowEditPage`, version page | `Workflow.Manage` |
 | `/admin/asset-types` (one page, no tab strip; `?tab=link-roles` and `/admin/asset-link-roles` redirect to the Link Roles list) | `asset-types` | `AssetAdminPage` | `AssetType.Manage` |

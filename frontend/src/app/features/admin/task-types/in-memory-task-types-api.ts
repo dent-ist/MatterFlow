@@ -10,6 +10,13 @@ import {
 } from '../../../shared/task-type/task-type-colours';
 import {
   CreateTaskTypeRequest,
+  PreviewTaskTypeAccessRequest,
+  ReplaceTaskTypeAccessRequest,
+  TaskTypeAccessLists,
+  TaskTypeAccessPreview,
+  AccessRoleChoice,
+  TaskTypeAccessRole,
+  TaskTypeAccessView,
   TaskTypeView,
   TaskTypesApi,
   UpdateTaskTypeRequest,
@@ -30,6 +37,22 @@ const problem = (
 export class InMemoryTaskTypesApi extends TaskTypesApi {
   private nextId = 2;
   private revision = 1;
+  /** The roles of the stub (id, name, active, members). */
+  readonly roles: readonly (TaskTypeAccessRole & { members: number })[] = [
+    { roleId: 1, name: 'Attorney', isActive: true, members: 20 },
+    { roleId: 2, name: 'eDiscovery Analyst', isActive: true, members: 14 },
+    { roleId: 3, name: 'Paralegal', isActive: true, members: 12 },
+    { roleId: 4, name: 'Partner', isActive: true, members: 6 },
+    { roleId: 5, name: 'Project Manager', isActive: true, members: 9 },
+    { roleId: 6, name: 'Vendor Liaison', isActive: false, members: 1 },
+  ];
+  /** Whether the stub server enforces the rules (`Features:TaskTypeAccess`); off by default like the real one. */
+  enforced = false;
+  /** The roles of the signed-in person, for `callerLosesView`. */
+  callerRoleIds: number[] = [1];
+  /** Set to make the next preview or save fail (tests): the error is thrown once. */
+  failNext: { preview?: ApiError; replace?: ApiError; get?: ApiError } = {};
+  private readonly access = new Map<number, TaskTypeAccessLists>();
   private rows: TaskTypeView[] = [
     this.withFlags({
       id: 1,
@@ -56,12 +79,12 @@ export class InMemoryTaskTypesApi extends TaskTypesApi {
       this.rows
         .filter((r) => workflowId === undefined || r.eligibleWorkflowIds.includes(workflowId))
         .sort((a, b) => a.name.localeCompare(b.name))
-        .map((r) => structuredClone(r)),
+        .map((r) => this.view(r)),
     );
   }
 
   get(id: number): Observable<TaskTypeView> {
-    return this.run(() => structuredClone(this.find(id)));
+    return this.run(() => this.view(this.find(id)));
   }
 
   create(request: CreateTaskTypeRequest): Observable<TaskTypeView> {
@@ -93,7 +116,7 @@ export class InMemoryTaskTypesApi extends TaskTypesApi {
         rowVersion: '',
       });
       this.rows.push(row);
-      return structuredClone(row);
+      return this.view(row);
     });
   }
 
@@ -121,7 +144,136 @@ export class InMemoryTaskTypesApi extends TaskTypesApi {
         eligibleWorkflowIds: eligible,
       });
       this.rows = this.rows.map((r) => (r.id === id ? next : r));
-      return structuredClone(next);
+      return this.view(next);
+    });
+  }
+
+  getAccess(id: number): Observable<TaskTypeAccessView> {
+    return this.run(() => {
+      const failure = this.failNext.get;
+      this.failNext.get = undefined;
+      if (failure) throw failure;
+      return this.accessView(this.find(id));
+    });
+  }
+
+  replaceAccess(id: number, request: ReplaceTaskTypeAccessRequest): Observable<TaskTypeAccessView> {
+    return this.run(() => {
+      const failure = this.failNext.replace;
+      this.failNext.replace = undefined;
+      if (failure) throw failure;
+      const current = this.find(id);
+      if (request.rowVersion !== current.rowVersion) {
+        throw problem(
+          409,
+          'CONCURRENCY_CONFLICT',
+          'Someone else changed this item. Reload and try again.',
+        );
+      }
+      const old = this.listsOf(id);
+      for (const field of ['canView', 'canEdit', 'canAssign'] as const) {
+        const ids = request[field];
+        const bad = ids.find(
+          (r) =>
+            !this.roles.some((x) => x.roleId === r) ||
+            (!old[field].includes(r) && this.roles.find((x) => x.roleId === r)?.isActive === false),
+        );
+        if (bad !== undefined) {
+          const message = 'One of the roles does not exist or is inactive.';
+          throw problem(400, 'VALIDATION_FAILED', message, {
+            [field]: [{ code: 'ROLE_NOT_FOUND', message }],
+          });
+        }
+      }
+      const view = [
+        ...new Set([...request.canView, ...request.canEdit, ...request.canAssign]),
+      ].sort((a, b) => a - b);
+      this.access.set(id, {
+        isRestricted: view.length > 0,
+        canView: view,
+        canEdit: [...request.canEdit],
+        canAssign: [...request.canAssign],
+      });
+      // The access is part of the type row: the row version moves, as on the server.
+      const next = this.withFlags(current);
+      this.rows = this.rows.map((r) => (r.id === id ? next : r));
+      return this.accessView(next);
+    });
+  }
+
+  previewAccess(
+    id: number,
+    request: PreviewTaskTypeAccessRequest,
+  ): Observable<TaskTypeAccessPreview> {
+    return this.run(() => {
+      const failure = this.failNext.preview;
+      this.failNext.preview = undefined;
+      if (failure) throw failure;
+      const row = this.find(id);
+      const old = this.listsOf(id);
+      const view = new Set([...request.canView, ...request.canEdit, ...request.canAssign]);
+      const people = (ids: number[]): number =>
+        ids.reduce((n, r) => n + (this.roles.find((x) => x.roleId === r)?.members ?? 0), 0);
+      const lostView = old.canView.filter((r) => !view.has(r));
+      const edit = new Set(request.canEdit);
+      const lostEdit = old.canEdit.filter((r) => !edit.has(r));
+      const open = view.size === 0;
+      const loses = !open && !this.callerRoleIds.some((r) => view.has(r));
+      return {
+        isRestricted: !open,
+        becomesOpenToEveryone: open && old.isRestricted,
+        openTasksBecomingHidden: open ? 0 : people(lostView) > 0 ? (row.openTaskCount ?? 14) : 0,
+        peopleLosingView: open ? 0 : people(lostView),
+        openTasksAssignedToPeopleLosingView: open ? 0 : people(lostView) > 0 ? 3 : 0,
+        peopleLosingEdit: people(lostEdit),
+        callerLosesView: loses,
+      };
+    });
+  }
+
+  accessRoles(): Observable<AccessRoleChoice[]> {
+    return this.run(() =>
+      this.roles.map(({ roleId, name, isActive, members }) => ({
+        roleId,
+        name,
+        isActive,
+        memberCount: members,
+      })),
+    );
+  }
+
+  /** Puts lists in place without the server checks (a test or a story that needs a role that is inactive now). */
+  setAccess(
+    id: number,
+    lists: { canView: number[]; canEdit?: number[]; canAssign?: number[] },
+  ): void {
+    const view = [
+      ...new Set([...lists.canView, ...(lists.canEdit ?? []), ...(lists.canAssign ?? [])]),
+    ];
+    this.access.set(id, {
+      isRestricted: view.length > 0,
+      canView: view,
+      canEdit: lists.canEdit ?? [],
+      canAssign: lists.canAssign ?? [],
+    });
+  }
+
+  private listsOf(id: number): TaskTypeAccessLists {
+    return this.access.get(id) ?? { isRestricted: false, canView: [], canEdit: [], canAssign: [] };
+  }
+
+  private view(row: TaskTypeView): TaskTypeView {
+    return structuredClone({ ...row, access: this.listsOf(row.id) });
+  }
+
+  private accessView(row: TaskTypeView): TaskTypeAccessView {
+    const lists = this.listsOf(row.id);
+    return structuredClone({
+      taskTypeId: row.id,
+      ...lists,
+      roles: this.roles.map(({ roleId, name, isActive }) => ({ roleId, name, isActive })),
+      enforced: this.enforced,
+      rowVersion: row.rowVersion,
     });
   }
 

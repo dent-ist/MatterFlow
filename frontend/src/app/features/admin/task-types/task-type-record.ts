@@ -5,13 +5,14 @@ import { WorkStripItem } from '../../../shared/work-queue/work-strip';
 import { firstAllowedTab } from '../denial';
 import { TaskTypeView } from './task-types-api';
 
-/** The three tabs of the Task Type page; `overview` is the default and is not written to the address. */
-export type TaskTypeTab = 'overview' | 'workflows' | 'form';
+/** The four tabs of the Task Type page; `overview` is the default and is not written to the address. */
+export type TaskTypeTab = 'overview' | 'workflows' | 'form' | 'access';
 
 export const TASK_TYPE_TAB_LABEL: Readonly<Record<TaskTypeTab, string>> = {
   overview: 'Overview',
   workflows: 'Workflows',
   form: 'Request Form',
+  access: 'Access',
 };
 
 /** Why the Request form tab cannot be opened on a type that is not saved yet (TE9, the "disabled with a reason" case). */
@@ -21,7 +22,7 @@ export const FORM_TAB_REASON = 'Save the task type first';
 export function tabOf(raw: string | null | undefined, isNew: boolean): TaskTypeTab {
   return firstAllowedTab<TaskTypeTab>(
     raw,
-    isNew ? ['overview', 'workflows'] : ['overview', 'workflows', 'form'],
+    isNew ? ['overview', 'workflows', 'access'] : ['overview', 'workflows', 'form', 'access'],
   );
 }
 

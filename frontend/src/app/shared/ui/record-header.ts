@@ -200,6 +200,11 @@ let nextId = 0;
         } @else if (kind() !== 'task' && showStatus()) {
           <mf-active-badge [active]="active()" [inactiveLabel]="inactiveLabel()" />
         }
+        @for (b of extraBadges(); track b.label) {
+          <mf-badge [tone]="b.tone ?? 'neutral'" [icon]="b.icon ?? null" data-extra-badge>{{
+            b.label
+          }}</mf-badge>
+        }
         @if (sensitive()) {
           <mf-sensitive-badge [describedBy]="noteId" />
         }
@@ -232,6 +237,8 @@ export class RecordHeader {
   /** False for a record that does not exist yet (Create): no Active badge. */
   readonly showStatus = input(true);
   readonly statusBadge = input<{ label: string; tone?: BadgeTone; icon?: string } | null>(null);
+  /** More state chips on the title line after the status (the Task Type's Restricted, #1402). */
+  readonly extraBadges = input<readonly { label: string; tone?: BadgeTone; icon?: string }[]>([]);
   /** Where "Back to ..." goes (a phone) when it is not the record's own list, for example the list a Task was opened from (`?from=`). */
   readonly backTo = input<{
     label: string;

@@ -81,7 +81,7 @@ describe('tab icons (LC-10, theme guide 11.3)', () => {
       ['form', 'request-form', 'reports'],
       ['notes', 'page-task-types', 'task-types'],
       ['page-profile', 'created-by-me'],
-      ['page-access-pending', 'permissions'],
+      ['page-access-pending', 'permissions', 'access'],
       ['unassigned', 'inputs'],
       ['all-open', 'steps', 'page-lists'],
       ['metrics', 'page-reports'],

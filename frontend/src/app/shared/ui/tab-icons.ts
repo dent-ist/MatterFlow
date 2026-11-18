@@ -54,6 +54,8 @@ export const ICONS: Readonly<Record<string, string>> = {
   'linked-tasks': 'pi-check-square',
   'request-form': 'pi-file',
   permissions: 'pi-lock',
+  // Task Type access (epic #1397, #1402): who can view, edit and be assigned a task type.
+  access: 'pi-lock',
   projects: 'pi-folder',
   project: 'pi-folder',
   assets: 'pi-database',

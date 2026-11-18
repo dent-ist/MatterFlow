@@ -472,3 +472,13 @@
 .mf-list--wide .mf-namecell > mf-badge {
   flex: none;
 }
+
+/* The Task Types that still list a role about to be deleted (#1402): one text button each, under the error line. */
+.mf-used-by {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mf-s1) var(--mf-s3);
+  margin: 0 0 var(--mf-s3);
+  padding: 0;
+  list-style: none;
+}

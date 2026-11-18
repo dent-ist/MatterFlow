@@ -100,11 +100,12 @@ describe('TaskTypeEditPage', () => {
       expect(q('[data-page-title] mf-task-type-chip[data-title-icon] .chip')).not.toBeNull();
     });
 
-    it('has the three tabs with the count of active workflows, Overview open and no footer while nothing changed', () => {
+    it('has the four tabs with the count of active workflows, Overview open and no footer while nothing changed', () => {
       expect(all('[role=tab]').map((t) => t.textContent!.replace(/\s+/g, ' ').trim())).toEqual([
         'Overview',
         'Workflows (2)',
         'Request Form',
+        'Access',
       ]);
       expect(q('[role=tab][aria-selected=true]').getAttribute('data-tab')).toBe('overview');
       expect(el().querySelector('[data-footer]')).toBeNull();

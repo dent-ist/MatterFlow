@@ -1,3 +1,4 @@
+import { showMatterColumns } from '../support/matter-columns';
 import { Page } from '@playwright/test';
 import { axeAvailable, axeBestPractice } from '../support/axe';
 import { expect, test } from '../support/fixtures';
@@ -49,6 +50,8 @@ test.describe('Task type colour, target and the badge', () => {
     const row = page.locator('tr', {
       has: page.locator(`[data-row="${world.taskType.name}"]`),
     });
+    // Target (Days) is an optional column since #1402: one click away in Columns.
+    await showMatterColumns(page, 'Target (Days)');
     await expect(row.locator('[data-target]')).toHaveText('4');
     await expect(row.locator('mf-task-type-cell mf-task-type-chip')).toHaveAttribute(
       'data-colour',

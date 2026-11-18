@@ -467,6 +467,7 @@ export class RecordSkeleton {
         { key: 'overview', label: 'Overview', icon: tabIcon('overview') },
         { key: 'workflows', label: 'Workflows', icon: tabIcon('workflows'), count: '--' },
         { key: 'form', label: 'Request Form', icon: tabIcon('form') },
+        { key: 'access', label: 'Access', icon: tabIcon('access') },
       ];
     }
     if (kind === 'step') {
