@@ -22,6 +22,9 @@ internal static class NoteSupport
         return palette[(int)((uint)Math.Max(tagId, 0) % (uint)palette.Count)].Key;
     }
 
+    public const string FolderNameUnique = "UQ_NoteFolder_Name";
+    public const string NoteFolderForeignKey = "FK_Note_Folder";
+    public const string FolderParentForeignKey = "FK_NoteFolder_Parent";
     public const string TagNameUnique = "UQ_NoteTag_Name";
     public const string SystemTemplateNameUnique = "UQ_NoteTemplate_SystemName";
     public const string ClientTemplateNameUnique = "UQ_NoteTemplate_ClientName";
@@ -77,6 +80,9 @@ internal static class NoteSupport
 
     public static bool IsUniqueViolation(DbUpdateException exception, string constraint) =>
         exception.InnerException is SqlException { Number: 2601 or 2627 } sql && sql.Message.Contains(constraint, StringComparison.OrdinalIgnoreCase);
+
+    public static bool IsForeignKeyViolation(DbUpdateException exception, string constraint) =>
+        exception.InnerException is SqlException { Number: 547 } sql && sql.Message.Contains(constraint, StringComparison.OrdinalIgnoreCase);
 
     public static Result<(PageRequest Page, IReadOnlyList<SortField> Sort)> PagingOf(int? page, int? pageSize, string? sort, IReadOnlyCollection<string> allowedSort)
     {

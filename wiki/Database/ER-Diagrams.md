@@ -653,19 +653,26 @@ erDiagram
 
 ## Notes
 
-Tables: `Note`, `NoteLink`, `NoteTag`, `NoteTagLink`, `NoteTemplate`, `NoteTemplateTag`.
+Tables: `Note`, `NoteFolder`, `NoteLink`, `NoteTag`, `NoteTagLink`, `NoteTemplate`, `NoteTemplateTag`.
 
-A `Note` belongs to one matter. Tags are many-to-many (`NoteTagLink`). `NoteLink` records references from the note text to users, notes, matters, projects and assets. A `NoteTemplate` is at System, Client or Matter level (`ScopeCode` with the matching `ClientId` or `MatterId`).
+A `Note` belongs to one matter and is in one `NoteFolder` of that matter or in none (`FolderId` null). A `NoteFolder` has an optional parent folder of the same matter (composite foreign keys on `(Id, MatterId)`). Tags are many-to-many (`NoteTagLink`). `NoteLink` records references from the note text to users, notes, matters, projects and assets. A `NoteTemplate` is at System, Client or Matter level (`ScopeCode` with the matching `ClientId` or `MatterId`).
 
 ::: mermaid
 erDiagram
   Note {
     int NoteId PK
     int MatterId FK
+    int FolderId FK
     nvarchar_300 Title
     bit IsPinned
     int LockedByUserId FK
     int ContentUpdatedByUserId FK
+  }
+  NoteFolder {
+    int NoteFolderId PK
+    int MatterId FK
+    int ParentFolderId FK
+    nvarchar_100 Name UK
   }
   NoteLink {
     int NoteId PK
@@ -705,6 +712,9 @@ erDiagram
   AppUser |o--o{ Note : "ContentUpdatedByUserId"
   AppUser |o--o{ Note : "LockedByUserId"
   Matter ||--o{ Note : "MatterId"
+  Matter ||--o{ NoteFolder : "MatterId"
+  NoteFolder |o--o{ NoteFolder : "ParentFolderId, MatterId"
+  NoteFolder |o--o{ Note : "FolderId, MatterId"
   Note ||--o{ NoteLink : "NoteId"
   Note ||--o{ NoteTagLink : "NoteId"
   NoteTag ||--o{ NoteTagLink : "NoteTagId"

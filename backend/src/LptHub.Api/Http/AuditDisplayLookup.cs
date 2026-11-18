@@ -101,13 +101,14 @@ internal sealed class AuditDisplayLookup(
         return labels;
     }
 
-    /// <summary>Productions, production specs and notes (epic #1001): named only for a matter the caller may see.</summary>
+    /// <summary>Productions, production specs, notes and note folders (epics #1001, #1405): named only for a matter the caller may see.</summary>
     private async Task AddMatterContentLabelsAsync(IReadOnlyCollection<AuditObjectRef> objects, Dictionary<AuditObjectRef, string> labels, CancellationToken cancellationToken)
     {
         var productions = (await productionLabels.ProductionsAsync(IdsOf(objects, "Production"), cancellationToken)).Select(p => ("Production", p.Id, p.MatterId, p.Name));
         var specs = (await productionLabels.SpecsAsync(IdsOf(objects, "ProductionSpec"), cancellationToken)).Select(p => ("ProductionSpec", p.Id, p.MatterId, p.Name));
         var notes = (await noteLabels.NotesAsync(IdsOf(objects, "Note"), cancellationToken)).Select(n => ("Note", n.Id, n.MatterId, n.Title));
-        var all = productions.Concat(specs).Concat(notes).ToList();
+        var folders = (await noteLabels.FoldersAsync(IdsOf(objects, "NoteFolder"), cancellationToken)).Select(f => ("NoteFolder", f.Id, f.MatterId, f.Name));
+        var all = productions.Concat(specs).Concat(notes).Concat(folders).ToList();
         if (all.Count == 0)
             return;
 

@@ -41,7 +41,8 @@ Totals (counted by `tools/db/schema-fingerprint.sql` on a database built from th
 | [MatterPath](#matterpath) | Clients, Matters and Projects | Organization | 5 | 1 |
 | [MatterTeamMember](#matterteammember) | Clients, Matters and Projects | Organization | 10 | 5 |
 | [MatterType](#mattertype) | Clients, Matters and Projects | Configuration | 9 | 2 |
-| [Note](#note) | Notes | Notes | 16 | 5 |
+| [Note](#note) | Notes | Notes | 17 | 6 |
+| [NoteFolder](#notefolder) | Notes | Notes | 9 | 5 |
 | [NoteLink](#notelink) | Notes | Notes | 3 | 1 |
 | [NoteTag](#notetag) | Notes | Notes | 9 | 2 |
 | [NoteTagLink](#notetaglink) | Notes | Notes | 2 | 2 |
@@ -1007,18 +1008,36 @@ A comment on a production.
 A rich text note of a matter (HTML body plus plain text), with pinning and a lock held by one person.
 
 - **Module:** Notes. **Area:** Notes.
-- **Scripts:** created by script 54.
+- **Scripts:** created by script 54; script 83 added `FolderId` and `FK_Note_Folder`.
 - **Report login (`lpt_report_reader`):** deny.
 - **Primary key:** `PK_Note` (NoteId), int identity.
-- **Columns (16; `?` = nullable):** `NoteId int`, `MatterId int`, `Title nvarchar(300)`, `Snippet nvarchar(300)`, `BodyHtml nvarchar(max)`, `BodyText nvarchar(max)`, `IsPinned bit`, `LockedByUserId int?`, `LockedAt datetime2(7)?`, `ContentUpdatedAt datetime2(7)`, `ContentUpdatedByUserId int?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
-- **Foreign keys (5):**
+- **Columns (17; `?` = nullable):** `NoteId int`, `MatterId int`, `FolderId int?` (the folder; NULL = No Folder), `Title nvarchar(300)`, `Snippet nvarchar(300)`, `BodyHtml nvarchar(max)`, `BodyText nvarchar(max)`, `IsPinned bit`, `LockedByUserId int?`, `LockedAt datetime2(7)?`, `ContentUpdatedAt datetime2(7)`, `ContentUpdatedByUserId int?`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
+- **Foreign keys (6):**
   - `FK_Note_ContentUpdatedBy`: `ContentUpdatedByUserId` to `AppUser(UserId)`
   - `FK_Note_CreatedBy`: `CreatedByUserId` to `AppUser(UserId)`
+  - `FK_Note_Folder`: (`FolderId`, `MatterId`) to `NoteFolder(NoteFolderId, MatterId)` (no cascade; a note can only be in a folder of its own matter)
   - `FK_Note_LockedBy`: `LockedByUserId` to `AppUser(UserId)`
   - `FK_Note_Matter`: `MatterId` to `Matter(MatterId)`
   - `FK_Note_ModifiedBy`: `ModifiedByUserId` to `AppUser(UserId)`
-- **Indexes and unique constraints (2):** `IX_Note_Matter` (MatterId,IsPinned DESC,ContentUpdatedAt DESC) - includes LockedByUserId; `UQ_Note_IdMatter` (NoteId,MatterId) - unique.
+- **Indexes and unique constraints (3):** `IX_Note_Folder` (MatterId,FolderId); `IX_Note_Matter` (MatterId,IsPinned DESC,ContentUpdatedAt DESC) - includes LockedByUserId; `UQ_Note_IdMatter` (NoteId,MatterId) - unique.
 - **Check constraints (1):** `CK_Note_Lock`.
+
+### NoteFolder
+
+A folder of a matter's notes. Folders nest (5 levels, 200 per matter, both checked by the service); a note is in one folder or none.
+
+- **Module:** Notes. **Area:** Notes.
+- **Scripts:** created by script 83.
+- **Report login (`lpt_report_reader`):** deny.
+- **Primary key:** `PK_NoteFolder` (NoteFolderId), int identity.
+- **Columns (9; `?` = nullable):** `NoteFolderId int`, `MatterId int`, `ParentFolderId int?` (NULL = top level), `Name nvarchar(100)`. Plus the five standard columns `CreatedAt`, `CreatedByUserId`, `ModifiedAt`, `ModifiedByUserId`, `RowVersion`.
+- **Foreign keys (5):**
+  - `FK_NoteFolder_CreatedBy`: `CreatedByUserId` to `AppUser(UserId)`
+  - `FK_NoteFolder_Matter`: `MatterId` to `Matter(MatterId)`
+  - `FK_NoteFolder_ModifiedBy`: `ModifiedByUserId` to `AppUser(UserId)`
+  - `FK_NoteFolder_Parent`: (`ParentFolderId`, `MatterId`) to `NoteFolder(NoteFolderId, MatterId)` (no cascade; a parent is always in the same matter)
+- **Indexes and unique constraints (4):** `IX_NoteFolder_Parent` (MatterId,ParentFolderId); `UQ_NoteFolder_IdMatter` (NoteFolderId,MatterId) - unique; `UQ_NoteFolder_Name` (MatterId,ParentFolderId,Name) - unique (a name is unique inside a parent, also at the top level, case-insensitive); `PK_NoteFolder`.
+- **Check constraints (2):** `CK_NoteFolder_Name` (not empty after trimming, no `/` or `\`), `CK_NoteFolder_NotOwnParent`.
 
 ### NoteLink
 

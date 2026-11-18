@@ -20,6 +20,9 @@ public class Note : AuditedEntity<int>
 {
     public int MatterId { get; set; }
 
+    /// <summary>The folder the note is in; null = "No Folder" (the top level). Always a folder of the note's own matter (composite foreign key).</summary>
+    public int? FolderId { get; set; }
+
     public string Title { get; set; } = string.Empty;
 
     public string Snippet { get; set; } = string.Empty;
@@ -41,6 +44,20 @@ public class Note : AuditedEntity<int>
     public int? ContentUpdatedByUserId { get; set; }
 
     public bool IsLocked => LockedByUserId is not null;
+}
+
+/// <summary>
+/// A folder of a matter's notes. Folders nest (up to <see cref="NoteFolderRules.MaxDepth"/> levels, <see cref="NoteFolderRules.MaxPerMatter"/> per matter); a name is unique inside its parent.
+/// A note is in one folder or none. Folders have no access list of their own: they follow the matter.
+/// </summary>
+public class NoteFolder : AuditedEntity<int>
+{
+    public int MatterId { get; set; }
+
+    /// <summary>Null for a top-level folder.</summary>
+    public int? ParentFolderId { get; set; }
+
+    public string Name { get; set; } = string.Empty;
 }
 
 /// <summary>A firm-wide tag an administrator manages; people only pick them. Deactivated, not deleted, once used.</summary>

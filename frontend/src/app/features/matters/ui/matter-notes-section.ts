@@ -147,7 +147,16 @@ export class MatterNotesSection {
     this.state.set('loading');
     try {
       const page = await firstValueFrom(
-        this.api.listNotes(this.matterId(), undefined, undefined, undefined, 1, SECTION_ROWS),
+        this.api.listNotes(
+          this.matterId(),
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          1,
+          SECTION_ROWS,
+        ),
       );
       if (id !== this.requestId) return;
       this.rows.set(page.items);

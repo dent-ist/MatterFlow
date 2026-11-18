@@ -11,4 +11,9 @@ internal sealed class NoteLabels(DbContext db) : INoteLabels
         ids.Count == 0
             ? []
             : await db.Set<Note>().AsNoTracking().Where(n => ids.Contains(n.Id)).Select(n => new NoteLabel(n.Id, n.MatterId, n.Title == "" ? NoteContent.UntitledTitle : n.Title)).ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<NoteFolderLabel>> FoldersAsync(IReadOnlyCollection<int> ids, CancellationToken cancellationToken = default) =>
+        ids.Count == 0
+            ? []
+            : await db.Set<NoteFolder>().AsNoTracking().Where(f => ids.Contains(f.Id)).Select(f => new NoteFolderLabel(f.Id, f.MatterId, f.Name)).ToListAsync(cancellationToken);
 }

@@ -155,6 +155,11 @@
       "reason": "Matter notes: rich-text work product, subject to the sensitive-matter rule; not report data."
     },
     {
+      "name": "NoteFolder",
+      "access": "deny",
+      "reason": "Folders of a matter's notes: names can describe work product, subject to the sensitive-matter rule; not report data."
+    },
+    {
       "name": "NoteLink",
       "access": "deny",
       "reason": "What a note refers to; follows Note."

@@ -149,13 +149,13 @@ Conventions common to all modules:
 
 ## Notes
 
-- **Purpose:** rich-text matter notes, tags, templates (epic #1001).
-- **Tables:** `Note`, `NoteLink`, `NoteTag`, `NoteTagLink`, `NoteTemplate`, `NoteTemplateTag`.
-- **Controllers:** `/notes`, `/note-tags`, `/note-templates` (`NoteControllers.cs`).
-- **Key services:** `NoteService`, `NoteTagService`, `NoteTemplateService`, `NoteAccess`, `NoteContent` (sanitises HTML with `RichHtml` and the `Note` profile).
+- **Purpose:** rich-text matter notes, tags, templates (epic #1001) and nested note folders (epic #1405).
+- **Tables:** `Note`, `NoteFolder`, `NoteLink`, `NoteTag`, `NoteTagLink`, `NoteTemplate`, `NoteTemplateTag`.
+- **Controllers:** `/notes`, `/note-tags`, `/note-templates`, `/note-folders` and `/matters/{id}/note-folders` (`NoteControllers.cs`).
+- **Key services:** `NoteService`, `NoteFolderService` (folder rules in `Domain/NoteFolderRules.cs`), `NoteTagService`, `NoteTemplateService`, `NoteAccess`, `NoteContent` (sanitises HTML with `RichHtml` and the `Note` profile).
 - **Permissions:** `MatterNote.View/Edit/Delete`.
 - **Frontend:** `features/notes`, Notes tab of the matter detail, Administration > Lists > Note Tags.
-- **Tests:** `IntegrationTests/Security/MatterContentApiTests`, `UnitTests/Notes`.
+- **Tests:** `IntegrationTests/Security/MatterContentApiTests`, `IntegrationTests/Notes/NoteFoldersApiTests`, `UnitTests/Notes`.
 
 ## Integrations
 
