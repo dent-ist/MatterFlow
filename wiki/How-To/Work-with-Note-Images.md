@@ -77,7 +77,7 @@ Tests: unit `notes/note-image-size.spec.ts`, `note-image-prepare.spec.ts`, `note
 
 - Script: `db/scripts/84-note-images.sql`; report login: `db/report-access.json` (deny).
 - Code: `backend/src/Modules/LptHub.Notes` (`Application/NoteImageService.cs`, `NoteImageInspector.cs`, `NoteContent.cs`, `Infrastructure/NoteImageSweeper.cs`, `Api/NoteControllers.cs`, `Api/NoteImagesOpenApi.cs`), `backend/src/LptHub.SharedKernel/Text/RichHtml.cs`, `backend/src/LptHub.Api/Http/SecurityHeadersMiddleware.cs`.
-- Tests: `UnitTests/Notes/NoteImageSanitiserTests`, `NoteImageInspectorTests`; `IntegrationTests/Notes/NoteImagesApiTests`; `SchemaTests/NoteImagesSchemaTests`; the two endpoint catalogues in `IntegrationTests/Security`.
+- Tests: `UnitTests/Notes/NoteImageSanitiserTests`, `NoteImageInspectorTests`; `IntegrationTests/Notes/NoteImagesApiTests`; `SchemaTests/NoteImagesSchemaTests`; the two endpoint catalogues in `IntegrationTests/Security`. The three features together (nested folder, pasted text and picture; save, move, copy to another matter, folder delete, note delete, Cancel, Edit and Delete rights, report-login denial): `IntegrationTests/Notes/NotesRound2CombinedTests` and e2e `frontend/e2e/tests/notes-round2-combined.spec.ts` (#1412).
 
 ## Related pages
 

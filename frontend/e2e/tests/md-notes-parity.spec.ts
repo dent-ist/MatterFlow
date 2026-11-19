@@ -283,18 +283,23 @@ test.describe('Notes tab matches the mockup (MD-27)', () => {
     await page.keyboard.press('Enter');
     await expect(page.getByRole('button', { name: 'Text color: Red' })).toBeVisible();
     await page.keyboard.type('red words');
+    // wait for the save to be answered before listing through the API (the list was read too early about every other run)
+    const saved = page.waitForResponse(
+      (r) => /\/api\/v1\/notes$/.test(r.url()) && r.request().method() === 'POST',
+    );
     await page.locator('[data-note-save]').click();
+    expect((await saved).status()).toBe(201);
     const span = page.locator('.ProseMirror [data-color="red"]');
     await expect(span).toHaveText('red words');
     await expect(span).toHaveCSS('color', 'rgb(180, 35, 24)');
     const list = await seed.admin.get<{ items: { noteId: number }[] }>(
       `/api/v1/notes?matterId=${w.matter.matterId}`,
     );
-    const saved = await seed.admin.get<{ bodyHtml: string }>(
+    const stored = await seed.admin.get<{ bodyHtml: string }>(
       `/api/v1/notes/${list.items[0].noteId}`,
     );
-    expect(saved.bodyHtml).toContain('<span data-color="red">red words</span>');
-    expect(saved.bodyHtml).not.toContain('style=');
+    expect(stored.bodyHtml).toContain('<span data-color="red">red words</span>');
+    expect(stored.bodyHtml).not.toContain('style=');
   });
 
   test('editing uses the full width of the note panel at 1920 px', async ({ page, seed }) => {
