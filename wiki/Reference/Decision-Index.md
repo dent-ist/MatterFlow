@@ -34,9 +34,10 @@
 | 024 | Projects are flat; an assigned user need not be in the assigned pod (the UI warns) |
 | 025 | Ethical walls deferred; read paths go through an access seam (later the Sensitive matter rule) |
 | 026 | Matter status is `IsActive` only; deactivation rules; inactive client or project blocks new matters or tasks |
-| 027 | No attachments or file storage anywhere |
+| 027 | No attachments or file storage anywhere (amended by 030: the icon and note images are the only stored binaries) |
 | 028 | Starter role and permission matrix is seeded and fully editable |
 | 029 | Reports module with a separate read-only SQL login (`docs/adr/029-reports-module.md`) |
+| 030 | Images in notes are stored in the database, outside the note body, never shared (`docs/adr/030-note-images.md`) |
 
 Other ADR-like documents: `docs/adr/outlook-dnd-spike.md` (drag and drop from new Outlook).
 

@@ -653,9 +653,9 @@ erDiagram
 
 ## Notes
 
-Tables: `Note`, `NoteFolder`, `NoteLink`, `NoteTag`, `NoteTagLink`, `NoteTemplate`, `NoteTemplateTag`.
+Tables: `Note`, `NoteFolder`, `NoteImage`, `NoteLink`, `NoteTag`, `NoteTagLink`, `NoteTemplate`, `NoteTemplateTag`.
 
-A `Note` belongs to one matter and is in one `NoteFolder` of that matter or in none (`FolderId` null). A `NoteFolder` has an optional parent folder of the same matter (composite foreign keys on `(Id, MatterId)`). Tags are many-to-many (`NoteTagLink`). `NoteLink` records references from the note text to users, notes, matters, projects and assets. A `NoteTemplate` is at System, Client or Matter level (`ScopeCode` with the matching `ClientId` or `MatterId`).
+A `Note` belongs to one matter and is in one `NoteFolder` of that matter or in none (`FolderId` null). A `NoteFolder` has an optional parent folder of the same matter (composite foreign keys on `(Id, MatterId)`). Tags are many-to-many (`NoteTagLink`). `NoteLink` records references from the note text to users, notes, matters, projects and assets. A `NoteTemplate` is at System, Client or Matter level (`ScopeCode` with the matching `ClientId` or `MatterId`). A `NoteImage` is the bytes of one image of a matter; there is deliberately no foreign key from `NoteLink` (type `IMAGE`, `TargetId` = the image) to `NoteImage`, and no link from a note to an image in the diagram: the note body holds `<img data-image-id>`, `NoteLink` records which saved notes use it, and the service deletes an image in the transaction that drops its last reference.
 
 ::: mermaid
 erDiagram
@@ -673,6 +673,17 @@ erDiagram
     int MatterId FK
     int ParentFolderId FK
     nvarchar_100 Name UK
+  }
+  NoteImage {
+    int NoteImageId PK
+    int MatterId FK
+    varchar_20 ContentType
+    smallint Width
+    smallint Height
+    int ByteSize
+    binary_32 ContentSha256
+    varbinary_max Content
+    int UploadedByUserId FK
   }
   NoteLink {
     int NoteId PK
@@ -713,6 +724,8 @@ erDiagram
   AppUser |o--o{ Note : "LockedByUserId"
   Matter ||--o{ Note : "MatterId"
   Matter ||--o{ NoteFolder : "MatterId"
+  Matter ||--o{ NoteImage : "MatterId"
+  AppUser |o--o{ NoteImage : "UploadedByUserId"
   NoteFolder |o--o{ NoteFolder : "ParentFolderId, MatterId"
   NoteFolder |o--o{ Note : "FolderId, MatterId"
   Note ||--o{ NoteLink : "NoteId"

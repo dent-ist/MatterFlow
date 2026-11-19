@@ -19,7 +19,7 @@ and Active Directory parts have **not** been run on a real Windows Server yet: s
 - SQL Server access uses the app-pool identity (a gMSA is recommended) with integrated security (`Trusted_Connection`), as a member of the database
   role `lpt_app`. A different login (the DBA or a `lpt_migrator` member) applies schema changes.
 - The API sets HSTS, `Content-Security-Policy`, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` and
-  `Cross-Origin-Opener-Policy` on every response, static files included (the app policy allows `'self'` plus inline styles, no inline scripts, no `eval`).
+  `Cross-Origin-Opener-Policy` on every response, static files included (the app policy allows `'self'` plus inline styles, no inline scripts, no `eval`; `img-src` also allows `data:` and `blob:`, the latter for note images the editor fetches through the API, ADR 030). Note images are stored in the database (`dbo.NoteImage`): plan headroom with the DBA; images no saved note uses are deleted at once and a nightly job (02:20 UTC) removes unreferenced uploads older than 48 hours.
   IIS must not add, replace or strip them.
 
 The hosting pieces live in `backend/src/LptHub.Api/Hosting/`; packaging in `deploy/`.

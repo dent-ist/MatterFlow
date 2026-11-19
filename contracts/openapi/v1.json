@@ -8747,6 +8747,182 @@
         }
       }
     },
+    "/api/v1/matters/{matterId}/note-images": {
+      "post": {
+        "tags": [
+          "NoteImages"
+        ],
+        "operationId": "UploadNoteImage",
+        "parameters": [
+          {
+            "name": "matterId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "required": [
+                  "file"
+                ],
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "description": "The image: PNG or JPEG, at most 2 MB.",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoteImageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/notes/images/{noteImageId}": {
+      "get": {
+        "tags": [
+          "NoteImages"
+        ],
+        "operationId": "GetNoteImage",
+        "parameters": [
+          {
+            "name": "noteImageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "image/png": { },
+              "image/jpeg": { }
+            }
+          },
+          "304": {
+            "description": "Not Modified",
+            "content": {
+              "image/png": { },
+              "image/jpeg": { }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "image/png": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/note-images/{noteImageId}": {
+      "delete": {
+        "tags": [
+          "NoteImages"
+        ],
+        "operationId": "DeleteNoteImage",
+        "parameters": [
+          {
+            "name": "noteImageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/note-images/{noteImageId}/copy": {
+      "post": {
+        "tags": [
+          "NoteImages"
+        ],
+        "operationId": "CopyNoteImage",
+        "parameters": [
+          {
+            "name": "noteImageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopyNoteImageRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopyNoteImageRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CopyNoteImageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoteImageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/note-tags": {
       "get": {
         "tags": [
@@ -26075,6 +26251,17 @@
           }
         }
       },
+      "CopyNoteImageRequest": {
+        "type": "object",
+        "properties": {
+          "targetMatterId": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "CoverageBoard": {
         "required": [
           "timeZone",
@@ -33697,6 +33884,42 @@
           }
         }
       },
+      "NoteImageResponse": {
+        "required": [
+          "noteImageId",
+          "matterId",
+          "width",
+          "height",
+          "contentType",
+          "byteSize"
+        ],
+        "type": "object",
+        "properties": {
+          "noteImageId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "matterId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "width": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "height": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "contentType": {
+            "type": "string"
+          },
+          "byteSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "NoteListItem": {
         "required": [
           "noteId",
@@ -34105,7 +34328,8 @@
           "updatedAtUtc",
           "updatedByUserId",
           "updatedByName",
-          "rowVersion"
+          "rowVersion",
+          "imagesLeftOut"
         ],
         "type": "object",
         "properties": {
@@ -34186,6 +34410,11 @@
           },
           "rowVersion": {
             "type": "string"
+          },
+          "imagesLeftOut": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0
           }
         }
       },
@@ -46319,6 +46548,9 @@
     },
     {
       "name": "NoteFolders"
+    },
+    {
+      "name": "NoteImages"
     },
     {
       "name": "NoteTags"

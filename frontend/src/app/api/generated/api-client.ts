@@ -13827,6 +13827,276 @@ export class NoteFoldersClient implements INoteFoldersClient {
     }
 }
 
+export interface INoteImagesClient {
+    /**
+     * @param file (optional) The image: PNG or JPEG, at most 2 MB.
+     * @return Created
+     */
+    uploadNoteImage(matterId: number, file?: FileParameter | undefined): Observable<NoteImageResponse>;
+    /**
+     * @return OK
+     */
+    getNoteImage(noteImageId: number): Observable<FileResponse>;
+    /**
+     * @return No Content
+     */
+    deleteNoteImage(noteImageId: number): Observable<void>;
+    /**
+     * @return Created
+     */
+    copyNoteImage(noteImageId: number, body: CopyNoteImageRequest): Observable<NoteImageResponse>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class NoteImagesClient implements INoteImagesClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    /**
+     * @param file (optional) The image: PNG or JPEG, at most 2 MB.
+     * @return Created
+     */
+    uploadNoteImage(matterId: number, file?: FileParameter | undefined): Observable<NoteImageResponse> {
+        let url_ = this.baseUrl + "/api/v1/matters/{matterId}/note-images";
+        if (matterId === undefined || matterId === null)
+            throw new globalThis.Error("The parameter 'matterId' must be defined.");
+        url_ = url_.replace("{matterId}", encodeURIComponent("" + matterId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = new FormData();
+        if (file === null || file === undefined)
+            throw new globalThis.Error("The parameter 'file' cannot be null.");
+        else
+            content_.append("file", file.data, file.fileName ? file.fileName : "file");
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUploadNoteImage(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUploadNoteImage(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<NoteImageResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<NoteImageResponse>;
+        }));
+    }
+
+    protected processUploadNoteImage(response: HttpResponseBase): Observable<NoteImageResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as NoteImageResponse;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return OK
+     */
+    getNoteImage(noteImageId: number): Observable<FileResponse> {
+        let url_ = this.baseUrl + "/api/v1/notes/images/{noteImageId}";
+        if (noteImageId === undefined || noteImageId === null)
+            throw new globalThis.Error("The parameter 'noteImageId' must be defined.");
+        url_ = url_.replace("{noteImageId}", encodeURIComponent("" + noteImageId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "image/png"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processGetNoteImage(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processGetNoteImage(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<FileResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<FileResponse>;
+        }));
+    }
+
+    protected processGetNoteImage(response: HttpResponseBase): Observable<FileResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200 || status === 206) {
+            const contentDisposition = response.headers ? response.headers.get("content-disposition") : undefined;
+            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
+            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
+            if (fileName) {
+                fileName = decodeURIComponent(fileName);
+            } else {
+                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
+                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
+            }
+            return _observableOf({ fileName: fileName, data: responseBlob as any, status: status, headers: _headers });
+        } else if (status === 304) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("Not Modified", status, _responseText, _headers);
+            }));
+        } else if (status === 404) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result404: any = null;
+            result404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as ProblemDetails;
+            return throwException("Not Found", status, _responseText, _headers, result404);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return No Content
+     */
+    deleteNoteImage(noteImageId: number): Observable<void> {
+        let url_ = this.baseUrl + "/api/v1/note-images/{noteImageId}";
+        if (noteImageId === undefined || noteImageId === null)
+            throw new globalThis.Error("The parameter 'noteImageId' must be defined.");
+        url_ = url_.replace("{noteImageId}", encodeURIComponent("" + noteImageId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processDeleteNoteImage(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processDeleteNoteImage(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processDeleteNoteImage(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    /**
+     * @return Created
+     */
+    copyNoteImage(noteImageId: number, body: CopyNoteImageRequest): Observable<NoteImageResponse> {
+        let url_ = this.baseUrl + "/api/v1/note-images/{noteImageId}/copy";
+        if (noteImageId === undefined || noteImageId === null)
+            throw new globalThis.Error("The parameter 'noteImageId' must be defined.");
+        url_ = url_.replace("{noteImageId}", encodeURIComponent("" + noteImageId));
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processCopyNoteImage(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processCopyNoteImage(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<NoteImageResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<NoteImageResponse>;
+        }));
+    }
+
+    protected processCopyNoteImage(response: HttpResponseBase): Observable<NoteImageResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 201) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result201: any = null;
+            result201 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver) as NoteImageResponse;
+            return _observableOf(result201);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
 export interface INoteTagsClient {
     /**
      * @param includeInactive (optional) 
@@ -32472,6 +32742,12 @@ export interface CompleteTaskRequest {
     [key: string]: any;
 }
 
+export interface CopyNoteImageRequest {
+    targetMatterId?: number;
+
+    [key: string]: any;
+}
+
 export interface CoverageBoard {
     timeZone: string;
     generatedAtUtc: string;
@@ -34504,6 +34780,17 @@ export interface NoteHistoryResponse {
     [key: string]: any;
 }
 
+export interface NoteImageResponse {
+    noteImageId: number;
+    matterId: number;
+    width: number;
+    height: number;
+    contentType: string;
+    byteSize: number;
+
+    [key: string]: any;
+}
+
 export interface NoteListItem {
     noteId: number;
     matterId: number;
@@ -34620,6 +34907,7 @@ export interface NoteTemplateResponse {
     updatedByUserId: number | undefined;
     updatedByName: string | undefined;
     rowVersion: string;
+    imagesLeftOut: number;
 
     [key: string]: any;
 }
@@ -37948,6 +38236,13 @@ export enum ApiProblemDetailsCode {
 export interface FileParameter {
     data: any;
     fileName: string;
+}
+
+export interface FileResponse {
+    data: Blob;
+    status: number;
+    fileName?: string;
+    headers?: { [name: string]: any };
 }
 
 export class SwaggerException extends Error {

@@ -149,14 +149,15 @@ Conventions common to all modules:
 
 ## Notes
 
-- **Purpose:** rich-text matter notes, tags, templates (epic #1001) and nested note folders (epic #1405).
-- **Tables:** `Note`, `NoteFolder`, `NoteLink`, `NoteTag`, `NoteTagLink`, `NoteTemplate`, `NoteTemplateTag`.
-- **Controllers:** `/notes`, `/note-tags`, `/note-templates`, `/note-folders` and `/matters/{id}/note-folders` (`NoteControllers.cs`).
-- **Key services:** `NoteService`, `NoteFolderService` (folder rules in `Domain/NoteFolderRules.cs`), `NoteTagService`, `NoteTemplateService`, `NoteAccess`, `NoteContent` (sanitises HTML with `RichHtml` and the `Note` profile).
+- **Purpose:** rich-text matter notes, tags, templates (epic #1001), nested note folders and pasted images (epic #1405).
+- **Tables:** `Note`, `NoteFolder`, `NoteImage`, `NoteLink`, `NoteTag`, `NoteTagLink`, `NoteTemplate`, `NoteTemplateTag`.
+- **Controllers:** `/notes`, `/note-tags`, `/note-templates`, `/note-folders`, `/matters/{id}/note-folders`, `/matters/{id}/note-images`, `/notes/images/{id}` and `/note-images/{id}[/copy]` (`NoteControllers.cs`).
+- **Key services:** `NoteService`, `NoteFolderService` (folder rules in `Domain/NoteFolderRules.cs`), `NoteImageService` (with the pure `NoteImageInspector`, and `Infrastructure/NoteImageSweeper`), `NoteTagService`, `NoteTemplateService`, `NoteAccess`, `NoteContent` (sanitises HTML with `RichHtml` and the `Note` profile).
 - **Permissions:** `MatterNote.View/Edit/Delete`.
 - **Paste (#1411):** the `Note` profile of `RichHtml` also removes, with their content, hidden elements (`hidden`, `display:none`, `visibility:hidden`, `mso-hide:all`, `font-size:0`, `opacity:0`) and `del` (tracked deletions) before the allow-list runs, so pasted hidden text cannot become visible text. The other profiles are unchanged. The client clean-up (`features/notes/note-paste.ts`) is for quality; this is the safety net. Tests: `UnitTests/Notes/NotePasteSanitiserTests`.
+- **Images (#1409):** the `Note` profile keeps `<img data-image-id alt width height>` only (see [Work with Note Images](../How-To/Work-with-Note-Images.md)); the bytes are in `NoteImage`, never in the body.
 - **Frontend:** `features/notes`, Notes tab of the matter detail, Administration > Lists > Note Tags.
-- **Tests:** `IntegrationTests/Security/MatterContentApiTests`, `IntegrationTests/Notes/NoteFoldersApiTests`, `UnitTests/Notes`.
+- **Tests:** `IntegrationTests/Security/MatterContentApiTests`, `IntegrationTests/Notes/NoteFoldersApiTests`, `IntegrationTests/Notes/NoteImagesApiTests`, `SchemaTests/NoteImagesSchemaTests`, `UnitTests/Notes`.
 
 ## Integrations
 

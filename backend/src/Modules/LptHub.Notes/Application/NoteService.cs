@@ -26,7 +26,8 @@ public sealed class NoteService(
     IAssetDirectory assets,
     IProjectDirectory projects,
     IMatterDirectory matters,
-    IUserDirectory users)
+    IUserDirectory users,
+    NoteImageService images)
 {
     public const string ObjectType = nameof(Note);
     public const string CreatedEvent = "NOTE_CREATED";
@@ -201,25 +202,44 @@ public sealed class NoteService(
         if (references.IsFailure)
             return references.Error!;
 
+        var body = content.Value;
         var now = clock.UtcNow;
         var note = new Note { MatterId = matter.MatterId, FolderId = request.FolderId, ContentUpdatedAtUtc = now, ContentUpdatedByUserId = Me };
-        ApplyContent(note, content.Value);
-        db.Set<Note>().Add(note);
-        audit.Write(new AuditEntry
-        {
-            EventType = CreatedEvent,
-            ObjectType = ObjectType,
-            ObjectIdFactory = () => NoteSupport.Id(note.Id),
-            MatterId = note.MatterId,
-            Summary = DisplayTitle(note),
-        });
-
         try
         {
             await using var transaction = await db.Database.BeginTransactionAsync(ct);
+            if (body.ImageIds.Count > 0)
+            {
+                // Lock the images, then give this note its own copy of any image another note already uses (a copied note copies its images).
+                var locked = await images.LockAsync(body.ImageIds, ct);
+                var verified = await images.VerifyAsync(matter.MatterId, body.ImageIds, locked, ct);
+                if (verified.IsFailure)
+                    return verified.Error!;
+
+                var separated = await images.SeparateSharedAsync(matter.MatterId, noteId: null, body.ImageIds, new HashSet<int>(), ct);
+                if (separated.Count > 0)
+                {
+                    var reprocessed = NoteContent.Process(NoteContent.ReplaceImageIds(body.Html, separated));
+                    if (reprocessed.IsFailure)
+                        return reprocessed.Error!;
+                    body = reprocessed.Value;
+                }
+            }
+
+            ApplyContent(note, body);
+            db.Set<Note>().Add(note);
+            audit.Write(new AuditEntry
+            {
+                EventType = CreatedEvent,
+                ObjectType = ObjectType,
+                ObjectIdFactory = () => NoteSupport.Id(note.Id),
+                MatterId = note.MatterId,
+                Summary = DisplayTitle(note),
+            });
+
             await db.SaveChangesAsync(ct);
             db.Set<NoteTagLink>().AddRange(tags.Value.Select(t => new NoteTagLink { NoteId = note.Id, NoteTagId = t.Id }));
-            db.Set<NoteLink>().AddRange(NoteContent.Links(content.Value.References).Select(l => new NoteLink { NoteId = note.Id, TargetType = l.Target, TargetId = l.Id }));
+            db.Set<NoteLink>().AddRange(NoteContent.Links(body.References).Select(l => new NoteLink { NoteId = note.Id, TargetType = l.Target, TargetId = l.Id }));
             if (tags.Value.Count > 0)
             {
                 audit.Write(new AuditEntry
@@ -275,16 +295,41 @@ public sealed class NoteService(
         if (references.IsFailure)
             return references.Error!;
 
-        var contentChanged = !string.Equals(note.BodyHtml, content.Value.Html, StringComparison.Ordinal);
+        var body = content.Value;
+        var contentChanged = !string.Equals(note.BodyHtml, body.Html, StringComparison.Ordinal);
         var oldTags = await TagNamesAsync(currentLinks.Select(l => l.NoteTagId), ct);
         var newIds = tags.Value.Select(t => t.Id).ToHashSet();
         var tagsChanged = !currentLinks.Select(l => l.NoteTagId).ToHashSet().SetEquals(newIds);
         if (!contentChanged && !tagsChanged)
             return await GetAsync(id, ct); // nothing to save: no new "last updated", no history line
 
+        // The images of the note: the ones it links now and the ones the new text uses. Any change of them is made in one transaction with the save: the images are locked, a copy is made for an image
+        // another note already uses, and an image no note uses any more is deleted right after the save (design 4.7; no retention).
+        var myImages = contentChanged
+            ? (await db.Set<NoteLink>().AsNoTracking().Where(l => l.NoteId == id && l.TargetType == NoteLinkTarget.Image).Select(l => l.TargetId).ToListAsync(ct)).ToHashSet()
+            : [];
+        var withImages = contentChanged && (body.ImageIds.Count > 0 || myImages.Count > 0);
+        await using var imageTransaction = withImages ? await db.Database.BeginTransactionAsync(ct) : null;
+        if (withImages)
+        {
+            var locked = await images.LockAsync([.. body.ImageIds.Concat(myImages)], ct);
+            var verified = await images.VerifyAsync(note.MatterId, body.ImageIds, locked, ct);
+            if (verified.IsFailure)
+                return verified.Error!;
+
+            var separated = await images.SeparateSharedAsync(note.MatterId, id, body.ImageIds, myImages, ct);
+            if (separated.Count > 0)
+            {
+                var reprocessed = NoteContent.Process(NoteContent.ReplaceImageIds(body.Html, separated));
+                if (reprocessed.IsFailure)
+                    return reprocessed.Error!;
+                body = reprocessed.Value;
+            }
+        }
+
         if (contentChanged)
         {
-            ApplyContent(note, content.Value);
+            ApplyContent(note, body);
             audit.Write(new AuditEntry
             {
                 EventType = EditedEvent,
@@ -295,7 +340,7 @@ public sealed class NoteService(
             });
 
             var existing = await db.Set<NoteLink>().Where(l => l.NoteId == id).ToListAsync(ct);
-            var wanted = NoteContent.Links(content.Value.References).ToHashSet();
+            var wanted = NoteContent.Links(body.References).ToHashSet();
             db.Set<NoteLink>().RemoveRange(existing.Where(l => !wanted.Contains((l.TargetType, l.TargetId))));
             var have = existing.Select(l => (l.TargetType, l.TargetId)).ToHashSet();
             db.Set<NoteLink>().AddRange(wanted.Where(w => !have.Contains(w)).Select(w => new NoteLink { NoteId = id, TargetType = w.Target, TargetId = w.Id }));
@@ -334,7 +379,15 @@ public sealed class NoteService(
         note.ContentUpdatedByUserId = Me;
         NoteSupport.TrackOriginalRowVersion(db, note, request.RowVersion);
         var saved = await SaveAsync(ct);
-        return saved.IsFailure ? saved.Error! : await GetAsync(id, ct);
+        if (saved.IsFailure)
+            return saved.Error!;
+        if (imageTransaction is not null)
+        {
+            await images.DeleteUnusedAsync([.. myImages.Except(body.ImageIds)], ct);
+            await imageTransaction.CommitAsync(ct);
+        }
+
+        return await GetAsync(id, ct);
     }
 
     /// <summary>
@@ -457,10 +510,22 @@ public sealed class NoteService(
         if (note.IsLocked)
             return (await LockedErrorAsync(note, ct)).Error!;
 
+        // The note's images go with it (the ones no other note uses; none are shared, but the check is cheap and the rule is "no reference, no image").
+        var myImages = await db.Set<NoteLink>().AsNoTracking().Where(l => l.NoteId == id && l.TargetType == NoteLinkTarget.Image).Select(l => l.TargetId).ToListAsync(ct);
+        await using var imageTransaction = myImages.Count > 0 ? await db.Database.BeginTransactionAsync(ct) : null;
+        if (imageTransaction is not null)
+            await images.LockAsync(myImages, ct);
+
         audit.Write(new AuditEntry { EventType = DeletedEvent, ObjectType = ObjectType, ObjectId = NoteSupport.Id(id), MatterId = note.MatterId, Summary = DisplayTitle(note) });
         NoteSupport.TrackOriginalRowVersion(db, note, rowVersion);
         db.Set<Note>().Remove(note);
-        return await SaveAsync(ct);
+        var saved = await SaveAsync(ct);
+        if (saved.IsFailure || imageTransaction is null)
+            return saved;
+
+        await images.DeleteUnusedAsync(myImages, ct);
+        await imageTransaction.CommitAsync(ct);
+        return saved;
     }
 
     // ---------------------------------------------------------------- references
@@ -576,7 +641,7 @@ public sealed class NoteService(
         if (userIds.Count > 0 && (await users.FindManyAsync(userIds, ct)).Count != userIds.Count)
             return Error.Validation("bodyHtml", "REFERENCE_NOT_ALLOWED", "The note mentions a person who doesn't exist.");
 
-        return Result.Success();
+        return await images.CheckAsync(matterId, NoteContent.ImageIdsOf(references), ct);
     }
 
     // ---------------------------------------------------------------- helpers
@@ -680,7 +745,7 @@ public sealed class NoteService(
     private async Task<NoteResponse> ToResponseAsync(Note n, CancellationToken ct)
     {
         var tags = await access.TagsOfNotesAsync([n.Id], ct);
-        var links = await db.Set<NoteLink>().AsNoTracking().Where(l => l.NoteId == n.Id).OrderBy(l => l.TargetType).ThenBy(l => l.TargetId).ToListAsync(ct);
+        var links = await db.Set<NoteLink>().AsNoTracking().Where(l => l.NoteId == n.Id && l.TargetType != NoteLinkTarget.Image).OrderBy(l => l.TargetType).ThenBy(l => l.TargetId).ToListAsync(ct);
         var names = await access.NamesAsync([n.LockedByUserId, n.ContentUpdatedByUserId, n.CreatedByUserId], ct);
         string? Name(int? userId) => userId is { } u && names.TryGetValue(u, out var name) ? name : null;
         return new NoteResponse(

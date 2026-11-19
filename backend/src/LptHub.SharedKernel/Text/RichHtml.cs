@@ -18,7 +18,16 @@ public static partial class RichHtml
         ["p", "br", "strong", "b", "em", "i", "u", "ul", "ol", "li", "a", "table", "thead", "tbody", "tfoot", "tr", "th", "td", "caption", "colgroup", "col"];
 
     /// <summary>The Note profile adds three heading levels, the quote and the reference span (see <see cref="RefAttributes"/>).</summary>
-    private static readonly string[] NoteExtraTags = ["h1", "h2", "h3", "blockquote", "span"];
+    private static readonly string[] NoteExtraTags = ["h1", "h2", "h3", "blockquote", "span", "img"];
+
+    /// <summary>Alt text of a pasted image that has none (never empty, so a screen reader announces something).</summary>
+    public const string DefaultImageAlt = "Pasted image";
+
+    /// <summary>Longest alt text of a note image, in characters.</summary>
+    public const int MaxImageAltLength = 200;
+
+    /// <summary>Largest <c>width</c> or <c>height</c> (CSS pixels) kept on a note image.</summary>
+    public const int MaxImageSize = 4000;
 
     /// <summary>
     /// The only attributes a reference span of a Note may carry, one per kind of target: <c>data-asset-id</c>, <c>data-project-id</c>, <c>data-matter-id</c>, <c>data-note-id</c>, <c>data-user-id</c> and
@@ -176,6 +185,10 @@ public static partial class RichHtml
             foreach (var attribute in RefAttributes)
                 sanitizer.AllowedAttributes.Add(attribute);
             sanitizer.AllowedAttributes.Add("data-color");
+            sanitizer.AllowedAttributes.Add("data-image-id");
+            sanitizer.AllowedAttributes.Add("alt");
+            sanitizer.AllowedAttributes.Add("width");
+            sanitizer.AllowedAttributes.Add("height");
         }
         sanitizer.AllowedAttributes.Add("href");
         sanitizer.AllowedAttributes.Add("colspan");
@@ -194,7 +207,8 @@ public static partial class RichHtml
         };
 
         var cleaned = sanitizer.Sanitize(StripDroppedElements(html, profile));
-        return IsBlank(cleaned) ? string.Empty : cleaned.Trim();
+        // A note that is only a picture has no text but is not blank.
+        return IsBlank(cleaned) && !(note && cleaned.Contains("<img ", StringComparison.Ordinal)) ? string.Empty : cleaned.Trim();
     }
 
     /// <summary>
@@ -213,6 +227,7 @@ public static partial class RichHtml
                 ("td" or "th", "colspan" or "rowspan") => true,
                 ("th", "scope") => true,
                 ("span", var name) => RefAttributes.Contains(name) || (note && name == "data-color"),
+                ("img", "data-image-id" or "alt" or "width" or "height") => note,
                 _ => false,
             };
             if (!keep)
@@ -426,6 +441,12 @@ public static partial class RichHtml
                 continue;
             }
 
+            if (profile == RichHtmlProfile.Note && name == "img")
+            {
+                EmitImage(element, output);
+                continue;
+            }
+
             if (profile == RichHtmlProfile.Note && name == "span")
             {
                 if (!RefAttributes.Any(a => element.HasAttribute(a)) && element.HasAttribute("data-color"))
@@ -505,6 +526,60 @@ public static partial class RichHtml
 
         output.Append("<span ").Append(present[0]).Append("=\"").Append(value).Append("\">").Append(text).Append("</span>");
     }
+
+    /// <summary>
+    /// An image of a Note survives only as <c>&lt;img data-image-id alt width height&gt;</c>, in that order: the id is a positive integer (1 to 10 digits), the alt text plain text of at most
+    /// <see cref="MaxImageAltLength"/> characters (never empty: <see cref="DefaultImageAlt"/>), and width and height are integers 1 to <see cref="MaxImageSize"/>, both or neither. There is no
+    /// <c>src</c>, no URL, no data URI and no other attribute: the client shows the image by its id. An <c>img</c> without a valid id is removed with no text.
+    /// </summary>
+    private static void EmitImage(AngleSharp.Dom.IElement image, StringBuilder output)
+    {
+        var raw = image.GetAttribute("data-image-id")?.Trim();
+        long id = 0;
+        var valid = raw is { Length: >= 1 and <= 10 } && raw.All(char.IsAsciiDigit) && long.TryParse(raw, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out id) && id is >= 1 and <= int.MaxValue;
+        if (!valid)
+            return;
+
+        var alt = CleanAlt(image.GetAttribute("alt"));
+        output.Append("<img data-image-id=\"").Append(id.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append("\" alt=\"").Append(WebUtility.HtmlEncode(alt)).Append('"');
+        if (TryImageSize(image.GetAttribute("width"), out var width) && TryImageSize(image.GetAttribute("height"), out var height))
+            output.Append(" width=\"").Append(width).Append("\" height=\"").Append(height).Append('"');
+        output.Append('>');
+    }
+
+    /// <summary>Alt text as plain text: control characters, bidi overrides, angle brackets and runs of spaces removed, cut to <see cref="MaxImageAltLength"/>; empty becomes <see cref="DefaultImageAlt"/>.</summary>
+    internal static string CleanAlt(string? alt)
+    {
+        var sb = new StringBuilder();
+        foreach (var c in StripBidiOverrides(alt ?? string.Empty))
+        {
+            if (c is '<' or '>' || IsBidiControl(c))
+                continue;
+            sb.Append(char.IsControl(c) || char.IsWhiteSpace(c) ? ' ' : c);
+        }
+
+        var text = SpaceRunPattern().Replace(sb.ToString(), " ").Trim();
+        if (text.Length > MaxImageAltLength)
+        {
+            text = text[..MaxImageAltLength];
+            if (char.IsHighSurrogate(text[^1]))
+                text = text[..^1];
+            text = text.TrimEnd();
+        }
+
+        return text.Length == 0 ? DefaultImageAlt : text;
+    }
+
+    private static bool TryImageSize(string? raw, out int size)
+    {
+        size = 0;
+        var value = raw?.Trim();
+        return value is { Length: >= 1 and <= 4 } && value.All(char.IsAsciiDigit)
+            && int.TryParse(value, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out size) && size is >= 1 and <= MaxImageSize;
+    }
+
+    [GeneratedRegex(@" {2,}", RegexOptions.CultureInvariant)]
+    private static partial Regex SpaceRunPattern();
 
     /// <summary>The Note profile keeps headings 1 to 3 and the quote as they are; the other wrappers become paragraphs.</summary>
     private static readonly HashSet<string> NoteBlockWrappers = new(["div", "h4", "h5", "h6", "pre", "section", "article", "address"], StringComparer.Ordinal);

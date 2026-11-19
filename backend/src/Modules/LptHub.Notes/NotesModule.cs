@@ -1,3 +1,4 @@
+using LptHub.Notes.Api;
 using LptHub.Notes.Application;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -10,10 +11,13 @@ public static class NotesModule
     public static IServiceCollection AddNotesModule(this IServiceCollection services)
     {
         services.AddControllers().AddApplicationPart(typeof(NotesModule).Assembly);
+        services.AddNoteImagesOpenApi();
 
         services.AddScoped<NoteAccess>();
         services.AddScoped<NoteService>();
         services.AddScoped<NoteFolderService>();
+        services.AddScoped<NoteImageService>();
+        services.AddHostedService<Infrastructure.NoteImageSweeper>();
         services.AddScoped<NoteTagService>();
         services.AddScoped<NoteTemplateService>();
         services.AddScoped<LptHub.Notes.Contracts.INoteLabels, NoteLabels>();

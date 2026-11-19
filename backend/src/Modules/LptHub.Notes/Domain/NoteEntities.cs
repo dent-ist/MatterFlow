@@ -10,6 +10,9 @@ public static class NoteLinkTarget
     public const string Matter = "MATTER";
     public const string Note = "NOTE";
     public const string User = "USER";
+
+    /// <summary>An image of the note (<c>&lt;img data-image-id&gt;</c>), id of a <see cref="NoteImage"/>. Not a reference the person sees: it only says which images a saved note uses.</summary>
+    public const string Image = "IMAGE";
 }
 
 /// <summary>
@@ -58,6 +61,35 @@ public class NoteFolder : AuditedEntity<int>
     public int? ParentFolderId { get; set; }
 
     public string Name { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// An image pasted into a note: PNG or JPEG bytes (at most 2 MB, 8,000 px on a side) stored in the database, owned by the matter, outside the note body. The body holds <c>&lt;img data-image-id&gt;</c>;
+/// which notes use the image is the <see cref="NoteLink"/> rows of type <see cref="NoteLinkTarget.Image"/>. An image nothing refers to is "pending" (uploaded, not saved yet) and is deleted by the
+/// save that drops its last reference, by Cancel (<c>DELETE</c>), with its note, or by the nightly crash sweep after 48 hours.
+/// </summary>
+public class NoteImage : Entity<int>
+{
+    public int MatterId { get; set; }
+
+    /// <summary><c>image/png</c> or <c>image/jpeg</c>, found by the bytes, never by what the client declared.</summary>
+    public string ContentType { get; set; } = string.Empty;
+
+    public int Width { get; set; }
+
+    public int Height { get; set; }
+
+    public int ByteSize { get; set; }
+
+    /// <summary>SHA-256 of <see cref="Content"/>; the ETag of the read endpoint.</summary>
+    public byte[] ContentSha256 { get; set; } = [];
+
+    /// <summary>The image bytes. Never selected by list queries.</summary>
+    public byte[] Content { get; set; } = [];
+
+    public DateTime UploadedAtUtc { get; set; }
+
+    public int? UploadedByUserId { get; set; }
 }
 
 /// <summary>A firm-wide tag an administrator manages; people only pick them. Deactivated, not deleted, once used.</summary>

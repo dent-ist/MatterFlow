@@ -33,6 +33,23 @@ internal sealed class NoteFolderConfiguration : IEntityTypeConfiguration<NoteFol
     }
 }
 
+internal sealed class NoteImageConfiguration : IEntityTypeConfiguration<NoteImage>
+{
+    public void Configure(EntityTypeBuilder<NoteImage> b)
+    {
+        b.ToTable("NoteImage");
+        b.Property(x => x.ContentType).HasMaxLength(20).IsUnicode(false).IsRequired();
+        b.Property(x => x.Width).HasColumnType("smallint");
+        b.Property(x => x.Height).HasColumnType("smallint");
+        b.Property(x => x.ContentSha256).HasColumnType("binary(32)").IsRequired();
+        b.Property(x => x.Content).HasColumnType("varbinary(max)").IsRequired();
+        b.Property(x => x.UploadedAtUtc).HasColumnName("UploadedAt");
+        b.HasIndex(x => x.MatterId).HasDatabaseName("IX_NoteImage_Matter");
+        b.HasIndex(x => x.UploadedAtUtc).HasDatabaseName("IX_NoteImage_Uploaded");
+        b.HasIndex(x => x.UploadedByUserId).HasDatabaseName("IX_NoteImage_UploadedBy");
+    }
+}
+
 internal sealed class NoteTagConfiguration : IEntityTypeConfiguration<NoteTag>
 {
     public void Configure(EntityTypeBuilder<NoteTag> b)
