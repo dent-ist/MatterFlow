@@ -278,6 +278,7 @@ The firm has not specified a backup policy yet. **Proposal for approval:**
 - Restore drill at least quarterly into a side database: `RESTORE DATABASE ... WITH NORECOVERY` (full), then the log chain `WITH STOPAT`, then `RECOVERY`; start a copy of the app against it and check `/health/ready`.
 - Restore in place: stop the site, restore, start the site. Logins and role membership are inside the database, so a restore to the same domain keeps `lpt_app`; on a **new** SQL Server instance create
   the Windows login for the app identity first (`CREATE LOGIN ... FROM WINDOWS`), then `ALTER USER [KE\svc-lpt-hub$] WITH LOGIN = [KE\svc-lpt-hub$]` if the user is orphaned.
+- **Note images and database growth (epic #1405, ADR 030).** Pictures pasted into notes live in `dbo.NoteImage` (PNG or JPEG, at most 2 MB each, 20 per note) and are part of every backup; there is no per-matter size or count limit, so image-heavy matters make the database and the backups grow. Check the size of `dbo.NoteImage` (`EXEC sp_spaceused 'dbo.NoteImage'`) at the quarterly restore drill and plan headroom. Pictures no saved note uses are deleted at once (save, Cancel, note delete); the nightly `NoteImageSweeper` (02:20 UTC) only removes unreferenced uploads older than 48 hours, writes no audit and logs the count.
 - The audit table is part of the same database; no separate backup is needed, but never restore a partial or older backup over it without recording the reason.
 
 ## 9. What the product owner must verify on the real server
