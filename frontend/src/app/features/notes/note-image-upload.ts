@@ -54,7 +54,7 @@ function lines(title: string, sub: string): HTMLElement {
   return tx;
 }
 
-/** The placeholder block (mockup scene `image-fail`): a bordered panel with a spinner and a progress bar, or the red failure block with Retry and Remove. */
+/** The placeholder block (mockup scene `image-fail`): a bordered panel with a spinner and a progress bar, or the red failure block with Retry (only when the same bytes can work) and Remove. */
 function render(slot: UploadSlot, handlers: UploadHandlers): HTMLElement {
   const root = node('div', `ne-up ne-up--${slot.state}`, {
     contenteditable: 'false',

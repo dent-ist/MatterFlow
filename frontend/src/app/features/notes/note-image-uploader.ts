@@ -149,7 +149,7 @@ export class NoteImageUploader {
       } catch (e) {
         outcome =
           e instanceof ImagePrepareError
-            ? { ok: false, why: { reason: e.problem, retry: e.problem === 'size' } }
+            ? { ok: false, why: { reason: e.problem, retry: false } }
             : { ok: false, why: failureOf(e) };
       }
     }

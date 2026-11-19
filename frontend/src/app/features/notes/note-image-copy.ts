@@ -67,7 +67,7 @@ export function failureOf(e: unknown): ImageFailure {
   if (e instanceof ApiError) {
     switch (e.code) {
       case 'IMAGE_TOO_LARGE':
-        return { reason: 'size', retry: true };
+        return { reason: 'size', retry: false };
       case 'IMAGE_TYPE_UNSUPPORTED':
       case 'IMAGE_CORRUPT':
       case 'IMAGE_REQUIRED':
@@ -78,7 +78,7 @@ export function failureOf(e: unknown): ImageFailure {
         return { reason: 'pending', retry: false };
       default:
     }
-    if (e.status === 413) return { reason: 'size', retry: true };
+    if (e.status === 413) return { reason: 'size', retry: false };
     if (e.status === 415) return { reason: 'type', retry: false };
     if (e.status === 401 || e.status === 403 || e.status === 404)
       return { reason: 'access', retry: false };

@@ -428,10 +428,14 @@ for (const size of SIZES) {
         'It is larger than 2 MB even after shrinking. Crop it or take a smaller screenshot.',
         { timeout: 30_000 },
       );
-      await expect(slot.getByRole('button', { name: 'Retry' })).toBeVisible();
+      // the same bytes cannot work: only Remove, and Save stays off until it is removed
+      await expect(slot.getByRole('button', { name: 'Retry' })).toHaveCount(0);
+      await expect(slot.getByRole('button')).toHaveCount(1);
+      await expect(page.locator('[data-note-save]')).toBeDisabled();
       await shot(page, 'image-failed-size', size);
       await noViolations(page);
       await slot.getByRole('button', { name: 'Remove' }).click();
+      await expect(page.locator('[data-note-save]')).toBeEnabled();
       // the server says the matter is inactive
       await page.route(/\/matters\/\d+\/note-images$/, (route) =>
         route.fulfill({
