@@ -32,6 +32,8 @@ export interface PasteResult {
   readonly formatted: boolean;
   /** Pictures inside the pasted text that were left out. */
   readonly droppedImages: number;
+  /** The ids of the note images in the cleaned html (a note's own pictures, copied from another note), in order, without repeats. */
+  readonly imageIds: readonly number[];
   /** True when tracked deletions were left out (inserted text is kept). */
   readonly droppedDeletions: boolean;
   /** Table cells in the cleaned html. */
@@ -133,6 +135,7 @@ const BLOCK_WRAPPERS = new Set([
 ]);
 
 const BLOCK_OUT = new Set([
+  'img',
   'p',
   'h1',
   'h2',
@@ -170,7 +173,7 @@ interface Ctx {
   readonly depth: number;
   /** Directly inside a `ul` or `ol`: an `li` is an item here, a paragraph anywhere else. */
   readonly inList: boolean;
-  readonly stats: { images: number; deletions: boolean };
+  readonly stats: { images: number; deletions: boolean; imageIds: number[] };
 }
 
 const NO_MARKS: Marks = { strong: false, em: false, u: false, colour: null };
@@ -422,6 +425,34 @@ function buildWordList(ctx: Ctx, items: readonly Element[]): Node[] {
   return roots;
 }
 
+/** A picture that is one of the app's note images: a positive `data-image-id` and no address. The alt text and the size are carried over (the server checks them again). */
+function ownImage(el: Element): { id: number; node: (doc: Document) => Element } | null {
+  if (el.hasAttribute('src') || el.hasAttribute('srcset')) return null;
+  const raw = el.getAttribute('data-image-id') ?? '';
+  if (!/^\d{1,10}$/.test(raw) || Number(raw) < 1) return null;
+  const id = Number(raw);
+  const dim = (name: string): string | null => {
+    const v = el.getAttribute(name)?.trim() ?? '';
+    return /^\d{1,4}$/.test(v) && Number(v) >= 1 ? v : null;
+  };
+  const width = dim('width');
+  const height = dim('height');
+  const alt = (el.getAttribute('alt') ?? '').slice(0, 200);
+  return {
+    id,
+    node: (doc) => {
+      const img = doc.createElement('img');
+      img.setAttribute('data-image-id', String(id));
+      img.setAttribute('alt', alt);
+      if (width && height) {
+        img.setAttribute('width', width);
+        img.setAttribute('height', height);
+      }
+      return img;
+    },
+  };
+}
+
 function convertElement(ctx: Ctx, el: Element): Node[] {
   const tag = el.localName;
   const style = styleOf(el);
@@ -431,6 +462,13 @@ function convertElement(ctx: Ctx, el: Element): Node[] {
     return [];
   }
   if (tag === 'img') {
+    // A picture of the app's own notes (`<img data-image-id>`, no address: copied from a note) is kept as a block; the editor copies it into this matter when it
+    // belongs to another one. Any other picture (Word, Outlook, a web page) cannot be kept in this round and is counted for the toast (design note 5.3).
+    const own = ownImage(el);
+    if (own) {
+      ctx.stats.imageIds.push(own.id);
+      return [own.node(ctx.doc)];
+    }
     ctx.stats.images += 1;
     return [];
   }
@@ -659,6 +697,7 @@ const EMPTY: PasteResult = {
   plain: '',
   formatted: false,
   droppedImages: 0,
+  imageIds: [],
   droppedDeletions: false,
   tableCells: 0,
   problem: null,
@@ -689,7 +728,7 @@ export function cleanPaste(
     own: /data-pm-slice/.test(html),
     depth: 0,
     inList: false,
-    stats: { images: 0, deletions: false },
+    stats: { images: 0, deletions: false, imageIds: [] },
   };
   const out = doc.createElement('div');
   out.append(...toBlocks(ctx, convertChildren(ctx, source.body)));
@@ -697,8 +736,12 @@ export function cleanPaste(
 
   const droppedImages = ctx.stats.images;
   const droppedDeletions = ctx.stats.deletions;
-  const visible = (out.textContent ?? '').trim() !== '' || out.querySelector('table') !== null;
-  const base = { droppedImages, droppedDeletions };
+  const imageIds = [...new Set(ctx.stats.imageIds)];
+  const visible =
+    (out.textContent ?? '').trim() !== '' ||
+    out.querySelector('table') !== null ||
+    imageIds.length > 0;
+  const base = { droppedImages, droppedDeletions, imageIds };
   if (!visible) return { ...EMPTY, ...base, plain: plainText };
 
   const tableCells = out.querySelectorAll('td, th').length;
@@ -716,6 +759,7 @@ export function cleanPaste(
     formatted:
       out.querySelector('strong, em, u, h1, h2, h3, ul, ol, table, a, blockquote, span') !== null,
     droppedImages,
+    imageIds,
     droppedDeletions,
     tableCells,
     problem: null,

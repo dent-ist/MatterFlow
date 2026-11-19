@@ -1,0 +1,384 @@
+// ---- Images in a note (#1410, rule D-46d; mockup notes-round-2 scenes `image`, `image-details`, `image-read`, `image-fail`). Tokens only.
+
+// The image: a block, width in CSS pixels from the node, never wider than its column.
+.ne-img {
+  position: relative;
+  display: block;
+  margin: var(--mf-s2, 8px) 0 var(--mf-s3, 12px);
+  user-select: none;
+
+  // The room for the readout under the image while it is selected (the readout hangs below the frame).
+  &.ne-img--sel {
+    margin-bottom: 40px;
+  }
+}
+
+.ne-img__frame {
+  position: relative;
+  display: block;
+  box-sizing: border-box;
+  max-width: 100%;
+  border: 1px solid var(--mf-border-strong);
+  background: var(--mf-surface);
+  line-height: 0;
+}
+
+.ne-img__pic {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.ne-img__pic[hidden] {
+  display: none;
+}
+
+.ne-img__frame--loading {
+  background: var(--mf-surface-alt);
+}
+
+.ne-img--sel .ne-img__frame {
+  outline: 2px solid var(--mf-primary);
+  outline-offset: 1px;
+}
+
+// The missing image (R18) and the failed fetch: the shared error colours, text beside the icon.
+.ne-img__frame--off {
+  width: 100% !important;
+  max-width: 480px;
+  border-color: var(--mf-sem-overdue-line);
+  background: var(--mf-sem-overdue-bg);
+  color: var(--mf-sem-overdue-fg);
+  line-height: 1.5;
+}
+
+.ne-img__state {
+  display: none;
+}
+
+.ne-img__frame--off .ne-img__state {
+  display: flex;
+  gap: var(--mf-s3, 12px);
+  align-items: flex-start;
+  padding: var(--mf-s3, 12px) var(--mf-s4, 16px);
+
+  > .pi {
+    margin-top: 1px;
+    font-size: var(--mf-icon-lg);
+  }
+}
+
+.ne-img__off-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+
+  b {
+    font-weight: var(--mf-fw-semibold, 600);
+  }
+
+  span {
+    font-size: var(--mf-fs-sm, 13px);
+  }
+}
+
+.ne-img__off-acts {
+  display: flex;
+  gap: var(--mf-s1, 4px);
+  margin: var(--mf-s1, 4px) 0 0 calc(-1 * var(--mf-s2, 8px));
+}
+
+.ne-img__act,
+.ne-up__act {
+  color: var(--mf-sem-overdue-fg);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+
+  .pi {
+    text-decoration: none;
+  }
+}
+
+// Read mode and locked notes: the stored size, no handles; hover outlines the image and offers the original.
+.ne-img--read .ne-img__frame[role='button'] {
+  cursor: zoom-in;
+
+  &:hover {
+    outline: 2px solid var(--mf-border-strong);
+    outline-offset: 1px;
+  }
+}
+
+// ---- Corner handles: 12 px squares, the south east one filled (mockup `.hd`).
+.ne-img__hd {
+  position: absolute;
+  z-index: 3;
+  width: 12px;
+  height: 12px;
+  box-sizing: border-box;
+  border: 2px solid var(--mf-primary);
+  border-radius: var(--mf-radius);
+  background: var(--mf-surface);
+  touch-action: none;
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+.ne-img__hd--nw {
+  top: -7px;
+  left: -7px;
+  cursor: nwse-resize;
+}
+
+.ne-img__hd--ne {
+  top: -7px;
+  right: -7px;
+  cursor: nesw-resize;
+}
+
+.ne-img__hd--sw {
+  bottom: -7px;
+  left: -7px;
+  cursor: nesw-resize;
+}
+
+.ne-img__hd--se {
+  right: -7px;
+  bottom: -7px;
+  background: var(--mf-primary);
+  cursor: nwse-resize;
+}
+
+// ---- Live size readout: a dark tip near the image ("480 x 300 px · 50% of original").
+.ne-img__readout {
+  position: absolute;
+  right: 0;
+  bottom: -34px;
+  z-index: 5;
+  padding: 3px var(--mf-s2, 8px);
+  border-radius: var(--mf-radius);
+  background: var(--mf-tip-bg);
+  color: var(--mf-tip-fg);
+  font-size: var(--mf-fs-sm, 13px);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+  white-space: nowrap;
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+.ne-img__readout--in {
+  right: var(--mf-s2, 8px);
+  bottom: auto;
+}
+
+// ---- The image bar (dense floating toolbar, 28 px buttons like the table tools; the designer's note in the design note, section 14).
+.ne-img__bar {
+  position: absolute;
+  top: -44px;
+  left: 0;
+  z-index: 6;
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  padding: 4px;
+  border: 1px solid var(--mf-border-soft);
+  border-radius: var(--mf-radius-lg);
+  background: var(--mf-surface);
+  box-shadow: var(--mf-shadow-pop);
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.ne-img__bar--over {
+  left: var(--mf-s2, 8px);
+}
+
+.ne-img__b {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  height: 28px;
+  padding: 0 var(--mf-s2, 8px);
+  border: 0;
+  border-radius: var(--mf-radius);
+  background: none;
+  color: var(--mf-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--mf-fs-sm, 13px);
+  font-weight: var(--mf-fw-semibold, 600);
+
+  &:hover:not(:disabled) {
+    background: var(--mf-surface-alt);
+  }
+
+  &[aria-pressed='true'] {
+    background: var(--mf-selected-bg);
+    color: var(--mf-primary);
+  }
+
+  &:disabled {
+    color: var(--mf-text-disabled);
+    cursor: default;
+  }
+
+  .pi {
+    font-size: var(--mf-icon-sm);
+  }
+}
+
+.ne-img__b--danger {
+  color: var(--mf-danger);
+}
+
+.ne-img__dv {
+  width: 1px;
+  height: 18px;
+  margin: 0 2px;
+  background: var(--mf-border-soft);
+}
+
+// ---- Placeholder block while an image is being added, and the red block when it failed (mockup `.ph-up` and `.ph-bad`).
+.ne-up {
+  display: flex;
+  gap: var(--mf-s3, 12px);
+  align-items: flex-start;
+  margin: var(--mf-s2, 8px) 0;
+  padding: var(--mf-s3, 12px) var(--mf-s4, 16px);
+  border: 1px solid var(--mf-border-strong);
+  border-radius: var(--mf-radius-lg);
+  background: var(--mf-surface-alt);
+  font-size: var(--mf-fs-md, 14px);
+  font-weight: 400;
+  line-height: 1.5;
+  user-select: none;
+
+  > .pi {
+    margin-top: 1px;
+    font-size: var(--mf-icon-lg);
+  }
+}
+
+.ne-up--failed {
+  border-color: var(--mf-sem-overdue-line);
+  background: var(--mf-sem-overdue-bg);
+  color: var(--mf-sem-overdue-fg);
+}
+
+.ne-up__tx {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+
+  b {
+    font-weight: var(--mf-fw-semibold, 600);
+  }
+
+  span {
+    font-size: var(--mf-fs-sm, 13px);
+  }
+}
+
+.ne-up__acts {
+  display: flex;
+  gap: var(--mf-s1, 4px);
+  margin: var(--mf-s1, 4px) 0 0 calc(-1 * var(--mf-s2, 8px)); // the text buttons carry 8 px of padding: their text lines up with the message
+}
+
+// An upload has no byte counter through the API client, so the bar slides (indeterminate); reduced motion shows it full and still.
+.ne-up__prog {
+  height: 6px;
+  margin-top: 6px;
+  overflow: hidden;
+  border-radius: var(--mf-radius);
+  background: var(--mf-border-soft);
+
+  > i {
+    display: block;
+    width: 40%;
+    height: 100%;
+    background: var(--mf-primary);
+    animation: ne-up-slide 1.2s ease-in-out infinite;
+  }
+}
+
+@keyframes ne-up-slide {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(250%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ne-up__prog > i {
+    width: 100%;
+    animation: none;
+  }
+}
+
+// Under the text while a picture is added or failed: why Save is off.
+.ne__why {
+  display: flex;
+  flex: none;
+  gap: var(--mf-s2, 8px);
+  align-items: center;
+  margin: var(--mf-s2, 8px) 0 0;
+  color: var(--mf-text-muted);
+  font-size: var(--mf-fs-sm, 13px);
+
+  .pi {
+    font-size: var(--mf-icon-sm);
+  }
+}
+
+// ---- Image Details (form dialog, large): thumbnail on the left, alt text, size buttons and the exact width on the right.
+.ne-imgdlg {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: var(--mf-s4, 16px);
+  align-items: start;
+}
+
+.ne-imgdlg__thumb {
+  width: 120px;
+  min-height: 75px;
+  border: 1px solid var(--mf-border-strong);
+  background: var(--mf-surface-alt);
+
+  img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+}
+
+.ne-imgdlg__fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mf-s4, 16px);
+  min-width: 0;
+}
+
+.ne-imgdlg__sizes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mf-s2, 8px);
+}
+
+.ne-imgdlg__width {
+  max-width: 200px;
+}

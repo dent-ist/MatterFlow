@@ -2,7 +2,7 @@
 
 [[_TOC_]]
 
-**What this page is for.** How images pasted into a matter's notes work in the backend (epic #1405, issue #1409): where the bytes live, the limits, the endpoints, the error codes, how an image is cleaned up, and what the editor (issue #1410) must do. The decision is `docs/adr/030-note-images.md`; the design is `docs/ux/notes-round-2/README.md` section 4.
+**What this page is for.** How images pasted into a matter's notes work in the backend (epic #1405, issue #1409): where the bytes live, the limits, the endpoints, the error codes, how an image is cleaned up, and what the editor (issue #1410) must do. The decision is `docs/adr/030-note-images.md`; the design is `docs/ux/notes-round-2/README.md` section 4. The screen is issue #1410 (rule D-46d in `docs/ux/design-guidelines.md`); it is described under "The screen" below.
 
 ## The rules
 
@@ -54,6 +54,25 @@
 7. **Template save:** read `imagesLeftOut` and say "N images were left out of the template."
 8. `references` of a note never lists images; read the images from the body.
 
+## The screen
+
+Matter > Notes: a person pastes a screenshot or a copied image into the note editor (there is no Insert Image button and no file drop; no keyboard shortcut). The seven points above are done like this:
+
+| Part | What it does | Where |
+|---|---|---|
+| Paste | A picture-only clipboard (and a clipboard whose text is gone after clean-up, such as Edge's Copy Image) uploads the picture files; a clipboard with text or a table keeps the text (Excel); pictures inside pasted Word or Outlook text are still dropped with the toast of D-46b. Nothing is pasted in a template (no matter) | `notes/note-editor.ts` (`handlePaste`, `imageFilesOf`), `note-paste.ts` |
+| Re-draw | The browser draws the image on a canvas: long side at most 1,600 px, PNG; over 2 MB a JPEG at 0.85 on white; still over: `size`; not decodable: `type`. Metadata is gone | `note-image-prepare.ts` |
+| Upload | Placeholder in the text (plugin state, not in the document), two uploads at a time, inserted in pasted order, in ONE transaction with the removal of the placeholder (one Undo). Failure block with Retry and Remove; reasons in `IMAGE_COPY`; `failureOf` maps the API codes; Save stays off while a placeholder exists or a copy runs (`imagesBusy` output, `NotesTab.imagesBusy`) | `note-image-uploader.ts`, `note-image-upload.ts`, `note-image-copy.ts` |
+| Show | Fetched through `getNoteImage` and shown as a blob URL, cache of 80 ids (a failure is not cached); a 404 or 403 is the "missing image" block | `note-image-store.ts`, `note-image-node.ts` |
+| Resize | Corner handles (aspect locked, 48 px to the natural width and the room), live readout, the image bar presets, Image Details (alt text up to 200 characters, exact width). Sums in `note-image-size.ts`. Stored as `width` and `height` | `note-image-node.ts`, `note-editor.ts` (Image Details), `note-image-size.ts` |
+| Cancel and Discard | `NoteImageStore` remembers the images uploaded or copied in the editing session; `discardSession` calls `deleteNoteImage` for each (404 and 409 ignored); a save calls `keepSession` and shows the returned `bodyHtml` | `notes-tab.ts` (`restore`, `proceedDiscard`, `save`) |
+| Save answers | `IMAGE_NOT_FOUND` and `IMAGE_NOT_IN_MATTER` (`meta.imageIds`): the nodes go, the text stays, the save is repeated once, an info toast says how many; `TOO_MANY_IMAGES` is said under the editor | `notes-tab.ts` (`save`), `NoteEditor.dropImages` |
+| Between matters | A pasted note's own pictures (`<img data-image-id>` with no address) are copied with `copyNoteImage` into this matter and the ids swapped (a failure takes the picture out and says so) | `note-paste.ts` (`imageIds`), `note-editor.ts` (`adoptImages`) |
+| Templates | The Save as Template dialog says "N images will be left out of the template."; the toast reads `imagesLeftOut` | `notes-tab.ts` |
+| History | `noteHistoryText` words NOTE_MOVED and NOTE_IMAGE_ADDED; the audit browser shows "Note image added" and the object type "Note image" | `note-ui.ts`, `shared/ui/audit-format.ts` |
+
+Tests: unit `notes/note-image-size.spec.ts`, `note-image-prepare.spec.ts`, `note-image-store.spec.ts`, `note-image-copy.spec.ts`, `note-editor-images.spec.ts`, `note-paste.spec.ts`; e2e `frontend/e2e/tests/notes-images.spec.ts` (both desktop sizes, axe).
+
 ## Where things are
 
 - Script: `db/scripts/84-note-images.sql`; report login: `db/report-access.json` (deny).
@@ -67,4 +86,4 @@
 - [Table Reference](../Database/Table-Reference.md)
 - [Sensitive Matter Visibility](../Architecture/Sensitive-Matter-Visibility.md)
 
-Last verified against commit e34b07ed.
+Last verified against commit 0acb7794.

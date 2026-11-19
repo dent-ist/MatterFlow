@@ -93,6 +93,8 @@ describe('audit formatting', () => {
     expect(eventTypeLabel('ENTRA_SECRET_REPLACED')).toBe('Client secret replaced');
     expect(objectTypeLabel('EntraConnection')).toBe('Entra ID connection');
     expect(objectTypeLabel('Integration')).toBe('Integration');
+    expect(objectTypeLabel('NoteImage')).toBe('Note image');
+    expect(eventTypeLabel('NOTE_IMAGE_ADDED')).toBe('Note image added');
     expect(eventTypeLabel('FIELD_CHANGED')).toBe('Field changed');
     expect(eventTypeLabel('SOMETHING_NEW_HAPPENED')).toBe('Something new happened');
     expect(objectTypeLabel('AssetLinkRole')).toBe('Asset link role');

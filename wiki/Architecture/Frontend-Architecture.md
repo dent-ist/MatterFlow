@@ -82,6 +82,9 @@ The note editor (`features/notes/note-editor.ts`, Tiptap) keeps formatting when 
 - **Dropped:** colours, fonts, highlight, strikethrough, layout, hidden text, tracked deletions (inserted text is kept), comments, scripts, styles and pictures inside the text. The result says how many pictures and whether deletions were left out, and the editor shows an info toast from the `PASTE_COPY` table.
 - **Result:** `view.pasteHTML(cleaned)` parses with the note's schema as one undo step. If the paste kept formatting the **Paste Options chip** shows under the text (Keep Formatting, Paste as Plain Text); Paste as Plain Text undoes the paste and inserts the plain text kept from the same paste event, so there is no clipboard permission prompt. There is no toolbar button and no shortcut (#420). A text-only clipboard (also the browser's Ctrl+Shift+V) takes ProseMirror's plain path.
 - **Safety:** the server (`RichHtml`, profile Note) re-checks everything on save and drops hidden text and `del` too. Add a source by adding a fixture and a case to `note-paste.spec.ts`; keep the module small, it is in the lazy editor chunk, not the initial bundle.
+- **Pictures (#1410):** a picture on its own (a screenshot, Copy Image) is uploaded; a note's own pictures (`<img data-image-id>`, no address) pass `cleanPaste` as blocks and are copied into the matter (`imageIds`); every other picture inside pasted text is still dropped.
+
+Images in a note (`note-image-*.ts`, all in the lazy editor chunk): the `noteImage` Tiptap node (`<img data-image-id alt width height>`, no `src`) has a vanilla node view with the selection chrome (corner handles, readout, image bar); `note-image-upload.ts` is a ProseMirror plugin that keeps the placeholders outside the document; `NoteImageUploader` runs the queue (two at a time, inserted in pasted order, one transaction per image); `NoteImageStore` (root service) uploads, copies and deletes through the generated client, shows images as blob URLs with a small cache and remembers the images of the editing session for Cancel and Discard; `note-image-size.ts` holds the sums (ratio, 48 px minimum, natural width and room as the maximum) and `note-image-prepare.ts` the canvas re-draw (1,600 px, PNG or JPEG, 2 MB). See [Work with Note Images](../How-To/Work-with-Note-Images.md).
 
 ## Related pages
 
@@ -89,4 +92,4 @@ The note editor (`features/notes/note-editor.ts`, Tiptap) keeps formatting when 
 - [UI Standard](../Frontend/UI-Standard.md)
 - [How to Add a Page](../Frontend/How-to-Add-a-Page.md)
 
-Last verified against commit f45fc1d.
+Last verified against commit 0acb7794.

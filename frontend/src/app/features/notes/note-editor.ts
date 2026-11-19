@@ -7,6 +7,7 @@ import {
   ViewEncapsulation,
   afterNextRender,
   effect,
+  computed,
   inject,
   input,
   output,
@@ -16,6 +17,26 @@ import {
 } from '@angular/core';
 import { NotificationService } from '../../core/notify/notification.service';
 import { Dropdown, DropdownItem } from '../../shared/ui/dropdown';
+import { FormDialog } from '../../shared/ui/form-dialog';
+import { TextField } from '../../shared/ui/text-field';
+import { IMAGE_COPY } from './note-image-copy';
+import { IMAGE_NODE, NoteImageHost, noteImageNode, refreshImageViews } from './note-image-node';
+import {
+  IMAGE_ALT_MAX,
+  IMAGE_DEFAULT_ALT,
+  IMAGE_MIN_WIDTH,
+  SIZE_PRESETS,
+  SizePreset,
+  activePreset,
+  clampWidth,
+  heightFor,
+  maxWidth,
+  parseWidth,
+  presetWidth,
+} from './note-image-size';
+import { NoteImageStore } from './note-image-store';
+import { NoteImageUploader, imageIdsIn } from './note-image-uploader';
+import { uploadsPlugin } from './note-image-upload';
 import { PASTE_COPY, cleanPaste } from './note-paste';
 import { AnyExtension, Editor, Extension, Mark, Node } from '@tiptap/core';
 import { Placeholder } from '@tiptap/extensions';
@@ -190,7 +211,7 @@ export interface EmbedContent {
 export type EmbedSource = (noteId: number) => Promise<EmbedContent | null>;
 
 /** The schema of a note without the typing triggers: used by the editor and by the read-only copies that show a linked note. */
-function baseExtensions(): AnyExtension[] {
+function baseExtensions(images: () => NoteImageHost | null): AnyExtension[] {
   return [
     StarterKit.configure({
       heading: { levels: [1, 2, 3] },
@@ -211,6 +232,7 @@ function baseExtensions(): AnyExtension[] {
     TableCell,
     colourMark(),
     referenceNode(),
+    noteImageNode(images),
   ];
 }
 
@@ -273,7 +295,7 @@ function referenceNode(): Node {
 }
 
 /** Another note shown inline and read only, with a border. Stored as `<span data-embed-id="n">Title</span>` inside a paragraph. */
-function embedNode(source: () => EmbedSource | null): Node {
+function embedNode(source: () => EmbedSource | null, images: () => NoteImageHost | null): Node {
   return Node.create({
     name: 'noteEmbed',
     group: 'inline',
@@ -345,7 +367,7 @@ function embedNode(source: () => EmbedSource | null): Node {
             element: body,
             content: content.html,
             editable: false,
-            extensions: [...baseExtensions()],
+            extensions: [...baseExtensions(images)],
           });
         });
         return {
@@ -362,6 +384,21 @@ function embedNode(source: () => EmbedSource | null): Node {
 
 /** A link the toolbar may write: https, or a OneNote page (`onenote:https://`). The server allows the same two (RichHtml, Note profile). */
 export const LINK_OK = /^(https:\/\/|onenote:https:\/\/)[^\s<>"']+$/i;
+
+/** The picture files of a clipboard (a screenshot, "Copy Image"): `files` first, then the items some browsers fill instead. */
+export function imageFilesOf(data: DataTransfer | null | undefined): File[] {
+  if (!data) return [];
+  const fromFiles = Array.from(data.files ?? []).filter((f) => f.type.startsWith('image/'));
+  if (fromFiles.length > 0) return fromFiles;
+  const out: File[] = [];
+  for (const item of Array.from(data.items ?? [])) {
+    if (item.kind === 'file' && item.type.startsWith('image/')) {
+      const f = item.getAsFile();
+      if (f) out.push(f);
+    }
+  }
+  return out;
+}
 
 /** One reference the host resolved: what the reader may do with its chip (Ok, Inactive, Restricted, Removed) and the words of its state tag. */
 export interface RefInfo {
@@ -380,11 +417,12 @@ export interface RefInfo {
  */
 @Component({
   selector: 'mf-note-editor',
-  imports: [Dropdown],
+  imports: [Dropdown, FormDialog, TextField],
   changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None,
   styleUrls: [
     './note-editor.scss',
+    './note-editor-image.scss',
     './note-editor-refs.scss',
     './note-editor-colours.scss',
     './note-editor-paste.scss',
@@ -734,6 +772,11 @@ export interface RefInfo {
             }
           </div>
         }
+        @if (imagesPending()) {
+          <p class="ne__why" data-image-why>
+            <i class="pi pi-info-circle" aria-hidden="true"></i>{{ imageCopy.saveOff }}
+          </p>
+        }
         @if (emptyDoc()) {
           <p class="ne__hint" data-editor-hint data-editor-empty-hint>
             Type <kbd>/</kbd> for commands, for example <kbd>/template</kbd> to start from a
@@ -864,6 +907,64 @@ export interface RefInfo {
           </div>
         </div>
       }
+      @if (imageDetails(); as d) {
+        <mf-form-dialog
+          [title]="imageCopy.detailsTitle"
+          [primaryLabel]="imageCopy.detailsSave"
+          size="large"
+          [visible]="true"
+          [dirty]="detailsDirty()"
+          [canSubmit]="detailsValid()"
+          [deleteLabel]="imageCopy.removeImage"
+          (visibleChange)="!$event && closeImageDetails()"
+          (submitted)="saveImageDetails()"
+          (deleted)="removeImageFromDetails()"
+        >
+          <div class="ne-imgdlg" data-image-details>
+            <div class="ne-imgdlg__thumb">
+              @if (d.url) {
+                <img [src]="d.url" alt="" />
+              }
+            </div>
+            <div class="ne-imgdlg__fields">
+              <mf-text-field
+                inputId="ne-img-alt"
+                label="Alt Text"
+                [multiline]="true"
+                [maxLength]="altMax"
+                [counter]="true"
+                [help]="imageCopy.altHelp"
+                [(value)]="detailAlt"
+              />
+              <div class="mf-field">
+                <span class="mf-field__label" id="ne-img-size-l">{{ imageCopy.sizeLabel }}</span>
+                <div class="ne-imgdlg__sizes" role="group" aria-labelledby="ne-img-size-l">
+                  @for (p of presets; track p.key) {
+                    <button
+                      type="button"
+                      class="mf-btn mf-btn--toggle"
+                      [attr.data-preset]="p.key"
+                      [attr.aria-pressed]="detailPreset() === p.key"
+                      (click)="choosePreset(p.key)"
+                    >
+                      {{ p.label }}
+                    </button>
+                  }
+                </div>
+              </div>
+              <div class="ne-imgdlg__width">
+                <mf-text-field
+                  inputId="ne-img-width"
+                  [label]="imageCopy.widthLabel"
+                  [error]="detailWidthError()"
+                  [help]="detailWidthHelp()"
+                  [(value)]="detailWidth"
+                />
+              </div>
+            </div>
+          </div>
+        </mf-form-dialog>
+      }
     </div>
   `,
 })
@@ -924,6 +1025,70 @@ export class NoteEditor {
   private pasting = false;
   private removeAway: (() => void) | null = null;
 
+  /** The matter the pictures of this note belong to. Without it (a template) a picture is never added: pasting one does nothing. */
+  readonly imageMatterId = input<number | null>(null);
+  /** True while a picture is being added, failed, or being copied from another matter: the host keeps Save off (the sentence is shown under the text). */
+  readonly imagesBusy = output<boolean>();
+  protected readonly imageCopy = IMAGE_COPY;
+  protected readonly altMax = IMAGE_ALT_MAX;
+  protected readonly presets = SIZE_PRESETS;
+  protected readonly imagesPending = signal(false);
+  private readonly images = inject(NoteImageStore);
+  /** A new note is loaded: copies still running for the old one must not touch the new text. */
+  private imageEpoch = 0;
+  private copying = 0;
+  private readonly imageHost: NoteImageHost = {
+    load: (id) => this.images.load(id),
+    details: (pos) => this.openImageDetails(pos),
+    openFull: (id) => void this.openFullImage(id),
+  };
+  private readonly uploader = new NoteImageUploader({
+    editor: () => this.editor,
+    matterId: () => this.imageMatterId(),
+    store: this.images,
+    room: () => this.contentWidth(),
+    announce: (text) => this.announceImage(text),
+    changed: () => this.syncImages(),
+  });
+  /** Image Details: the node, its natural size, the room in the text and what was typed. */
+  protected readonly imageDetails = signal<{
+    pos: number;
+    url: string | null;
+    natural: { width: number; height: number };
+    room: number;
+    alt: string;
+    width: number;
+  } | null>(null);
+  protected readonly detailAlt = signal('');
+  protected readonly detailWidth = signal('');
+  private readonly detailWidthNum = computed(() => parseWidth(this.detailWidth()));
+  protected readonly detailWidthMax = computed(() => {
+    const d = this.imageDetails();
+    return d ? maxWidth(d.natural.width, d.room) : IMAGE_MIN_WIDTH;
+  });
+  protected readonly detailWidthError = computed(() => {
+    const w = this.detailWidthNum();
+    return w === null || w < IMAGE_MIN_WIDTH || w > this.detailWidthMax()
+      ? IMAGE_COPY.widthError(this.detailWidthMax())
+      : null;
+  });
+  protected readonly detailsValid = computed(() => this.detailWidthError() === null);
+  protected readonly detailPreset = computed<SizePreset | null>(() => {
+    const d = this.imageDetails();
+    const w = this.detailWidthNum();
+    return d && w ? activePreset(w, d.natural, d.room) : null;
+  });
+  protected readonly detailWidthHelp = computed(() => {
+    const d = this.imageDetails();
+    if (!d) return '';
+    const w = this.detailWidthError() === null ? (this.detailWidthNum() ?? d.width) : d.width;
+    return IMAGE_COPY.widthHelp(heightFor(w, d.natural), d.natural.width, d.natural.height);
+  });
+  protected readonly detailsDirty = computed(() => {
+    const d = this.imageDetails();
+    return !!d && (this.detailAlt() !== d.alt || this.detailWidthNum() !== d.width);
+  });
+
   constructor() {
     afterNextRender(() => this.create());
     inject(DestroyRef).onDestroy(() => {
@@ -945,6 +1110,10 @@ export class NoteEditor {
       void key;
       untracked(() => {
         const html = this.html();
+        this.uploader.reset();
+        this.imageEpoch++;
+        this.copying = 0;
+        this.syncImages();
         if (this.editor) this.editor.commands.setContent(html, { emitUpdate: false });
         this.tick.update((n) => n + 1);
         queueMicrotask(() => {
@@ -997,13 +1166,27 @@ export class NoteEditor {
     this.pasteMessage.set('');
     this.closePasteOptions();
     const plain = data?.getData('text/plain') ?? '';
-    // Text only (also the browser's Ctrl+Shift+V): the editor's plain paste, one paragraph per line. A picture file alone is not pasted (images are a later issue).
-    if (!html.trim()) return !plain;
+    const files = imageFilesOf(data);
+    const canImage = this.imageMatterId() !== null;
+    // Text only (also the browser's Ctrl+Shift+V): the editor's plain paste, one paragraph per line. A picture on its own (a screenshot) is uploaded; in a template
+    // (no matter) it is not pasted.
+    if (!html.trim()) {
+      if (files.length > 0 && !plain.trim()) {
+        if (canImage) this.uploader.add(files);
+        return true;
+      }
+      return !plain;
+    }
     let result;
     try {
       result = cleanPaste(html, plain);
     } catch {
       return this.pastePlain(editor, event, plain);
+    }
+    // "Copy Image" in a browser puts an <img> with a web address and the picture file on the clipboard: no text is left, so the file is the paste.
+    if (!result.html && !result.problem && files.length > 0 && !result.plain.trim()) {
+      if (canImage) this.uploader.add(files);
+      return true;
     }
     if (result.droppedImages > 0) {
       this.notifier.info(PASTE_COPY.imagesSummary(result.droppedImages), PASTE_COPY.imagesDetail);
@@ -1019,18 +1202,27 @@ export class NoteEditor {
       this.pasteMessage.set(PASTE_COPY.tooManyCells(result.tableCells));
       return true;
     }
+    // A note's own pictures stay only where pictures are allowed (a note of a matter); a template drops them.
+    const pasted = canImage ? result.html : result.html.replace(/<img\b[^>]*>/gi, '');
     // Nothing is left of the html (a picture on its own, or only hidden text): the text flavour, if there is one, goes the plain way.
-    if (!result.html)
+    if (!pasted.trim())
       return this.pastePlain(editor, event, result.droppedImages > 0 ? '' : result.plain);
     const view = editor.view;
+    const known = imageIdsIn(editor);
     this.pasting = true;
     try {
       // Own undo step, so the toolbar's or the editor's Undo removes the whole paste and Paste as Plain Text can take it back.
       view.dispatch(closeHistory(view.state.tr));
-      view.pasteHTML(result.html, event);
+      view.pasteHTML(pasted, event);
       view.dispatch(closeHistory(view.state.tr));
     } finally {
       this.pasting = false;
+    }
+    if (canImage) {
+      // Pictures copied from a note: each one is copied into this matter (a separate image, never shared) and the id is swapped.
+      this.adoptImages(
+        result.imageIds.filter((id) => !known.has(id) && !this.images.inSession(id)),
+      );
     }
     if (result.formatted) {
       this.pasteChip.set({ plain: result.plain, doc: view.state.doc });
@@ -1038,6 +1230,173 @@ export class NoteEditor {
       queueMicrotask(() => this.pasteLive.set(PASTE_COPY.live));
     }
     return true;
+  }
+
+  // ------------------------------------------------------------ images (#1410)
+
+  /** Tells the host whether Save must stay off: a picture is being added, has failed, or is being copied. */
+  private syncImages(): void {
+    const busy = this.uploader.busy || this.copying > 0;
+    if (busy === this.imagesPending()) return;
+    this.imagesPending.set(busy);
+    this.imagesBusy.emit(busy);
+  }
+
+  private announceImage(text: string): void {
+    this.pasteLive.set('');
+    queueMicrotask(() => this.pasteLive.set(text));
+  }
+
+  /** The width the text leaves for an image (0 when it is not laid out: no limit). */
+  private contentWidth(): number {
+    return this.hostEl().nativeElement.querySelector<HTMLElement>('.ProseMirror')?.clientWidth ?? 0;
+  }
+
+  /** Copies the pictures of another note into this matter and swaps the ids; a picture that cannot be copied is taken out and one message says so. */
+  private adoptImages(ids: readonly number[]): void {
+    const matter = this.imageMatterId();
+    if (!matter || ids.length === 0) return;
+    const epoch = this.imageEpoch;
+    this.copying += ids.length;
+    this.syncImages();
+    let failed = 0;
+    void Promise.all(
+      ids.map(async (old) => {
+        let next: number | null = null;
+        try {
+          next = (await this.images.copy(old, matter)).noteImageId;
+        } catch {
+          failed++;
+        }
+        if (epoch !== this.imageEpoch) return;
+        this.copying--;
+        this.swapImage(old, next);
+      }),
+    ).then(() => {
+      if (epoch !== this.imageEpoch) return;
+      this.syncImages();
+      if (failed > 0) this.pasteMessage.set(IMAGE_COPY.copyFailed(failed));
+    });
+  }
+
+  /** Every node of image `old` gets the id `next` (kept out of the undo history), or goes when there is none. */
+  private swapImage(old: number, next: number | null): void {
+    const editor = this.editor;
+    if (!editor || editor.isDestroyed) return;
+    const hits: { pos: number; size: number; attrs: Record<string, unknown> }[] = [];
+    editor.state.doc.descendants((n, pos) => {
+      if (n.type.name === IMAGE_NODE && Number(n.attrs['imageId']) === old)
+        hits.push({ pos, size: n.nodeSize, attrs: n.attrs });
+    });
+    if (hits.length === 0) return;
+    const tr = editor.state.tr;
+    for (const h of hits.reverse()) {
+      if (next === null) tr.delete(h.pos, h.pos + h.size);
+      else tr.setNodeMarkup(h.pos, undefined, { ...h.attrs, imageId: next });
+    }
+    tr.setMeta('addToHistory', false);
+    this.pasting = true; // the chip stays: this is not an edit of the person's
+    try {
+      editor.view.dispatch(tr);
+    } finally {
+      this.pasting = false;
+    }
+  }
+
+  /**
+   * The host's answer to a save that named pictures the server does not have (`IMAGE_NOT_FOUND`, `IMAGE_NOT_IN_MATTER`): the nodes of those ids are taken out and the
+   * text stays. Returns how many nodes went.
+   */
+  dropImages(ids: readonly number[]): number {
+    const editor = this.editor;
+    if (!editor || ids.length === 0) return 0;
+    const hits: { pos: number; size: number }[] = [];
+    editor.state.doc.descendants((n, pos) => {
+      if (n.type.name === IMAGE_NODE && ids.includes(Number(n.attrs['imageId'])))
+        hits.push({ pos, size: n.nodeSize });
+    });
+    if (hits.length === 0) return 0;
+    const tr = editor.state.tr;
+    for (const h of hits.reverse()) tr.delete(h.pos, h.pos + h.size);
+    tr.setMeta('addToHistory', false);
+    editor.view.dispatch(tr);
+    return hits.length;
+  }
+
+  /** How many pictures the note holds (the template dialog says how many a template would leave out). */
+  imageCount(): number {
+    return this.editor ? imageIdsIn(this.editor).size : 0;
+  }
+
+  private async openFullImage(id: number): Promise<void> {
+    const res = await this.images.load(id);
+    if (res.state === 'ok') window.open(res.url, '_blank', 'noopener');
+  }
+
+  private openImageDetails(pos: number): void {
+    const editor = this.editor;
+    if (!editor || !this.editable()) return;
+    const node = editor.state.doc.nodeAt(pos);
+    if (!node || node.type.name !== IMAGE_NODE) return;
+    const dom = editor.view.nodeDOM(pos) as HTMLElement | null;
+    const nw = Number(dom?.dataset['naturalWidth']) || Number(node.attrs['width']) || 480;
+    const nh = Number(dom?.dataset['naturalHeight']) || Number(node.attrs['height']) || 300;
+    const width = Number(node.attrs['width']) || nw;
+    const alt = String(node.attrs['alt'] || IMAGE_DEFAULT_ALT);
+    this.imageDetails.set({
+      pos,
+      url: null,
+      natural: { width: nw, height: nh },
+      room: this.contentWidth(),
+      alt,
+      width,
+    });
+    this.detailAlt.set(alt);
+    this.detailWidth.set(String(width));
+    void this.images.load(Number(node.attrs['imageId'])).then((res) => {
+      const cur = this.imageDetails();
+      if (res.state === 'ok' && cur?.pos === pos) this.imageDetails.set({ ...cur, url: res.url });
+    });
+  }
+
+  protected choosePreset(key: SizePreset): void {
+    const d = this.imageDetails();
+    if (d) this.detailWidth.set(String(presetWidth(key, d.natural, d.room)));
+  }
+
+  protected closeImageDetails(): void {
+    this.imageDetails.set(null);
+    this.editor?.commands.focus();
+  }
+
+  protected saveImageDetails(): void {
+    const d = this.imageDetails();
+    const editor = this.editor;
+    const w = this.detailWidthNum();
+    if (!d || !editor || w === null || !this.detailsValid()) return;
+    const node = editor.state.doc.nodeAt(d.pos);
+    if (node?.type.name === IMAGE_NODE) {
+      const width = clampWidth(w, d.natural.width, d.room);
+      editor.view.dispatch(
+        editor.state.tr.setNodeMarkup(d.pos, undefined, {
+          ...node.attrs,
+          alt: this.detailAlt().trim().slice(0, IMAGE_ALT_MAX) || IMAGE_DEFAULT_ALT,
+          width,
+          height: heightFor(width, d.natural),
+        }),
+      );
+    }
+    this.closeImageDetails();
+  }
+
+  protected removeImageFromDetails(): void {
+    const d = this.imageDetails();
+    const editor = this.editor;
+    const node = d && editor?.state.doc.nodeAt(d.pos);
+    if (d && editor && node && node.type.name === IMAGE_NODE) {
+      editor.view.dispatch(editor.state.tr.delete(d.pos, d.pos + node.nodeSize));
+    }
+    this.closeImageDetails();
   }
 
   private pastePlain(editor: Editor, event: ClipboardEvent, text: string): boolean {
@@ -1404,6 +1763,7 @@ export class NoteEditor {
   private decorate(): void {
     const root = this.hostEl().nativeElement;
     const read = !this.editable();
+    refreshImageViews(root);
     for (const chip of Array.from(root.querySelectorAll<HTMLElement>('.ne-ref'))) {
       const kind = chip.dataset['refKind'] as RefKind;
       const info = this.refInfo()[`${kind}:${chip.dataset['refId']}`];
@@ -1482,21 +1842,39 @@ export class NoteEditor {
         ];
       },
     });
+    const uploader = this.uploader;
+    const imageUploads = Extension.create({
+      name: 'noteImageUploads',
+      addProseMirrorPlugins() {
+        return [
+          uploadsPlugin({
+            retry: (id) => uploader.retry(id),
+            remove: (id) => uploader.remove(id),
+          }),
+        ];
+      },
+    });
     this.editor = new Editor({
       element: this.hostEl().nativeElement,
       content: this.html(),
       editable: this.editable(),
       extensions: [
-        ...baseExtensions(),
+        ...baseExtensions(() => this.imageHost),
         Placeholder.configure({ placeholder: this.placeholder() }),
-        embedNode(() => this.embedSource()),
+        embedNode(
+          () => this.embedSource(),
+          () => this.imageHost,
+        ),
         suggestions,
+        imageUploads,
       ],
       editorProps: {
         attributes: { 'aria-label': 'Note text', role: 'textbox', 'aria-multiline': 'true' },
         // Formatted paste (#1411): the clipboard's html is cleaned (note-paste.ts) and parsed with the note's own schema; nothing is dropped into the text.
         handlePaste: (_view, event) => this.handlePaste(event),
         handleDrop: () => true,
+        // A selected image keeps room below it for its handles and the size readout when the text box scrolls to it.
+        scrollMargin: { top: 8, bottom: 56, left: 8, right: 8 },
       },
       onUpdate: ({ editor }) => {
         this.changed.emit(editor.getHTML());
