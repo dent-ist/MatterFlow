@@ -117,6 +117,10 @@ export function noteHistoryText(e: {
       return 'pinned this note';
     case 'NOTE_UNPINNED':
       return 'unpinned this note';
+    case 'NOTE_MOVED':
+      return `moved this note${e.newValue ? ` to ${e.newValue}` : ''}`;
+    case 'NOTE_IMAGE_ADDED':
+      return `added an image${e.summary ? ` (${e.summary})` : ''}`;
     case 'NOTE_SAVED_AFTER_AI_WARNING':
       return `saved after an AI warning${e.summary ? `: ${e.summary}` : ''}`;
     default:

@@ -56,6 +56,7 @@ const OBJECT_TYPES: Readonly<Record<string, string>> = {
   CustomField: 'Custom field',
   Integration: 'Integration',
   EntraConnection: 'Entra ID connection',
+  NoteImage: 'Note image',
 };
 
 /** Event codes whose plain sentence case reads wrong. */

@@ -66,6 +66,8 @@ import {
 } from './note-folders';
 import { TextField } from '../../shared/ui/text-field';
 import { EmbedContent, NoteEditor, RefInfo, SuggestItem, SuggestKind } from './note-editor';
+import { IMAGE_COPY } from './note-image-copy';
+import { NoteImageStore } from './note-image-store';
 import { NoteTagChip } from './note-tag-chip';
 import {
   NoteSort,
@@ -880,7 +882,9 @@ interface RefChip {
                         [title]="
                           saveBlocked()
                             ? 'Locked by ' + lockedWhileEditing() + '; your changes cannot be saved'
-                            : ''
+                            : imagesBusy()
+                              ? imageCopy.saveOff
+                              : ''
                         "
                         (click)="onSaveClick()"
                       >
@@ -1098,9 +1102,11 @@ interface RefChip {
                         [html]="d.html"
                         [contentKey]="d.key"
                         [editable]="true"
+                        [imageMatterId]="matterId()"
                         [source]="source"
                         [embedSource]="embedSource"
                         (changed)="onChanged($event)"
+                        (imagesBusy)="imagesBusy.set($event)"
                         (notice)="notify.info($event)"
                         (templateChosen)="onTemplateChosen($event)"
                         (ready)="onEditorReady()"
@@ -1818,6 +1824,12 @@ interface RefChip {
               ></label
             >
           </fieldset>
+          @if (noteImageCount() > 0) {
+            <p class="nt__byline" role="note" data-template-images>
+              <i class="pi pi-info-circle" aria-hidden="true"></i>
+              {{ imageCopy.willLeaveOut(noteImageCount()) }}
+            </p>
+          }
           <label class="nt__check"
             ><input
               type="checkbox"
@@ -1884,6 +1896,17 @@ interface RefChip {
 })
 export class NotesTab {
   private readonly notesApi = inject(NotesClient);
+  private readonly images = inject(NoteImageStore);
+  protected readonly imageCopy = IMAGE_COPY;
+  /** A picture is being added, has failed or is being copied: Save stays off until it is added or removed (design note 4.5). */
+  protected readonly imagesBusy = signal(false);
+  /** The pictures of the open note: a template carries none, and the Save as Template dialog says how many it will leave out. */
+  protected readonly noteImageCount = computed(
+    () =>
+      new Set(
+        [...(this.note()?.bodyHtml ?? '').matchAll(/data-image-id="(\d+)"/g)].map((m) => m[1]),
+      ).size,
+  );
   private readonly tagsApi = inject(NoteTagsClient);
   private readonly templatesApi = inject(NoteTemplatesClient);
   private readonly assetsApi = inject(AssetsClient);
@@ -2219,8 +2242,10 @@ export class NotesTab {
         (this.currentHtml() !== this.startedHtml() || this.tagKey() !== this.startedTags())),
   );
   /** Save is on once there is something to save: any change of an open note, or some content in a new note. */
-  protected readonly canSave = computed(() =>
-    this.note() ? this.dirty() : titleOfHtml(this.currentHtml()) !== '' || this.dirty(),
+  protected readonly canSave = computed(
+    () =>
+      !this.imagesBusy() &&
+      (this.note() ? this.dirty() : titleOfHtml(this.currentHtml()) !== '' || this.dirty()),
   );
   protected readonly saveBlocked = computed(() => this.lockedWhileEditing() !== '');
   /** The tags a person can pick: the active ones, plus an inactive one the note already has (it stays visible and can be removed). */
@@ -2832,6 +2857,7 @@ export class NotesTab {
       this.pendingAfterDiscard = go;
       this.confirmDiscard.set(true);
     } else {
+      if (this.editing()) void this.images.discardSession();
       go();
     }
   }
@@ -2935,6 +2961,7 @@ export class NotesTab {
   }
 
   private startNew(html: string, tags: NoteTemplateResponse['tags']): void {
+    this.imagesBusy.set(false);
     this.newFolder.set(this.folders.selectedId());
     this.note.set(null);
     this.saveError.set('');
@@ -2965,6 +2992,7 @@ export class NotesTab {
   protected edit(): void {
     const n = this.note();
     if (!n || !this.lock().canEdit) return;
+    this.imagesBusy.set(false);
     this.startedHtml.set(n.bodyHtml);
     this.currentHtml.set(n.bodyHtml);
     this.draft.set({ html: n.bodyHtml, key: `${n.noteId}:${n.rowVersion}:edit` });
@@ -3013,6 +3041,7 @@ export class NotesTab {
 
   /** Back to the saved note in read mode, or to an empty pane when it was a new note. */
   private restore(): void {
+    void this.images.discardSession();
     const n = this.note();
     this.wide.set(false);
     if (n) {
@@ -3040,6 +3069,7 @@ export class NotesTab {
     this.confirmDiscard.set(false);
     const go = this.pendingAfterDiscard;
     this.pendingAfterDiscard = null;
+    void this.images.discardSession();
     this.editing.set(false);
     this.tplEditMode.set(false);
     this.currentHtml.set(this.startedHtml());
@@ -3057,7 +3087,7 @@ export class NotesTab {
     void this.save();
   }
 
-  protected async save(): Promise<void> {
+  protected async save(left: { count: number; other: boolean } | null = null): Promise<void> {
     const html = this.editorRef()?.getHtml() ?? this.currentHtml();
     if (html.length > 100_000) {
       this.notify.warn('Note too large', 'The limit is 100 KB of formatted text.');
@@ -3067,6 +3097,7 @@ export class NotesTab {
     if (check && !check.proceed) return;
     this.busy.set(true);
     this.saveError.set('');
+    let again: { count: number; other: boolean } | null = null;
     try {
       const tagIds = this.selectedTags().map((t) => t.noteTagId);
       const n = this.note();
@@ -3091,6 +3122,16 @@ export class NotesTab {
             }),
           );
       this.notify.success('Note saved');
+      if (left) {
+        this.notify.info(
+          left.other
+            ? IMAGE_COPY.otherMatterSummary(left.count)
+            : IMAGE_COPY.goneSummary(left.count),
+          left.other ? IMAGE_COPY.otherMatterDetail : IMAGE_COPY.goneDetail,
+        );
+      }
+      // The body of the answer is the truth: a picture another note already used came back as the note's own copy, with a new id.
+      this.images.keepSession();
       this.showNote(saved);
       this.focusTitle();
       await this.loadList();
@@ -3101,6 +3142,22 @@ export class NotesTab {
         this.lockedWhileEditing.set(who);
       } else if (e instanceof ApiError && e.code === 'CONCURRENCY_CONFLICT') {
         await this.showConflict();
+      } else if (
+        e instanceof ApiError &&
+        !left &&
+        (e.code === 'IMAGE_NOT_FOUND' || e.code === 'IMAGE_NOT_IN_MATTER')
+      ) {
+        // A picture the server does not have (removed by another save, or of another matter): its node goes, the text stays, the save is tried once more.
+        const raw = e.problem?.meta?.['imageIds'];
+        const ids = (Array.isArray(raw) ? raw : []).map(Number).filter(Number.isInteger);
+        const count = this.editorRef()?.dropImages(ids) ?? 0;
+        if (count > 0) again = { count, other: e.code === 'IMAGE_NOT_IN_MATTER' };
+        else this.saveError.set(e.message);
+      } else if (
+        e instanceof ApiError &&
+        e.problem?.errors?.['bodyHtml']?.some((x) => x.code === 'TOO_MANY_IMAGES')
+      ) {
+        this.saveError.set(IMAGE_COPY.saveTooMany);
       } else if (e instanceof ApiError && e.hasFieldErrors) {
         this.saveError.set(Object.values(e.problem?.errors ?? {})[0]?.[0]?.message ?? e.message);
       } else {
@@ -3111,6 +3168,7 @@ export class NotesTab {
     } finally {
       this.busy.set(false);
     }
+    if (again) await this.save(again);
   }
 
   private async latestRowVersion(id: number): Promise<string | null> {
@@ -3144,6 +3202,7 @@ export class NotesTab {
   protected async reloadTheirs(): Promise<void> {
     const n = this.note();
     if (!n) return;
+    void this.images.discardSession();
     this.editing.set(false);
     this.currentHtml.set(this.startedHtml());
     await this.openNow(n.noteId, true);
@@ -3166,6 +3225,7 @@ export class NotesTab {
   }
 
   protected closeLockedWarning(): void {
+    void this.images.discardSession();
     this.lockedWhileEditing.set('');
     const n = this.note();
     this.editing.set(false);
@@ -3496,7 +3556,10 @@ export class NotesTab {
           rowVersion: t.rowVersion,
         }),
       );
-      this.notify.success('Template saved');
+      this.notify.success(
+        'Template saved',
+        saved.imagesLeftOut > 0 ? IMAGE_COPY.leftOut(saved.imagesLeftOut) : undefined,
+      );
       this.tplEditMode.set(false);
       await this.loadTemplates();
       this.selTemplate.set(
@@ -3548,7 +3611,7 @@ export class NotesTab {
     this.busy.set(true);
     try {
       const level = this.tplLevel();
-      await firstValueFrom(
+      const created = await firstValueFrom(
         this.templatesApi.createNoteTemplate({
           scope: level,
           matterId: level === 'MATTER' ? this.matterId() : undefined,
@@ -3560,9 +3623,10 @@ export class NotesTab {
         }),
       );
       this.panel.set('none');
+      const find = `Find "${this.tplName().trim()}" under Templates or with New note, From template.`;
       this.notify.success(
         'Template saved',
-        `Find "${this.tplName().trim()}" under Templates or with New note, From template.`,
+        created.imagesLeftOut > 0 ? `${IMAGE_COPY.leftOut(created.imagesLeftOut)} ${find}` : find,
       );
     } catch (e) {
       this.tplError.set(e instanceof ApiError ? e.message : "Couldn't save the template.");

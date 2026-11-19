@@ -434,6 +434,45 @@ describe('realHref', () => {
   });
 });
 
+describe('pictures of notes (#1410)', () => {
+  const own = '<img data-image-id="581" alt="Privilege log" width="480" height="300">';
+
+  it("keeps a note's own picture (an id, no address) as a block and reports its id", () => {
+    const r = cleanPaste(`<p>Before</p>${own}<p>After</p>`, 'Before\nAfter');
+    expect(r.html).toBe(`<p>Before</p>${own}<p>After</p>`);
+    expect(r.imageIds).toEqual([581]);
+    expect(r.droppedImages).toBe(0);
+  });
+
+  it('keeps a picture on its own with no text around it', () => {
+    const r = cleanPaste(own, '');
+    expect(r.html).toBe(own);
+    expect(r.imageIds).toEqual([581]);
+  });
+
+  it('still drops every picture with an address (Word, Outlook, web) and counts it', () => {
+    const r = cleanPaste(
+      '<p>Hi <img src="file:///c:/a.png"> <img src="https://x.example/a.png" data-image-id="5"> <img src="cid:abc"></p>',
+      'Hi',
+    );
+    expect(r.html).not.toContain('<img');
+    expect(r.droppedImages).toBe(3);
+    expect(r.imageIds).toEqual([]);
+  });
+
+  it('refuses a data-image-id that is not a plain positive number', () => {
+    for (const bad of ['0', '-3', '1e3', 'abc', '12345678901', '']) {
+      const r = cleanPaste(`<p>x</p><img data-image-id="${bad}" alt="a">`, 'x');
+      expect(r.html, bad).not.toContain('<img');
+      expect(r.imageIds, bad).toEqual([]);
+    }
+  });
+
+  it('lists each id once', () => {
+    expect(cleanPaste(`${own}${own}`, '').imageIds).toEqual([581]);
+  });
+});
+
 describe('the fixtures', () => {
   it('are hand-written samples with no real client data', () => {
     for (const sample of [

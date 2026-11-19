@@ -84,6 +84,12 @@ describe('lock rules', () => {
 describe('history wording and dates', () => {
   it('writes the lines', () => {
     expect(noteHistoryText({ eventType: 'NOTE_LOCKED' })).toBe('locked this note');
+    expect(noteHistoryText({ eventType: 'NOTE_MOVED', newValue: 'Custodians > Finance' })).toBe(
+      'moved this note to Custodians > Finance',
+    );
+    expect(
+      noteHistoryText({ eventType: 'NOTE_IMAGE_ADDED', summary: 'PNG, 1200 x 800 px, 84 KB' }),
+    ).toBe('added an image (PNG, 1200 x 800 px, 84 KB)');
     expect(
       noteHistoryText({ eventType: 'NOTE_TAGS_CHANGED', newValue: 'Privilege, Hosting' }),
     ).toBe('changed the tags to Privilege, Hosting');
