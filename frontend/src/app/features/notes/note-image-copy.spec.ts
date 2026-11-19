@@ -22,6 +22,10 @@ describe('failureOf', () => {
     expect(failureOf(err(500)).retry).toBe(true);
     expect(failureOf(new Error('x')).retry).toBe(true);
     expect(failureOf(err(415, 'IMAGE_TYPE_UNSUPPORTED')).retry).toBe(false);
+    expect(failureOf(err(413, 'IMAGE_TOO_LARGE')).retry).toBe(false);
+    expect(failureOf(err(413)).retry).toBe(false);
+    expect(failureOf(err(415)).retry).toBe(false);
+    expect(failureOf(err(400, 'IMAGE_CORRUPT')).retry).toBe(false);
     expect(failureOf(err(409, 'MATTER_INACTIVE')).retry).toBe(false);
   });
 

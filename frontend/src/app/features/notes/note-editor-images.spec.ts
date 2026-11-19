@@ -317,6 +317,30 @@ describe('NoteEditor images', () => {
       expect(f.componentInstance.getHtml()).not.toContain('<img');
     });
 
+    it('a server too-large refusal shows only Remove and keeps Save off until it is removed', async () => {
+      store.upload.mockRejectedValueOnce(
+        new ApiError(
+          413,
+          'IMAGE_TOO_LARGE',
+          'x',
+          undefined,
+          new HttpErrorResponse({ status: 413 }),
+        ),
+      );
+      const busy: boolean[] = [];
+      const f = await make();
+      f.componentInstance.imagesBusy.subscribe((b) => busy.push(b));
+      paste(f, {}, [png()]);
+      await settle(f);
+      expect(q(f, '[data-image-slot]')?.textContent).toContain(IMAGE_COPY.reasons.size);
+      expect(q(f, '[data-slot-retry]')).toBeNull();
+      expect(q(f, '[data-slot-remove]')).not.toBeNull();
+      expect(busy).toEqual([true]);
+      q(f, '[data-slot-remove]')?.click();
+      await settle(f);
+      expect(busy).toEqual([true, false]);
+    });
+
     it('stops at 20 images with the reason from the table, without uploading', async () => {
       const html = Array.from({ length: 20 }, (_v, i) => IMG(i + 1, 24 * 2, 30)).join('');
       const f = await make(`<p>x</p>${html}`);

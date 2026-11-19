@@ -233,9 +233,9 @@
   };
   function failScene() {
     const r = REASONS[S.reason] || REASONS.size;
-    const retry = ['offline', 'size'].includes(S.reason) ? '' : '';
+    const canRetry = S.reason === 'offline'; /* only when the same bytes can work (#1410) */
     const body = '<div class="np-b"><div class="doc ed"><h1>Log batch 3: export screenshots</h1><p>Two screenshots from the review platform. The first has the full column set; the second shows the error banner.</p>' +
-      '<div class="ph-bad" role="alert">' + ic('exclamation-triangle') + '<div class="tx"><b>' + r[0] + '</b><span>' + r[1] + '</span><div class="acts">' + (S.reason === 'access' || S.reason === 'locked' ? '' : '<button class="btn btn--text sm">' + ic('refresh') + 'Retry</button>') + '<button class="btn btn--text sm">Remove</button></div></div></div>' +
+      '<div class="ph-bad" role="alert">' + ic('exclamation-triangle') + '<div class="tx"><b>' + r[0] + '</b><span>' + r[1] + '</span><div class="acts">' + (!canRetry ? '' : '<button class="btn btn--text sm">' + ic('refresh') + 'Retry</button>') + '<button class="btn btn--text sm">Remove</button></div></div></div>' +
       '<div class="ph-up" role="status">' + ic('spinner', 'pi-spin') + '<div class="tx"><b>Adding image...</b><span>error-banner.png &middot; 1.4 MB</span><div class="prog" role="progressbar" aria-valuenow="62" aria-valuemin="0" aria-valuemax="100" aria-label="Upload progress"><i style="width:62%"></i></div></div></div>' +
       '<p>Both go to Mei Lin for QC.<span class="caret"></span></p></div></div>';
     return card(tree() + list() + '<section class="nt__note">' + edHead() + TBAR + body + edFoot(true, 'Save is off until the image is added or removed.') + '</section>', 'nt--rail');

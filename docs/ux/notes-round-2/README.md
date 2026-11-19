@@ -214,7 +214,7 @@ Flow in the editor (mockup scene `image-fail`):
 1. The paste handler finds an image file on the clipboard (5.3 says when an image beats text). It shrinks and re-encodes it on a canvas (long side 1,600; PNG; if over 2 MB, JPEG at 0.85 on a white background; if still over, fail).
 2. A **placeholder block** appears at the cursor: a bordered panel with a spinner, "Adding image...", the file name or "pasted image" and size, and a progress bar. It is not part of the stored document; undo and redo skip it.
 3. On success it becomes the image: inserted at **min(natural width, 720 px, editor width)**, aspect ratio kept, alt text "Pasted image", selected so the image bar shows.
-4. On failure it turns into a red block (the shared error colours, not a dashed box): "Couldn't add the image." plus the reason and two text buttons, **Retry** and **Remove**. Retry resends the already prepared bytes. No toast: the failure shows inline where the image would be (D-51), and the polite live region announces it.
+4. On failure it turns into a red block (the shared error colours, not a dashed box): "Couldn't add the image." plus the reason and two text buttons, **Retry** and **Remove** (a cause the same bytes cannot get past, such as over 2 MB or an unsupported type, shows **Remove** only). Retry resends the already prepared bytes. No toast: the failure shows inline where the image would be (D-51), and the polite live region announces it.
 5. **Save is off** while any placeholder is uploading or failed; the footer says "Save is off until the image is added or removed." (a failed image that silently disappeared on Save would lose the person's work).
 6. Cancel or leaving the note discards the draft; images already uploaded stay as pending until the clean-up (4.7).
 7. Several images are uploaded two at a time, in the order pasted.
@@ -223,7 +223,7 @@ Reasons, in the words of the interface:
 
 | Situation | Reason text under "Couldn't add the image." | Retry? |
 | --- | --- | --- |
-| Over 2 MB after shrinking | It is larger than 2 MB even after shrinking. Crop it or take a smaller screenshot. | yes |
+| Over 2 MB after shrinking | It is larger than 2 MB even after shrinking. Crop it or take a smaller screenshot. | no (Remove only) |
 | Not PNG or JPEG and the browser cannot convert it | This image type isn't supported. Paste a PNG or JPEG, or take a screenshot. | no |
 | 20 images in the note | A note can hold up to 20 images. Remove one first. | no |
 | Connection lost, server error | The upload didn't finish. Check your connection and try again. | yes |
